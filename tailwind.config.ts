@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        feature: {
+          dice: "hsl(var(--feature-dice))",
+          maps: "hsl(var(--feature-maps))",
+          compendium: "hsl(var(--feature-compendium))",
+          character: "hsl(var(--feature-character))",
+        },
+      },
+      fontFamily: {
+        display: ["Cinzel", "serif"],
+        body: ["Lora", "serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
