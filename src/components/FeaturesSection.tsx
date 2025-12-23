@@ -11,8 +11,8 @@ const features = [
   },
   {
     icon: Map,
-    title: "Cartes animées",
-    subtitle: "GIF, MP4, WebM",
+    title: "Campagnes",
+    subtitle: "Gérez vos aventures",
     colorClass: "text-feature-maps",
     href: "/campaigns",
   },
