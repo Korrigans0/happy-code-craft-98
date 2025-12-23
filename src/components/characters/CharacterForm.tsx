@@ -412,14 +412,14 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
                   Arme Équipée
                 </Label>
                 <Select
-                  value={formData.equipped_weapon_id || ""}
-                  onValueChange={(v) => updateField("equipped_weapon_id", v || null)}
+                  value={formData.equipped_weapon_id || "none"}
+                  onValueChange={(v) => updateField("equipped_weapon_id", v === "none" ? null : v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir une arme..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucune</SelectItem>
+                    <SelectItem value="none">Aucune</SelectItem>
                     {weapons?.map((w) => (
                       <SelectItem key={w.id} value={w.id}>
                         <div className="flex items-center gap-2">
@@ -440,14 +440,14 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
                   Armure Équipée
                 </Label>
                 <Select
-                  value={formData.equipped_armor_id || ""}
-                  onValueChange={(v) => updateField("equipped_armor_id", v || null)}
+                  value={formData.equipped_armor_id || "none"}
+                  onValueChange={(v) => updateField("equipped_armor_id", v === "none" ? null : v)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Choisir une armure..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucune</SelectItem>
+                    <SelectItem value="none">Aucune</SelectItem>
                     {armors?.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
                         <div className="flex items-center gap-2">
