@@ -1,6 +1,7 @@
 import { Sword, Users, Calendar, Settings, Trash2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 interface CampaignCardProps {
   title: string;
@@ -46,9 +47,11 @@ const CampaignCard = ({ title, description, isActive, date }: CampaignCardProps)
           </div>
 
           <div className="mt-4 flex items-center gap-2">
-            <Button variant="join" size="sm" className="flex-1">
-              <Play className="mr-1.5 h-3.5 w-3.5" />
-              Rejoindre
+            <Button variant="join" size="sm" className="flex-1" asChild>
+              <Link to="/campaigns">
+                <Play className="mr-1.5 h-3.5 w-3.5" />
+                Rejoindre
+              </Link>
             </Button>
             <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
               <Settings className="h-4 w-4" />
