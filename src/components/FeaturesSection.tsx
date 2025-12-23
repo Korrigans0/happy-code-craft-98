@@ -7,7 +7,7 @@ const features = [
     title: "Lanceur de dés",
     subtitle: "Tous les dés D&D",
     colorClass: "text-feature-dice",
-    href: "/dice-roller",
+    href: "/dice",
   },
   {
     icon: Map,
