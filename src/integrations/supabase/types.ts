@@ -14,6 +14,171 @@ export type Database = {
   }
   public: {
     Tables: {
+      characters: {
+        Row: {
+          alignment: string | null
+          appearance: string | null
+          armor_class: number
+          background: string | null
+          backstory: string | null
+          bonds: string | null
+          campaign: string | null
+          charisma: number
+          class: string
+          constitution: number
+          created_at: string
+          dexterity: number
+          equipped_armor_id: string | null
+          equipped_items: string[] | null
+          equipped_weapon_id: string | null
+          experience_points: number | null
+          flaws: string | null
+          gold: number | null
+          hit_dice: string | null
+          hp: number
+          id: string
+          ideals: string | null
+          initiative: number | null
+          intelligence: number
+          inventory: string | null
+          known_spells: string[] | null
+          languages: string[] | null
+          level: number
+          max_hp: number
+          name: string
+          personality_traits: string | null
+          prepared_spells: string[] | null
+          proficiency_bonus: number | null
+          race: string
+          saving_throws: string[] | null
+          skills: string[] | null
+          speed: number | null
+          spell_attack_bonus: number | null
+          spell_save_dc: number | null
+          spell_slots: Json | null
+          spellcasting_ability: string | null
+          strength: number
+          subclass: string | null
+          temp_hp: number | null
+          updated_at: string
+          user_id: string | null
+          wisdom: number
+        }
+        Insert: {
+          alignment?: string | null
+          appearance?: string | null
+          armor_class?: number
+          background?: string | null
+          backstory?: string | null
+          bonds?: string | null
+          campaign?: string | null
+          charisma?: number
+          class: string
+          constitution?: number
+          created_at?: string
+          dexterity?: number
+          equipped_armor_id?: string | null
+          equipped_items?: string[] | null
+          equipped_weapon_id?: string | null
+          experience_points?: number | null
+          flaws?: string | null
+          gold?: number | null
+          hit_dice?: string | null
+          hp?: number
+          id?: string
+          ideals?: string | null
+          initiative?: number | null
+          intelligence?: number
+          inventory?: string | null
+          known_spells?: string[] | null
+          languages?: string[] | null
+          level?: number
+          max_hp?: number
+          name: string
+          personality_traits?: string | null
+          prepared_spells?: string[] | null
+          proficiency_bonus?: number | null
+          race: string
+          saving_throws?: string[] | null
+          skills?: string[] | null
+          speed?: number | null
+          spell_attack_bonus?: number | null
+          spell_save_dc?: number | null
+          spell_slots?: Json | null
+          spellcasting_ability?: string | null
+          strength?: number
+          subclass?: string | null
+          temp_hp?: number | null
+          updated_at?: string
+          user_id?: string | null
+          wisdom?: number
+        }
+        Update: {
+          alignment?: string | null
+          appearance?: string | null
+          armor_class?: number
+          background?: string | null
+          backstory?: string | null
+          bonds?: string | null
+          campaign?: string | null
+          charisma?: number
+          class?: string
+          constitution?: number
+          created_at?: string
+          dexterity?: number
+          equipped_armor_id?: string | null
+          equipped_items?: string[] | null
+          equipped_weapon_id?: string | null
+          experience_points?: number | null
+          flaws?: string | null
+          gold?: number | null
+          hit_dice?: string | null
+          hp?: number
+          id?: string
+          ideals?: string | null
+          initiative?: number | null
+          intelligence?: number
+          inventory?: string | null
+          known_spells?: string[] | null
+          languages?: string[] | null
+          level?: number
+          max_hp?: number
+          name?: string
+          personality_traits?: string | null
+          prepared_spells?: string[] | null
+          proficiency_bonus?: number | null
+          race?: string
+          saving_throws?: string[] | null
+          skills?: string[] | null
+          speed?: number | null
+          spell_attack_bonus?: number | null
+          spell_save_dc?: number | null
+          spell_slots?: Json | null
+          spellcasting_ability?: string | null
+          strength?: number
+          subclass?: string | null
+          temp_hp?: number | null
+          updated_at?: string
+          user_id?: string | null
+          wisdom?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "characters_equipped_armor_id_fkey"
+            columns: ["equipped_armor_id"]
+            isOneToOne: false
+            referencedRelation: "magic_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_equipped_weapon_id_fkey"
+            columns: ["equipped_weapon_id"]
+            isOneToOne: false
+            referencedRelation: "magic_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
