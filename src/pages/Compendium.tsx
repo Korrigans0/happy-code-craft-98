@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Search, Sparkles, Sword, Filter } from "lucide-react";
+import { Search, Sparkles, Sword, Gem } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SpellsList from "@/components/compendium/SpellsList";
 import MonstersList from "@/components/compendium/MonstersList";
+import ItemsList from "@/components/compendium/ItemsList";
 
 const Compendium = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +22,7 @@ const Compendium = () => {
               Compendium D&D 5e
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Accédez à tous les sorts et monstres
+              Accédez à tous les sorts, monstres et objets magiques
             </p>
           </div>
 
@@ -38,7 +39,7 @@ const Compendium = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mx-auto mb-8 grid w-full max-w-md grid-cols-2 bg-muted/50">
+            <TabsList className="mx-auto mb-8 grid w-full max-w-lg grid-cols-3 bg-muted/50">
               <TabsTrigger value="spells" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Sparkles className="h-4 w-4" />
                 Sorts
@@ -46,6 +47,10 @@ const Compendium = () => {
               <TabsTrigger value="monsters" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Sword className="h-4 w-4" />
                 Monstres
+              </TabsTrigger>
+              <TabsTrigger value="items" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Gem className="h-4 w-4" />
+                Objets
               </TabsTrigger>
             </TabsList>
 
@@ -55,6 +60,10 @@ const Compendium = () => {
 
             <TabsContent value="monsters">
               <MonstersList searchQuery={searchQuery} />
+            </TabsContent>
+
+            <TabsContent value="items">
+              <ItemsList searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </div>

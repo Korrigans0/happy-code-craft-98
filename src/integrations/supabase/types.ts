@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      magic_items: {
+        Row: {
+          attunement: boolean
+          created_at: string
+          description: string
+          id: string
+          name: string
+          properties: string | null
+          rarity: string
+          type: string
+        }
+        Insert: {
+          attunement?: boolean
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          properties?: string | null
+          rarity: string
+          type: string
+        }
+        Update: {
+          attunement?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          properties?: string | null
+          rarity?: string
+          type?: string
+        }
+        Relationships: []
+      }
       monsters: {
         Row: {
           alignment: string
