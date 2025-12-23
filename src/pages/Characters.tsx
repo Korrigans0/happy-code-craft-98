@@ -1,77 +1,208 @@
 import { useState } from "react";
-import { Plus, Search, Filter, User, Shield, Heart, Zap } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CharacterCard from "@/components/characters/CharacterCard";
+import CharacterForm from "@/components/characters/CharacterForm";
+import CharacterSheet from "@/components/characters/CharacterSheet";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Character {
-  id: string;
-  name: string;
-  race: string;
-  class: string;
-  level: number;
-  hp: number;
-  maxHp: number;
-  ac: number;
-  campaign?: string;
-}
-
-const mockCharacters: Character[] = [
-  {
-    id: "1",
-    name: "Thalion Étoile-d'Argent",
-    race: "Elfe",
-    class: "Magicien",
-    level: 8,
-    hp: 45,
-    maxHp: 52,
-    ac: 14,
-    campaign: "La Malédiction de Strahd",
-  },
-  {
-    id: "2",
-    name: "Grommash Brisefer",
-    race: "Nain",
-    class: "Guerrier",
-    level: 6,
-    hp: 68,
-    maxHp: 68,
-    ac: 18,
-    campaign: "Mines Perdues de Phandelver",
-  },
-  {
-    id: "3",
-    name: "Lyra Chantelune",
-    race: "Demi-Elfe",
-    class: "Barde",
-    level: 5,
-    hp: 32,
-    maxHp: 38,
-    ac: 15,
-  },
-  {
-    id: "4",
-    name: "Kael le Silencieux",
-    race: "Humain",
-    class: "Rôdeur",
-    level: 7,
-    hp: 55,
-    maxHp: 55,
-    ac: 16,
-    campaign: "La Malédiction de Strahd",
-  },
-];
+type Character = Tables<"characters">;
 
 const Characters = () => {
-  const [characters] = useState<Character[]>(mockCharacters);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
+
+  // Fetch characters
+  const { data: characters = [], isLoading } = useQuery({
+    queryKey: ["characters"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("characters")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data as Character[];
+    },
+  });
+
+  // Create character
+  const createMutation = useMutation({
+    mutationFn: async (character: Partial<Character>) => {
+      const { data, error } = await supabase
+        .from("characters")
+        .insert({
+          name: character.name || "Nouveau Personnage",
+          race: character.race || "Humain",
+          class: character.class || "Guerrier",
+          subclass: character.subclass,
+          level: character.level || 1,
+          background: character.background,
+          alignment: character.alignment,
+          backstory: character.backstory,
+          personality_traits: character.personality_traits,
+          ideals: character.ideals,
+          bonds: character.bonds,
+          flaws: character.flaws,
+          appearance: character.appearance,
+          strength: character.strength || 10,
+          dexterity: character.dexterity || 10,
+          constitution: character.constitution || 10,
+          intelligence: character.intelligence || 10,
+          wisdom: character.wisdom || 10,
+          charisma: character.charisma || 10,
+          hp: character.hp || 10,
+          max_hp: character.max_hp || 10,
+          armor_class: character.armor_class || 10,
+          speed: character.speed || 30,
+          gold: character.gold || 0,
+          campaign: character.campaign,
+          skills: character.skills || [],
+          languages: character.languages || ["Commun"],
+          inventory: character.inventory,
+          equipped_weapon_id: character.equipped_weapon_id,
+          equipped_armor_id: character.equipped_armor_id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      toast({
+        title: "Personnage créé",
+        description: "Votre personnage a été créé avec succès.",
+      });
+      setIsFormOpen(false);
+      setSelectedCharacter(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le personnage.",
+        variant: "destructive",
+      });
+      console.error("Create error:", error);
+    },
+  });
+
+  // Update character
+  const updateMutation = useMutation({
+    mutationFn: async (character: Partial<Character>) => {
+      const { data, error } = await supabase
+        .from("characters")
+        .update(character)
+        .eq("id", character.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      toast({
+        title: "Personnage mis à jour",
+        description: "Les modifications ont été enregistrées.",
+      });
+      setIsFormOpen(false);
+      setIsSheetOpen(false);
+      setSelectedCharacter(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le personnage.",
+        variant: "destructive",
+      });
+      console.error("Update error:", error);
+    },
+  });
+
+  // Delete character
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("characters")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      toast({
+        title: "Personnage supprimé",
+        description: "Le personnage a été supprimé.",
+      });
+      setDeleteConfirmOpen(false);
+      setCharacterToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le personnage.",
+        variant: "destructive",
+      });
+      console.error("Delete error:", error);
+    },
+  });
+
+  const handleSave = (characterData: Partial<Character>) => {
+    if (selectedCharacter?.id) {
+      updateMutation.mutate({ ...characterData, id: selectedCharacter.id });
+    } else {
+      createMutation.mutate(characterData);
+    }
+  };
+
+  const handleEdit = (character: Character) => {
+    setSelectedCharacter(character);
+    setIsFormOpen(true);
+    setIsSheetOpen(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setCharacterToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (characterToDelete) {
+      deleteMutation.mutate(characterToDelete);
+    }
+  };
+
+  const handleViewSheet = (character: Character) => {
+    setSelectedCharacter(character);
+    setIsSheetOpen(true);
+  };
+
+  const handleNewCharacter = () => {
+    setSelectedCharacter(null);
+    setIsFormOpen(true);
+  };
 
   const filteredCharacters = characters.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.class.toLowerCase().includes(searchQuery.toLowerCase())
+      c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.race.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -88,7 +219,7 @@ const Characters = () => {
                 Créez et gérez vos héros d'aventure
               </p>
             </div>
-            <Button variant="gold">
+            <Button variant="gold" onClick={handleNewCharacter}>
               <Plus className="mr-2 h-4 w-4" />
               Nouveau Personnage
             </Button>
@@ -109,60 +240,97 @@ const Characters = () => {
             </Button>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredCharacters.map((char) => (
-              <div
-                key={char.id}
-                className="group overflow-hidden rounded-xl border border-border/50 bg-gradient-card shadow-card transition-all duration-300 hover:border-primary/30"
-              >
-                <div className="relative h-32 bg-gradient-to-br from-primary/20 to-secondary/20">
-                  <div className="absolute -bottom-8 left-4 flex h-16 w-16 items-center justify-center rounded-full border-4 border-background bg-muted">
-                    <User className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <div className="absolute right-3 top-3">
-                    <Badge variant="default">Niv. {char.level}</Badge>
-                  </div>
-                </div>
-
-                <div className="p-4 pt-10">
-                  <h3 className="font-display text-lg font-semibold text-foreground">
-                    {char.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {char.race} • {char.class}
-                  </p>
-
-                  {char.campaign && (
-                    <p className="mt-2 text-xs text-primary">{char.campaign}</p>
-                  )}
-
-                  <div className="mt-4 flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1.5 text-red-400">
-                      <Heart className="h-4 w-4" />
-                      <span>
-                        {char.hp}/{char.maxHp}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-blue-400">
-                      <Shield className="h-4 w-4" />
-                      <span>{char.ac}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-yellow-400">
-                      <Zap className="h-4 w-4" />
-                      <span>+{Math.floor((char.level - 1) / 4) + 2}</span>
-                    </div>
-                  </div>
-
-                  <Button variant="join" size="sm" className="mt-4 w-full">
-                    Voir la fiche
-                  </Button>
-                </div>
+          {isLoading ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-64 animate-pulse rounded-xl border border-border/50 bg-muted"
+                />
+              ))}
+            </div>
+          ) : filteredCharacters.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-4 rounded-full bg-muted p-6">
+                <Plus className="h-12 w-12 text-muted-foreground" />
               </div>
-            ))}
-          </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Aucun personnage
+              </h3>
+              <p className="mt-2 text-muted-foreground">
+                Créez votre premier héros pour commencer l'aventure !
+              </p>
+              <Button variant="gold" className="mt-4" onClick={handleNewCharacter}>
+                <Plus className="mr-2 h-4 w-4" />
+                Créer un personnage
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredCharacters.map((character) => (
+                <CharacterCard
+                  key={character.id}
+                  character={character}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onViewSheet={handleViewSheet}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
       <Footer />
+
+      {/* Character Form Sheet */}
+      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
+          <CharacterForm
+            character={selectedCharacter}
+            onSave={handleSave}
+            onCancel={() => {
+              setIsFormOpen(false);
+              setSelectedCharacter(null);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Character Sheet View */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
+          {selectedCharacter && (
+            <CharacterSheet
+              character={selectedCharacter}
+              onEdit={() => handleEdit(selectedCharacter)}
+              onClose={() => {
+                setIsSheetOpen(false);
+                setSelectedCharacter(null);
+              }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer le personnage ?</DialogTitle>
+            <DialogDescription>
+              Cette action est irréversible. Le personnage sera définitivement supprimé.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
