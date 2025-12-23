@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      monsters: {
+        Row: {
+          alignment: string
+          armor_class: number
+          challenge_rating: string
+          created_at: string
+          description: string
+          hit_points: string
+          id: string
+          name: string
+          size: string
+          speed: string
+          type: string
+        }
+        Insert: {
+          alignment: string
+          armor_class: number
+          challenge_rating: string
+          created_at?: string
+          description: string
+          hit_points: string
+          id?: string
+          name: string
+          size: string
+          speed: string
+          type: string
+        }
+        Update: {
+          alignment?: string
+          armor_class?: number
+          challenge_rating?: string
+          created_at?: string
+          description?: string
+          hit_points?: string
+          id?: string
+          name?: string
+          size?: string
+          speed?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      spells: {
+        Row: {
+          casting_time: string
+          classes: string[]
+          components: string
+          created_at: string
+          description: string
+          duration: string
+          id: string
+          level: number
+          name: string
+          range: string
+          school: string
+        }
+        Insert: {
+          casting_time: string
+          classes?: string[]
+          components: string
+          created_at?: string
+          description: string
+          duration: string
+          id?: string
+          level?: number
+          name: string
+          range: string
+          school: string
+        }
+        Update: {
+          casting_time?: string
+          classes?: string[]
+          components?: string
+          created_at?: string
+          description?: string
+          duration?: string
+          id?: string
+          level?: number
+          name?: string
+          range?: string
+          school?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
