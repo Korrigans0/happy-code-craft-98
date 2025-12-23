@@ -7,24 +7,28 @@ const features = [
     title: "Lanceur de dés",
     subtitle: "Tous les dés D&D",
     colorClass: "text-feature-dice",
+    href: "/dice-roller",
   },
   {
     icon: Map,
     title: "Cartes animées",
     subtitle: "GIF, MP4, WebM",
     colorClass: "text-feature-maps",
+    href: "/campaigns",
   },
   {
     icon: BookOpen,
     title: "Compendium",
     subtitle: "Sorts & Monstres",
     colorClass: "text-feature-compendium",
+    href: "/compendium",
   },
   {
     icon: User,
     title: "Fiches personnage",
     subtitle: "D&D 5e complet",
     colorClass: "text-feature-character",
+    href: "/characters",
   },
 ];
 
