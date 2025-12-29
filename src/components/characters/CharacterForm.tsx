@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices } from "lucide-react";
+import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+
+type Spell = Tables<"spells">;
 
 type Character = Tables<"characters">;
 type MagicItem = Tables<"magic_items">;
@@ -53,6 +55,34 @@ const LANGUAGES = [
   "Orc", "Abyssal", "Céleste", "Draconique", "Infernal", "Primordial", "Sylvain"
 ];
 
+// Classes that can cast spells
+const SPELLCASTING_CLASSES = [
+  "Barde", "Clerc", "Druide", "Paladin", "Rôdeur", "Ensorceleur", "Sorcier", "Magicien"
+];
+
+// Map French class names to English for spell filtering
+const CLASS_SPELL_MAP: Record<string, string> = {
+  "Barde": "Bard",
+  "Clerc": "Cleric",
+  "Druide": "Druid",
+  "Paladin": "Paladin",
+  "Rôdeur": "Ranger",
+  "Ensorceleur": "Sorcerer",
+  "Sorcier": "Warlock",
+  "Magicien": "Wizard"
+};
+
+const SPELLCASTING_ABILITIES: Record<string, string> = {
+  "Barde": "Charisme",
+  "Clerc": "Sagesse",
+  "Druide": "Sagesse",
+  "Paladin": "Charisme",
+  "Rôdeur": "Sagesse",
+  "Ensorceleur": "Charisme",
+  "Sorcier": "Charisme",
+  "Magicien": "Intelligence"
+};
+
 const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
@@ -88,6 +118,11 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(formData.skills || []);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(formData.languages || ["Commun"]);
+  const [selectedKnownSpells, setSelectedKnownSpells] = useState<string[]>((formData.known_spells as string[]) || []);
+  const [selectedPreparedSpells, setSelectedPreparedSpells] = useState<string[]>((formData.prepared_spells as string[]) || []);
+  const [spellLevelFilter, setSpellLevelFilter] = useState<number | "all">("all");
+
+  const isSpellcaster = SPELLCASTING_CLASSES.includes(formData.class || "");
 
   // Fetch magic items for equipment selection
   const { data: weapons } = useQuery({
@@ -112,13 +147,43 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     },
   });
 
+  // Fetch spells for the character's class
+  const { data: spells } = useQuery({
+    queryKey: ["spells-for-class", formData.class],
+    queryFn: async () => {
+      const englishClass = CLASS_SPELL_MAP[formData.class || ""];
+      if (!englishClass) return [];
+      
+      const { data } = await supabase
+        .from("spells")
+        .select("*")
+        .contains("classes", [englishClass])
+        .order("level")
+        .order("name");
+      return data as Spell[];
+    },
+    enabled: isSpellcaster,
+  });
+
   useEffect(() => {
     if (character) {
       setFormData({ ...character });
       setSelectedSkills(character.skills || []);
       setSelectedLanguages(character.languages || ["Commun"]);
+      setSelectedKnownSpells((character.known_spells as string[]) || []);
+      setSelectedPreparedSpells((character.prepared_spells as string[]) || []);
     }
   }, [character]);
+
+  // Auto-set spellcasting ability when class changes
+  useEffect(() => {
+    if (isSpellcaster && formData.class) {
+      const ability = SPELLCASTING_ABILITIES[formData.class];
+      if (ability && !formData.spellcasting_ability) {
+        updateField("spellcasting_ability", ability);
+      }
+    }
+  }, [formData.class, isSpellcaster]);
 
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -139,6 +204,38 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     setSelectedLanguages(newLangs);
     updateField("languages", newLangs);
   };
+
+  const toggleKnownSpell = (spellId: string) => {
+    const newSpells = selectedKnownSpells.includes(spellId)
+      ? selectedKnownSpells.filter((s) => s !== spellId)
+      : [...selectedKnownSpells, spellId];
+    setSelectedKnownSpells(newSpells);
+    updateField("known_spells", newSpells);
+    
+    // If removing from known, also remove from prepared
+    if (!newSpells.includes(spellId) && selectedPreparedSpells.includes(spellId)) {
+      const newPrepared = selectedPreparedSpells.filter((s) => s !== spellId);
+      setSelectedPreparedSpells(newPrepared);
+      updateField("prepared_spells", newPrepared);
+    }
+  };
+
+  const togglePreparedSpell = (spellId: string) => {
+    // Can only prepare spells that are known
+    if (!selectedKnownSpells.includes(spellId)) return;
+    
+    const newPrepared = selectedPreparedSpells.includes(spellId)
+      ? selectedPreparedSpells.filter((s) => s !== spellId)
+      : [...selectedPreparedSpells, spellId];
+    setSelectedPreparedSpells(newPrepared);
+    updateField("prepared_spells", newPrepared);
+  };
+
+  const filteredSpells = spells?.filter(spell => 
+    spellLevelFilter === "all" || spell.level === spellLevelFilter
+  ) || [];
+
+  const getSpellById = (id: string) => spells?.find(s => s.id === id);
 
   const getModifier = (stat: number) => {
     const mod = Math.floor((stat - 10) / 2);
@@ -169,7 +266,7 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
       <ScrollArea className="flex-1 p-4">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-5 bg-muted">
+          <TabsList className={`mb-6 grid w-full ${isSpellcaster ? 'grid-cols-6' : 'grid-cols-5'} bg-muted`}>
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Base</span>
@@ -182,6 +279,12 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               <Sword className="h-4 w-4" />
               <span className="hidden sm:inline">Équip.</span>
             </TabsTrigger>
+            {isSpellcaster && (
+              <TabsTrigger value="spells" className="flex items-center gap-2">
+                <Wand2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Sorts</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="lore" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Lore</span>
@@ -473,6 +576,162 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               />
             </div>
           </TabsContent>
+
+          {/* Spells - Only for spellcasting classes */}
+          {isSpellcaster && (
+            <TabsContent value="spells" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Sorts de {formData.class}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Caractéristique d'incantation: {SPELLCASTING_ABILITIES[formData.class || ""]}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Niveau:</Label>
+                  <Select
+                    value={spellLevelFilter === "all" ? "all" : String(spellLevelFilter)}
+                    onValueChange={(v) => setSpellLevelFilter(v === "all" ? "all" : parseInt(v))}
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous</SelectItem>
+                      <SelectItem value="0">Cantrips</SelectItem>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
+                        <SelectItem key={lvl} value={String(lvl)}>
+                          Niveau {lvl}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Selected Spells Summary */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
+                  <Label className="text-purple-400">
+                    Sorts Connus ({selectedKnownSpells.length})
+                  </Label>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedKnownSpells.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">Aucun sort sélectionné</span>
+                    ) : (
+                      selectedKnownSpells.slice(0, 8).map((id) => {
+                        const spell = getSpellById(id);
+                        return spell ? (
+                          <Badge key={id} variant="secondary" className="text-xs">
+                            {spell.name}
+                          </Badge>
+                        ) : null;
+                      })
+                    )}
+                    {selectedKnownSpells.length > 8 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{selectedKnownSpells.length - 8}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                  <Label className="text-amber-400">
+                    Sorts Préparés ({selectedPreparedSpells.length})
+                  </Label>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedPreparedSpells.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">Aucun sort préparé</span>
+                    ) : (
+                      selectedPreparedSpells.slice(0, 8).map((id) => {
+                        const spell = getSpellById(id);
+                        return spell ? (
+                          <Badge key={id} variant="default" className="text-xs">
+                            {spell.name}
+                          </Badge>
+                        ) : null;
+                      })
+                    )}
+                    {selectedPreparedSpells.length > 8 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{selectedPreparedSpells.length - 8}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Spell List */}
+              <div className="space-y-2">
+                <Label>Sélectionner des Sorts</Label>
+                <ScrollArea className="h-[400px] rounded-lg border border-border bg-card/50 p-4">
+                  {filteredSpells.length === 0 ? (
+                    <p className="text-center text-muted-foreground">
+                      Aucun sort disponible pour cette classe
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredSpells.map((spell) => {
+                        const isKnown = selectedKnownSpells.includes(spell.id);
+                        const isPrepared = selectedPreparedSpells.includes(spell.id);
+                        
+                        return (
+                          <div
+                            key={spell.id}
+                            className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+                              isKnown
+                                ? "border-purple-500/50 bg-purple-500/10"
+                                : "border-border bg-background hover:bg-muted/50"
+                            }`}
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-foreground">{spell.name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {spell.level === 0 ? "Cantrip" : `Niv. ${spell.level}`}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {spell.school}
+                                </Badge>
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                                {spell.casting_time} • {spell.range} • {spell.duration}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isKnown ? "default" : "outline"}
+                                onClick={() => toggleKnownSpell(spell.id)}
+                                className="h-8 text-xs"
+                              >
+                                {isKnown ? "Connu ✓" : "Apprendre"}
+                              </Button>
+                              {isKnown && spell.level > 0 && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={isPrepared ? "gold" : "outline"}
+                                  onClick={() => togglePreparedSpell(spell.id)}
+                                  className="h-8 text-xs"
+                                >
+                                  {isPrepared ? "Préparé ✓" : "Préparer"}
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </TabsContent>
+          )}
 
           {/* Lore */}
           <TabsContent value="lore" className="space-y-6">
