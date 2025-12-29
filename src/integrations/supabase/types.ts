@@ -19,6 +19,7 @@ export type Database = {
           alignment: string | null
           appearance: string | null
           armor_class: number
+          avatar_url: string | null
           background: string | null
           backstory: string | null
           bonds: string | null
@@ -68,6 +69,7 @@ export type Database = {
           alignment?: string | null
           appearance?: string | null
           armor_class?: number
+          avatar_url?: string | null
           background?: string | null
           backstory?: string | null
           bonds?: string | null
@@ -117,6 +119,7 @@ export type Database = {
           alignment?: string | null
           appearance?: string | null
           armor_class?: number
+          avatar_url?: string | null
           background?: string | null
           backstory?: string | null
           bonds?: string | null
