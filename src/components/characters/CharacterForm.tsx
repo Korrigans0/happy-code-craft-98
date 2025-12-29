@@ -60,16 +60,17 @@ const SPELLCASTING_CLASSES = [
   "Barde", "Clerc", "Druide", "Paladin", "Rôdeur", "Ensorceleur", "Sorcier", "Magicien"
 ];
 
-// Map French class names to English for spell filtering
-const CLASS_SPELL_MAP: Record<string, string> = {
-  "Barde": "Bard",
-  "Clerc": "Cleric",
-  "Druide": "Druid",
-  "Paladin": "Paladin",
-  "Rôdeur": "Ranger",
-  "Ensorceleur": "Sorcerer",
-  "Sorcier": "Warlock",
-  "Magicien": "Wizard"
+// Map class names for spell filtering (database uses French names)
+// Some classes may have variations in the database
+const CLASS_SPELL_VARIANTS: Record<string, string[]> = {
+  "Barde": ["Barde", "Bard"],
+  "Clerc": ["Clerc", "Cleric"],
+  "Druide": ["Druide", "Druid"],
+  "Paladin": ["Paladin"],
+  "Rôdeur": ["Rôdeur", "Ranger"],
+  "Ensorceleur": ["Ensorceleur", "Sorcerer"],
+  "Sorcier": ["Sorcier", "Occultiste", "Warlock"],
+  "Magicien": ["Magicien", "Wizard"]
 };
 
 const SPELLCASTING_ABILITIES: Record<string, string> = {
@@ -151,16 +152,22 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const { data: spells } = useQuery({
     queryKey: ["spells-for-class", formData.class],
     queryFn: async () => {
-      const englishClass = CLASS_SPELL_MAP[formData.class || ""];
-      if (!englishClass) return [];
+      const classVariants = CLASS_SPELL_VARIANTS[formData.class || ""];
+      if (!classVariants || classVariants.length === 0) return [];
       
+      // Fetch all spells and filter client-side for class variants
       const { data } = await supabase
         .from("spells")
         .select("*")
-        .contains("classes", [englishClass])
         .order("level")
         .order("name");
-      return data as Spell[];
+      
+      // Filter spells that include any of the class variants
+      const filtered = (data || []).filter(spell => 
+        spell.classes.some((c: string) => classVariants.includes(c))
+      );
+      
+      return filtered as Spell[];
     },
     enabled: isSpellcaster,
   });
