@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2 } from "lucide-react";
+import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2, Camera, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Spell = Tables<"spells">;
@@ -122,6 +123,8 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const [selectedKnownSpells, setSelectedKnownSpells] = useState<string[]>((formData.known_spells as string[]) || []);
   const [selectedPreparedSpells, setSelectedPreparedSpells] = useState<string[]>((formData.prepared_spells as string[]) || []);
   const [spellLevelFilter, setSpellLevelFilter] = useState<number | "all">("all");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSpellcaster = SPELLCASTING_CLASSES.includes(formData.class || "");
 
@@ -253,6 +256,53 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     onSave(formData);
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Veuillez sélectionner une image");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("L'image doit faire moins de 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('character-avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('character-avatars')
+        .getPublicUrl(filePath);
+
+      updateField("avatar_url", publicUrl);
+      toast.success("Avatar uploadé avec succès!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      toast.error("Erreur lors de l'upload de l'avatar");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const removeAvatar = () => {
+    updateField("avatar_url", null);
+  };
+
   return (
     <div className="flex h-full flex-col bg-gradient-dark">
       <div className="flex items-center justify-between border-b border-border p-4">
@@ -304,6 +354,63 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
           {/* Basic Info */}
           <TabsContent value="basic" className="space-y-6">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                {formData.avatar_url ? (
+                  <img
+                    src={formData.avatar_url}
+                    alt="Avatar"
+                    className="h-24 w-24 rounded-full object-cover border-4 border-primary/30"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-muted border-4 border-border">
+                    <User className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                )}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/80">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Avatar du Personnage</Label>
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    {formData.avatar_url ? "Changer" : "Ajouter"}
+                  </Button>
+                  {formData.avatar_url && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeAvatar}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Supprimer
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">JPG, PNG ou GIF. Max 5MB.</p>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom du Personnage</Label>

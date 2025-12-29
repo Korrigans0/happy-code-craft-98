@@ -18,8 +18,23 @@ const CharacterCard = ({ character, onEdit, onDelete, onViewSheet }: CharacterCa
   return (
     <div className="group overflow-hidden rounded-xl border border-border/50 bg-gradient-card shadow-card transition-all duration-300 hover:border-primary/30">
       <div className="relative h-32 bg-gradient-to-br from-primary/20 to-secondary/20">
-        <div className="absolute -bottom-8 left-4 flex h-16 w-16 items-center justify-center rounded-full border-4 border-background bg-muted">
-          <User className="h-8 w-8 text-muted-foreground" />
+        {character.avatar_url ? (
+          <img
+            src={character.avatar_url}
+            alt={character.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
+        <div className="absolute -bottom-8 left-4 flex h-16 w-16 items-center justify-center rounded-full border-4 border-background bg-muted overflow-hidden">
+          {character.avatar_url ? (
+            <img
+              src={character.avatar_url}
+              alt={character.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <User className="h-8 w-8 text-muted-foreground" />
+          )}
         </div>
         <div className="absolute right-3 top-3">
           <Badge variant="default">Niv. {character.level}</Badge>

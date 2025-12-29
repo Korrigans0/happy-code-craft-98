@@ -3,12 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { X, Edit, Heart, Shield, Zap, Sword, BookOpen, User, Footprints, Coins } from "lucide-react";
+import { X, Edit, Heart, Shield, Zap, Sword, BookOpen, User, Footprints, Coins, Wand2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Character = Tables<"characters">;
 type MagicItem = Tables<"magic_items">;
+type Spell = Tables<"spells">;
 
 interface CharacterSheetProps {
   character: Character;
@@ -16,8 +16,25 @@ interface CharacterSheetProps {
   onClose: () => void;
 }
 
+// Spellcasting classes
+const SPELLCASTING_CLASSES = [
+  "Barde", "Clerc", "Druide", "Paladin", "Rôdeur", "Ensorceleur", "Sorcier", "Magicien"
+];
+
+const SPELLCASTING_ABILITIES: Record<string, string> = {
+  "Barde": "Charisme",
+  "Clerc": "Sagesse",
+  "Druide": "Sagesse",
+  "Paladin": "Charisme",
+  "Rôdeur": "Sagesse",
+  "Ensorceleur": "Charisme",
+  "Sorcier": "Charisme",
+  "Magicien": "Intelligence"
+};
+
 const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => {
   const proficiencyBonus = Math.floor((character.level - 1) / 4) + 2;
+  const isSpellcaster = SPELLCASTING_CLASSES.includes(character.class);
 
   const { data: equippedWeapon } = useQuery({
     queryKey: ["magic-item", character.equipped_weapon_id],
@@ -47,6 +64,25 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
     enabled: !!character.equipped_armor_id,
   });
 
+  // Fetch known spells
+  const knownSpellIds = (character.known_spells as string[]) || [];
+  const preparedSpellIds = (character.prepared_spells as string[]) || [];
+
+  const { data: knownSpells } = useQuery({
+    queryKey: ["character-spells", knownSpellIds],
+    queryFn: async () => {
+      if (knownSpellIds.length === 0) return [];
+      const { data } = await supabase
+        .from("spells")
+        .select("*")
+        .in("id", knownSpellIds)
+        .order("level")
+        .order("name");
+      return data as Spell[];
+    },
+    enabled: knownSpellIds.length > 0,
+  });
+
   const getModifier = (stat: number) => {
     const mod = Math.floor((stat - 10) / 2);
     return mod >= 0 ? `+${mod}` : `${mod}`;
@@ -61,14 +97,30 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
     { key: "charisma", label: "CHA", value: character.charisma },
   ];
 
+  // Group spells by level
+  const spellsByLevel = knownSpells?.reduce((acc, spell) => {
+    const level = spell.level;
+    if (!acc[level]) acc[level] = [];
+    acc[level].push(spell);
+    return acc;
+  }, {} as Record<number, Spell[]>) || {};
+
   return (
     <div className="flex h-full flex-col bg-gradient-dark">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
-            <User className="h-6 w-6 text-primary" />
-          </div>
+          {character.avatar_url ? (
+            <img
+              src={character.avatar_url}
+              alt={character.name}
+              className="h-14 w-14 rounded-full object-cover border-2 border-primary/50"
+            />
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20">
+              <User className="h-7 w-7 text-primary" />
+            </div>
+          )}
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">
               {character.name}
@@ -136,6 +188,70 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
               ))}
             </div>
           </div>
+
+          {/* Spells Section - Only for spellcasters */}
+          {isSpellcaster && knownSpells && knownSpells.length > 0 && (
+            <div>
+              <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold text-foreground">
+                <Wand2 className="h-4 w-4 text-purple-400" />
+                Sorts ({knownSpells.length} connus, {preparedSpellIds.length} préparés)
+              </h3>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Caractéristique d'incantation: {SPELLCASTING_ABILITIES[character.class] || "N/A"}
+              </p>
+
+              <div className="space-y-4">
+                {Object.entries(spellsByLevel)
+                  .sort(([a], [b]) => Number(a) - Number(b))
+                  .map(([level, spells]) => (
+                    <div key={level} className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
+                      <h4 className="mb-2 text-xs font-semibold text-purple-400">
+                        {Number(level) === 0 ? "Cantrips" : `Niveau ${level}`}
+                      </h4>
+                      <div className="space-y-2">
+                        {spells.map((spell) => {
+                          const isPrepared = preparedSpellIds.includes(spell.id);
+                          return (
+                            <div
+                              key={spell.id}
+                              className={`rounded-md border p-2 ${
+                                isPrepared
+                                  ? "border-amber-500/50 bg-amber-500/10"
+                                  : "border-border bg-card/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground text-sm">
+                                    {spell.name}
+                                  </span>
+                                  {isPrepared && (
+                                    <Badge className="bg-amber-500/20 text-amber-400 text-xs">
+                                      Préparé
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {spell.school}
+                                </Badge>
+                              </div>
+                              <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <span>⏱ {spell.casting_time}</span>
+                                <span>📏 {spell.range}</span>
+                                <span>⏳ {spell.duration}</span>
+                              </div>
+                              <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                                {spell.description}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* Equipment */}
           <div>
