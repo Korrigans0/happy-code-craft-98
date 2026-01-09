@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_members: {
+        Row: {
+          campaign_id: string
+          character_id: string | null
+          id: string
+          joined_at: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          character_id?: string | null
+          id?: string
+          joined_at?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string | null
+          id?: string
+          joined_at?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_members_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          system: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          system?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          system?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       characters: {
         Row: {
           alignment: string | null
