@@ -1,7 +1,8 @@
-import { Wand2, Plus, Menu, X, Sword, User, BookOpen, Dices, Home } from "lucide-react";
+import { Wand2, Plus, Menu, X, Sword, User, BookOpen, Dices, Home, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
   { to: "/", label: "Accueil", icon: Home },
@@ -13,7 +14,14 @@ const navLinks = [
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
@@ -49,10 +57,24 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="gold" size="default" className="hidden sm:flex">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle Campagne
-          </Button>
+          {user ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:block">
+                {user.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Déconnexion</span>
+              </Button>
+            </>
+          ) : (
+            <Button variant="gold" size="default" asChild>
+              <Link to="/auth">
+                <LogIn className="mr-2 h-4 w-4" />
+                Connexion
+              </Link>
+            </Button>
+          )}
 
           {/* Mobile Menu Button */}
           <Button
@@ -85,10 +107,19 @@ const Header = () => {
                 {link.label}
               </Link>
             ))}
-            <Button variant="gold" size="default" className="mt-2 w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Campagne
-            </Button>
+            {user ? (
+              <Button variant="outline" size="default" className="mt-2 w-full" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+              </Button>
+            ) : (
+              <Button variant="gold" size="default" className="mt-2 w-full" asChild>
+                <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Connexion
+                </Link>
+              </Button>
+            )}
           </div>
         </nav>
       )}

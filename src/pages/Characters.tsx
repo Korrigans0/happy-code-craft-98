@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Filter } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Plus, Search, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -18,6 +20,8 @@ type Character = Tables<"characters">;
 
 const Characters = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -25,23 +29,34 @@ const Characters = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
-  // Fetch characters
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Fetch characters for current user
   const { data: characters = [], isLoading } = useQuery({
-    queryKey: ["characters"],
+    queryKey: ["characters", user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("characters")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data as Character[];
     },
+    enabled: !!user,
   });
 
   // Create character
   const createMutation = useMutation({
     mutationFn: async (character: Partial<Character>) => {
+      if (!user) throw new Error("Non authentifié");
       const { data, error } = await supabase
         .from("characters")
         .insert({
@@ -75,6 +90,7 @@ const Characters = () => {
           inventory: character.inventory,
           equipped_weapon_id: character.equipped_weapon_id,
           equipped_armor_id: character.equipped_armor_id,
+          user_id: user.id,
         })
         .select()
         .single();
@@ -83,7 +99,7 @@ const Characters = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({
         title: "Personnage créé",
         description: "Votre personnage a été créé avec succès.",
@@ -115,7 +131,7 @@ const Characters = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({
         title: "Personnage mis à jour",
         description: "Les modifications ont été enregistrées.",
@@ -145,7 +161,7 @@ const Characters = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["characters"] });
+      queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({
         title: "Personnage supprimé",
         description: "Le personnage a été supprimé.",
@@ -204,6 +220,15 @@ const Characters = () => {
       c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.race.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-dark">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
