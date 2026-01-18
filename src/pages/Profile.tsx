@@ -48,7 +48,7 @@ const Profile = () => {
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) throw error;
-      return data as ProfileData | null;
+      return data as unknown as ProfileData | null;
     },
     enabled: !!user,
   });
@@ -69,7 +69,7 @@ const Profile = () => {
         .select()
         .single();
       if (error) throw error;
-      return data as ProfileData;
+      return data as unknown as ProfileData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
