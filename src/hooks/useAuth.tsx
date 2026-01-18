@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, displayName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -51,6 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     });
+
+    // Update profile with display name if provided and signup succeeded
+    if (!error && data.user && displayName) {
+      await supabase
+        .from('profiles')
+        .update({ display_name: displayName })
+        .eq('user_id', data.user.id);
+    }
+
     return { error };
   };
 

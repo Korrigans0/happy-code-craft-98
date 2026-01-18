@@ -13,14 +13,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, Mail, Calendar, Save, Upload, Trash2 } from 'lucide-react';
 
-interface ProfileData {
-  id: string;
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { Tables } from "@/integrations/supabase/types";
+
+type ProfileData = Tables<"profiles">;
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -40,15 +35,15 @@ const Profile = () => {
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
-    queryFn: async (): Promise<ProfileData | null> => {
+    queryFn: async () => {
       if (!user) return null;
       const { data, error } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) throw error;
-      return data as unknown as ProfileData | null;
+      return data;
     },
     enabled: !!user,
   });
@@ -63,13 +58,13 @@ const Profile = () => {
     mutationFn: async (updates: { display_name?: string; avatar_url?: string | null }) => {
       if (!user) throw new Error('Non authentifié');
       const { data, error } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .update(updates)
         .eq('user_id', user.id)
         .select()
         .single();
       if (error) throw error;
-      return data as unknown as ProfileData;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });

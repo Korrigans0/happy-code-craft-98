@@ -22,11 +22,6 @@ const navLinks = [
   { to: "/dice", label: "Dés", icon: Dices },
 ];
 
-interface ProfileData {
-  display_name: string | null;
-  avatar_url: string | null;
-}
-
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,14 +31,14 @@ const Header = () => {
   // Fetch profile for avatar
   const { data: profile } = useQuery({
     queryKey: ['headerProfile', user?.id],
-    queryFn: async (): Promise<ProfileData | null> => {
+    queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .select('display_name, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
-      return data as unknown as ProfileData | null;
+      return data;
     },
     enabled: !!user,
   });
