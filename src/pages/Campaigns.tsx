@@ -14,18 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { toast } from "@/hooks/use-toast";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface Campaign {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  system: string | null;
-  is_active: boolean | null;
-  image_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+type Campaign = Tables<"campaigns">;
 
 const Campaigns = () => {
   const queryClient = useQueryClient();
@@ -60,7 +51,7 @@ const Campaigns = () => {
         .order("created_at", { ascending: false });
       
       if (error) throw error;
-      return data as Campaign[];
+      return data;
     },
     enabled: !!user,
   });
