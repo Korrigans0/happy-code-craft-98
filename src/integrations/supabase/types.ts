@@ -20,7 +20,7 @@ export type Database = {
           character_id: string | null
           id: string
           joined_at: string
-          role: string | null
+          role: Database["public"]["Enums"]["campaign_role"]
           user_id: string
         }
         Insert: {
@@ -28,7 +28,7 @@ export type Database = {
           character_id?: string | null
           id?: string
           joined_at?: string
-          role?: string | null
+          role?: Database["public"]["Enums"]["campaign_role"]
           user_id: string
         }
         Update: {
@@ -36,7 +36,7 @@ export type Database = {
           character_id?: string | null
           id?: string
           joined_at?: string
-          role?: string | null
+          role?: Database["public"]["Enums"]["campaign_role"]
           user_id?: string
         }
         Relationships: [
@@ -56,12 +56,139 @@ export type Database = {
           },
         ]
       }
+      campaign_messages: {
+        Row: {
+          campaign_id: string
+          content: string
+          created_at: string
+          id: string
+          message_type: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          content: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_notes: {
+        Row: {
+          campaign_id: string
+          content: string | null
+          created_at: string
+          id: string
+          is_gm_only: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_gm_only?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_gm_only?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_sessions: {
+        Row: {
+          campaign_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          scheduled_at: string | null
+          session_number: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_at?: string | null
+          session_number?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_at?: string | null
+          session_number?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
           description: string | null
           id: string
           image_url: string | null
+          invite_code: string | null
           is_active: boolean | null
           system: string | null
           title: string
@@ -73,6 +200,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          invite_code?: string | null
           is_active?: boolean | null
           system?: string | null
           title: string
@@ -84,6 +212,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          invite_code?: string | null
           is_active?: boolean | null
           system?: string | null
           title?: string
@@ -256,6 +385,114 @@ export type Database = {
             columns: ["equipped_weapon_id"]
             isOneToOne: false
             referencedRelation: "magic_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_encounters: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          current_turn: number
+          id: string
+          is_active: boolean
+          name: string
+          round: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          current_turn?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          round?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          current_turn?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          round?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_encounters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combat_participants: {
+        Row: {
+          armor_class: number
+          character_id: string | null
+          conditions: string[] | null
+          current_hp: number
+          encounter_id: string
+          id: string
+          initiative: number
+          is_player: boolean
+          max_hp: number
+          monster_id: string | null
+          name: string
+          notes: string | null
+          turn_order: number
+        }
+        Insert: {
+          armor_class?: number
+          character_id?: string | null
+          conditions?: string[] | null
+          current_hp?: number
+          encounter_id: string
+          id?: string
+          initiative?: number
+          is_player?: boolean
+          max_hp?: number
+          monster_id?: string | null
+          name: string
+          notes?: string | null
+          turn_order?: number
+        }
+        Update: {
+          armor_class?: number
+          character_id?: string | null
+          conditions?: string[] | null
+          current_hp?: number
+          encounter_id?: string
+          id?: string
+          initiative?: number
+          is_player?: boolean
+          max_hp?: number
+          monster_id?: string | null
+          name?: string
+          notes?: string | null
+          turn_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combat_participants_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_participants_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "combat_encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combat_participants_monster_id_fkey"
+            columns: ["monster_id"]
+            isOneToOne: false
+            referencedRelation: "monsters"
             referencedColumns: ["id"]
           },
         ]
@@ -433,10 +670,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_campaign_gm: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_campaign_member: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      campaign_role: "gm" | "player"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -563,6 +807,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campaign_role: ["gm", "player"],
+    },
   },
 } as const
