@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Shield, Sword, Sparkles } from 'lucide-react';
+import { Loader2, Shield, Sword, Sparkles, UserRound } from 'lucide-react';
 import { z } from 'zod';
 
 const authSchema = z.object({
@@ -25,6 +25,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
@@ -92,6 +93,36 @@ const Auth = () => {
       toast({
         title: "Erreur de connexion",
         description: message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setIsGuestLoading(true);
+    const guestEmail = 'guest@taverne.com';
+    const guestPassword = '123456';
+
+    // Try to sign in first
+    let { error } = await signIn(guestEmail, guestPassword);
+    
+    // If account doesn't exist, create it then sign in
+    if (error) {
+      const { error: signUpError } = await signUp(guestEmail, guestPassword, 'Invité');
+      if (!signUpError) {
+        const result = await signIn(guestEmail, guestPassword);
+        error = result.error;
+      } else {
+        error = signUpError;
+      }
+    }
+
+    setIsGuestLoading(false);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de se connecter en tant qu'invité",
         variant: "destructive"
       });
     }
@@ -241,6 +272,35 @@ const Auth = () => {
               </form>
             </TabsContent>
           </Tabs>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">ou</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-border hover:bg-secondary"
+            onClick={handleGuestLogin}
+            disabled={isGuestLoading}
+          >
+            {isGuestLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connexion...
+              </>
+            ) : (
+              <>
+                <UserRound className="mr-2 h-4 w-4" />
+                Connexion Invité (sans compte)
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
     </div>
