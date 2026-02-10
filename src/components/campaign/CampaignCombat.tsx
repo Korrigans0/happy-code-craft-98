@@ -207,6 +207,37 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     },
   });
 
+  // Toggle condition on participant
+  const toggleConditionMutation = useMutation({
+    mutationFn: async ({ id, condition, current }: { id: string; condition: string; current: string[] }) => {
+      const newConditions = current.includes(condition)
+        ? current.filter(c => c !== condition)
+        : [...current, condition];
+      const { error } = await supabase
+        .from("combat_participants")
+        .update({ conditions: newConditions })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["combatParticipants", encounter?.id] });
+    },
+  });
+
+  // Quick dice roll
+  const [lastRoll, setLastRoll] = useState<{ dice: string; result: number } | null>(null);
+  const rollDice = (sides: number, count: number = 1, modifier: number = 0) => {
+    let total = modifier;
+    for (let i = 0; i < count; i++) {
+      total += Math.floor(Math.random() * sides) + 1;
+    }
+    const dice = `${count}d${sides}${modifier > 0 ? `+${modifier}` : modifier < 0 ? modifier : ''}`;
+    setLastRoll({ dice, result: total });
+    toast({ title: `🎲 ${dice} = ${total}` });
+  };
+
+  const [conditionsOpenFor, setConditionsOpenFor] = useState<string | null>(null);
+
   // Next turn
   const nextTurnMutation = useMutation({
     mutationFn: async () => {
@@ -285,6 +316,19 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
           <div className="flex items-center gap-2">
             {isGM && (
               <>
+                {/* Quick Dice Roller */}
+                <div className="flex items-center gap-1 mr-2 border-r border-border pr-2">
+                  {[4, 6, 8, 10, 12, 20].map(d => (
+                    <Button key={d} variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => rollDice(d)}>
+                      d{d}
+                    </Button>
+                  ))}
+                  {lastRoll && (
+                    <Badge variant="outline" className="ml-1 text-xs">
+                      {lastRoll.dice} = <strong>{lastRoll.result}</strong>
+                    </Badge>
+                  )}
+                </div>
                 <Button variant="outline" size="sm" onClick={() => nextTurnMutation.mutate()}>
                   <SkipForward className="mr-2 h-4 w-4" />
                   Tour suivant
@@ -425,7 +469,19 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                     )}
                     <span className="font-semibold text-foreground truncate">{p.name}</span>
                     {isCurrent && <Badge variant="default">En cours</Badge>}
+                    {isDead && <Badge variant="destructive">Mort</Badge>}
                   </div>
+
+                  {/* Conditions */}
+                  {p.conditions && p.conditions.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {p.conditions.map(c => (
+                        <Badge key={c} variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                          <Zap className="mr-1 h-2 w-2" />{c}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   
                   {/* HP Bar */}
                   <div className="mt-2 flex items-center gap-3">
@@ -436,7 +492,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                       />
                     </div>
                     <span className="text-sm font-medium w-20 text-right">
-                      <Heart className="h-3 w-3 inline mr-1 text-red-400" />
+                      <Heart className="h-3 w-3 inline mr-1 text-destructive" />
                       {p.current_hp}/{p.max_hp}
                     </span>
                   </div>
@@ -472,6 +528,14 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setConditionsOpenFor(conditionsOpenFor === p.id ? null : p.id)}
+                    >
+                      <Zap className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => removeParticipantMutation.mutate(p.id)}
                     >
@@ -480,6 +544,33 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </div>
                 )}
               </CardContent>
+              
+              {/* Conditions Panel */}
+              {conditionsOpenFor === p.id && isGM && (
+                <div className="border-t border-border px-4 py-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Conditions / Effets</p>
+                  <div className="flex flex-wrap gap-1">
+                    {CONDITIONS.map(condition => {
+                      const active = (p.conditions || []).includes(condition);
+                      return (
+                        <Button
+                          key={condition}
+                          variant={active ? "default" : "outline"}
+                          size="sm"
+                          className={`h-7 text-xs ${active ? "bg-destructive hover:bg-destructive/80" : ""}`}
+                          onClick={() => toggleConditionMutation.mutate({
+                            id: p.id,
+                            condition,
+                            current: p.conditions || [],
+                          })}
+                        >
+                          {condition}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </Card>
           );
         })}

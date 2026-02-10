@@ -59,7 +59,7 @@ const CampaignPlay = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaign_members")
-        .select("*, character:characters(*), profile:profiles!campaign_members_user_id_fkey(display_name, avatar_url)")
+        .select("*, character:characters(*)")
         .eq("campaign_id", id)
         .eq("user_id", user!.id)
         .maybeSingle();
