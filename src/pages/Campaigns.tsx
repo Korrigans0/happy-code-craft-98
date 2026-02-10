@@ -41,19 +41,43 @@ const Campaigns = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Fetch campaigns
+  // Fetch campaigns (owned + joined)
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["campaigns", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
+      
+      // Get campaigns owned by user
+      const { data: ownedCampaigns, error: ownedError } = await supabase
         .from("campaigns")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+      if (ownedError) throw ownedError;
+
+      // Get campaigns joined as member
+      const { data: memberships, error: memberError } = await supabase
+        .from("campaign_members")
+        .select("campaign_id")
+        .eq("user_id", user.id);
+      if (memberError) throw memberError;
+
+      const joinedIds = memberships
+        .map(m => m.campaign_id)
+        .filter(cid => !ownedCampaigns?.some(c => c.id === cid));
       
-      if (error) throw error;
-      return data;
+      let joinedCampaigns: any[] = [];
+      if (joinedIds.length > 0) {
+        const { data, error } = await supabase
+          .from("campaigns")
+          .select("*")
+          .in("id", joinedIds)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        joinedCampaigns = data || [];
+      }
+
+      return [...(ownedCampaigns || []), ...joinedCampaigns];
     },
     enabled: !!user,
   });
@@ -243,12 +267,6 @@ const Campaigns = () => {
                     Nouvelle Campagne
                   </Button>
                 </DialogTrigger>
-              <DialogTrigger asChild>
-                <Button variant="gold">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Campagne
-                </Button>
-              </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Créer une campagne</DialogTitle>
@@ -356,14 +374,17 @@ const Campaigns = () => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-display text-lg font-semibold text-foreground truncate">
-                          {campaign.title}
-                        </h3>
-                        <Badge variant={campaign.is_active ? "active" : "inactive"}>
-                          {campaign.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-display text-lg font-semibold text-foreground truncate">
+                            {campaign.title}
+                          </h3>
+                          <Badge variant={campaign.is_active ? "active" : "inactive"}>
+                            {campaign.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {campaign.user_id === user?.id ? "MJ" : "Joueur"}
+                          </Badge>
+                        </div>
 
                       {campaign.description && (
                         <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
@@ -383,25 +404,29 @@ const Campaigns = () => {
                           <Play className="mr-1.5 h-3.5 w-3.5" />
                           Ouvrir
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                          onClick={() => toggleActiveMutation.mutate({ 
-                            id: campaign.id, 
-                            is_active: !campaign.is_active 
-                          })}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDelete(campaign.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {campaign.user_id === user?.id && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                              onClick={() => toggleActiveMutation.mutate({ 
+                                id: campaign.id, 
+                                is_active: !campaign.is_active 
+                              })}
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDelete(campaign.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
