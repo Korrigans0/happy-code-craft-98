@@ -13,13 +13,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, Swords, BookOpen, Users, 
-  Settings, Copy, ArrowLeft, Send, Dices, Crown
+  Settings, Copy, ArrowLeft, Send, Dices, Crown, Map
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 import CampaignCombat from "@/components/campaign/CampaignCombat";
 import CampaignNotes from "@/components/campaign/CampaignNotes";
 import CampaignMembers from "@/components/campaign/CampaignMembers";
 import CampaignSettings from "@/components/campaign/CampaignSettings";
+import CampaignTabletop from "@/components/campaign/CampaignTabletop";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Campaign = Tables<"campaigns">;
@@ -28,7 +29,7 @@ const CampaignPlay = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("chat");
+  const [activeTab, setActiveTab] = useState("tabletop");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -159,7 +160,11 @@ const CampaignPlay = () => {
         {/* Main Content with Tabs */}
         <div className="flex-1 container mx-auto px-4 py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-5 bg-muted">
+            <TabsList className="grid w-full grid-cols-6 bg-muted">
+              <TabsTrigger value="tabletop" className="flex items-center gap-2">
+                <Map className="h-4 w-4" />
+                <span className="hidden sm:inline">Partie</span>
+              </TabsTrigger>
               <TabsTrigger value="chat" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 <span className="hidden sm:inline">Chat</span>
@@ -185,6 +190,9 @@ const CampaignPlay = () => {
             </TabsList>
 
             <div className="flex-1 mt-4">
+              <TabsContent value="tabletop" className="h-full m-0">
+                <CampaignTabletop campaignId={id!} isGM={isGM} />
+              </TabsContent>
               <TabsContent value="chat" className="h-full m-0">
                 <CampaignChat campaignId={id!} userId={user!.id} isGM={isGM} />
               </TabsContent>

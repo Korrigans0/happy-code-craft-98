@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Search, Filter, Sword, Calendar, Settings, Trash2, Play, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Sword, Calendar, Settings, Trash2, Play, Loader2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ const Campaigns = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null);
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
   
   // Form state
   const [newTitle, setNewTitle] = useState("");
@@ -137,6 +139,45 @@ const Campaigns = () => {
     },
   });
 
+  // Join campaign by invite code
+  const joinMutation = useMutation({
+    mutationFn: async (code: string) => {
+      if (!user) throw new Error("Non authentifié");
+      // Find campaign by invite code
+      const { data: campaign, error: findError } = await supabase
+        .from("campaigns")
+        .select("id")
+        .eq("invite_code", code.trim())
+        .single();
+      if (findError || !campaign) throw new Error("Code invalide");
+      
+      // Check if already a member
+      const { data: existing } = await supabase
+        .from("campaign_members")
+        .select("id")
+        .eq("campaign_id", campaign.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing) throw new Error("Vous êtes déjà membre");
+      
+      // Join as player
+      const { error: joinError } = await supabase
+        .from("campaign_members")
+        .insert({ campaign_id: campaign.id, user_id: user.id, role: "player" });
+      if (joinError) throw joinError;
+      return campaign.id;
+    },
+    onSuccess: (campaignId) => {
+      toast({ title: "Rejoint !", description: "Vous avez rejoint la campagne." });
+      setIsJoinOpen(false);
+      setJoinCode("");
+      navigate(`/campaigns/${campaignId}`);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
+  });
+
   const handleCreate = () => {
     if (!newTitle.trim()) {
       toast({
@@ -190,7 +231,18 @@ const Campaigns = () => {
                 Gérez vos aventures et sessions de jeu
               </p>
             </div>
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsJoinOpen(true)}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                Rejoindre
+              </Button>
+              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="gold">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouvelle Campagne
+                  </Button>
+                </DialogTrigger>
               <DialogTrigger asChild>
                 <Button variant="gold">
                   <Plus className="mr-2 h-4 w-4" />
@@ -247,7 +299,8 @@ const Campaigns = () => {
                   </Button>
                 </DialogFooter>
               </DialogContent>
-            </Dialog>
+             </Dialog>
+            </div>
           </div>
 
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
@@ -326,7 +379,7 @@ const Campaigns = () => {
                       </div>
 
                       <div className="mt-4 flex items-center gap-2">
-                        <Button variant="join" size="sm" className="flex-1">
+                        <Button variant="join" size="sm" className="flex-1" onClick={() => navigate(`/campaigns/${campaign.id}`)}>
                           <Play className="mr-1.5 h-3.5 w-3.5" />
                           Ouvrir
                         </Button>
@@ -375,6 +428,43 @@ const Campaigns = () => {
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Join by Code Dialog */}
+      <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rejoindre une campagne</DialogTitle>
+            <DialogDescription>
+              Entrez le code d'invitation partagé par le Maître du Jeu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-code">Code d'invitation</Label>
+              <Input
+                id="invite-code"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
+                placeholder="ABC123"
+                className="text-center text-lg tracking-widest"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsJoinOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="gold"
+              onClick={() => joinMutation.mutate(joinCode)}
+              disabled={!joinCode.trim() || joinMutation.isPending}
+            >
+              {joinMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Rejoindre
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -11,6 +11,7 @@ import Compendium from "./pages/Compendium";
 import DiceRoller from "./pages/DiceRoller";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
+import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/campaigns" element={<Campaigns />} />
+            <Route path="/campaigns/:id" element={<CampaignPlay />} />
             <Route path="/characters" element={<Characters />} />
             <Route path="/compendium" element={<Compendium />} />
             <Route path="/dice" element={<DiceRoller />} />
