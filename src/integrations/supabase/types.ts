@@ -670,6 +670,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_campaign_access: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_campaign_gm: {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
