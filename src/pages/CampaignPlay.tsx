@@ -1,19 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, Swords, BookOpen, Users, 
-  Settings, Copy, ArrowLeft, Send, Dices, Crown, Map
+  Settings, Copy, ArrowLeft, Crown, Map, CalendarDays
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 import CampaignCombat from "@/components/campaign/CampaignCombat";
@@ -21,6 +18,7 @@ import CampaignNotes from "@/components/campaign/CampaignNotes";
 import CampaignMembers from "@/components/campaign/CampaignMembers";
 import CampaignSettings from "@/components/campaign/CampaignSettings";
 import CampaignTabletop from "@/components/campaign/CampaignTabletop";
+import CampaignSessions from "@/components/campaign/CampaignSessions";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Campaign = Tables<"campaigns">;
@@ -31,14 +29,12 @@ const CampaignPlay = () => {
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("tabletop");
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
-  // Fetch campaign details
   const { data: campaign, isLoading: campaignLoading } = useQuery({
     queryKey: ["campaign", id],
     queryFn: async () => {
@@ -53,7 +49,6 @@ const CampaignPlay = () => {
     enabled: !!id && !!user,
   });
 
-  // Check if user is a member and their role
   const { data: membership, isLoading: membershipLoading } = useQuery({
     queryKey: ["campaignMembership", id, user?.id],
     queryFn: async () => {
@@ -124,6 +119,16 @@ const CampaignPlay = () => {
     );
   }
 
+  const tabs = [
+    { id: "tabletop", icon: Map, label: "Partie" },
+    { id: "chat", icon: MessageSquare, label: "Chat" },
+    { id: "combat", icon: Swords, label: "Combat" },
+    { id: "sessions", icon: CalendarDays, label: "Sessions" },
+    { id: "notes", icon: BookOpen, label: "Notes" },
+    { id: "members", icon: Users, label: "Joueurs" },
+    ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
       <Header />
@@ -144,6 +149,11 @@ const CampaignPlay = () => {
                       MJ
                     </Badge>
                   )}
+                  {campaign.system && (
+                    <Badge variant="outline" className="text-xs">
+                      {campaign.system}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">{campaign.description || "Pas de description"}</p>
               </div>
@@ -160,33 +170,13 @@ const CampaignPlay = () => {
         {/* Main Content with Tabs */}
         <div className="flex-1 container mx-auto px-4 py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-6 bg-muted">
-              <TabsTrigger value="tabletop" className="flex items-center gap-2">
-                <Map className="h-4 w-4" />
-                <span className="hidden sm:inline">Partie</span>
-              </TabsTrigger>
-              <TabsTrigger value="chat" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                <span className="hidden sm:inline">Chat</span>
-              </TabsTrigger>
-              <TabsTrigger value="combat" className="flex items-center gap-2">
-                <Swords className="h-4 w-4" />
-                <span className="hidden sm:inline">Combat</span>
-              </TabsTrigger>
-              <TabsTrigger value="notes" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span className="hidden sm:inline">Notes</span>
-              </TabsTrigger>
-              <TabsTrigger value="members" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Joueurs</span>
-              </TabsTrigger>
-              {isGM && (
-                <TabsTrigger value="settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Options</span>
+            <TabsList className={`grid w-full bg-muted`} style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+              {tabs.map(tab => (
+                <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
+                  <tab.icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </TabsTrigger>
-              )}
+              ))}
             </TabsList>
 
             <div className="flex-1 mt-4">
@@ -198,6 +188,9 @@ const CampaignPlay = () => {
               </TabsContent>
               <TabsContent value="combat" className="h-full m-0">
                 <CampaignCombat campaignId={id!} isGM={isGM} />
+              </TabsContent>
+              <TabsContent value="sessions" className="h-full m-0">
+                <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="notes" className="h-full m-0">
                 <CampaignNotes campaignId={id!} userId={user!.id} isGM={isGM} />

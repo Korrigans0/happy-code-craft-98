@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Send, Dices, Crown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
@@ -20,12 +21,26 @@ interface DiceRollMetadata {
   results: number[];
   total: number;
   modifier?: number;
+  whisperTo?: string;
 }
+
+const QUICK_ACTIONS = [
+  { label: "Jet de Perception", dice: "1d20", skill: "Perception" },
+  { label: "Jet d'Investigation", dice: "1d20", skill: "Investigation" },
+  { label: "Jet de Discrétion", dice: "1d20", skill: "Discrétion" },
+  { label: "Jet d'Initiative", dice: "1d20", skill: "Initiative" },
+  { label: "Jet de Sauvegarde", dice: "1d20", skill: "Sauvegarde" },
+  { label: "Attaque", dice: "1d20", skill: "Attaque" },
+  { label: "Dégâts (épée)", dice: "1d8", skill: "Dégâts" },
+  { label: "Dégâts (dague)", dice: "1d4", skill: "Dégâts" },
+];
 
 const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [diceInput, setDiceInput] = useState("1d20");
+  const [isWhisper, setIsWhisper] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch messages
@@ -37,7 +52,7 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
         .select("*")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: true })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return data;
     },
@@ -104,7 +119,7 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
 
   // Send message mutation
   const sendMutation = useMutation({
-    mutationFn: async (data: { content: string; message_type: string; metadata?: DiceRollMetadata }) => {
+    mutationFn: async (data: { content: string; message_type: string; metadata?: any }) => {
       const { error } = await supabase.from("campaign_messages").insert({
         campaign_id: campaignId,
         user_id: userId,
@@ -124,11 +139,20 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
 
   const handleSend = () => {
     if (!message.trim()) return;
-    sendMutation.mutate({ content: message, message_type: "chat" });
+    
+    const msgType = isWhisper ? "whisper" : "chat";
+    const content = isWhisper ? `🔒 [Murmure MJ] ${message}` : message;
+    
+    sendMutation.mutate({ 
+      content, 
+      message_type: msgType,
+      metadata: isWhisper ? { whisper: true } : undefined,
+    });
   };
 
-  const rollDice = () => {
-    const match = diceInput.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  const rollDice = (diceStr?: string) => {
+    const input = diceStr || diceInput;
+    const match = input.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
     if (!match) {
       toast({ title: "Format invalide", description: "Utilisez le format XdY ou XdY+Z (ex: 2d6+3)", variant: "destructive" });
       return;
@@ -149,15 +173,48 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
     }
     const total = results.reduce((a, b) => a + b, 0) + modifier;
 
+    // Check for nat 20/1
+    let prefix = "🎲";
+    if (sides === 20 && count === 1) {
+      if (results[0] === 20) prefix = "🎲✨ CRITIQUE !";
+      if (results[0] === 1) prefix = "🎲💀 ÉCHEC CRITIQUE !";
+    }
+
     const content = modifier !== 0 
-      ? `🎲 ${diceInput} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier} = **${total}**`
-      : `🎲 ${diceInput} → [${results.join(", ")}] = **${total}**`;
+      ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier} = **${total}**`
+      : `${prefix} ${input} → [${results.join(", ")}] = **${total}**`;
 
     sendMutation.mutate({
       content,
       message_type: "dice_roll",
-      metadata: { dice: diceInput, results, total, modifier },
+      metadata: { dice: input, results, total, modifier },
     });
+  };
+
+  const quickAction = (action: typeof QUICK_ACTIONS[0]) => {
+    const match = action.dice.match(/^(\d+)d(\d+)$/);
+    if (!match) return;
+    const count = parseInt(match[1]);
+    const sides = parseInt(match[2]);
+    const results: number[] = [];
+    for (let i = 0; i < count; i++) {
+      results.push(Math.floor(Math.random() * sides) + 1);
+    }
+    const total = results.reduce((a, b) => a + b, 0);
+    
+    let prefix = "🎲";
+    if (sides === 20 && count === 1) {
+      if (results[0] === 20) prefix = "🎲✨ CRITIQUE !";
+      if (results[0] === 1) prefix = "🎲💀 ÉCHEC CRITIQUE !";
+    }
+
+    const content = `${prefix} ${action.skill} (${action.dice}) → [${results.join(", ")}] = **${total}**`;
+    sendMutation.mutate({
+      content,
+      message_type: "dice_roll",
+      metadata: { dice: action.dice, results, total, modifier: 0 },
+    });
+    setShowQuickActions(false);
   };
 
   const getProfile = (id: string) => profiles.find(p => p.user_id === id);
@@ -170,16 +227,25 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
     return 'U';
   };
 
+  // Filter whisper messages - only show to GM and sender
+  const visibleMessages = messages.filter(msg => {
+    if (msg.message_type === "whisper") {
+      return isGM || msg.user_id === userId;
+    }
+    return true;
+  });
+
   return (
     <div className="flex h-[calc(100vh-280px)] flex-col rounded-lg border border-border bg-gradient-card">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
-          {messages.map((msg) => {
+          {visibleMessages.map((msg) => {
             const profile = getProfile(msg.user_id);
             const member = getMember(msg.user_id);
             const isOwn = msg.user_id === userId;
             const isMsgGM = member?.role === 'gm';
+            const isMsgWhisper = msg.message_type === "whisper";
 
             return (
               <div
@@ -203,20 +269,28 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
                         MJ
                       </Badge>
                     )}
+                    {isMsgWhisper && (
+                      <Badge variant="outline" className="h-4 px-1 text-[10px] border-purple-500/50 text-purple-400">
+                        <EyeOff className="mr-0.5 h-2.5 w-2.5" />
+                        Murmure
+                      </Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                   <div
                     className={`mt-1 rounded-lg px-3 py-2 text-sm ${
-                      msg.message_type === "dice_roll"
+                      isMsgWhisper
+                        ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
+                        : msg.message_type === "dice_roll"
                         ? "bg-primary/20 text-primary border border-primary/30"
                         : isOwn
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground"
                     }`}
                   >
-                    {msg.content.split('**').map((part, i) => 
+                    {msg.content.split('**').map((part: string, i: number) => 
                       i % 2 === 1 ? <strong key={i}>{part}</strong> : part
                     )}
                   </div>
@@ -229,6 +303,18 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
 
       {/* Input Area */}
       <div className="border-t border-border p-4">
+        {/* Quick Actions */}
+        {showQuickActions && (
+          <div className="mb-3 flex flex-wrap gap-1 p-2 rounded-md bg-muted/50 border border-border">
+            {QUICK_ACTIONS.map((action, i) => (
+              <Button key={i} variant="outline" size="sm" className="h-7 text-xs" onClick={() => quickAction(action)}>
+                <Sparkles className="mr-1 h-3 w-3" />
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
         {/* Dice Roller */}
         <div className="mb-3 flex items-center gap-2">
           <Dices className="h-4 w-4 text-muted-foreground" />
@@ -239,33 +325,50 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
             className="w-32 h-8 text-sm"
             onKeyDown={(e) => e.key === "Enter" && rollDice()}
           />
-          <Button variant="outline" size="sm" onClick={rollDice}>
+          <Button variant="outline" size="sm" onClick={() => rollDice()}>
             Lancer
           </Button>
-          <div className="flex gap-1 ml-2">
-            {["1d20", "1d6", "2d6", "1d8", "1d10", "1d12"].map((dice) => (
+          <div className="flex gap-1 ml-1">
+            {["1d20", "1d6", "2d6", "1d8", "1d10", "1d12", "1d4", "1d100"].map((dice) => (
               <Button
                 key={dice}
                 variant="ghost"
                 size="sm"
                 className="h-7 px-2 text-xs"
-                onClick={() => {
-                  setDiceInput(dice);
-                }}
+                onClick={() => setDiceInput(dice)}
               >
                 {dice}
               </Button>
             ))}
           </div>
+          <Button
+            variant={showQuickActions ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7 px-2 text-xs ml-auto"
+            onClick={() => setShowQuickActions(!showQuickActions)}
+          >
+            <Sparkles className="h-3 w-3" />
+          </Button>
         </div>
 
         {/* Message Input */}
         <div className="flex gap-2">
+          {isGM && (
+            <Button
+              variant={isWhisper ? "secondary" : "ghost"}
+              size="icon"
+              className={`shrink-0 ${isWhisper ? "text-purple-400" : ""}`}
+              onClick={() => setIsWhisper(!isWhisper)}
+              title={isWhisper ? "Murmure activé (MJ seul)" : "Message public"}
+            >
+              {isWhisper ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          )}
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Écrire un message..."
-            className="flex-1"
+            placeholder={isWhisper ? "Murmure MJ (visible seulement par vous)..." : "Écrire un message..."}
+            className={`flex-1 ${isWhisper ? "border-purple-500/50" : ""}`}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
           />
           <Button onClick={handleSend} disabled={sendMutation.isPending}>
