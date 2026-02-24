@@ -54,6 +54,8 @@ const Auth = () => {
       let message = error.message;
       if (error.message.includes('already registered')) {
         message = "Cette adresse email est déjà utilisée";
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        message = "Erreur réseau. Vérifiez votre connexion et réessayez.";
       }
       toast({
         title: "Erreur d'inscription",
@@ -89,6 +91,10 @@ const Auth = () => {
       let message = error.message;
       if (error.message.includes('Invalid login credentials')) {
         message = "Email ou mot de passe incorrect";
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        message = "Erreur réseau. Vérifiez votre connexion et réessayez.";
+      } else if (error.message.includes('Email not confirmed')) {
+        message = "Veuillez confirmer votre email avant de vous connecter.";
       }
       toast({
         title: "Erreur de connexion",
