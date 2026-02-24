@@ -20,13 +20,13 @@ interface RollResult {
 }
 
 const diceTypes: DiceType[] = [
-  { sides: 4, color: "from-red-500 to-red-600", label: "D4" },
-  { sides: 6, color: "from-orange-500 to-orange-600", label: "D6" },
-  { sides: 8, color: "from-yellow-500 to-yellow-600", label: "D8" },
-  { sides: 10, color: "from-green-500 to-green-600", label: "D10" },
-  { sides: 12, color: "from-blue-500 to-blue-600", label: "D12" },
-  { sides: 20, color: "from-purple-500 to-purple-600", label: "D20" },
-  { sides: 100, color: "from-pink-500 to-pink-600", label: "D100" },
+  { sides: 4, color: "from-[hsl(0,70%,50%)] to-[hsl(0,70%,40%)]", label: "D4" },
+  { sides: 6, color: "from-[hsl(32,90%,50%)] to-[hsl(32,90%,40%)]", label: "D6" },
+  { sides: 8, color: "from-[hsl(42,65%,58%)] to-[hsl(35,80%,45%)]", label: "D8" },
+  { sides: 10, color: "from-[hsl(142,70%,45%)] to-[hsl(142,70%,35%)]", label: "D10" },
+  { sides: 12, color: "from-[hsl(210,70%,50%)] to-[hsl(210,70%,40%)]", label: "D12" },
+  { sides: 20, color: "from-[hsl(270,70%,55%)] to-[hsl(270,70%,45%)]", label: "D20" },
+  { sides: 100, color: "from-[hsl(340,75%,55%)] to-[hsl(340,75%,45%)]", label: "D100" },
 ];
 
 const DiceRoller = () => {

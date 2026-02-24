@@ -23,6 +23,7 @@ const Characters = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
@@ -214,11 +215,14 @@ const Characters = () => {
     setIsFormOpen(true);
   };
 
+  const uniqueClasses = [...new Set(characters.map(c => c.class))].sort();
+  
   const filteredCharacters = characters.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.race.toLowerCase().includes(searchQuery.toLowerCase())
+      c.race.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (classFilter === "all" || c.class === classFilter)
   );
 
   // Show loading while checking auth
@@ -260,9 +264,25 @@ const Characters = () => {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={classFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setClassFilter("all")}
+              >
+                Toutes
+              </Button>
+              {uniqueClasses.map(cls => (
+                <Button
+                  key={cls}
+                  variant={classFilter === cls ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setClassFilter(cls)}
+                >
+                  {cls}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {isLoading ? (

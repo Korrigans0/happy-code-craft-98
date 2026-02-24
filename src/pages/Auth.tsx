@@ -107,28 +107,41 @@ const Auth = () => {
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);
     const guestEmail = 'guest@taverne.com';
-    const guestPassword = '123456';
+    const guestPassword = 'guest123456!';
 
     // Try to sign in first
     let { error } = await signIn(guestEmail, guestPassword);
     
-    // If account doesn't exist, create it then sign in
+    // If account doesn't exist or credentials fail, create it then sign in
     if (error) {
       const { error: signUpError } = await signUp(guestEmail, guestPassword, 'Invité');
       if (!signUpError) {
+        // Wait briefly for account creation, then try sign in
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const result = await signIn(guestEmail, guestPassword);
         error = result.error;
       } else {
-        error = signUpError;
+        // If signup also fails (e.g. email confirmation required), show clear message
+        if (signUpError.message.includes('Failed to fetch') || signUpError.message.includes('NetworkError')) {
+          error = new Error("Erreur réseau. Vérifiez votre connexion.");
+        } else {
+          error = signUpError;
+        }
       }
     }
 
     setIsGuestLoading(false);
 
     if (error) {
+      let message = "Impossible de se connecter en tant qu'invité.";
+      if (error.message.includes('Email not confirmed')) {
+        message = "Le compte invité n'est pas encore activé. Veuillez créer un compte classique.";
+      } else if (error.message.includes('réseau') || error.message.includes('Failed to fetch')) {
+        message = "Erreur réseau. Vérifiez votre connexion et réessayez.";
+      }
       toast({
-        title: "Erreur",
-        description: "Impossible de se connecter en tant qu'invité",
+        title: "Connexion invité indisponible",
+        description: message,
         variant: "destructive"
       });
     }
