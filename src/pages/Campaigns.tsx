@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Search, Filter, Sword, Calendar, Settings, Trash2, Play, Loader2, KeyRound } from "lucide-react";
+import { Plus, Search, Filter, Sword, Calendar, Settings, Trash2, Play, Loader2, KeyRound, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ const Campaigns = () => {
   const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   
   // Form state
   const [newTitle, setNewTitle] = useState("");
@@ -229,9 +230,9 @@ const Campaigns = () => {
     }
   };
 
-  const filteredCampaigns = campaigns.filter((c) =>
-    c.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCampaigns = campaigns
+    .filter((c) => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((c) => filterStatus === "all" ? true : filterStatus === "active" ? c.is_active : !c.is_active);
 
   if (authLoading) {
     return (
@@ -331,9 +332,31 @@ const Campaigns = () => {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={filterStatus === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("all")}
+              >
+                Toutes
+              </Button>
+              <Button
+                variant={filterStatus === "active" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("active")}
+              >
+                <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                Actives
+              </Button>
+              <Button
+                variant={filterStatus === "inactive" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("inactive")}
+              >
+                <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                Inactives
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
