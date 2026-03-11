@@ -428,6 +428,11 @@ const Campaigns = () => {
                           <Badge variant="outline" className="text-xs">
                             {campaign.user_id === user?.id ? "MJ" : "Joueur"}
                           </Badge>
+                          {campaign.system && (
+                            <Badge variant="secondary" className="text-xs">
+                              {campaign.system}
+                            </Badge>
+                          )}
                         </div>
 
                       {campaign.description && (
