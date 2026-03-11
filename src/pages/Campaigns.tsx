@@ -114,6 +114,7 @@ const Campaigns = () => {
       setIsCreateOpen(false);
       setNewTitle("");
       setNewDescription("");
+      setNewSystem("D&D 5e");
       setNewIsActive(true);
     },
     onError: () => {
