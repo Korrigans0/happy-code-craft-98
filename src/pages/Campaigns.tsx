@@ -33,6 +33,7 @@ const Campaigns = () => {
   // Form state
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newSystem, setNewSystem] = useState("D&D 5e");
   const [newIsActive, setNewIsActive] = useState(true);
 
   // Redirect if not authenticated
