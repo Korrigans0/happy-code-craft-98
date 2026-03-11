@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS } from "@/lib/game-systems";
 
 type Spell = Tables<"spells">;
 
@@ -22,47 +23,15 @@ interface CharacterFormProps {
   character?: Character | null;
   onSave: (character: Partial<Character>) => void;
   onCancel: () => void;
+  gameSystem?: string;
 }
 
-const RACES = [
-  "Humain", "Elfe", "Nain", "Halfelin", "Gnome", "Demi-Elfe", "Demi-Orc", 
-  "Tieffelin", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Kenku"
-];
-
-const CLASSES = [
-  "Barbare", "Barde", "Clerc", "Druide", "Guerrier", "Moine", 
-  "Paladin", "Rôdeur", "Roublard", "Ensorceleur", "Sorcier", "Magicien"
-];
-
-const ALIGNMENTS = [
-  "Loyal Bon", "Neutre Bon", "Chaotique Bon",
-  "Loyal Neutre", "Neutre", "Chaotique Neutre",
-  "Loyal Mauvais", "Neutre Mauvais", "Chaotique Mauvais"
-];
-
-const BACKGROUNDS = [
-  "Acolyte", "Artisan", "Charlatan", "Criminel", "Artiste", "Gladiateur",
-  "Héros du Peuple", "Ermite", "Noble", "Érudit", "Marin", "Soldat", "Vagabond"
-];
-
-const SKILLS = [
-  "Acrobaties", "Arcanes", "Athlétisme", "Discrétion", "Dressage", "Escamotage",
-  "Histoire", "Intimidation", "Investigation", "Médecine", "Nature", "Perception",
-  "Perspicacité", "Persuasion", "Religion", "Représentation", "Survie", "Tromperie"
-];
-
-const LANGUAGES = [
-  "Commun", "Elfique", "Nain", "Géant", "Gnome", "Gobelin", "Halfelin", 
-  "Orc", "Abyssal", "Céleste", "Draconique", "Infernal", "Primordial", "Sylvain"
-];
-
-// Classes that can cast spells
+// Classes that can cast spells (D&D only)
 const SPELLCASTING_CLASSES = [
   "Barde", "Clerc", "Druide", "Paladin", "Rôdeur", "Ensorceleur", "Sorcier", "Magicien"
 ];
 
-// Map class names for spell filtering (database uses French names)
-// Some classes may have variations in the database
+// Map class names for spell filtering
 const CLASS_SPELL_VARIANTS: Record<string, string[]> = {
   "Barde": ["Barde", "Bard"],
   "Clerc": ["Clerc", "Cleric"],
