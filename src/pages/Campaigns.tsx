@@ -88,13 +88,14 @@ const Campaigns = () => {
 
   // Create campaign
   const createMutation = useMutation({
-    mutationFn: async (campaign: { title: string; description: string; is_active: boolean }) => {
+    mutationFn: async (campaign: { title: string; description: string; system: string; is_active: boolean }) => {
       if (!user) throw new Error("Non authentifié");
       const { data, error } = await supabase
         .from("campaigns")
         .insert({
           title: campaign.title,
           description: campaign.description || null,
+          system: campaign.system,
           is_active: campaign.is_active,
           user_id: user.id,
         })
