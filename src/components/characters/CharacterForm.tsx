@@ -405,16 +405,16 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
               </div>
 
               <div className="space-y-2">
-                <Label>Race</Label>
+                <Label>{systemConfig.raceLabel}</Label>
                 <Select
-                  value={formData.race || "Humain"}
+                  value={formData.race || systemConfig.races[0]}
                   onValueChange={(v) => updateField("race", v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {RACES.map((race) => (
+                    {systemConfig.races.map((race) => (
                       <SelectItem key={race} value={race}>
                         {race}
                       </SelectItem>
@@ -424,16 +424,16 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
               </div>
 
               <div className="space-y-2">
-                <Label>Classe</Label>
+                <Label>{systemConfig.classLabel}</Label>
                 <Select
-                  value={formData.class || "Guerrier"}
+                  value={formData.class || systemConfig.classes[0]}
                   onValueChange={(v) => updateField("class", v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASSES.map((cls) => (
+                    {systemConfig.classes.map((cls) => (
                       <SelectItem key={cls} value={cls}>
                         {cls}
                       </SelectItem>
@@ -443,52 +443,58 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subclass">Sous-classe</Label>
+                <Label htmlFor="subclass">
+                  {gameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                </Label>
                 <Input
                   id="subclass"
                   value={formData.subclass || ""}
                   onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder="Ex: Champion, École d'Évocation..."
+                  placeholder={gameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Historique</Label>
-                <Select
-                  value={formData.background || ""}
-                  onValueChange={(v) => updateField("background", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir un historique" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BACKGROUNDS.map((bg) => (
-                      <SelectItem key={bg} value={bg}>
-                        {bg}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {systemConfig.backgrounds.length > 0 && (
+                <div className="space-y-2">
+                  <Label>{gameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
+                  <Select
+                    value={formData.background || ""}
+                    onValueChange={(v) => updateField("background", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.backgrounds.map((bg) => (
+                        <SelectItem key={bg} value={bg}>
+                          {bg}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <Label>Alignement</Label>
-                <Select
-                  value={formData.alignment || "Neutre"}
-                  onValueChange={(v) => updateField("alignment", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ALIGNMENTS.map((a) => (
-                      <SelectItem key={a} value={a}>
-                        {a}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {systemConfig.hasAlignments && (
+                <div className="space-y-2">
+                  <Label>Alignement</Label>
+                  <Select
+                    value={formData.alignment || "Neutre"}
+                    onValueChange={(v) => updateField("alignment", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALIGNMENTS.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="campaign">Campagne</Label>
