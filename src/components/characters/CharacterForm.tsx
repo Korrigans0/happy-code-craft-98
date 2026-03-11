@@ -96,7 +96,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isSpellcaster = SPELLCASTING_CLASSES.includes(formData.class || "");
+  const isSpellcaster = systemConfig.hasSpellcasting && SPELLCASTING_CLASSES.includes(formData.class || "");
 
   // Fetch magic items for equipment selection
   const { data: weapons } = useQuery({
