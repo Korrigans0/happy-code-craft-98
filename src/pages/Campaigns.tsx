@@ -220,6 +220,7 @@ const Campaigns = () => {
     createMutation.mutate({
       title: newTitle,
       description: newDescription,
+      system: newSystem,
       is_active: newIsActive,
     });
   };
