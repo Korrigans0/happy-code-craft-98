@@ -8,7 +8,6 @@ const HeroSection = () => {
 
   return (
     <section className="relative overflow-hidden py-16 md:py-24">
-      {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-primary blur-3xl" />
         <div className="absolute right-1/4 bottom-1/4 h-48 w-48 rounded-full bg-feature-compendium blur-3xl" />
@@ -19,8 +18,8 @@ const HeroSection = () => {
           Bienvenue sur DragonTable
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-          La table virtuelle ultime pour vos aventures Dungeons & Dragons 5e. 
-          Gérez vos campagnes, lancez des dés, et vivez des aventures épiques avec vos amis.
+          La table virtuelle ultime pour tous vos jeux de rôle. 
+          D&D 5e, Call of Cthulhu, Worlds Awakening et bien d'autres — gérez vos campagnes, lancez des dés et vivez des aventures épiques.
         </p>
 
         {!loading && (

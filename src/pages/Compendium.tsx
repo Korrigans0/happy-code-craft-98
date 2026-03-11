@@ -19,10 +19,10 @@ const Compendium = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="mb-8 text-center">
             <h1 className="font-display text-4xl font-bold text-foreground">
-              Compendium D&D 5e
+              Compendium
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Accédez à tous les sorts, monstres et objets magiques
+              Accédez à tous les sorts, monstres et objets magiques — multi-système
             </p>
           </div>
 

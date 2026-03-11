@@ -19,7 +19,7 @@ const features = [
   {
     icon: BookOpen,
     title: "Compendium",
-    subtitle: "Sorts & Monstres",
+    subtitle: "Sorts, Monstres & plus",
     colorClass: "text-feature-compendium",
     href: "/compendium",
   },
