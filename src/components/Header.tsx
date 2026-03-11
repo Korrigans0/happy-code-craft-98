@@ -63,7 +63,7 @@ const Header = () => {
             <h1 className="font-display text-xl font-semibold text-primary">
               DragonTable
             </h1>
-            <p className="text-xs text-muted-foreground">Table Virtuelle D&D 5e</p>
+            <p className="text-xs text-muted-foreground">Table Virtuelle JdR</p>
           </div>
         </Link>
 

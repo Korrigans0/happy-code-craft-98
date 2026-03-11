@@ -64,7 +64,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const [timerSeconds, setTimerSeconds] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (timerRunning) {
       interval = setInterval(() => setTimerSeconds(s => s + 1), 1000);
     }

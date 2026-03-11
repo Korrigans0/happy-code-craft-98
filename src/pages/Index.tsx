@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
+import GameSystemsSection from "@/components/GameSystemsSection";
 import CampaignsSection from "@/components/CampaignsSection";
 import Footer from "@/components/Footer";
 
@@ -11,6 +12,7 @@ const Index = () => {
       <main className="flex-1">
         <HeroSection />
         <FeaturesSection />
+        <GameSystemsSection />
         <CampaignsSection />
       </main>
       <Footer />
