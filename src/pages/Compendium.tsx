@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Sparkles, Sword, Gem } from "lucide-react";
+import { Search, Sparkles, Sword, Gem, Swords, BookOpen, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
@@ -7,6 +7,9 @@ import Footer from "@/components/Footer";
 import SpellsList from "@/components/compendium/SpellsList";
 import MonstersList from "@/components/compendium/MonstersList";
 import ItemsList from "@/components/compendium/ItemsList";
+import WACreaturesList from "@/components/compendium/WACreaturesList";
+import WACodex from "@/components/compendium/WACodex";
+import WAHistoire from "@/components/compendium/WAHistoire";
 
 const Compendium = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,7 +25,7 @@ const Compendium = () => {
               Compendium
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Accédez à tous les sorts, monstres et objets magiques — multi-système
+              Sorts, monstres, objets et ressources — multi-système
             </p>
           </div>
 
@@ -39,18 +42,30 @@ const Compendium = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mx-auto mb-8 grid w-full max-w-lg grid-cols-3 bg-muted/50">
-              <TabsTrigger value="spells" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                <Sparkles className="h-4 w-4" />
+            <TabsList className="mx-auto mb-8 flex w-full max-w-3xl flex-wrap gap-1 bg-muted/50 p-1">
+              <TabsTrigger value="spells" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <Sparkles className="h-3.5 w-3.5" />
                 Sorts
               </TabsTrigger>
-              <TabsTrigger value="monsters" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                <Sword className="h-4 w-4" />
+              <TabsTrigger value="monsters" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <Sword className="h-3.5 w-3.5" />
                 Monstres
               </TabsTrigger>
-              <TabsTrigger value="items" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                <Gem className="h-4 w-4" />
+              <TabsTrigger value="items" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <Gem className="h-3.5 w-3.5" />
                 Objets
+              </TabsTrigger>
+              <TabsTrigger value="wa-bestiary" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <Swords className="h-3.5 w-3.5" />
+                Bestiaire WA
+              </TabsTrigger>
+              <TabsTrigger value="wa-codex" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <BookOpen className="h-3.5 w-3.5" />
+                Codex WA
+              </TabsTrigger>
+              <TabsTrigger value="wa-histoire" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                <Globe className="h-3.5 w-3.5" />
+                Histoire WA
               </TabsTrigger>
             </TabsList>
 
@@ -64,6 +79,18 @@ const Compendium = () => {
 
             <TabsContent value="items">
               <ItemsList searchQuery={searchQuery} />
+            </TabsContent>
+
+            <TabsContent value="wa-bestiary">
+              <WACreaturesList searchQuery={searchQuery} />
+            </TabsContent>
+
+            <TabsContent value="wa-codex">
+              <WACodex />
+            </TabsContent>
+
+            <TabsContent value="wa-histoire">
+              <WAHistoire />
             </TabsContent>
           </Tabs>
         </div>

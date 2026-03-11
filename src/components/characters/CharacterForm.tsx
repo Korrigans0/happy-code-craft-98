@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS } from "@/lib/game-systems";
 
 type Spell = Tables<"spells">;
 
@@ -22,47 +23,15 @@ interface CharacterFormProps {
   character?: Character | null;
   onSave: (character: Partial<Character>) => void;
   onCancel: () => void;
+  gameSystem?: string;
 }
 
-const RACES = [
-  "Humain", "Elfe", "Nain", "Halfelin", "Gnome", "Demi-Elfe", "Demi-Orc", 
-  "Tieffelin", "Dragonborn", "Aarakocra", "Genasi", "Goliath", "Tabaxi", "Kenku"
-];
-
-const CLASSES = [
-  "Barbare", "Barde", "Clerc", "Druide", "Guerrier", "Moine", 
-  "Paladin", "Rôdeur", "Roublard", "Ensorceleur", "Sorcier", "Magicien"
-];
-
-const ALIGNMENTS = [
-  "Loyal Bon", "Neutre Bon", "Chaotique Bon",
-  "Loyal Neutre", "Neutre", "Chaotique Neutre",
-  "Loyal Mauvais", "Neutre Mauvais", "Chaotique Mauvais"
-];
-
-const BACKGROUNDS = [
-  "Acolyte", "Artisan", "Charlatan", "Criminel", "Artiste", "Gladiateur",
-  "Héros du Peuple", "Ermite", "Noble", "Érudit", "Marin", "Soldat", "Vagabond"
-];
-
-const SKILLS = [
-  "Acrobaties", "Arcanes", "Athlétisme", "Discrétion", "Dressage", "Escamotage",
-  "Histoire", "Intimidation", "Investigation", "Médecine", "Nature", "Perception",
-  "Perspicacité", "Persuasion", "Religion", "Représentation", "Survie", "Tromperie"
-];
-
-const LANGUAGES = [
-  "Commun", "Elfique", "Nain", "Géant", "Gnome", "Gobelin", "Halfelin", 
-  "Orc", "Abyssal", "Céleste", "Draconique", "Infernal", "Primordial", "Sylvain"
-];
-
-// Classes that can cast spells
+// Classes that can cast spells (D&D only)
 const SPELLCASTING_CLASSES = [
   "Barde", "Clerc", "Druide", "Paladin", "Rôdeur", "Ensorceleur", "Sorcier", "Magicien"
 ];
 
-// Map class names for spell filtering (database uses French names)
-// Some classes may have variations in the database
+// Map class names for spell filtering
 const CLASS_SPELL_VARIANTS: Record<string, string[]> = {
   "Barde": ["Barde", "Bard"],
   "Clerc": ["Clerc", "Cleric"],
@@ -85,11 +54,12 @@ const SPELLCASTING_ABILITIES: Record<string, string> = {
   "Magicien": "Intelligence"
 };
 
-const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
+const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: CharacterFormProps) => {
+  const systemConfig = getSystemConfig(gameSystem);
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
-    race: "Humain",
-    class: "Guerrier",
+    race: systemConfig.races[0],
+    class: systemConfig.classes[0],
     subclass: "",
     level: 1,
     background: "",
@@ -126,7 +96,7 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isSpellcaster = SPELLCASTING_CLASSES.includes(formData.class || "");
+  const isSpellcaster = systemConfig.hasSpellcasting && SPELLCASTING_CLASSES.includes(formData.class || "");
 
   // Fetch magic items for equipment selection
   const { data: weapons } = useQuery({
@@ -435,16 +405,16 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label>Race</Label>
+                <Label>{systemConfig.raceLabel}</Label>
                 <Select
-                  value={formData.race || "Humain"}
+                  value={formData.race || systemConfig.races[0]}
                   onValueChange={(v) => updateField("race", v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {RACES.map((race) => (
+                    {systemConfig.races.map((race) => (
                       <SelectItem key={race} value={race}>
                         {race}
                       </SelectItem>
@@ -454,16 +424,16 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label>Classe</Label>
+                <Label>{systemConfig.classLabel}</Label>
                 <Select
-                  value={formData.class || "Guerrier"}
+                  value={formData.class || systemConfig.classes[0]}
                   onValueChange={(v) => updateField("class", v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASSES.map((cls) => (
+                    {systemConfig.classes.map((cls) => (
                       <SelectItem key={cls} value={cls}>
                         {cls}
                       </SelectItem>
@@ -473,52 +443,58 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subclass">Sous-classe</Label>
+                <Label htmlFor="subclass">
+                  {gameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                </Label>
                 <Input
                   id="subclass"
                   value={formData.subclass || ""}
                   onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder="Ex: Champion, École d'Évocation..."
+                  placeholder={gameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Historique</Label>
-                <Select
-                  value={formData.background || ""}
-                  onValueChange={(v) => updateField("background", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir un historique" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BACKGROUNDS.map((bg) => (
-                      <SelectItem key={bg} value={bg}>
-                        {bg}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {systemConfig.backgrounds.length > 0 && (
+                <div className="space-y-2">
+                  <Label>{gameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
+                  <Select
+                    value={formData.background || ""}
+                    onValueChange={(v) => updateField("background", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.backgrounds.map((bg) => (
+                        <SelectItem key={bg} value={bg}>
+                          {bg}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-              <div className="space-y-2">
-                <Label>Alignement</Label>
-                <Select
-                  value={formData.alignment || "Neutre"}
-                  onValueChange={(v) => updateField("alignment", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ALIGNMENTS.map((a) => (
-                      <SelectItem key={a} value={a}>
-                        {a}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {systemConfig.hasAlignments && (
+                <div className="space-y-2">
+                  <Label>Alignement</Label>
+                  <Select
+                    value={formData.alignment || "Neutre"}
+                    onValueChange={(v) => updateField("alignment", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALIGNMENTS.map((a) => (
+                        <SelectItem key={a} value={a}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="campaign">Campagne</Label>

@@ -665,6 +665,63 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_creatures: {
+        Row: {
+          author: string | null
+          charisma: number
+          constitution: number
+          created_at: string
+          description: string
+          dexterity: number
+          id: string
+          image_url: string | null
+          intelligence: number
+          name: string
+          power_level: string
+          profile: string
+          ra: string
+          size: string
+          strength: number
+          wisdom: number
+        }
+        Insert: {
+          author?: string | null
+          charisma?: number
+          constitution?: number
+          created_at?: string
+          description?: string
+          dexterity?: number
+          id?: string
+          image_url?: string | null
+          intelligence?: number
+          name: string
+          power_level?: string
+          profile?: string
+          ra?: string
+          size?: string
+          strength?: number
+          wisdom?: number
+        }
+        Update: {
+          author?: string | null
+          charisma?: number
+          constitution?: number
+          created_at?: string
+          description?: string
+          dexterity?: number
+          id?: string
+          image_url?: string | null
+          intelligence?: number
+          name?: string
+          power_level?: string
+          profile?: string
+          ra?: string
+          size?: string
+          strength?: number
+          wisdom?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

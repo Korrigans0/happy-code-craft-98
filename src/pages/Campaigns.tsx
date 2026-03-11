@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Search, Filter, Sword, Calendar, Settings, Trash2, Play, Loader2, KeyRound, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GAME_SYSTEMS } from "@/lib/game-systems";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +35,7 @@ const Campaigns = () => {
   // Form state
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newSystem, setNewSystem] = useState("D&D 5e");
   const [newIsActive, setNewIsActive] = useState(true);
 
   // Redirect if not authenticated
@@ -85,13 +88,14 @@ const Campaigns = () => {
 
   // Create campaign
   const createMutation = useMutation({
-    mutationFn: async (campaign: { title: string; description: string; is_active: boolean }) => {
+    mutationFn: async (campaign: { title: string; description: string; system: string; is_active: boolean }) => {
       if (!user) throw new Error("Non authentifié");
       const { data, error } = await supabase
         .from("campaigns")
         .insert({
           title: campaign.title,
           description: campaign.description || null,
+          system: campaign.system,
           is_active: campaign.is_active,
           user_id: user.id,
         })
@@ -110,6 +114,7 @@ const Campaigns = () => {
       setIsCreateOpen(false);
       setNewTitle("");
       setNewDescription("");
+      setNewSystem("D&D 5e");
       setNewIsActive(true);
     },
     onError: () => {
@@ -215,6 +220,7 @@ const Campaigns = () => {
     createMutation.mutate({
       title: newTitle,
       description: newDescription,
+      system: newSystem,
       is_active: newIsActive,
     });
   };
@@ -294,6 +300,21 @@ const Campaigns = () => {
                       placeholder="Une aventure sombre dans les terres de Barovie..."
                       rows={3}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Système de jeu</Label>
+                    <Select value={newSystem} onValueChange={setNewSystem}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GAME_SYSTEMS.map((sys) => (
+                          <SelectItem key={sys.value} value={sys.value}>
+                            {sys.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="active">Campagne active</Label>
@@ -407,6 +428,11 @@ const Campaigns = () => {
                           <Badge variant="outline" className="text-xs">
                             {campaign.user_id === user?.id ? "MJ" : "Joueur"}
                           </Badge>
+                          {campaign.system && (
+                            <Badge variant="secondary" className="text-xs">
+                              {campaign.system}
+                            </Badge>
+                          )}
                         </div>
 
                       {campaign.description && (
