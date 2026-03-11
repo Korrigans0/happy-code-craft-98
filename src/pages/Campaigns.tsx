@@ -301,6 +301,21 @@ const Campaigns = () => {
                       rows={3}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label>Système de jeu</Label>
+                    <Select value={newSystem} onValueChange={setNewSystem}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GAME_SYSTEMS.map((sys) => (
+                          <SelectItem key={sys.value} value={sys.value}>
+                            {sys.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="active">Campagne active</Label>
                     <Switch
