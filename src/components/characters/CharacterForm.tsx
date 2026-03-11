@@ -54,11 +54,12 @@ const SPELLCASTING_ABILITIES: Record<string, string> = {
   "Magicien": "Intelligence"
 };
 
-const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
+const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: CharacterFormProps) => {
+  const systemConfig = getSystemConfig(gameSystem);
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
-    race: "Humain",
-    class: "Guerrier",
+    race: systemConfig.races[0],
+    class: systemConfig.classes[0],
     subclass: "",
     level: 1,
     background: "",
