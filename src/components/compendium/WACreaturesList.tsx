@@ -29,10 +29,22 @@ interface WACreaturesListProps {
 }
 
 const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
+  const { user } = useAuth();
   const [creatures, setCreatures] = useState<WACreature[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [powerFilter, setPowerFilter] = useState<string>("all");
   const [sizeFilter, setSizeFilter] = useState<string>("all");
+  const [expandedCreature, setExpandedCreature] = useState<string | null>(null);
+
+  const fetchCreatures = async () => {
+    const { data, error } = await supabase
+      .from("wa_creatures")
+      .select("*")
+      .order("name");
+    if (!error) setCreatures((data as WACreature[]) || []);
+    setLoading(false);
+  };
   const [expandedCreature, setExpandedCreature] = useState<string | null>(null);
 
   useEffect(() => {
