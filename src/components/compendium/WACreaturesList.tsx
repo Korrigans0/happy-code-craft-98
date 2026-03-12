@@ -45,19 +45,27 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
     if (!error) setCreatures((data as WACreature[]) || []);
     setLoading(false);
   };
-  const [expandedCreature, setExpandedCreature] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data, error } = await supabase
-        .from("wa_creatures")
-        .select("*")
-        .order("name");
-      if (!error) setCreatures((data as WACreature[]) || []);
-      setLoading(false);
-    };
-    fetch();
+    fetchCreatures();
   }, []);
+
+  const syncFromWA = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-wa-bestiary');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Sync terminée : ${data.inserted} ajoutées, ${data.updated} mises à jour`);
+        fetchCreatures();
+      } else {
+        toast.error(data?.error || "Erreur de synchronisation");
+      }
+    } catch (err: any) {
+      toast.error("Erreur: " + (err.message || "Impossible de synchroniser"));
+    }
+    setSyncing(false);
+  };
 
   const filtered = creatures.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
