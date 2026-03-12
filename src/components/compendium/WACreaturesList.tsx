@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Skull, Swords } from "lucide-react";
+import { Loader2, Skull, Swords, RefreshCw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface WACreature {
   id: string;
@@ -26,23 +29,43 @@ interface WACreaturesListProps {
 }
 
 const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
+  const { user } = useAuth();
   const [creatures, setCreatures] = useState<WACreature[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [powerFilter, setPowerFilter] = useState<string>("all");
   const [sizeFilter, setSizeFilter] = useState<string>("all");
   const [expandedCreature, setExpandedCreature] = useState<string | null>(null);
 
+  const fetchCreatures = async () => {
+    const { data, error } = await supabase
+      .from("wa_creatures")
+      .select("*")
+      .order("name");
+    if (!error) setCreatures((data as WACreature[]) || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      const { data, error } = await supabase
-        .from("wa_creatures")
-        .select("*")
-        .order("name");
-      if (!error) setCreatures((data as WACreature[]) || []);
-      setLoading(false);
-    };
-    fetch();
+    fetchCreatures();
   }, []);
+
+  const syncFromWA = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-wa-bestiary');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Sync terminée : ${data.inserted} ajoutées, ${data.updated} mises à jour`);
+        fetchCreatures();
+      } else {
+        toast.error(data?.error || "Erreur de synchronisation");
+      }
+    } catch (err: any) {
+      toast.error("Erreur: " + (err.message || "Impossible de synchroniser"));
+    }
+    setSyncing(false);
+  };
 
   const filtered = creatures.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -77,7 +100,13 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        {user && (
+          <Button variant="outline" size="sm" onClick={syncFromWA} disabled={syncing} className="gap-1.5">
+            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Synchronisation..." : "Sync WA"}
+          </Button>
+        )}
         <Select value={powerFilter} onValueChange={setPowerFilter}>
           <SelectTrigger className="w-[180px] bg-muted/50 border-border/50">
             <SelectValue placeholder="Puissance" />
