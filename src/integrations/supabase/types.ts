@@ -525,6 +525,7 @@ export type Database = {
         Row: {
           attunement: boolean
           created_at: string
+          created_by: string | null
           description: string
           id: string
           name: string
@@ -535,6 +536,7 @@ export type Database = {
         Insert: {
           attunement?: boolean
           created_at?: string
+          created_by?: string | null
           description: string
           id?: string
           name: string
@@ -545,6 +547,7 @@ export type Database = {
         Update: {
           attunement?: boolean
           created_at?: string
+          created_by?: string | null
           description?: string
           id?: string
           name?: string
@@ -560,6 +563,7 @@ export type Database = {
           armor_class: number
           challenge_rating: string
           created_at: string
+          created_by: string | null
           description: string
           hit_points: string
           id: string
@@ -573,6 +577,7 @@ export type Database = {
           armor_class: number
           challenge_rating: string
           created_at?: string
+          created_by?: string | null
           description: string
           hit_points: string
           id?: string
@@ -586,6 +591,7 @@ export type Database = {
           armor_class?: number
           challenge_rating?: string
           created_at?: string
+          created_by?: string | null
           description?: string
           hit_points?: string
           id?: string
@@ -629,6 +635,7 @@ export type Database = {
           classes: string[]
           components: string
           created_at: string
+          created_by: string | null
           description: string
           duration: string
           id: string
@@ -642,6 +649,7 @@ export type Database = {
           classes?: string[]
           components: string
           created_at?: string
+          created_by?: string | null
           description: string
           duration: string
           id?: string
@@ -655,6 +663,7 @@ export type Database = {
           classes?: string[]
           components?: string
           created_at?: string
+          created_by?: string | null
           description?: string
           duration?: string
           id?: string
@@ -671,6 +680,7 @@ export type Database = {
           charisma: number
           constitution: number
           created_at: string
+          created_by: string | null
           description: string
           dexterity: number
           id: string
@@ -689,6 +699,7 @@ export type Database = {
           charisma?: number
           constitution?: number
           created_at?: string
+          created_by?: string | null
           description?: string
           dexterity?: number
           id?: string
@@ -707,6 +718,7 @@ export type Database = {
           charisma?: number
           constitution?: number
           created_at?: string
+          created_by?: string | null
           description?: string
           dexterity?: number
           id?: string
