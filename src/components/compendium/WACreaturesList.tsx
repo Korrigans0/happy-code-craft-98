@@ -100,7 +100,13 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap gap-4">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        {user && (
+          <Button variant="outline" size="sm" onClick={syncFromWA} disabled={syncing} className="gap-1.5">
+            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Synchronisation..." : "Sync WA"}
+          </Button>
+        )}
         <Select value={powerFilter} onValueChange={setPowerFilter}>
           <SelectTrigger className="w-[180px] bg-muted/50 border-border/50">
             <SelectValue placeholder="Puissance" />
