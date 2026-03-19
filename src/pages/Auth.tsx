@@ -107,7 +107,36 @@ const Auth = () => {
     }
   };
 
-  const handleGuestLogin = async () => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer votre adresse email.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    setIsSubmitting(false);
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email de réinitialisation.",
+        variant: "destructive"
+      });
+    } else {
+      setResetEmailSent(true);
+      toast({
+        title: "Email envoyé !",
+        description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe."
+      });
+    }
+  };
+
     setIsGuestLoading(true);
     const guestEmail = 'guest@taverne.com';
     const guestPassword = 'guest123456!';
