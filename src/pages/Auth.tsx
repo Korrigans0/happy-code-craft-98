@@ -109,42 +109,37 @@ const Auth = () => {
     const guestEmail = 'guest@taverne.com';
     const guestPassword = 'guest123456!';
 
-    // Try to sign in first
-    let { error } = await signIn(guestEmail, guestPassword);
-    
-    // If account doesn't exist or credentials fail, create it then sign in
-    if (error) {
-      const { error: signUpError } = await signUp(guestEmail, guestPassword, 'Invité');
-      if (!signUpError) {
-        // Wait briefly for account creation, then try sign in
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const result = await signIn(guestEmail, guestPassword);
-        error = result.error;
-      } else {
-        // If signup also fails (e.g. email confirmation required), show clear message
-        if (signUpError.message.includes('Failed to fetch') || signUpError.message.includes('NetworkError')) {
-          error = new Error("Erreur réseau. Vérifiez votre connexion.");
-        } else {
-          error = signUpError;
+    try {
+      // Ensure guest account exists and is confirmed via edge function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('guest-login');
+      
+      if (fnError) {
+        console.error('Guest setup error:', fnError);
+      }
+
+      // Now sign in
+      const { error } = await signIn(guestEmail, guestPassword);
+
+      if (error) {
+        let message = "Impossible de se connecter en tant qu'invité.";
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          message = "Erreur réseau. Vérifiez votre connexion et réessayez.";
         }
+        toast({
+          title: "Connexion invité indisponible",
+          description: message,
+          variant: "destructive"
+        });
       }
-    }
-
-    setIsGuestLoading(false);
-
-    if (error) {
-      let message = "Impossible de se connecter en tant qu'invité.";
-      if (error.message.includes('Email not confirmed')) {
-        message = "Le compte invité n'est pas encore activé. Veuillez créer un compte classique.";
-      } else if (error.message.includes('réseau') || error.message.includes('Failed to fetch')) {
-        message = "Erreur réseau. Vérifiez votre connexion et réessayez.";
-      }
+    } catch (err) {
       toast({
         title: "Connexion invité indisponible",
-        description: message,
+        description: "Une erreur est survenue. Réessayez plus tard.",
         variant: "destructive"
       });
     }
+
+    setIsGuestLoading(false);
   };
 
   if (loading) {
