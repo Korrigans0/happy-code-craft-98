@@ -137,6 +137,7 @@ const Auth = () => {
     }
   };
 
+  const handleGuestLogin = async () => {
     setIsGuestLoading(true);
     const guestEmail = 'guest@taverne.com';
     const guestPassword = 'guest123456!';
