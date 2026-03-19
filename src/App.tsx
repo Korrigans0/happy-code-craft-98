@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
