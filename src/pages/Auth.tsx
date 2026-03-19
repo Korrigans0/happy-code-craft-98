@@ -29,7 +29,6 @@ const Auth = () => {
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
