@@ -217,49 +217,114 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-foreground">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="aventurier@exemple.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-foreground">Mot de passe</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="bg-secondary border-border focus:border-primary"
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connexion...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Se connecter
-                    </>
-                  )}
-                </Button>
-              </form>
+              {forgotPassword ? (
+                resetEmailSent ? (
+                  <div className="text-center space-y-4">
+                    <p className="text-foreground">📧 Un email de réinitialisation a été envoyé à <strong>{email}</strong>.</p>
+                    <p className="text-sm text-muted-foreground">Vérifiez votre boîte mail (et vos spams).</p>
+                    <Button
+                      variant="link"
+                      className="text-primary"
+                      onClick={() => { setForgotPassword(false); setResetEmailSent(false); }}
+                    >
+                      Retour à la connexion
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Entrez votre email pour recevoir un lien de réinitialisation.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="text-foreground">Email</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="aventurier@exemple.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-secondary border-border focus:border-primary"
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Envoi...
+                        </>
+                      ) : (
+                        "Envoyer le lien"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full text-muted-foreground"
+                      onClick={() => setForgotPassword(false)}
+                    >
+                      Retour à la connexion
+                    </Button>
+                  </form>
+                )
+              ) : (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email" className="text-foreground">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="aventurier@exemple.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="bg-secondary border-border focus:border-primary"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="signin-password" className="text-foreground">Mot de passe</Label>
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => setForgotPassword(true)}
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="bg-secondary border-border focus:border-primary"
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-gold hover:opacity-90 text-primary-foreground font-semibold"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connexion...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Se connecter
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
             
             <TabsContent value="signup" className="mt-6">
