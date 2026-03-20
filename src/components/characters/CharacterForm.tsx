@@ -465,7 +465,13 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
                 <Label>{systemConfig.classLabel}</Label>
                 <Select
                   value={formData.class || systemConfig.classes[0]}
-                  onValueChange={(v) => updateField("class", v)}
+                  onValueChange={(v) => {
+                    updateField("class", v);
+                    // Reset tenue when class changes in WA
+                    if (currentGameSystem === "Worlds Awakening") {
+                      updateField("subclass", "");
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
