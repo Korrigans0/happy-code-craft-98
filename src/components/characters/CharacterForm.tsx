@@ -482,14 +482,32 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
               <div className="space-y-2">
                 <Label htmlFor="subclass">
-                  {currentGameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                  {systemConfig.subclassLabel}
                 </Label>
-                <Input
-                  id="subclass"
-                  value={formData.subclass || ""}
-                  onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder={currentGameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
-                />
+                {currentGameSystem === "Worlds Awakening" ? (
+                  <Select
+                    value={formData.subclass || ""}
+                    onValueChange={(v) => updateField("subclass", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir une tenue..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(WA_TENUES[formData.class || ""] || []).map((tenue) => (
+                        <SelectItem key={tenue} value={tenue}>
+                          {tenue}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="subclass"
+                    value={formData.subclass || ""}
+                    onChange={(e) => updateField("subclass", e.target.value)}
+                    placeholder="Ex: Champion, École d'Évocation..."
+                  />
+                )}
               </div>
 
               {systemConfig.backgrounds.length > 0 && (
