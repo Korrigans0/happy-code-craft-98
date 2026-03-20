@@ -466,7 +466,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
                   id="subclass"
                   value={formData.subclass || ""}
                   onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder={gameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
+                  placeholder={currentGameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
                 />
               </div>
 
