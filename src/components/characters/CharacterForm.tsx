@@ -460,7 +460,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
               <div className="space-y-2">
                 <Label htmlFor="subclass">
-                  {gameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                  {currentGameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
                 </Label>
                 <Input
                   id="subclass"
