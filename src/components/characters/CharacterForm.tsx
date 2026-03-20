@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
-import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS } from "@/lib/game-systems";
+import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS, WA_TENUES } from "@/lib/game-systems";
 
 type Spell = Tables<"spells">;
 
@@ -465,7 +465,13 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
                 <Label>{systemConfig.classLabel}</Label>
                 <Select
                   value={formData.class || systemConfig.classes[0]}
-                  onValueChange={(v) => updateField("class", v)}
+                  onValueChange={(v) => {
+                    updateField("class", v);
+                    // Reset tenue when class changes in WA
+                    if (currentGameSystem === "Worlds Awakening") {
+                      updateField("subclass", "");
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -482,14 +488,32 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
               <div className="space-y-2">
                 <Label htmlFor="subclass">
-                  {currentGameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                  {systemConfig.subclassLabel}
                 </Label>
-                <Input
-                  id="subclass"
-                  value={formData.subclass || ""}
-                  onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder={currentGameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
-                />
+                {currentGameSystem === "Worlds Awakening" ? (
+                  <Select
+                    value={formData.subclass || ""}
+                    onValueChange={(v) => updateField("subclass", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir une tenue..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(WA_TENUES[formData.class || ""] || []).map((tenue) => (
+                        <SelectItem key={tenue} value={tenue}>
+                          {tenue}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="subclass"
+                    value={formData.subclass || ""}
+                    onChange={(e) => updateField("subclass", e.target.value)}
+                    placeholder="Ex: Champion, École d'Évocation..."
+                  />
+                )}
               </div>
 
               {systemConfig.backgrounds.length > 0 && (
