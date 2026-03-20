@@ -54,8 +54,9 @@ const SPELLCASTING_ABILITIES: Record<string, string> = {
   "Magicien": "Intelligence"
 };
 
-const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: CharacterFormProps) => {
-  const systemConfig = getSystemConfig(gameSystem);
+const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSystem = "D&D 5e" }: CharacterFormProps) => {
+  const [currentGameSystem, setCurrentGameSystem] = useState(initialGameSystem);
+  const systemConfig = getSystemConfig(currentGameSystem);
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
     race: systemConfig.races[0],
@@ -87,6 +88,21 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
     languages: ["Commun"],
     ...character,
   });
+
+  // When game system changes, reset race/class to match new system
+  const handleGameSystemChange = (newSystem: string) => {
+    const newConfig = getSystemConfig(newSystem);
+    setCurrentGameSystem(newSystem);
+    setFormData(prev => ({
+      ...prev,
+      race: newConfig.races[0],
+      class: newConfig.classes[0],
+      subclass: "",
+      background: "",
+      alignment: newConfig.hasAlignments ? "Neutre" : "",
+      campaign: newSystem,
+    }));
+  };
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(formData.skills || []);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(formData.languages || ["Commun"]);
