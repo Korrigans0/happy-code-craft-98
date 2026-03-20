@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,37 +7,69 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
     const guestEmail = "guest@taverne.com";
     const guestPassword = "guest123456!";
 
     // List users to find guest
-    const { data: usersData } = await adminClient.auth.admin.listUsers();
-    const existingGuest = usersData?.users?.find((u: any) => u.email === guestEmail);
+    const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=50`, {
+      headers: {
+        "Authorization": `Bearer ${serviceRoleKey}`,
+        "apikey": serviceRoleKey,
+      },
+    });
+    const listData = await listRes.json();
+    const users = listData.users || listData || [];
+    const existingGuest = Array.isArray(users)
+      ? users.find((u: any) => u.email === guestEmail)
+      : null;
 
     if (existingGuest) {
-      await adminClient.auth.admin.updateUser(existingGuest.id, {
-        password: guestPassword,
-        email_confirm: true,
-        user_metadata: { display_name: "Invité" }
+      // Update existing guest user
+      const updateRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${existingGuest.id}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${serviceRoleKey}`,
+          "apikey": serviceRoleKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: guestPassword,
+          email_confirm: true,
+          user_metadata: { display_name: "Invité" },
+        }),
       });
+      if (!updateRes.ok) {
+        const err = await updateRes.text();
+        throw new Error(`Failed to update guest: ${err}`);
+      }
+      await updateRes.text();
     } else {
-      await adminClient.auth.admin.createUser({
-        email: guestEmail,
-        password: guestPassword,
-        email_confirm: true,
-        user_metadata: { display_name: "Invité" }
+      // Create guest user
+      const createRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${serviceRoleKey}`,
+          "apikey": serviceRoleKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: guestEmail,
+          password: guestPassword,
+          email_confirm: true,
+          user_metadata: { display_name: "Invité" },
+        }),
       });
+      if (!createRes.ok) {
+        const err = await createRes.text();
+        throw new Error(`Failed to create guest: ${err}`);
+      }
+      await createRes.text();
     }
 
     return new Response(
