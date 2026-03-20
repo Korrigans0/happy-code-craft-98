@@ -54,8 +54,9 @@ const SPELLCASTING_ABILITIES: Record<string, string> = {
   "Magicien": "Intelligence"
 };
 
-const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: CharacterFormProps) => {
-  const systemConfig = getSystemConfig(gameSystem);
+const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSystem = "D&D 5e" }: CharacterFormProps) => {
+  const [currentGameSystem, setCurrentGameSystem] = useState(initialGameSystem);
+  const systemConfig = getSystemConfig(currentGameSystem);
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
     race: systemConfig.races[0],
@@ -87,6 +88,21 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
     languages: ["Commun"],
     ...character,
   });
+
+  // When game system changes, reset race/class to match new system
+  const handleGameSystemChange = (newSystem: string) => {
+    const newConfig = getSystemConfig(newSystem);
+    setCurrentGameSystem(newSystem);
+    setFormData(prev => ({
+      ...prev,
+      race: newConfig.races[0],
+      class: newConfig.classes[0],
+      subclass: "",
+      background: "",
+      alignment: newConfig.hasAlignments ? "Neutre" : "",
+      campaign: newSystem,
+    }));
+  };
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(formData.skills || []);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(formData.languages || ["Commun"]);
@@ -324,6 +340,28 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
 
           {/* Basic Info */}
           <TabsContent value="basic" className="space-y-6">
+            {/* Game System Selector */}
+            {!character && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                <Label className="text-base font-semibold">Système de jeu</Label>
+                <p className="text-xs text-muted-foreground">
+                  Choisissez le système de jeu pour adapter les options de création.
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {GAME_SYSTEMS.map((sys) => (
+                    <Button
+                      key={sys.value}
+                      type="button"
+                      variant={currentGameSystem === sys.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleGameSystemChange(sys.value)}
+                    >
+                      {sys.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Avatar Upload */}
             <div className="flex items-center gap-6">
               <div className="relative">
@@ -444,19 +482,19 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem = "D&D 5e" }: C
 
               <div className="space-y-2">
                 <Label htmlFor="subclass">
-                  {gameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
+                  {currentGameSystem === "Worlds Awakening" ? "Tenue" : "Sous-classe"}
                 </Label>
                 <Input
                   id="subclass"
                   value={formData.subclass || ""}
                   onChange={(e) => updateField("subclass", e.target.value)}
-                  placeholder={gameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
+                  placeholder={currentGameSystem === "Worlds Awakening" ? "Ex: Lame d'Ombre..." : "Ex: Champion, École d'Évocation..."}
                 />
               </div>
 
               {systemConfig.backgrounds.length > 0 && (
                 <div className="space-y-2">
-                  <Label>{gameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
+                  <Label>{currentGameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
                   <Select
                     value={formData.background || ""}
                     onValueChange={(v) => updateField("background", v)}
