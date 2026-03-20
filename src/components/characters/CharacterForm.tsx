@@ -472,7 +472,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
               {systemConfig.backgrounds.length > 0 && (
                 <div className="space-y-2">
-                  <Label>{gameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
+                  <Label>{currentGameSystem === "Call of Cthulhu" ? "Époque" : "Historique"}</Label>
                   <Select
                     value={formData.background || ""}
                     onValueChange={(v) => updateField("background", v)}
