@@ -340,6 +340,28 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
           {/* Basic Info */}
           <TabsContent value="basic" className="space-y-6">
+            {/* Game System Selector */}
+            {!character && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                <Label className="text-base font-semibold">Système de jeu</Label>
+                <p className="text-xs text-muted-foreground">
+                  Choisissez le système de jeu pour adapter les options de création.
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {GAME_SYSTEMS.map((sys) => (
+                    <Button
+                      key={sys.value}
+                      type="button"
+                      variant={currentGameSystem === sys.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleGameSystemChange(sys.value)}
+                    >
+                      {sys.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Avatar Upload */}
             <div className="flex items-center gap-6">
               <div className="relative">
