@@ -24,16 +24,25 @@ export const DND_BACKGROUNDS = [
   "Héros du Peuple", "Ermite", "Noble", "Érudit", "Marin", "Soldat", "Vagabond"
 ];
 
-// Worlds Awakening data
+// Worlds Awakening data (from official Codex)
 export const WA_ASCENDANCES = [
-  "Humain", "Elfe", "Nain", "Orc", "Fée", "Démon", "Ange",
-  "Draconien", "Bestial", "Élémentaire", "Mort-vivant"
+  "Humain", "Elfe", "Nain", "Demi-Orc", "Halfelin"
 ];
 
 export const WA_CLASSES = [
-  "Combattant", "Protecteur", "Éclaireur", "Mystique",
-  "Guérisseur", "Stratège", "Artisan", "Vagabond"
+  "Combattant", "Croyant", "Mystique", "Ombre"
 ];
+
+// Tenues mapped by class (from official Codex)
+export const WA_TENUES: Record<string, string[]> = {
+  "Combattant": ["Berserk", "Épéiste", "Protecteur"],
+  "Mystique": ["Arcane", "Élémentaliste", "Enchanteur"],
+  "Ombre": ["Assassin", "Embusqué", "Manipulateur"],
+  "Croyant": ["Exorciste", "Guérisseur", "Prophète"],
+};
+
+// All tenues flat list
+export const WA_ALL_TENUES = Object.values(WA_TENUES).flat();
 
 // Call of Cthulhu data
 export const COC_OCCUPATIONS = [
@@ -70,23 +79,27 @@ export function getSystemConfig(system: string) {
       return {
         raceLabel: "Ascendance",
         classLabel: "Classe",
+        subclassLabel: "Tenue",
         races: WA_ASCENDANCES,
         classes: WA_CLASSES,
         backgrounds: [] as string[],
         hasAlignments: false,
         hasSpellcasting: false,
-        statMode: "modifier" as const, // WA uses modifiers directly
+        hasTenues: true,
+        statMode: "modifier" as const,
         speedUnit: "m",
       };
     case "Call of Cthulhu":
       return {
         raceLabel: "Nationalité",
         classLabel: "Occupation",
+        subclassLabel: "Spécialisation",
         races: ["Américain", "Britannique", "Français", "Allemand", "Japonais", "Autre"],
         classes: COC_OCCUPATIONS,
         backgrounds: COC_ERAS,
         hasAlignments: false,
         hasSpellcasting: false,
+        hasTenues: false,
         statMode: "percentile" as const,
         speedUnit: "m",
       };
@@ -94,11 +107,13 @@ export function getSystemConfig(system: string) {
       return {
         raceLabel: "Race",
         classLabel: "Classe",
+        subclassLabel: "Sous-classe",
         races: DND_RACES,
         classes: DND_CLASSES,
         backgrounds: DND_BACKGROUNDS,
         hasAlignments: true,
         hasSpellcasting: true,
+        hasTenues: false,
         statMode: "score" as const,
         speedUnit: "ft",
       };
