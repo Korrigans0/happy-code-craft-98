@@ -791,73 +791,221 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem: initialGameSys
 
           {/* Equipment */}
           <TabsContent value="equipment" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Sword className="h-4 w-4 text-red-400" />
-                  Arme Équipée
-                </Label>
-                <Select
-                  value={formData.equipped_weapon_id || "none"}
-                  onValueChange={(v) => updateField("equipped_weapon_id", v === "none" ? null : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir une arme..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucune</SelectItem>
-                    {weapons?.map((w) => (
-                      <SelectItem key={w.id} value={w.id}>
-                        <div className="flex items-center gap-2">
-                          {w.name}
-                          <Badge variant="outline" className="text-xs">
-                            {w.rarity}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {currentGameSystem === "Worlds Awakening" ? (
+              // WA: manual equipment with reference tables
+              <div className="space-y-6">
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Notez vos armes, armures et équipements manuellement avec leurs bonus. Référez-vous aux tableaux ci-dessous.
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-400" />
-                  Armure Équipée
-                </Label>
-                <Select
-                  value={formData.equipped_armor_id || "none"}
-                  onValueChange={(v) => updateField("equipped_armor_id", v === "none" ? null : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir une armure..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Aucune</SelectItem>
-                    {armors?.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        <div className="flex items-center gap-2">
-                          {a.name}
-                          <Badge variant="outline" className="text-xs">
-                            {a.rarity}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Sword className="h-4 w-4 text-red-400" />
+                      Arme (Main Principale)
+                    </Label>
+                    <Input
+                      value={formData.hit_dice || ""}
+                      onChange={(e) => updateField("hit_dice", e.target.value)}
+                      placeholder="Ex: Epée Longue (1d8, FOR+0)"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-blue-400" />
+                      Équipement (Main Secondaire)
+                    </Label>
+                    <Input
+                      value={formData.spellcasting_ability || ""}
+                      onChange={(e) => updateField("spellcasting_ability", e.target.value)}
+                      placeholder="Ex: Bouclier (+1 Def PHY)"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label>Inventaire</Label>
-              <Textarea
-                value={formData.inventory || ""}
-                onChange={(e) => updateField("inventory", e.target.value)}
-                placeholder="Listez vos objets, équipements, consommables..."
-                rows={6}
-              />
-            </div>
+                {/* Reference: Armes de Contact */}
+                <details className="rounded-lg border border-border">
+                  <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
+                    📋 Référence : Armes de Contact
+                  </summary>
+                  <div className="overflow-x-auto p-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-border text-muted-foreground">
+                        <th className="p-1 text-left">Nom</th><th className="p-1">Utilisation</th><th className="p-1">Dégât</th><th className="p-1">Test</th><th className="p-1">Prix</th>
+                      </tr></thead>
+                      <tbody>
+                        {WA_WEAPONS_CONTACT.map((w) => (
+                          <tr key={w.name} className="border-b border-border/50">
+                            <td className="p-1 font-medium text-foreground">{w.name}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.use}</td>
+                            <td className="p-1 text-center text-primary">{w.damage}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.test}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                {/* Reference: Armes à Distance */}
+                <details className="rounded-lg border border-border">
+                  <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
+                    📋 Référence : Armes à Distance
+                  </summary>
+                  <div className="overflow-x-auto p-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-border text-muted-foreground">
+                        <th className="p-1 text-left">Nom</th><th className="p-1">Portée</th><th className="p-1">Dégât</th><th className="p-1">Test</th><th className="p-1">Prix</th>
+                      </tr></thead>
+                      <tbody>
+                        {WA_WEAPONS_RANGED.map((w) => (
+                          <tr key={w.name} className="border-b border-border/50">
+                            <td className="p-1 font-medium text-foreground">{w.name}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.range}</td>
+                            <td className="p-1 text-center text-primary">{w.damage}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.test}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                {/* Reference: Armes Magiques */}
+                <details className="rounded-lg border border-border">
+                  <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
+                    📋 Référence : Armes Magiques
+                  </summary>
+                  <div className="overflow-x-auto p-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-border text-muted-foreground">
+                        <th className="p-1 text-left">Nom</th><th className="p-1">Type</th><th className="p-1">Portée</th><th className="p-1">Dégât</th><th className="p-1">Prix</th>
+                      </tr></thead>
+                      <tbody>
+                        {WA_WEAPONS_MAGIC.map((w) => (
+                          <tr key={w.name} className="border-b border-border/50">
+                            <td className="p-1 font-medium text-foreground">{w.name}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.type}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.range}</td>
+                            <td className="p-1 text-center text-primary">{w.damage}</td>
+                            <td className="p-1 text-center text-muted-foreground">{w.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                {/* Reference: Équipements */}
+                <details className="rounded-lg border border-border">
+                  <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
+                    📋 Référence : Équipements
+                  </summary>
+                  <div className="overflow-x-auto p-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="border-b border-border text-muted-foreground">
+                        <th className="p-1 text-left">Nom</th><th className="p-1">Bonus</th><th className="p-1">Utilisation</th><th className="p-1">Prix</th>
+                      </tr></thead>
+                      <tbody>
+                        {WA_EQUIPMENTS.map((e) => (
+                          <tr key={e.name} className="border-b border-border/50">
+                            <td className="p-1 font-medium text-foreground">{e.name}</td>
+                            <td className="p-1 text-center text-primary">{e.bonus}</td>
+                            <td className="p-1 text-center text-muted-foreground">{e.use}</td>
+                            <td className="p-1 text-center text-muted-foreground">{e.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
+                <div className="space-y-2">
+                  <Label>Inventaire & Notes d'équipement</Label>
+                  <Textarea
+                    value={formData.inventory || ""}
+                    onChange={(e) => updateField("inventory", e.target.value)}
+                    placeholder="Listez vos objets, équipements, bonus d'amélioration..."
+                    rows={6}
+                  />
+                </div>
+              </div>
+            ) : (
+              // D&D / CoC: dropdown-based equipment
+              <>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Sword className="h-4 w-4 text-red-400" />
+                      Arme Équipée
+                    </Label>
+                    <Select
+                      value={formData.equipped_weapon_id || "none"}
+                      onValueChange={(v) => updateField("equipped_weapon_id", v === "none" ? null : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir une arme..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucune</SelectItem>
+                        {weapons?.map((w) => (
+                          <SelectItem key={w.id} value={w.id}>
+                            <div className="flex items-center gap-2">
+                              {w.name}
+                              <Badge variant="outline" className="text-xs">
+                                {w.rarity}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-blue-400" />
+                      Armure Équipée
+                    </Label>
+                    <Select
+                      value={formData.equipped_armor_id || "none"}
+                      onValueChange={(v) => updateField("equipped_armor_id", v === "none" ? null : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir une armure..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucune</SelectItem>
+                        {armors?.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            <div className="flex items-center gap-2">
+                              {a.name}
+                              <Badge variant="outline" className="text-xs">
+                                {a.rarity}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Inventaire</Label>
+                  <Textarea
+                    value={formData.inventory || ""}
+                    onChange={(e) => updateField("inventory", e.target.value)}
+                    placeholder="Listez vos objets, équipements, consommables..."
+                    rows={6}
+                  />
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* Spells - Only for spellcasting classes */}
