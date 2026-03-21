@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Wand2, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
-import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS, WA_TENUES } from "@/lib/game-systems";
+import { getSystemConfig, ALIGNMENTS, SKILLS, LANGUAGES, GAME_SYSTEMS, WA_TENUES, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
 
 type Spell = Tables<"spells">;
 
