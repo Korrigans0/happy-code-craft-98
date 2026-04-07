@@ -1,4 +1,4 @@
-import { Wand2, Menu, X, Sword, User, BookOpen, Dices, Home, LogIn, LogOut, UserCircle } from "lucide-react";
+import { Wand2, Menu, X, Sword, User, BookOpen, Dices, Home, LogIn, LogOut, UserCircle, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -18,7 +18,7 @@ const navLinks = [
   { to: "/", label: "Accueil", icon: Home },
   { to: "/campaigns", label: "Campagnes", icon: Sword },
   { to: "/characters", label: "Personnages", icon: User },
-  { to: "/compendium", label: "Compendium", icon: BookOpen },
+  { to: "/compendium", label: "Codex", icon: BookOpen },
   { to: "/dice", label: "Dés", icon: Dices },
 ];
 
@@ -28,7 +28,6 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
 
-  // Fetch profile for avatar
   const { data: profile } = useQuery({
     queryKey: ['headerProfile', user?.id],
     queryFn: async () => {
@@ -53,30 +52,30 @@ const Header = () => {
     : user?.email?.slice(0, 2).toUpperCase() || 'U';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-gold shadow-gold">
-            <Wand2 className="h-5 w-5 text-primary-foreground" />
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-gold shadow-gold transition-transform group-hover:scale-105">
+            <Globe className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-display text-xl font-semibold text-primary">
-              DragonTable
+            <h1 className="font-display text-xl font-semibold text-gradient-gold">
+              Aetheria VTT
             </h1>
-            <p className="text-xs text-muted-foreground">Table Virtuelle JdR</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Table Virtuelle Immersive</p>
           </div>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-0.5 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 location.pathname === link.to
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-primary/15 text-primary shadow-[inset_0_-2px_0_hsl(var(--primary))]"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }`}
             >
               <link.icon className="h-4 w-4" />
@@ -90,9 +89,9 @@ const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-                  <Avatar className="h-10 w-10 border border-primary/30">
+                  <Avatar className="h-10 w-10 border-2 border-primary/30 transition-colors hover:border-primary/60">
                     <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/20 text-primary">
+                    <AvatarFallback className="bg-primary/20 text-primary font-display">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
@@ -146,7 +145,6 @@ const Header = () => {
             </Button>
           )}
 
-          {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -160,7 +158,7 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <nav className="border-t border-border/50 bg-background/95 p-4 backdrop-blur-md md:hidden">
+        <nav className="border-t border-border/30 bg-background/95 p-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => (
               <Link

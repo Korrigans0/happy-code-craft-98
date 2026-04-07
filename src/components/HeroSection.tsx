@@ -1,55 +1,69 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Sparkles, User, Sword } from 'lucide-react';
+import { Sparkles, User, Sword, Globe, BookOpen } from 'lucide-react';
 
 const HeroSection = () => {
   const { user, loading } = useAuth();
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-24">
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-primary blur-3xl" />
-        <div className="absolute right-1/4 bottom-1/4 h-48 w-48 rounded-full bg-feature-compendium blur-3xl" />
+    <section className="relative overflow-hidden py-20 md:py-32">
+      {/* Atmospheric background */}
+      <div className="absolute inset-0">
+        <div className="absolute left-1/4 top-1/6 h-96 w-96 rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute right-1/4 bottom-1/4 h-72 w-72 rounded-full bg-feature-compendium/5 blur-[100px]" />
+        <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/3 blur-[80px]" />
       </div>
 
       <div className="container relative mx-auto px-4 text-center md:px-6">
-        <h2 className="font-display text-3xl font-bold text-gradient-gold md:text-4xl lg:text-5xl">
-          Bienvenue sur DragonTable
+        {/* Emblem */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 animate-pulse-slow rounded-full bg-primary/20 blur-2xl" />
+            <Globe className="relative h-16 w-16 text-primary glow-gold animate-float" />
+          </div>
+        </div>
+
+        <h2 className="font-display text-4xl font-bold text-gradient-gold md:text-5xl lg:text-6xl tracking-wide">
+          Aetheria VTT
         </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg">
-          La table virtuelle ultime pour tous vos jeux de rôle. 
-          D&D 5e, Call of Cthulhu, Worlds Awakening et bien d'autres — gérez vos campagnes, lancez des dés et vivez des aventures épiques.
+        <p className="mx-auto mt-3 max-w-lg text-sm uppercase tracking-[0.3em] text-primary/60 font-display">
+          Table Virtuelle Immersive
+        </p>
+        <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg leading-relaxed">
+          Explorez l'univers d'Aetheria. Invoquez des créatures du bestiaire directement sur la carte, 
+          gérez vos campagnes et vivez des aventures épiques dans un VTT dédié.
         </p>
 
         {!loading && (
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             {user ? (
               <>
-                <Button variant="gold" size="lg" asChild>
-                  <Link to="/characters">
-                    <User className="mr-2 h-5 w-5" />
-                    Mes Personnages
+                <Button variant="gold" size="lg" asChild className="shadow-gold">
+                  <Link to="/campaigns">
+                    <Sword className="mr-2 h-5 w-5" />
+                    Lancer une session
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
-                  <Link to="/campaigns">
-                    <Sword className="mr-2 h-5 w-5" />
-                    Mes Campagnes
+                  <Link to="/compendium">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Explorer le Codex
                   </Link>
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="gold" size="lg" asChild>
+                <Button variant="gold" size="lg" asChild className="shadow-gold">
                   <Link to="/auth">
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Commencer l'aventure
+                    Entrer dans Aetheria
                   </Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
                   <Link to="/compendium">
-                    Explorer le Compendium
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Explorer le Codex
                   </Link>
                 </Button>
               </>
