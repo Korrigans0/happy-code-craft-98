@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, GripVertical, Plus
+  X, Plus, Search, Skull, Swords
 } from "lucide-react";
 import {
   Popover,
@@ -24,6 +25,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
 
@@ -46,6 +50,12 @@ interface TokenItem {
   label: string;
   layer: string;
   visible: boolean;
+  // Compendium link
+  creatureId?: string;
+  creatureType?: "wa_creature" | "monster";
+  hp?: number;
+  maxHp?: number;
+  ac?: number;
 }
 
 interface MapLayer {
@@ -101,6 +111,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
+  const [bestiarySearch, setBestiarySearch] = useState("");
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
@@ -109,16 +121,88 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 70 },
   ]);
 
+  // Fetch WA creatures for bestiary panel
+  const { data: waCreatures = [] } = useQuery({
+    queryKey: ['vtt-wa-creatures', bestiarySearch],
+    queryFn: async () => {
+      let query = supabase.from('wa_creatures').select('id, name, power_level, size, profile, strength, dexterity, constitution, intelligence, wisdom, charisma, ra');
+      if (bestiarySearch.trim()) {
+        query = query.ilike('name', `%${bestiarySearch.trim()}%`);
+      }
+      const { data } = await query.limit(50);
+      return data || [];
+    },
+  });
+
+  // Fetch D&D monsters
+  const { data: dndMonsters = [] } = useQuery({
+    queryKey: ['vtt-monsters', bestiarySearch],
+    queryFn: async () => {
+      let query = supabase.from('monsters').select('id, name, challenge_rating, hit_points, armor_class, type, size');
+      if (bestiarySearch.trim()) {
+        query = query.ilike('name', `%${bestiarySearch.trim()}%`);
+      }
+      const { data } = await query.limit(50);
+      return data || [];
+    },
+  });
+
+  const spawnWACreature = (creature: typeof waCreatures[0]) => {
+    const newToken: TokenItem = {
+      id: crypto.randomUUID(),
+      name: creature.name,
+      x: (-panOffset.x / zoom) + 200,
+      y: (-panOffset.y / zoom) + 200,
+      size: creature.size === "Grand" ? GRID_SIZE * 2 : creature.size === "Très grand" ? GRID_SIZE * 3 : GRID_SIZE,
+      color: "hsl(0, 72%, 51%)",
+      label: creature.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: creature.id,
+      creatureType: "wa_creature",
+      hp: (creature.constitution || 0) * 5 + 10,
+      maxHp: (creature.constitution || 0) * 5 + 10,
+      ac: 10 + (creature.dexterity || 0),
+    };
+    setTokens(prev => [...prev, newToken]);
+  };
+
+  const spawnMonster = (monster: typeof dndMonsters[0]) => {
+    const hpMatch = monster.hit_points.match(/(\d+)/);
+    const hp = hpMatch ? parseInt(hpMatch[1]) : 10;
+    const newToken: TokenItem = {
+      id: crypto.randomUUID(),
+      name: monster.name,
+      x: (-panOffset.x / zoom) + 200,
+      y: (-panOffset.y / zoom) + 200,
+      size: monster.size === "Large" ? GRID_SIZE * 2 : monster.size === "Huge" ? GRID_SIZE * 3 : GRID_SIZE,
+      color: "hsl(270, 70%, 60%)",
+      label: monster.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: monster.id,
+      creatureType: "monster",
+      hp,
+      maxHp: hp,
+      ac: monster.armor_class,
+    };
+    setTokens(prev => [...prev, newToken]);
+  };
+
+  const updateTokenHp = (tokenId: string, delta: number) => {
+    setTokens(prev => prev.map(t => {
+      if (t.id !== tokenId) return t;
+      const newHp = Math.max(0, Math.min(t.maxHp || 999, (t.hp || 0) + delta));
+      return { ...t, hp: newHp };
+    }));
+  };
+
   const toggleLayerVisibility = (layerId: string) => {
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l));
   };
 
   const updateLayerOpacity = (layerId: string, opacity: number) => {
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, opacity } : l));
-  };
-
-  const toggleLayerLock = (layerId: string) => {
-    setLayers(prev => prev.map(l => l.id === layerId ? { ...l, locked: !l.locked } : l));
   };
 
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +240,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const removeToken = (tokenId: string) => {
     setTokens(prev => prev.filter(t => t.id !== tokenId));
+    if (selectedTokenId === tokenId) setSelectedTokenId(null);
   };
 
   const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -201,16 +286,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const startX = Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE;
     const startY = Math.floor(viewTop / GRID_SIZE) * GRID_SIZE;
     for (let x = startX; x <= viewRight; x += GRID_SIZE) {
-      ctx.beginPath();
-      ctx.moveTo(x, viewTop);
-      ctx.lineTo(x, viewBottom);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
     }
     for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
-      ctx.beginPath();
-      ctx.moveTo(viewLeft, y);
-      ctx.lineTo(viewRight, y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
     }
 
     // === DRAWINGS LAYER ===
@@ -273,14 +352,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       for (const token of tokens) {
         if (!token.visible) continue;
         const halfSize = token.size / 2;
+        const isSelected = token.id === selectedTokenId;
+        
+        // Selection ring
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = "hsl(42, 65%, 58%)";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
         // Token circle
         ctx.beginPath();
         ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
         ctx.fillStyle = token.color;
         ctx.fill();
-        ctx.strokeStyle = "hsl(0, 0%, 100%)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = token.creatureId ? "hsl(0, 72%, 51%)" : "hsl(0, 0%, 100%)";
+        ctx.lineWidth = token.creatureId ? 3 : 2;
         ctx.stroke();
+
         // Label
         ctx.fillStyle = "hsl(0, 0%, 100%)";
         ctx.font = `bold ${14}px sans-serif`;
@@ -289,11 +380,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
         ctx.textAlign = "start";
         ctx.textBaseline = "alphabetic";
+
         // Name below
         ctx.fillStyle = "hsl(0, 0%, 90%)";
         ctx.font = `${10}px sans-serif`;
         ctx.textAlign = "center";
         ctx.fillText(token.name, token.x + halfSize, token.y + token.size + 12);
+        
+        // HP bar for linked creatures
+        if (token.hp !== undefined && token.maxHp) {
+          const barWidth = token.size - 4;
+          const barHeight = 4;
+          const barX = token.x + 2;
+          const barY = token.y + token.size + 16;
+          const hpRatio = token.hp / token.maxHp;
+          
+          ctx.fillStyle = "hsl(0, 0%, 20%)";
+          ctx.fillRect(barX, barY, barWidth, barHeight);
+          ctx.fillStyle = hpRatio > 0.5 ? "hsl(142, 70%, 45%)" : hpRatio > 0.25 ? "hsl(42, 65%, 58%)" : "hsl(0, 72%, 51%)";
+          ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+          
+          ctx.fillStyle = "hsl(0, 0%, 80%)";
+          ctx.font = `${8}px sans-serif`;
+          ctx.fillText(`${token.hp}/${token.maxHp}`, token.x + halfSize, barY + barHeight + 10);
+        }
+        
         ctx.textAlign = "start";
       }
       ctx.globalAlpha = 1;
@@ -308,9 +419,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
     ctx.restore();
-  }, [actions, currentAction, panOffset, zoom, tokens, layers]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId]);
 
-  // Resize canvas
   useEffect(() => {
     const resize = () => {
       const canvas = canvasRef.current;
@@ -325,11 +435,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return () => window.removeEventListener("resize", resize);
   }, [redrawCanvas]);
 
-  useEffect(() => {
-    redrawCanvas();
-  }, [redrawCanvas]);
+  useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
 
-  // Zoom with mouse wheel
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -355,27 +462,25 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getCanvasCoords(e);
-
-    // Try to pick up a token first (if on tokens layer and not locked)
     const tokensLayer = layers.find(l => l.id === "tokens");
     if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         setDraggedToken(tokenHit.id);
+        setSelectedTokenId(tokenHit.id);
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
         return;
+      } else {
+        setSelectedTokenId(null);
       }
     }
-
     if (tool === "move") {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       setIsDrawing(true);
       return;
     }
-
-    if (tool === "token") return; // No token hit, do nothing
-
+    if (tool === "token") return;
     if (tool === "text") {
       const text = prompt("Texte à ajouter :");
       if (text) {
@@ -385,14 +490,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       return;
     }
-
     setIsDrawing(true);
     setCurrentAction({ type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-
     if (draggedToken) {
       const coords = getCanvasCoords(e);
       setTokens(prev => prev.map(t =>
@@ -402,7 +505,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ));
       return;
     }
-
     if (tool === "move" && lastPanPoint) {
       const dx = e.clientX - lastPanPoint.x;
       const dy = e.clientY - lastPanPoint.y;
@@ -410,7 +512,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       return;
     }
-
     const coords = getCanvasCoords(e);
     if (currentAction) {
       if (tool === "pencil" || tool === "eraser") {
@@ -422,67 +523,23 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = () => {
-    if (draggedToken) {
-      setDraggedToken(null);
-      setIsDrawing(false);
-      return;
-    }
-
-    if (tool === "move") {
-      setIsDrawing(false);
-      setLastPanPoint(null);
-      return;
-    }
-
-    if (currentAction) {
-      setActions(prev => [...prev, currentAction]);
-      setUndoneActions([]);
-      setCurrentAction(null);
-    }
+    if (draggedToken) { setDraggedToken(null); setIsDrawing(false); return; }
+    if (tool === "move") { setIsDrawing(false); setLastPanPoint(null); return; }
+    if (currentAction) { setActions(prev => [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
     setIsDrawing(false);
   };
 
-  const undo = () => {
-    setActions(prev => {
-      if (prev.length === 0) return prev;
-      setUndoneActions(u => [...u, prev[prev.length - 1]]);
-      return prev.slice(0, -1);
-    });
-  };
-
-  const redo = () => {
-    setUndoneActions(prev => {
-      if (prev.length === 0) return prev;
-      setActions(a => [...a, prev[prev.length - 1]]);
-      return prev.slice(0, -1);
-    });
-  };
-
-  const clearAll = () => {
-    if (!confirm("Effacer tout le plateau ?")) return;
-    setActions([]);
-    setUndoneActions([]);
-    setTokens([]);
-    setPanOffset({ x: 0, y: 0 });
-    setZoom(1);
-    mapImageRef.current = null;
-    setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
-  };
-
-  const exportCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = "tabletop.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  };
-
+  const undo = () => { setActions(prev => { if (!prev.length) return prev; setUndoneActions(u => [...u, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
+  const redo = () => { setUndoneActions(prev => { if (!prev.length) return prev; setActions(a => [...a, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
+  const clearAll = () => { if (!confirm("Effacer tout le plateau ?")) return; setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1); mapImageRef.current = null; setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l)); };
+  const exportCanvas = () => { const canvas = canvasRef.current; if (!canvas) return; const link = document.createElement("a"); link.download = "aetheria-tabletop.png"; link.href = canvas.toDataURL(); link.click(); };
   const zoomIn = () => setZoom(prev => Math.min(MAX_ZOOM, prev + 0.15));
   const zoomOut = () => setZoom(prev => Math.max(MIN_ZOOM, prev - 0.15));
   const resetView = () => { setZoom(1); setPanOffset({ x: 0, y: 0 }); };
 
-  const tools: { id: Tool; icon: React.ReactNode; label: string }[] = [
+  const selectedToken = tokens.find(t => t.id === selectedTokenId);
+
+  const tools_list: { id: Tool; icon: React.ReactNode; label: string }[] = [
     { id: "move", icon: <Move className="h-4 w-4" />, label: "Déplacer" },
     { id: "token", icon: <Users className="h-4 w-4" />, label: "Sélection jeton" },
     { id: "pencil", icon: <Pencil className="h-4 w-4" />, label: "Crayon" },
@@ -514,7 +571,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     <div className="flex h-[calc(100vh-220px)] flex-col gap-3">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
-        {tools.map(t => (
+        {tools_list.map(t => (
           <Button key={t.id} variant={tool === t.id ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool(t.id)} title={t.label}>
             {t.icon}
           </Button>
@@ -522,7 +579,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* Color picker */}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9" title="Couleur">
@@ -538,7 +594,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           </PopoverContent>
         </Popover>
 
-        {/* Brush size */}
         <div className="flex items-center gap-2 px-2">
           <Minus className="h-3 w-3 text-muted-foreground" />
           <Slider value={[brushSize]} onValueChange={([v]) => setBrushSize(v)} min={1} max={20} step={1} className="w-20" />
@@ -547,35 +602,106 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* Zoom controls */}
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomOut} title="Dézoomer">
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        <button onClick={resetView} className="min-w-[48px] rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" title="Réinitialiser le zoom">
-          {Math.round(zoom * 100)}%
-        </button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomIn} title="Zoomer">
-          <ZoomIn className="h-4 w-4" />
-        </Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomOut} title="Dézoomer"><ZoomOut className="h-4 w-4" /></Button>
+        <button onClick={resetView} className="min-w-[48px] rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" title="Réinitialiser">{Math.round(zoom * 100)}%</button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomIn} title="Zoomer"><ZoomIn className="h-4 w-4" /></Button>
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undo} title="Annuler" disabled={actions.length === 0}>
-          <Undo2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redo} title="Rétablir" disabled={undoneActions.length === 0}>
-          <Redo2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={clearAll} title="Tout effacer">
-          <Trash2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={exportCanvas} title="Exporter">
-          <Download className="h-4 w-4" />
-        </Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undo} title="Annuler" disabled={actions.length === 0}><Undo2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redo} title="Rétablir" disabled={undoneActions.length === 0}><Redo2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={clearAll} title="Tout effacer"><Trash2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={exportCanvas} title="Exporter"><Download className="h-4 w-4" /></Button>
 
         <div className="flex-1" />
 
-        {/* Layers panel toggle */}
+        {/* Bestiary + Layers panel */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Skull className="h-4 w-4" /> Bestiaire
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-96 p-0">
+            <div className="flex h-full flex-col">
+              <SheetHeader className="p-4 pb-2">
+                <SheetTitle className="font-display text-gradient-gold">Bestiaire Aetheria</SheetTitle>
+              </SheetHeader>
+              
+              <div className="px-4 pb-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    placeholder="Rechercher une créature..." 
+                    value={bestiarySearch} 
+                    onChange={e => setBestiarySearch(e.target.value)} 
+                    className="pl-9 h-9"
+                  />
+                </div>
+              </div>
+
+              <Tabs defaultValue="wa" className="flex-1 flex flex-col">
+                <TabsList className="mx-4 grid grid-cols-2">
+                  <TabsTrigger value="wa" className="text-xs">Aetheria</TabsTrigger>
+                  <TabsTrigger value="dnd" className="text-xs">D&D 5e</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="wa" className="flex-1 m-0">
+                  <ScrollArea className="h-[calc(100vh-280px)] px-4">
+                    <div className="space-y-1.5 py-2">
+                      {waCreatures.map(creature => (
+                        <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
+                            <Skull className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{creature.name}</p>
+                            <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size} • {creature.profile}</p>
+                          </div>
+                          {isGM && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer sur la carte">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      {waCreatures.length === 0 && (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+
+                <TabsContent value="dnd" className="flex-1 m-0">
+                  <ScrollArea className="h-[calc(100vh-280px)] px-4">
+                    <div className="space-y-1.5 py-2">
+                      {dndMonsters.map(monster => (
+                        <div key={monster.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-feature-compendium/20 text-feature-compendium">
+                            <Swords className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{monster.name}</p>
+                            <p className="text-xs text-muted-foreground">CR {monster.challenge_rating} • CA {monster.armor_class} • {monster.type}</p>
+                          </div>
+                          {isGM && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnMonster(monster)} title="Placer sur la carte">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      {dndMonsters.length === 0 && (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Aucun monstre trouvé</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5">
@@ -587,14 +713,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               <SheetTitle>Calques & Jetons</SheetTitle>
             </SheetHeader>
             <div className="mt-6 space-y-6">
-              {/* Layers list */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">Calques</h3>
                 {layers.map(layer => (
                   <div key={layer.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
                     <div className="text-muted-foreground">{getLayerIcon(layer.type)}</div>
                     <span className="flex-1 text-sm font-medium">{layer.name}</span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleLayerVisibility(layer.id)} title={layer.visible ? "Masquer" : "Afficher"}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleLayerVisibility(layer.id)}>
                       {layer.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                     </Button>
                     <div className="flex items-center gap-1">
@@ -607,7 +732,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
               <Separator />
 
-              {/* Map upload */}
               {isGM && (
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-foreground">Carte de fond</h3>
@@ -628,11 +752,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
               <Separator />
 
-              {/* Token management */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Jetons</h3>
+                <h3 className="text-sm font-semibold text-foreground">Jetons manuels</h3>
                 <div className="flex gap-2">
-                  <Input placeholder="Nom du jeton" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} className="flex-1 h-9" onKeyDown={e => e.key === "Enter" && addToken()} />
+                  <Input placeholder="Nom" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} className="flex-1 h-9" onKeyDown={e => e.key === "Enter" && addToken()} />
                   <Popover>
                     <PopoverTrigger asChild>
                       <button className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
@@ -651,9 +774,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 </div>
                 <div className="max-h-48 space-y-1 overflow-y-auto">
                   {tokens.map(token => (
-                    <div key={token.id} className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-2.5 py-1.5">
+                    <div key={token.id} className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${token.id === selectedTokenId ? "border-primary bg-primary/10" : "border-border bg-muted/20"}`}>
                       <div className="h-5 w-5 shrink-0 rounded-full" style={{ backgroundColor: token.color }} />
                       <span className="flex-1 text-sm truncate">{token.name}</span>
+                      {token.hp !== undefined && (
+                        <span className="text-xs text-muted-foreground">{token.hp}/{token.maxHp}</span>
+                      )}
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTokens(prev => prev.map(t => t.id === token.id ? { ...t, visible: !t.visible } : t))}>
                         {token.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                       </Button>
@@ -672,32 +798,75 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         </Sheet>
       </div>
 
-      {/* Canvas */}
-      <div
-        ref={containerRef}
-        className="relative flex-1 overflow-hidden rounded-lg border border-border bg-background"
-        style={{ cursor: getCursor() }}
-      >
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className="block h-full w-full"
-        />
+      {/* Canvas + selected token panel */}
+      <div className="flex flex-1 gap-3 overflow-hidden">
+        <div
+          ref={containerRef}
+          className="relative flex-1 overflow-hidden rounded-lg border border-border bg-background"
+          style={{ cursor: getCursor() }}
+        >
+          <canvas
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            className="block h-full w-full"
+          />
 
-        {/* Zoom indicator */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-          <ZoomIn className="h-3 w-3" />
-          {Math.round(zoom * 100)}%
+          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+            <ZoomIn className="h-3 w-3" /> {Math.round(zoom * 100)}%
+          </div>
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+            <Layers className="h-3 w-3" /> {layers.filter(l => l.visible).length}/{layers.length}
+          </div>
         </div>
 
-        {/* Layer indicator */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-          <Layers className="h-3 w-3" />
-          {layers.filter(l => l.visible).length}/{layers.length} calques
-        </div>
+        {/* Selected token detail panel */}
+        {selectedToken && isGM && (
+          <div className="w-56 shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 overflow-y-auto">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: selectedToken.color }} />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
+                {selectedToken.creatureType && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedToken.creatureType === "wa_creature" ? "Aetheria" : "D&D 5e"}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {selectedToken.hp !== undefined && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">PV</span>
+                    <span className="text-sm font-medium">{selectedToken.hp}/{selectedToken.maxHp}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</Button>
+                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</Button>
+                    <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</Button>
+                    <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</Button>
+                  </div>
+                  {selectedToken.ac !== undefined && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">CA</span>
+                      <span className="text-sm font-medium">{selectedToken.ac}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            
+            <Separator />
+            <Button size="sm" variant="destructive" className="w-full h-7 text-xs" onClick={() => removeToken(selectedToken.id)}>
+              <Trash2 className="mr-1 h-3 w-3" /> Retirer
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
