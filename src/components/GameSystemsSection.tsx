@@ -1,24 +1,25 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Star } from "lucide-react";
 
 const systems = [
   {
-    name: "D&D 5e",
-    description: "Le jeu de rôle fantastique le plus populaire au monde. Explorez des donjons, combattez des dragons et forgez des légendes.",
+    name: "Worlds Awakening",
+    description: "Le système natif d'Aetheria. Ascendances, tenues, bestiaire intégré — une expérience VTT pensée pour cet univers.",
     color: "hsl(var(--primary))",
+    tags: ["Natif", "Bestiaire intégré", "Fantasy"],
+    link: "https://www.worlds-awakening.com/fr",
+    featured: true,
+  },
+  {
+    name: "D&D 5e",
+    description: "Le jeu de rôle fantastique le plus populaire. Support complet des sorts, monstres et fiches de personnage.",
+    color: "hsl(0, 72%, 51%)",
     tags: ["Fantaisie", "Héroïque", "Classique"],
   },
   {
     name: "Call of Cthulhu",
-    description: "Plongez dans l'horreur cosmique de Lovecraft. Enquêtez sur des mystères indicibles et luttez pour votre santé mentale.",
+    description: "Plongez dans l'horreur cosmique de Lovecraft. Enquêtez sur des mystères indicibles.",
     color: "hsl(142, 50%, 45%)",
     tags: ["Horreur", "Enquête", "Années 1920"],
-  },
-  {
-    name: "Worlds Awakening",
-    description: "Un JdR gratuit et communautaire avec un système original. Créez des personnages uniques dans un univers fantasy riche.",
-    color: "hsl(200, 70%, 55%)",
-    tags: ["Gratuit", "Communautaire", "Fantasy"],
-    link: "https://www.worlds-awakening.com/fr",
   },
 ];
 
@@ -28,10 +29,10 @@ const GameSystemsSection = () => {
       <div className="container mx-auto px-4 md:px-6">
         <div className="mb-8 text-center">
           <h2 className="font-display text-2xl font-bold text-foreground md:text-3xl">
-            Systèmes de jeu supportés
+            Systèmes de jeu
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Une table virtuelle pour tous vos univers préférés
+            Optimisé pour Aetheria — compatible avec vos univers préférés
           </p>
         </div>
 
@@ -39,8 +40,17 @@ const GameSystemsSection = () => {
           {systems.map((system) => (
             <div
               key={system.name}
-              className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-card p-6 shadow-card transition-all duration-300 hover:border-primary/30 hover:shadow-gold"
+              className={`group relative overflow-hidden rounded-xl border p-6 shadow-card transition-all duration-300 hover:shadow-gold ${
+                system.featured 
+                  ? "border-primary/40 bg-gradient-to-b from-primary/5 to-card" 
+                  : "border-border/50 bg-gradient-card hover:border-primary/30"
+              }`}
             >
+              {system.featured && (
+                <div className="absolute top-3 right-3">
+                  <Star className="h-4 w-4 fill-primary text-primary" />
+                </div>
+              )}
               <div
                 className="mb-4 h-1 w-12 rounded-full transition-all duration-300 group-hover:w-20"
                 style={{ backgroundColor: system.color }}
@@ -68,17 +78,13 @@ const GameSystemsSection = () => {
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
-                  Découvrir
+                  Site officiel
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
           ))}
         </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          D'autres systèmes à venir — Pathfinder, Shadowrun, Vampire et plus encore…
-        </p>
       </div>
     </section>
   );

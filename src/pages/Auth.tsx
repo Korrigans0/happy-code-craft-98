@@ -199,9 +199,9 @@ const Auth = () => {
               <Sword className="h-8 w-8 text-primary absolute -right-2 -bottom-1 rotate-45" />
             </div>
           </div>
-          <CardTitle className="text-3xl text-gradient-gold">Taverne des Héros</CardTitle>
+          <CardTitle className="text-3xl text-gradient-gold font-display">Aetheria VTT</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Connectez-vous pour gérer vos personnages et aventures
+            Connectez-vous pour explorer l'univers d'Aetheria
           </CardDescription>
         </CardHeader>
         
