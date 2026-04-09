@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Sparkles, User, Sword, Globe, BookOpen } from 'lucide-react';
+import { Sparkles, User, Sword, Swords, BookOpen } from 'lucide-react';
 
 const HeroSection = () => {
   const { user, loading } = useAuth();
@@ -20,7 +20,7 @@ const HeroSection = () => {
         <div className="mb-8 flex justify-center">
           <div className="relative">
             <div className="absolute inset-0 animate-pulse-slow rounded-full bg-primary/20 blur-2xl" />
-            <Globe className="relative h-16 w-16 text-primary glow-gold animate-float" />
+            <Swords className="relative h-16 w-16 text-primary glow-gold animate-float" />
           </div>
         </div>
 
