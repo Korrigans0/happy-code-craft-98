@@ -1,4 +1,4 @@
-import { Wand2, Menu, X, Sword, User, BookOpen, Dices, Home, LogIn, LogOut, UserCircle, Globe } from "lucide-react";
+import { Wand2, Menu, X, Sword, User, BookOpen, Dices, Home, LogIn, LogOut, UserCircle, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -56,7 +56,7 @@ const Header = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link to="/" className="flex items-center gap-3 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-gold shadow-gold transition-transform group-hover:scale-105">
-            <Globe className="h-5 w-5 text-primary-foreground" />
+            <Swords className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
             <h1 className="font-display text-xl font-semibold text-gradient-gold">
