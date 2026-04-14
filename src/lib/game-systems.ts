@@ -1,7 +1,7 @@
-// Game system definitions — Aetheria VTT (Worlds Awakening only)
+// Game system definitions — Aetheria VTT
 
 export const GAME_SYSTEMS = [
-  { value: "Worlds Awakening", label: "Worlds Awakening" },
+  { value: "Aetheria", label: "Aetheria" },
 ] as const;
 
 export type GameSystem = typeof GAME_SYSTEMS[number]["value"];
