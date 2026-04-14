@@ -11,7 +11,7 @@ import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull, Swords
+  X, Plus, Search, Skull
 } from "lucide-react";
 import {
   Popover,
@@ -25,7 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
