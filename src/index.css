@@ -107,11 +107,37 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Cinzel', serif;
   }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus styles */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(216, 28%, 7%);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(216, 20%, 22%);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(42, 65%, 58%, 0.4);
+  }
 }
 
 @layer utilities {
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(42, 65%, 58%) 0%, hsl(35, 80%, 50%) 100%);
+    background: linear-gradient(135deg, hsl(42, 65%, 62%) 0%, hsl(35, 80%, 50%) 50%, hsl(42, 70%, 55%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -130,7 +156,7 @@
   }
 
   .shadow-gold {
-    box-shadow: 0 0 20px hsl(42, 65%, 58%, 0.2);
+    box-shadow: 0 0 20px hsl(42, 65%, 58%, 0.15), 0 0 60px hsl(42, 65%, 58%, 0.05);
   }
 
   .shadow-card {
@@ -138,7 +164,7 @@
   }
 
   .glow-gold {
-    filter: drop-shadow(0 0 8px hsl(42, 65%, 58%, 0.4));
+    filter: drop-shadow(0 0 8px hsl(42, 65%, 58%, 0.4)) drop-shadow(0 0 24px hsl(42, 65%, 58%, 0.15));
   }
 
   .animate-float {
@@ -163,7 +189,23 @@
       opacity: 1;
     }
     50% {
-      opacity: 0.7;
+      opacity: 0.5;
+    }
+  }
+
+  /* Fade in animation for page transitions */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }
