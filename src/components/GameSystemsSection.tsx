@@ -1,4 +1,4 @@
-import { ExternalLink, Star } from "lucide-react";
+import { ExternalLink, Star, Handshake, Swords } from "lucide-react";
 
 const GameSystemsSection = () => {
   return (
@@ -9,26 +9,58 @@ const GameSystemsSection = () => {
             Système de jeu
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Conçu exclusivement pour l'univers Aetheria
+            Le système natif de l'univers Aetheria
           </p>
         </div>
 
-        <div className="mx-auto max-w-md">
-          <div className="group relative overflow-hidden rounded-xl border border-primary/40 bg-gradient-to-b from-primary/5 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
+        <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+          {/* Aetheria — système principal */}
+          <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
             <div className="absolute top-3 right-3">
-              <Star className="h-4 w-4 fill-primary text-primary" />
+              <Star className="h-5 w-5 fill-primary text-primary" />
             </div>
-            <div
-              className="mb-4 h-1 w-12 rounded-full bg-primary transition-all duration-300 group-hover:w-20"
-            />
+            <div className="mb-4 flex items-center gap-2">
+              <Swords className="h-5 w-5 text-primary" />
+              <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                Système principal
+              </span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-foreground">
+              Aetheria
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Le système de jeu officiel de l'univers Aetheria. Ascendances, tenues, bestiaire intégré — une expérience VTT complète et immersive.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["Système natif", "Bestiaire intégré", "Dark Fantasy"].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Worlds Awakening — partenaire */}
+          <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-b from-muted/30 to-card p-6 shadow-card transition-all duration-300 hover:border-border">
+            <div className="absolute top-3 right-3">
+              <Handshake className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="mb-4 flex items-center gap-2">
+              <span className="rounded-full border border-border/50 bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                Partenaire
+              </span>
+            </div>
             <h3 className="font-display text-lg font-semibold text-foreground">
               Worlds Awakening
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Le système natif d'Aetheria. Ascendances, tenues, bestiaire intégré — une expérience VTT pensée pour cet univers.
+              Partenaire officiel d'Aetheria VTT. Données du bestiaire, codex et ressources issues de l'univers Worlds Awakening.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Natif", "Bestiaire intégré", "Fantasy"].map((tag) => (
+              {["Partenaire", "Codex", "Ressources"].map((tag) => (
                 <span
                   key={tag}
                   className="rounded-full border border-border/50 bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground"
@@ -41,7 +73,7 @@ const GameSystemsSection = () => {
               href="https://www.worlds-awakening.com/fr"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
             >
               Site officiel
               <ExternalLink className="h-3 w-3" />
