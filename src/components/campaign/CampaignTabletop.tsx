@@ -11,7 +11,7 @@ import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull, Swords
+  X, Plus, Search, Skull
 } from "lucide-react";
 import {
   Popover,
@@ -25,7 +25,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -134,19 +134,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     },
   });
 
-  // Fetch D&D monsters
-  const { data: dndMonsters = [] } = useQuery({
-    queryKey: ['vtt-monsters', bestiarySearch],
-    queryFn: async () => {
-      let query = supabase.from('monsters').select('id, name, challenge_rating, hit_points, armor_class, type, size');
-      if (bestiarySearch.trim()) {
-        query = query.ilike('name', `%${bestiarySearch.trim()}%`);
-      }
-      const { data } = await query.limit(50);
-      return data || [];
-    },
-  });
-
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
     const newToken: TokenItem = {
       id: crypto.randomUUID(),
@@ -163,28 +150,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       hp: (creature.constitution || 0) * 5 + 10,
       maxHp: (creature.constitution || 0) * 5 + 10,
       ac: 10 + (creature.dexterity || 0),
-    };
-    setTokens(prev => [...prev, newToken]);
-  };
-
-  const spawnMonster = (monster: typeof dndMonsters[0]) => {
-    const hpMatch = monster.hit_points.match(/(\d+)/);
-    const hp = hpMatch ? parseInt(hpMatch[1]) : 10;
-    const newToken: TokenItem = {
-      id: crypto.randomUUID(),
-      name: monster.name,
-      x: (-panOffset.x / zoom) + 200,
-      y: (-panOffset.y / zoom) + 200,
-      size: monster.size === "Large" ? GRID_SIZE * 2 : monster.size === "Huge" ? GRID_SIZE * 3 : GRID_SIZE,
-      color: "hsl(270, 70%, 60%)",
-      label: monster.name.substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-      creatureId: monster.id,
-      creatureType: "monster",
-      hp,
-      maxHp: hp,
-      ac: monster.armor_class,
     };
     setTokens(prev => [...prev, newToken]);
   };
@@ -640,14 +605,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 </div>
               </div>
 
-              <Tabs defaultValue="wa" className="flex-1 flex flex-col">
-                <TabsList className="mx-4 grid grid-cols-2">
-                  <TabsTrigger value="wa" className="text-xs">Aetheria</TabsTrigger>
-                  <TabsTrigger value="dnd" className="text-xs">D&D 5e</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="wa" className="flex-1 m-0">
-                  <ScrollArea className="h-[calc(100vh-280px)] px-4">
+              <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-240px)] px-4">
                     <div className="space-y-1.5 py-2">
                       {waCreatures.map(creature => (
                         <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
@@ -670,34 +629,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                       )}
                     </div>
                   </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="dnd" className="flex-1 m-0">
-                  <ScrollArea className="h-[calc(100vh-280px)] px-4">
-                    <div className="space-y-1.5 py-2">
-                      {dndMonsters.map(monster => (
-                        <div key={monster.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-feature-compendium/20 text-feature-compendium">
-                            <Swords className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{monster.name}</p>
-                            <p className="text-xs text-muted-foreground">CR {monster.challenge_rating} • CA {monster.armor_class} • {monster.type}</p>
-                          </div>
-                          {isGM && (
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnMonster(monster)} title="Placer sur la carte">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {dndMonsters.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">Aucun monstre trouvé</p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-              </Tabs>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
@@ -831,7 +763,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
                 {selectedToken.creatureType && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedToken.creatureType === "wa_creature" ? "Aetheria" : "D&D 5e"}
+                    {selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
                   </p>
                 )}
               </div>

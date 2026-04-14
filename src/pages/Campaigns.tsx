@@ -35,7 +35,7 @@ const Campaigns = () => {
   // Form state
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newSystem, setNewSystem] = useState("D&D 5e");
+  const [newSystem, setNewSystem] = useState("Aetheria");
   const [newIsActive, setNewIsActive] = useState(true);
 
   // Redirect if not authenticated
@@ -114,7 +114,7 @@ const Campaigns = () => {
       setIsCreateOpen(false);
       setNewTitle("");
       setNewDescription("");
-      setNewSystem("D&D 5e");
+      setNewSystem("Aetheria");
       setNewIsActive(true);
     },
     onError: () => {
