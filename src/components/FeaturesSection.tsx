@@ -26,7 +26,7 @@ const features = [
   {
     icon: User,
     title: "Fiches personnage",
-    subtitle: "WA & D&D 5e",
+    subtitle: "Aetheria",
     colorClass: "text-feature-character",
     href: "/characters",
   },
