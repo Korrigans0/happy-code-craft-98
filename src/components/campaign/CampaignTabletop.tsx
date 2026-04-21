@@ -910,8 +910,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 gap-3 overflow-hidden">
         <div
           ref={containerRef}
-          className="relative flex-1 overflow-hidden rounded-lg border border-border bg-background"
+          className={`relative flex-1 overflow-hidden rounded-lg border bg-background transition-colors ${isDragOverCanvas ? "border-primary border-2 ring-2 ring-primary/30" : "border-border"}`}
           style={{ cursor: getCursor() }}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes("application/x-aetheria-char")) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              if (!isDragOverCanvas) setIsDragOverCanvas(true);
+            }
+          }}
+          onDragLeave={(e) => {
+            // Only clear when leaving the container itself
+            if (e.currentTarget === e.target) setIsDragOverCanvas(false);
+          }}
+          onDrop={(e) => {
+            const charId = e.dataTransfer.getData("application/x-aetheria-char");
+            setIsDragOverCanvas(false);
+            setDraggingCharId(null);
+            if (!charId) return;
+            const char = userCharacters.find(c => c.id === charId);
+            if (!char) return;
+            e.preventDefault();
+            spawnCharacterAt(char, e.clientX, e.clientY);
+          }}
         >
           <canvas
             ref={canvasRef}
@@ -921,6 +942,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onMouseLeave={handleMouseUp}
             className="block h-full w-full"
           />
+
+          {isDragOverCanvas && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/5">
+              <div className="rounded-lg border-2 border-dashed border-primary bg-card/90 px-6 py-3 font-display text-lg text-gradient-gold shadow-gold animate-fade-in">
+                Lâchez pour placer le personnage
+              </div>
+            </div>
+          )}
 
           <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <ZoomIn className="h-3 w-3" /> {Math.round(zoom * 100)}%
