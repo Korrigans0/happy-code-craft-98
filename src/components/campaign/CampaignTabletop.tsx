@@ -758,6 +758,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <Layers className="h-3 w-3" /> {layers.filter(l => l.visible).length}/{layers.length}
           </div>
+
+          <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
         </div>
 
         {/* Selected token detail panel */}
