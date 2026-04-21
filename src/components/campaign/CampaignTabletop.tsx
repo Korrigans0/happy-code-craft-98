@@ -243,28 +243,44 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.globalAlpha = 1;
     }
 
-    // Draw grid
-    ctx.strokeStyle = "hsl(216, 20%, 15%)";
-    ctx.lineWidth = 0.5 / zoom;
+    // Helper to draw the grid (called twice: once as base, once on top so it's never erased)
     const viewLeft = -panOffset.x / zoom;
     const viewTop = -panOffset.y / zoom;
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
     const startX = Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE;
     const startY = Math.floor(viewTop / GRID_SIZE) * GRID_SIZE;
-    for (let x = startX; x <= viewRight; x += GRID_SIZE) {
-      ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
-    }
-    for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
-      ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
-    }
+
+    const drawGrid = (alpha: number) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "hsl(216, 20%, 25%)";
+      ctx.lineWidth = 0.5 / zoom;
+      for (let x = startX; x <= viewRight; x += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
+      }
+      for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
+        ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
+      }
+      ctx.restore();
+    };
+
+    // Base grid (under drawings)
+    drawGrid(1);
 
     // === DRAWINGS LAYER ===
     if (drawingsLayer?.visible) {
       ctx.globalAlpha = drawingsLayer.opacity / 100;
       const allActions = currentAction ? [...actions, currentAction] : actions;
       for (const action of allActions) {
-        ctx.strokeStyle = action.type === "eraser" ? "hsl(216, 28%, 7%)" : action.color;
+        const isEraser = action.type === "eraser";
+        if (isEraser) {
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.strokeStyle = "hsl(0, 0%, 0%)";
+        } else {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.strokeStyle = action.color;
+        }
         ctx.fillStyle = action.color;
         ctx.lineWidth = action.size;
         ctx.lineCap = "round";
@@ -310,8 +326,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.fillText(action.text, action.points[0].x, action.points[0].y);
         }
       }
+      ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
     }
+
+    // Re-draw grid ON TOP so it's never erased by the eraser
+    drawGrid(0.35);
 
     // === TOKENS LAYER ===
     if (tokensLayer?.visible) {
