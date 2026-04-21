@@ -96,6 +96,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const tokenImagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
