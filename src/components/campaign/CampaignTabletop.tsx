@@ -53,10 +53,11 @@ interface TokenItem {
   visible: boolean;
   // Compendium link
   creatureId?: string;
-  creatureType?: "wa_creature" | "monster";
+  creatureType?: "wa_creature" | "monster" | "character";
   hp?: number;
   maxHp?: number;
   ac?: number;
+  imageUrl?: string;
 }
 
 interface MapLayer {
@@ -95,6 +96,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
+  const tokenImagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
@@ -135,6 +137,58 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       return data || [];
     },
   });
+
+  // Fetch user's characters
+  const { data: userCharacters = [] } = useQuery({
+    queryKey: ['vtt-user-characters'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from('characters')
+        .select('id, name, race, class, level, hp, max_hp, armor_class, avatar_url')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+      return data || [];
+    },
+  });
+
+  // Preload token images (avatars)
+  useEffect(() => {
+    for (const token of tokens) {
+      if (!token.imageUrl) continue;
+      if (tokenImagesRef.current.has(token.imageUrl)) continue;
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        tokenImagesRef.current.set(token.imageUrl!, img);
+        // Trigger redraw
+        setTokens(prev => [...prev]);
+      };
+      img.src = token.imageUrl;
+    }
+  }, [tokens]);
+
+  const spawnCharacter = (char: typeof userCharacters[0]) => {
+    const newToken: TokenItem = {
+      id: crypto.randomUUID(),
+      name: char.name,
+      x: Math.round(((-panOffset.x / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
+      y: Math.round(((-panOffset.y / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
+      size: GRID_SIZE,
+      color: "hsl(42, 65%, 58%)",
+      label: char.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: char.id,
+      creatureType: "character",
+      hp: char.hp ?? char.max_hp ?? 10,
+      maxHp: char.max_hp ?? 10,
+      ac: char.armor_class ?? 10,
+      imageUrl: char.avatar_url || undefined,
+    };
+    setTokens(prev => [...prev, newToken]);
+  };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
     const newToken: TokenItem = {
@@ -350,23 +404,44 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.stroke();
         }
 
-        // Token circle
+        const ringColor = token.creatureType === "character"
+          ? "hsl(42, 65%, 58%)"
+          : token.creatureId
+          ? "hsl(0, 72%, 51%)"
+          : "hsl(0, 0%, 100%)";
+
+        // Token avatar image (if available) clipped to circle, otherwise colored disc
+        const cachedImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : undefined;
+        if (cachedImg) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(cachedImg, token.x, token.y, token.size, token.size);
+          ctx.restore();
+        } else {
+          ctx.beginPath();
+          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.fillStyle = token.color;
+          ctx.fill();
+
+          // Label only when no avatar
+          ctx.fillStyle = "hsl(0, 0%, 100%)";
+          ctx.font = `bold ${14}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
+          ctx.textAlign = "start";
+          ctx.textBaseline = "alphabetic";
+        }
+
+        // Outer ring
         ctx.beginPath();
         ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
-        ctx.fillStyle = token.color;
-        ctx.fill();
-        ctx.strokeStyle = token.creatureId ? "hsl(0, 72%, 51%)" : "hsl(0, 0%, 100%)";
+        ctx.strokeStyle = ringColor;
         ctx.lineWidth = token.creatureId ? 3 : 2;
         ctx.stroke();
-
-        // Label
-        ctx.fillStyle = "hsl(0, 0%, 100%)";
-        ctx.font = `bold ${14}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
-        ctx.textAlign = "start";
-        ctx.textBaseline = "alphabetic";
 
         // Name below
         ctx.fillStyle = "hsl(0, 0%, 90%)";
@@ -606,6 +681,57 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <Dices className="h-4 w-4" /> Dés
         </Button>
 
+        {/* Personnages joueurs */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Users className="h-4 w-4" /> Personnages
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-96 p-0">
+            <div className="flex h-full flex-col">
+              <SheetHeader className="p-4 pb-2">
+                <SheetTitle className="font-display text-gradient-gold">Mes personnages</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-[calc(100vh-140px)] px-4">
+                  <div className="space-y-1.5 py-2">
+                    {userCharacters.map(char => (
+                      <div key={char.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                        {char.avatar_url ? (
+                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold">
+                            {char.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{char.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Niv. {char.level} • {char.race} {char.class}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/70">
+                            PV {char.hp}/{char.max_hp} • CA {char.armor_class}
+                          </p>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnCharacter(char)} title="Placer sur la carte">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {userCharacters.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        Aucun personnage créé.<br />
+                        Créez-en un depuis l'onglet Personnages.
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {/* Bestiary + Layers panel */}
         <Sheet>
           <SheetTrigger asChild>
@@ -791,7 +917,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
                 {selectedToken.creatureType && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
+                    {selectedToken.creatureType === "character" ? "Personnage joueur" : selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
                   </p>
                 )}
               </div>
