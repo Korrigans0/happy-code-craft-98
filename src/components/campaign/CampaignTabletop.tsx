@@ -11,8 +11,9 @@ import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull
+  X, Plus, Search, Skull, Dices
 } from "lucide-react";
+import DiceRoller3D from "./DiceRoller3D";
 import {
   Popover,
   PopoverContent,
