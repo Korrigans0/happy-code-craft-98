@@ -169,25 +169,37 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
   }, [tokens]);
 
+  const buildCharacterToken = (char: typeof userCharacters[0], worldX: number, worldY: number): TokenItem => ({
+    id: crypto.randomUUID(),
+    name: char.name,
+    x: Math.round((worldX - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
+    y: Math.round((worldY - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
+    size: GRID_SIZE,
+    color: "hsl(42, 65%, 58%)",
+    label: char.name.substring(0, 2).toUpperCase(),
+    layer: "tokens",
+    visible: true,
+    creatureId: char.id,
+    creatureType: "character",
+    hp: char.hp ?? char.max_hp ?? 10,
+    maxHp: char.max_hp ?? 10,
+    ac: char.armor_class ?? 10,
+    imageUrl: char.avatar_url || undefined,
+  });
+
   const spawnCharacter = (char: typeof userCharacters[0]) => {
-    const newToken: TokenItem = {
-      id: crypto.randomUUID(),
-      name: char.name,
-      x: Math.round(((-panOffset.x / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
-      y: Math.round(((-panOffset.y / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
-      size: GRID_SIZE,
-      color: "hsl(42, 65%, 58%)",
-      label: char.name.substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-      creatureId: char.id,
-      creatureType: "character",
-      hp: char.hp ?? char.max_hp ?? 10,
-      maxHp: char.max_hp ?? 10,
-      ac: char.armor_class ?? 10,
-      imageUrl: char.avatar_url || undefined,
-    };
-    setTokens(prev => [...prev, newToken]);
+    const wx = (-panOffset.x / zoom) + 200;
+    const wy = (-panOffset.y / zoom) + 200;
+    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
+  };
+
+  const spawnCharacterAt = (char: typeof userCharacters[0], clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const wx = (clientX - rect.left - panOffset.x) / zoom;
+    const wy = (clientY - rect.top - panOffset.y) / zoom;
+    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
   };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
