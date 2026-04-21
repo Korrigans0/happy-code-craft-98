@@ -117,6 +117,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [bestiarySearch, setBestiarySearch] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [diceOpen, setDiceOpen] = useState(false);
+  const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
+  const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
