@@ -711,15 +711,25 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <ScrollArea className="h-[calc(100vh-140px)] px-4">
                   <div className="space-y-1.5 py-2">
                     {userCharacters.map(char => (
-                      <div key={char.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                      <div
+                        key={char.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggingCharId(char.id);
+                          e.dataTransfer.effectAllowed = "copy";
+                          e.dataTransfer.setData("application/x-aetheria-char", char.id);
+                        }}
+                        onDragEnd={() => setDraggingCharId(null)}
+                        className={`group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing ${draggingCharId === char.id ? "opacity-50" : ""}`}
+                      >
                         {char.avatar_url ? (
-                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover" />
+                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover pointer-events-none" />
                         ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold pointer-events-none">
                             {char.name.substring(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pointer-events-none">
                           <p className="text-sm font-medium truncate">{char.name}</p>
                           <p className="text-xs text-muted-foreground truncate">
                             Niv. {char.level} • {char.race} {char.class}
