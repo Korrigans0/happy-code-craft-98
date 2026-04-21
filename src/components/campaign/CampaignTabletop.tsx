@@ -117,6 +117,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [bestiarySearch, setBestiarySearch] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [diceOpen, setDiceOpen] = useState(false);
+  const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
+  const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
@@ -169,25 +171,37 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
   }, [tokens]);
 
+  const buildCharacterToken = (char: typeof userCharacters[0], worldX: number, worldY: number): TokenItem => ({
+    id: crypto.randomUUID(),
+    name: char.name,
+    x: Math.round((worldX - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
+    y: Math.round((worldY - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
+    size: GRID_SIZE,
+    color: "hsl(42, 65%, 58%)",
+    label: char.name.substring(0, 2).toUpperCase(),
+    layer: "tokens",
+    visible: true,
+    creatureId: char.id,
+    creatureType: "character",
+    hp: char.hp ?? char.max_hp ?? 10,
+    maxHp: char.max_hp ?? 10,
+    ac: char.armor_class ?? 10,
+    imageUrl: char.avatar_url || undefined,
+  });
+
   const spawnCharacter = (char: typeof userCharacters[0]) => {
-    const newToken: TokenItem = {
-      id: crypto.randomUUID(),
-      name: char.name,
-      x: Math.round(((-panOffset.x / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
-      y: Math.round(((-panOffset.y / zoom) + 200) / GRID_SIZE) * GRID_SIZE,
-      size: GRID_SIZE,
-      color: "hsl(42, 65%, 58%)",
-      label: char.name.substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-      creatureId: char.id,
-      creatureType: "character",
-      hp: char.hp ?? char.max_hp ?? 10,
-      maxHp: char.max_hp ?? 10,
-      ac: char.armor_class ?? 10,
-      imageUrl: char.avatar_url || undefined,
-    };
-    setTokens(prev => [...prev, newToken]);
+    const wx = (-panOffset.x / zoom) + 200;
+    const wy = (-panOffset.y / zoom) + 200;
+    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
+  };
+
+  const spawnCharacterAt = (char: typeof userCharacters[0], clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const wx = (clientX - rect.left - panOffset.x) / zoom;
+    const wy = (clientY - rect.top - panOffset.y) / zoom;
+    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
   };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
@@ -697,15 +711,25 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <ScrollArea className="h-[calc(100vh-140px)] px-4">
                   <div className="space-y-1.5 py-2">
                     {userCharacters.map(char => (
-                      <div key={char.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                      <div
+                        key={char.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggingCharId(char.id);
+                          e.dataTransfer.effectAllowed = "copy";
+                          e.dataTransfer.setData("application/x-aetheria-char", char.id);
+                        }}
+                        onDragEnd={() => setDraggingCharId(null)}
+                        className={`group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing ${draggingCharId === char.id ? "opacity-50" : ""}`}
+                      >
                         {char.avatar_url ? (
-                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover" />
+                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover pointer-events-none" />
                         ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold pointer-events-none">
                             {char.name.substring(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pointer-events-none">
                           <p className="text-sm font-medium truncate">{char.name}</p>
                           <p className="text-xs text-muted-foreground truncate">
                             Niv. {char.level} • {char.race} {char.class}
@@ -886,8 +910,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 gap-3 overflow-hidden">
         <div
           ref={containerRef}
-          className="relative flex-1 overflow-hidden rounded-lg border border-border bg-background"
+          className={`relative flex-1 overflow-hidden rounded-lg border bg-background transition-colors ${isDragOverCanvas ? "border-primary border-2 ring-2 ring-primary/30" : "border-border"}`}
           style={{ cursor: getCursor() }}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes("application/x-aetheria-char")) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              if (!isDragOverCanvas) setIsDragOverCanvas(true);
+            }
+          }}
+          onDragLeave={(e) => {
+            // Only clear when leaving the container itself
+            if (e.currentTarget === e.target) setIsDragOverCanvas(false);
+          }}
+          onDrop={(e) => {
+            const charId = e.dataTransfer.getData("application/x-aetheria-char");
+            setIsDragOverCanvas(false);
+            setDraggingCharId(null);
+            if (!charId) return;
+            const char = userCharacters.find(c => c.id === charId);
+            if (!char) return;
+            e.preventDefault();
+            spawnCharacterAt(char, e.clientX, e.clientY);
+          }}
         >
           <canvas
             ref={canvasRef}
@@ -897,6 +942,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onMouseLeave={handleMouseUp}
             className="block h-full w-full"
           />
+
+          {isDragOverCanvas && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/5">
+              <div className="rounded-lg border-2 border-dashed border-primary bg-card/90 px-6 py-3 font-display text-lg text-gradient-gold shadow-gold animate-fade-in">
+                Lâchez pour placer le personnage
+              </div>
+            </div>
+          )}
 
           <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <ZoomIn className="h-3 w-3" /> {Math.round(zoom * 100)}%
