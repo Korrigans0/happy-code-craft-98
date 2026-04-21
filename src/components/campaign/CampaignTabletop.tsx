@@ -114,6 +114,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   const [bestiarySearch, setBestiarySearch] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [diceOpen, setDiceOpen] = useState(false);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
