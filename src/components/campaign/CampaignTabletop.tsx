@@ -404,23 +404,44 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.stroke();
         }
 
-        // Token circle
+        const ringColor = token.creatureType === "character"
+          ? "hsl(42, 65%, 58%)"
+          : token.creatureId
+          ? "hsl(0, 72%, 51%)"
+          : "hsl(0, 0%, 100%)";
+
+        // Token avatar image (if available) clipped to circle, otherwise colored disc
+        const cachedImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : undefined;
+        if (cachedImg) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(cachedImg, token.x, token.y, token.size, token.size);
+          ctx.restore();
+        } else {
+          ctx.beginPath();
+          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.fillStyle = token.color;
+          ctx.fill();
+
+          // Label only when no avatar
+          ctx.fillStyle = "hsl(0, 0%, 100%)";
+          ctx.font = `bold ${14}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
+          ctx.textAlign = "start";
+          ctx.textBaseline = "alphabetic";
+        }
+
+        // Outer ring
         ctx.beginPath();
         ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
-        ctx.fillStyle = token.color;
-        ctx.fill();
-        ctx.strokeStyle = token.creatureId ? "hsl(0, 72%, 51%)" : "hsl(0, 0%, 100%)";
+        ctx.strokeStyle = ringColor;
         ctx.lineWidth = token.creatureId ? 3 : 2;
         ctx.stroke();
-
-        // Label
-        ctx.fillStyle = "hsl(0, 0%, 100%)";
-        ctx.font = `bold ${14}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
-        ctx.textAlign = "start";
-        ctx.textBaseline = "alphabetic";
 
         // Name below
         ctx.fillStyle = "hsl(0, 0%, 90%)";
