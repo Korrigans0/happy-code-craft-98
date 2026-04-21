@@ -917,7 +917,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
                 {selectedToken.creatureType && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
+                    {selectedToken.creatureType === "character" ? "Personnage joueur" : selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
                   </p>
                 )}
               </div>
