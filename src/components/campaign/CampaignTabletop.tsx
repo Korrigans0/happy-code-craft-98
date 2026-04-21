@@ -53,10 +53,11 @@ interface TokenItem {
   visible: boolean;
   // Compendium link
   creatureId?: string;
-  creatureType?: "wa_creature" | "monster";
+  creatureType?: "wa_creature" | "monster" | "character";
   hp?: number;
   maxHp?: number;
   ac?: number;
+  imageUrl?: string;
 }
 
 interface MapLayer {
