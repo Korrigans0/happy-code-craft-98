@@ -11,8 +11,9 @@ import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull
+  X, Plus, Search, Skull, Dices
 } from "lucide-react";
+import DiceRoller3D from "./DiceRoller3D";
 import {
   Popover,
   PopoverContent,
@@ -113,6 +114,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   const [bestiarySearch, setBestiarySearch] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [diceOpen, setDiceOpen] = useState(false);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
@@ -580,6 +582,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <div className="flex-1" />
 
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setDiceOpen(true)}>
+          <Dices className="h-4 w-4" /> Dés
+        </Button>
+
         {/* Bestiary + Layers panel */}
         <Sheet>
           <SheetTrigger asChild>
@@ -752,6 +758,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <Layers className="h-3 w-3" /> {layers.filter(l => l.visible).length}/{layers.length}
           </div>
+
+          <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
         </div>
 
         {/* Selected token detail panel */}

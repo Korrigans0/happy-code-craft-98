@@ -208,4 +208,45 @@
       transform: translateY(0);
     }
   }
+
+  /* === Dice roller animations === */
+  .dice-piece {
+    transform-style: preserve-3d;
+    perspective: 600px;
+  }
+
+  @keyframes dice-roll {
+    0% {
+      transform: translate(0, -120px) rotate(0deg) scale(0.6);
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+      transform: translate(calc(var(--tx) * 0.2), -40px) rotate(180deg) scale(1.1);
+    }
+    40% {
+      transform: translate(calc(var(--tx) * 0.6), 30px) rotate(540deg) scale(1);
+    }
+    70% {
+      transform: translate(calc(var(--tx) * 0.9), calc(var(--ty) * 0.85)) rotate(900deg) scale(1);
+    }
+    85% {
+      transform: translate(var(--tx), calc(var(--ty) - 8px)) rotate(calc(var(--tr) - 20deg)) scale(1.05);
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) rotate(var(--tr)) scale(1);
+    }
+  }
+
+  .dice-tumble {
+    animation: dice-tumble 0.18s linear infinite;
+  }
+
+  @keyframes dice-tumble {
+    0%   { transform: rotateX(0deg) rotateY(0deg); }
+    25%  { transform: rotateX(90deg) rotateY(45deg); }
+    50%  { transform: rotateX(180deg) rotateY(180deg); }
+    75%  { transform: rotateX(270deg) rotateY(225deg); }
+    100% { transform: rotateX(360deg) rotateY(360deg); }
+  }
 }
