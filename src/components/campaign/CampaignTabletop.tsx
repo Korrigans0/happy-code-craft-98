@@ -582,6 +582,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <div className="flex-1" />
 
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setDiceOpen(true)}>
+          <Dices className="h-4 w-4" /> Dés
+        </Button>
+
         {/* Bestiary + Layers panel */}
         <Sheet>
           <SheetTrigger asChild>
