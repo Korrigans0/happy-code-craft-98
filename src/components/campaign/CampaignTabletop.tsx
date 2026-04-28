@@ -2,16 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull, Dices
+  X, Plus, Search, Skull, Dices, RotateCw, Copy, Magnet, Crosshair,
+  Maximize2,
 } from "lucide-react";
 import DiceRoller3D from "./DiceRoller3D";
 import {
@@ -26,6 +24,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,12 +45,13 @@ interface TokenItem {
   name: string;
   x: number;
   y: number;
-  size: number;
+  size: number;       // pixels (multiple of GRID_SIZE)
+  sizeUnits: number;  // 1, 2, 3, 4 cases
+  rotation: number;   // degrees
   color: string;
   label: string;
   layer: string;
   visible: boolean;
-  // Compendium link
   creatureId?: string;
   creatureType?: "wa_creature" | "monster" | "character";
   hp?: number;
@@ -91,6 +91,7 @@ interface CampaignTabletopProps {
 const GRID_SIZE = 40;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
+const FT_PER_SQUARE = 5;
 
 const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,6 +111,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [zoom, setZoom] = useState(1);
   const [tokens, setTokens] = useState<TokenItem[]>([]);
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [tokenDragOffset, setTokenDragOffset] = useState({ x: 0, y: 0 });
   const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
   const [newTokenName, setNewTokenName] = useState("");
@@ -119,6 +121,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [diceOpen, setDiceOpen] = useState(false);
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [collisionEnabled, setCollisionEnabled] = useState(true);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
@@ -127,20 +132,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 70 },
   ]);
 
-  // Fetch WA creatures for bestiary panel
+  // Fetch WA creatures
   const { data: waCreatures = [] } = useQuery({
     queryKey: ['vtt-wa-creatures', bestiarySearch],
     queryFn: async () => {
       let query = supabase.from('wa_creatures').select('id, name, power_level, size, profile, strength, dexterity, constitution, intelligence, wisdom, charisma, ra');
-      if (bestiarySearch.trim()) {
-        query = query.ilike('name', `%${bestiarySearch.trim()}%`);
-      }
+      if (bestiarySearch.trim()) query = query.ilike('name', `%${bestiarySearch.trim()}%`);
       const { data } = await query.limit(50);
       return data || [];
     },
   });
 
-  // Fetch user's characters
   const { data: userCharacters = [] } = useQuery({
     queryKey: ['vtt-user-characters'],
     queryFn: async () => {
@@ -155,7 +157,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     },
   });
 
-  // Preload token images (avatars)
+  // Preload token images
   useEffect(() => {
     for (const token of tokens) {
       if (!token.imageUrl) continue;
@@ -164,30 +166,67 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       img.crossOrigin = "anonymous";
       img.onload = () => {
         tokenImagesRef.current.set(token.imageUrl!, img);
-        // Trigger redraw
         setTokens(prev => [...prev]);
       };
       img.src = token.imageUrl;
     }
   }, [tokens]);
 
-  const buildCharacterToken = (char: typeof userCharacters[0], worldX: number, worldY: number): TokenItem => ({
-    id: crypto.randomUUID(),
-    name: char.name,
-    x: Math.round((worldX - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
-    y: Math.round((worldY - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE,
-    size: GRID_SIZE,
-    color: "hsl(42, 65%, 58%)",
-    label: char.name.substring(0, 2).toUpperCase(),
-    layer: "tokens",
-    visible: true,
-    creatureId: char.id,
-    creatureType: "character",
-    hp: char.hp ?? char.max_hp ?? 10,
-    maxHp: char.max_hp ?? 10,
-    ac: char.armor_class ?? 10,
-    imageUrl: char.avatar_url || undefined,
-  });
+  // === Helpers ===
+  const snapValue = useCallback((v: number) => {
+    return snapToGrid ? Math.round(v / GRID_SIZE) * GRID_SIZE : v;
+  }, [snapToGrid]);
+
+  const tokensOverlap = (a: { x: number; y: number; size: number }, b: { x: number; y: number; size: number }) => {
+    return !(a.x + a.size <= b.x || b.x + b.size <= a.x || a.y + a.size <= b.y || b.y + b.size <= a.y);
+  };
+
+  const findFreePosition = useCallback((x: number, y: number, size: number, ignoreId?: string): { x: number; y: number } => {
+    if (!collisionEnabled) return { x, y };
+    const others = tokens.filter(t => t.id !== ignoreId && t.visible);
+    if (!others.some(o => tokensOverlap({ x, y, size }, { x: o.x, y: o.y, size: o.size }))) {
+      return { x, y };
+    }
+    // Spiral search around target on grid
+    for (let r = 1; r < 12; r++) {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+          const nx = x + dx * GRID_SIZE;
+          const ny = y + dy * GRID_SIZE;
+          if (!others.some(o => tokensOverlap({ x: nx, y: ny, size }, { x: o.x, y: o.y, size: o.size }))) {
+            return { x: nx, y: ny };
+          }
+        }
+      }
+    }
+    return { x, y };
+  }, [collisionEnabled, tokens]);
+
+  const buildCharacterToken = (char: typeof userCharacters[0], worldX: number, worldY: number): TokenItem => {
+    const targetX = snapValue(worldX - GRID_SIZE / 2);
+    const targetY = snapValue(worldY - GRID_SIZE / 2);
+    const free = findFreePosition(targetX, targetY, GRID_SIZE);
+    return {
+      id: crypto.randomUUID(),
+      name: char.name,
+      x: free.x,
+      y: free.y,
+      size: GRID_SIZE,
+      sizeUnits: 1,
+      rotation: 0,
+      color: "hsl(42, 65%, 58%)",
+      label: char.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: char.id,
+      creatureType: "character",
+      hp: char.hp ?? char.max_hp ?? 10,
+      maxHp: char.max_hp ?? 10,
+      ac: char.armor_class ?? 10,
+      imageUrl: char.avatar_url || undefined,
+    };
+  };
 
   const spawnCharacter = (char: typeof userCharacters[0]) => {
     const wx = (-panOffset.x / zoom) + 200;
@@ -205,12 +244,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
+    const sizeUnits = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
+    const size = GRID_SIZE * sizeUnits;
+    const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
+    const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
+    const free = findFreePosition(wx, wy, size);
     const newToken: TokenItem = {
       id: crypto.randomUUID(),
       name: creature.name,
-      x: (-panOffset.x / zoom) + 200,
-      y: (-panOffset.y / zoom) + 200,
-      size: creature.size === "Grand" ? GRID_SIZE * 2 : creature.size === "Très grand" ? GRID_SIZE * 3 : GRID_SIZE,
+      x: free.x,
+      y: free.y,
+      size,
+      sizeUnits,
+      rotation: 0,
       color: "hsl(0, 72%, 51%)",
       label: creature.name.substring(0, 2).toUpperCase(),
       layer: "tokens",
@@ -230,6 +276,49 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const newHp = Math.max(0, Math.min(t.maxHp || 999, (t.hp || 0) + delta));
       return { ...t, hp: newHp };
     }));
+  };
+
+  const rotateToken = (tokenId: string, deg: number) => {
+    setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, rotation: (t.rotation + deg + 360) % 360 } : t));
+  };
+
+  const resizeToken = (tokenId: string, sizeUnits: number) => {
+    setTokens(prev => prev.map(t => {
+      if (t.id !== tokenId) return t;
+      const newSize = GRID_SIZE * sizeUnits;
+      return { ...t, sizeUnits, size: newSize };
+    }));
+  };
+
+  const duplicateToken = (tokenId: string) => {
+    const src = tokens.find(t => t.id === tokenId);
+    if (!src) return;
+    const targetX = src.x + GRID_SIZE;
+    const targetY = src.y;
+    const free = findFreePosition(targetX, targetY, src.size);
+    const copy: TokenItem = { ...src, id: crypto.randomUUID(), x: free.x, y: free.y };
+    setTokens(prev => [...prev, copy]);
+    setSelectedTokenId(copy.id);
+  };
+
+  const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
+    setTokens(prev => prev.map(t => {
+      if (t.id !== tokenId) return t;
+      const targetX = t.x + dx;
+      const targetY = t.y + dy;
+      const free = findFreePosition(targetX, targetY, t.size, t.id);
+      return { ...t, x: free.x, y: free.y };
+    }));
+  };
+
+  const centerOnToken = (tokenId: string) => {
+    const t = tokens.find(x => x.id === tokenId);
+    const canvas = canvasRef.current;
+    if (!t || !canvas) return;
+    setPanOffset({
+      x: canvas.width / 2 - (t.x + t.size / 2) * zoom,
+      y: canvas.height / 2 - (t.y + t.size / 2) * zoom,
+    });
   };
 
   const toggleLayerVisibility = (layerId: string) => {
@@ -258,12 +347,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const addToken = () => {
     if (!newTokenName.trim()) return;
+    const wx = snapValue((-panOffset.x / zoom) + 200);
+    const wy = snapValue((-panOffset.y / zoom) + 200);
+    const free = findFreePosition(wx, wy, GRID_SIZE);
     const newToken: TokenItem = {
       id: crypto.randomUUID(),
       name: newTokenName.trim(),
-      x: (-panOffset.x / zoom) + 200,
-      y: (-panOffset.y / zoom) + 200,
+      x: free.x,
+      y: free.y,
       size: GRID_SIZE,
+      sizeUnits: 1,
+      rotation: 0,
       color: newTokenColor,
       label: newTokenName.trim().substring(0, 2).toUpperCase(),
       layer: "tokens",
@@ -311,7 +405,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.globalAlpha = 1;
     }
 
-    // Helper to draw the grid (called twice: once as base, once on top so it's never erased)
     const viewLeft = -panOffset.x / zoom;
     const viewTop = -panOffset.y / zoom;
     const viewRight = viewLeft + canvas.width / zoom;
@@ -322,18 +415,33 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const drawGrid = (alpha: number) => {
       ctx.save();
       ctx.globalAlpha = alpha;
+      // Minor grid
       ctx.strokeStyle = "hsl(216, 20%, 25%)";
       ctx.lineWidth = 0.5 / zoom;
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
+        const isMajor = Math.round(x / GRID_SIZE) % 5 === 0;
+        if (isMajor) continue;
         ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
       }
       for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
+        const isMajor = Math.round(y / GRID_SIZE) % 5 === 0;
+        if (isMajor) continue;
+        ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
+      }
+      // Major grid (every 5 squares = 25 ft)
+      ctx.strokeStyle = "hsl(42, 50%, 45%)";
+      ctx.lineWidth = 1 / zoom;
+      for (let x = startX; x <= viewRight; x += GRID_SIZE) {
+        if (Math.round(x / GRID_SIZE) % 5 !== 0) continue;
+        ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
+      }
+      for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
+        if (Math.round(y / GRID_SIZE) % 5 !== 0) continue;
         ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
       }
       ctx.restore();
     };
 
-    // Base grid (under drawings)
     drawGrid(1);
 
     // === DRAWINGS LAYER ===
@@ -372,7 +480,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const dy = last.y - action.points[0].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const squares = Math.round(dist / GRID_SIZE);
-          const feet = squares * 5;
+          const feet = squares * FT_PER_SQUARE;
           ctx.font = `${14 / zoom}px 'Lora', serif`;
           ctx.fillStyle = action.color;
           const midX = (action.points[0].x + last.x) / 2;
@@ -398,8 +506,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.globalAlpha = 1;
     }
 
-    // Re-draw grid ON TOP so it's never erased by the eraser
-    drawGrid(0.35);
+    // Re-draw grid ON TOP so it's never erased
+    drawGrid(0.4);
 
     // === TOKENS LAYER ===
     if (tokensLayer?.visible) {
@@ -407,15 +515,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       for (const token of tokens) {
         if (!token.visible) continue;
         const halfSize = token.size / 2;
+        const cx = token.x + halfSize;
+        const cy = token.y + halfSize;
         const isSelected = token.id === selectedTokenId;
-        
+        const isDragged = token.id === draggedToken;
+
+        // Drop shadow under token
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = isDragged ? 18 : 8;
+        ctx.shadowOffsetY = isDragged ? 6 : 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.001)";
+        ctx.fill();
+        ctx.restore();
+
         // Selection ring
         if (isSelected) {
           ctx.beginPath();
-          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize + 3, 0, Math.PI * 2);
+          ctx.arc(cx, cy, halfSize + 4, 0, Math.PI * 2);
           ctx.strokeStyle = "hsl(42, 65%, 58%)";
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 3 / zoom;
+          ctx.setLineDash([6 / zoom, 4 / zoom]);
           ctx.stroke();
+          ctx.setLineDash([]);
         }
 
         const ringColor = token.creatureType === "character"
@@ -424,64 +548,100 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ? "hsl(0, 72%, 51%)"
           : "hsl(0, 0%, 100%)";
 
-        // Token avatar image (if available) clipped to circle, otherwise colored disc
+        // Rotate the token's body around its center
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate((token.rotation * Math.PI) / 180);
+        ctx.translate(-cx, -cy);
+
         const cachedImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : undefined;
         if (cachedImg) {
           ctx.save();
           ctx.beginPath();
-          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
           ctx.drawImage(cachedImg, token.x, token.y, token.size, token.size);
           ctx.restore();
         } else {
           ctx.beginPath();
-          ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+          ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
           ctx.fillStyle = token.color;
           ctx.fill();
-
-          // Label only when no avatar
           ctx.fillStyle = "hsl(0, 0%, 100%)";
-          ctx.font = `bold ${14}px sans-serif`;
+          ctx.font = `bold ${Math.max(12, halfSize * 0.5)}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(token.label, token.x + halfSize, token.y + halfSize);
+          ctx.fillText(token.label, cx, cy);
           ctx.textAlign = "start";
           ctx.textBaseline = "alphabetic";
         }
 
         // Outer ring
         ctx.beginPath();
-        ctx.arc(token.x + halfSize, token.y + halfSize, halfSize - 2, 0, Math.PI * 2);
+        ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
         ctx.strokeStyle = ringColor;
-        ctx.lineWidth = token.creatureId ? 3 : 2;
+        ctx.lineWidth = (token.creatureId ? 3 : 2) / zoom;
         ctx.stroke();
 
-        // Name below
+        // Direction arrow (small triangle at top of rotated frame)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - halfSize - 6);
+        ctx.lineTo(cx - 5, cy - halfSize + 2);
+        ctx.lineTo(cx + 5, cy - halfSize + 2);
+        ctx.closePath();
+        ctx.fillStyle = ringColor;
+        ctx.fill();
+
+        ctx.restore(); // end rotation
+
+        // Name below (not rotated)
         ctx.fillStyle = "hsl(0, 0%, 90%)";
         ctx.font = `${10}px sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(token.name, token.x + halfSize, token.y + token.size + 12);
-        
-        // HP bar for linked creatures
+        ctx.fillText(token.name, cx, token.y + token.size + 12);
+
+        // HP bar
         if (token.hp !== undefined && token.maxHp) {
           const barWidth = token.size - 4;
           const barHeight = 4;
           const barX = token.x + 2;
           const barY = token.y + token.size + 16;
           const hpRatio = token.hp / token.maxHp;
-          
           ctx.fillStyle = "hsl(0, 0%, 20%)";
           ctx.fillRect(barX, barY, barWidth, barHeight);
           ctx.fillStyle = hpRatio > 0.5 ? "hsl(142, 70%, 45%)" : hpRatio > 0.25 ? "hsl(42, 65%, 58%)" : "hsl(0, 72%, 51%)";
           ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
-          
           ctx.fillStyle = "hsl(0, 0%, 80%)";
           ctx.font = `${8}px sans-serif`;
-          ctx.fillText(`${token.hp}/${token.maxHp}`, token.x + halfSize, barY + barHeight + 10);
+          ctx.fillText(`${token.hp}/${token.maxHp}`, cx, barY + barHeight + 10);
         }
-        
+
         ctx.textAlign = "start";
+
+        // Movement measurement while dragging
+        if (isDragged && dragStart) {
+          const sx = dragStart.x + halfSize;
+          const sy = dragStart.y + halfSize;
+          const dxw = cx - sx;
+          const dyw = cy - sy;
+          const dist = Math.sqrt(dxw * dxw + dyw * dyw);
+          const squares = Math.round(dist / GRID_SIZE);
+          const feet = squares * FT_PER_SQUARE;
+          ctx.save();
+          ctx.strokeStyle = "hsl(42, 65%, 58%)";
+          ctx.lineWidth = 2 / zoom;
+          ctx.setLineDash([5 / zoom, 4 / zoom]);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = "hsl(42, 65%, 58%)";
+          ctx.font = `bold ${14 / zoom}px 'Lora', serif`;
+          ctx.fillText(`${feet} ft (${squares} cases)`, cx + 12, cy - 12);
+          ctx.restore();
+        }
       }
       ctx.globalAlpha = 1;
     }
@@ -495,7 +655,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
     ctx.restore();
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart]);
 
   useEffect(() => {
     const resize = () => {
@@ -513,17 +673,87 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
 
+  // Wheel zoom anchored to cursor + Shift+wheel rotates selected token
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      // Shift+wheel rotates selected token
+      if (e.shiftKey && selectedTokenId) {
+        rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15);
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom(prev => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta)));
+      setZoom(prev => {
+        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta));
+        if (next === prev) return prev;
+        // Zoom around cursor
+        const wx = (mx - panOffset.x) / prev;
+        const wy = (my - panOffset.y) / prev;
+        setPanOffset({ x: mx - wx * next, y: my - wy * next });
+        return next;
+      });
     };
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, []);
+  }, [selectedTokenId, panOffset]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const isEditable = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (isEditable(e.target)) return;
+      // Space => temp pan
+      if (e.code === "Space") { e.preventDefault(); setIsSpacePressed(true); return; }
+
+      // Tools
+      if (!e.ctrlKey && !e.metaKey) {
+        if (e.key === "v" || e.key === "V") setTool("move");
+        else if (e.key === "p" || e.key === "P") setTool("pencil");
+        else if (e.key === "e" || e.key === "E") setTool("eraser");
+        else if (e.key === "l" || e.key === "L") setTool("line");
+        else if (e.key === "t" || e.key === "T") setTool("text");
+        else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
+      }
+
+      if (selectedTokenId) {
+        const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
+        if (e.key === "ArrowUp") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, -step); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, step); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); moveTokenBy(selectedTokenId, -step, 0); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); moveTokenBy(selectedTokenId, step, 0); }
+        else if (e.key === "r") rotateToken(selectedTokenId, 15);
+        else if (e.key === "R") rotateToken(selectedTokenId, -15);
+        else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
+        else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
+        else if (e.key === "f" || e.key === "F") centerOnToken(selectedTokenId);
+      }
+
+      // Undo / Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) { e.preventDefault(); redo(); }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") setIsSpacePressed(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTokenId, tokens, collisionEnabled]);
 
   const findTokenAt = (x: number, y: number): TokenItem | null => {
     for (let i = tokens.length - 1; i >= 0; i--) {
@@ -538,12 +768,20 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getCanvasCoords(e);
+    // Middle click or space => pan
+    if (e.button === 1 || isSpacePressed) {
+      setLastPanPoint({ x: e.clientX, y: e.clientY });
+      setIsDrawing(true);
+      return;
+    }
+
     const tokensLayer = layers.find(l => l.id === "tokens");
     if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
+        setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
         return;
@@ -574,14 +812,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!isDrawing) return;
     if (draggedToken) {
       const coords = getCanvasCoords(e);
-      setTokens(prev => prev.map(t =>
-        t.id === draggedToken
-          ? { ...t, x: Math.round((coords.x - tokenDragOffset.x) / GRID_SIZE) * GRID_SIZE, y: Math.round((coords.y - tokenDragOffset.y) / GRID_SIZE) * GRID_SIZE }
-          : t
-      ));
+      const draggedT = tokens.find(t => t.id === draggedToken);
+      if (!draggedT) return;
+      const rawX = coords.x - tokenDragOffset.x;
+      const rawY = coords.y - tokenDragOffset.y;
+      const sx = snapValue(rawX);
+      const sy = snapValue(rawY);
+      // Live collision: don't allow overlap; show last valid pos
+      let nextX = sx;
+      let nextY = sy;
+      if (collisionEnabled) {
+        const overlaps = tokens.some(o =>
+          o.id !== draggedToken && o.visible &&
+          tokensOverlap({ x: sx, y: sy, size: draggedT.size }, { x: o.x, y: o.y, size: o.size })
+        );
+        if (overlaps) { nextX = draggedT.x; nextY = draggedT.y; }
+      }
+      setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
-    if (tool === "move" && lastPanPoint) {
+    if ((tool === "move" || isSpacePressed) && lastPanPoint) {
       const dx = e.clientX - lastPanPoint.x;
       const dy = e.clientY - lastPanPoint.y;
       setPanOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
@@ -599,31 +849,39 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = () => {
-    if (draggedToken) { setDraggedToken(null); setIsDrawing(false); return; }
-    if (tool === "move") { setIsDrawing(false); setLastPanPoint(null); return; }
+    if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
+    if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) { setActions(prev => [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
     setIsDrawing(false);
   };
 
   const undo = () => { setActions(prev => { if (!prev.length) return prev; setUndoneActions(u => [...u, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
   const redo = () => { setUndoneActions(prev => { if (!prev.length) return prev; setActions(a => [...a, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
-  const clearAll = () => { if (!confirm("Effacer tout le plateau ?")) return; setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1); mapImageRef.current = null; setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l)); };
-  const exportCanvas = () => { const canvas = canvasRef.current; if (!canvas) return; const link = document.createElement("a"); link.download = "aetheria-tabletop.png"; link.href = canvas.toDataURL(); link.click(); };
+  const clearAll = () => {
+    if (!confirm("Effacer tout le plateau ?")) return;
+    setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1);
+    mapImageRef.current = null;
+    setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+  };
+  const exportCanvas = () => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const link = document.createElement("a"); link.download = "aetheria-tabletop.png"; link.href = canvas.toDataURL(); link.click();
+  };
   const zoomIn = () => setZoom(prev => Math.min(MAX_ZOOM, prev + 0.15));
   const zoomOut = () => setZoom(prev => Math.max(MIN_ZOOM, prev - 0.15));
   const resetView = () => { setZoom(1); setPanOffset({ x: 0, y: 0 }); };
 
   const selectedToken = tokens.find(t => t.id === selectedTokenId);
 
-  const tools_list: { id: Tool; icon: React.ReactNode; label: string }[] = [
-    { id: "move", icon: <Move className="h-4 w-4" />, label: "Déplacer" },
-    { id: "token", icon: <Users className="h-4 w-4" />, label: "Sélection jeton" },
-    { id: "pencil", icon: <Pencil className="h-4 w-4" />, label: "Crayon" },
-    { id: "eraser", icon: <Eraser className="h-4 w-4" />, label: "Gomme" },
-    { id: "line", icon: <Ruler className="h-4 w-4" />, label: "Règle" },
-    { id: "rect", icon: <Square className="h-4 w-4" />, label: "Rectangle" },
-    { id: "circle", icon: <Circle className="h-4 w-4" />, label: "Cercle" },
-    { id: "text", icon: <Type className="h-4 w-4" />, label: "Texte" },
+  const tools_list: { id: Tool; icon: React.ReactNode; label: string; key: string }[] = [
+    { id: "move", icon: <Move className="h-4 w-4" />, label: "Déplacer", key: "V" },
+    { id: "token", icon: <Users className="h-4 w-4" />, label: "Sélection jeton", key: "" },
+    { id: "pencil", icon: <Pencil className="h-4 w-4" />, label: "Crayon", key: "P" },
+    { id: "eraser", icon: <Eraser className="h-4 w-4" />, label: "Gomme", key: "E" },
+    { id: "line", icon: <Ruler className="h-4 w-4" />, label: "Règle", key: "L" },
+    { id: "rect", icon: <Square className="h-4 w-4" />, label: "Rectangle", key: "" },
+    { id: "circle", icon: <Circle className="h-4 w-4" />, label: "Cercle", key: "" },
+    { id: "text", icon: <Type className="h-4 w-4" />, label: "Texte", key: "T" },
   ];
 
   const getLayerIcon = (type: string) => {
@@ -638,6 +896,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const getCursor = () => {
     if (draggedToken) return "grabbing";
+    if (isSpacePressed) return "grab";
     if (tool === "move") return "grab";
     if (tool === "token") return "pointer";
     return "crosshair";
@@ -648,7 +907,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
         {tools_list.map(t => (
-          <Button key={t.id} variant={tool === t.id ? "default" : "ghost"} size="icon" className="h-9 w-9" onClick={() => setTool(t.id)} title={t.label}>
+          <Button
+            key={t.id}
+            variant={tool === t.id ? "default" : "ghost"}
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setTool(t.id)}
+            title={t.key ? `${t.label} (${t.key})` : t.label}
+          >
             {t.icon}
           </Button>
         ))}
@@ -678,16 +944,37 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
+        <Button
+          variant={snapToGrid ? "default" : "ghost"}
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => setSnapToGrid(s => !s)}
+          title={`Magnétisme grille (G) ${snapToGrid ? "ON" : "OFF"}`}
+        >
+          <Magnet className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={collisionEnabled ? "default" : "ghost"}
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => setCollisionEnabled(c => !c)}
+          title={`Collision jetons ${collisionEnabled ? "ON" : "OFF"}`}
+        >
+          <Crosshair className="h-4 w-4" />
+        </Button>
+
+        <Separator orientation="vertical" className="mx-1 h-6" />
+
         <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomOut} title="Dézoomer"><ZoomOut className="h-4 w-4" /></Button>
         <button onClick={resetView} className="min-w-[48px] rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" title="Réinitialiser">{Math.round(zoom * 100)}%</button>
         <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomIn} title="Zoomer"><ZoomIn className="h-4 w-4" /></Button>
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undo} title="Annuler" disabled={actions.length === 0}><Undo2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redo} title="Rétablir" disabled={undoneActions.length === 0}><Redo2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undo} title="Annuler (Ctrl+Z)" disabled={actions.length === 0}><Undo2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redo} title="Rétablir (Ctrl+Y)" disabled={undoneActions.length === 0}><Redo2 className="h-4 w-4" /></Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={clearAll} title="Tout effacer"><Trash2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={exportCanvas} title="Exporter"><Download className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={exportCanvas} title="Exporter PNG"><Download className="h-4 w-4" /></Button>
 
         <div className="flex-1" />
 
@@ -756,7 +1043,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           </SheetContent>
         </Sheet>
 
-        {/* Bestiary + Layers panel */}
+        {/* Bestiaire */}
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5">
@@ -768,43 +1055,36 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               <SheetHeader className="p-4 pb-2">
                 <SheetTitle className="font-display text-gradient-gold">Bestiaire Aetheria</SheetTitle>
               </SheetHeader>
-              
               <div className="px-4 pb-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input 
-                    placeholder="Rechercher une créature..." 
-                    value={bestiarySearch} 
-                    onChange={e => setBestiarySearch(e.target.value)} 
-                    className="pl-9 h-9"
-                  />
+                  <Input placeholder="Rechercher une créature..." value={bestiarySearch} onChange={e => setBestiarySearch(e.target.value)} className="pl-9 h-9" />
                 </div>
               </div>
-
               <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-240px)] px-4">
-                    <div className="space-y-1.5 py-2">
-                      {waCreatures.map(creature => (
-                        <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
-                            <Skull className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{creature.name}</p>
-                            <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size} • {creature.profile}</p>
-                          </div>
-                          {isGM && (
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer sur la carte">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          )}
+                <ScrollArea className="h-[calc(100vh-240px)] px-4">
+                  <div className="space-y-1.5 py-2">
+                    {waCreatures.map(creature => (
+                      <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
+                          <Skull className="h-4 w-4" />
                         </div>
-                      ))}
-                      {waCreatures.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
-                      )}
-                    </div>
-                  </ScrollArea>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{creature.name}</p>
+                          <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size} • {creature.profile}</p>
+                        </div>
+                        {isGM && (
+                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer sur la carte">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {waCreatures.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </div>
           </SheetContent>
@@ -884,7 +1164,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   {tokens.map(token => (
                     <div key={token.id} className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${token.id === selectedTokenId ? "border-primary bg-primary/10" : "border-border bg-muted/20"}`}>
                       <div className="h-5 w-5 shrink-0 rounded-full" style={{ backgroundColor: token.color }} />
-                      <span className="flex-1 text-sm truncate">{token.name}</span>
+                      <button className="flex-1 text-sm truncate text-left" onClick={() => { setSelectedTokenId(token.id); centerOnToken(token.id); }}>
+                        {token.name}
+                      </button>
                       {token.hp !== undefined && (
                         <span className="text-xs text-muted-foreground">{token.hp}/{token.maxHp}</span>
                       )}
@@ -920,7 +1202,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             }
           }}
           onDragLeave={(e) => {
-            // Only clear when leaving the container itself
             if (e.currentTarget === e.target) setIsDragOverCanvas(false);
           }}
           onDrop={(e) => {
@@ -940,6 +1221,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onContextMenu={(e) => e.preventDefault()}
             className="block h-full w-full"
           />
 
@@ -954,16 +1236,23 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <ZoomIn className="h-3 w-3" /> {Math.round(zoom * 100)}%
           </div>
-          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <Layers className="h-3 w-3" /> {layers.filter(l => l.visible).length}/{layers.length}
+            {snapToGrid && <span className="text-primary">• Magnet</span>}
+            {collisionEnabled && <span className="text-primary">• Collision</span>}
+          </div>
+
+          {/* Help hint */}
+          <div className="pointer-events-none absolute top-3 left-3 rounded-md bg-card/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
+            Espace = pan • Molette = zoom • Maj+Molette = rotation • R/⇧R = tourner • ←↑→↓ = bouger • Suppr = supprimer • Ctrl+D = dupliquer • F = recentrer
           </div>
 
           <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
         </div>
 
         {/* Selected token detail panel */}
-        {selectedToken && isGM && (
-          <div className="w-56 shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 overflow-y-auto">
+        {selectedToken && (
+          <div className="w-60 shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 overflow-y-auto">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: selectedToken.color }} />
               <div className="min-w-0">
@@ -975,7 +1264,49 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 )}
               </div>
             </div>
-            
+
+            {/* Rotation */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><RotateCw className="h-3 w-3" /> Rotation</span>
+                <span className="text-xs font-medium">{selectedToken.rotation}°</span>
+              </div>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</Button>
+                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, -45)}>-45°</Button>
+                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, 45)}>+45°</Button>
+                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</Button>
+              </div>
+              <Slider
+                value={[selectedToken.rotation]}
+                onValueChange={([v]) => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, rotation: v } : t))}
+                min={0} max={359} step={1}
+              />
+            </div>
+
+            {/* Size */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Maximize2 className="h-3 w-3" /> Taille</span>
+                <span className="text-xs font-medium">{selectedToken.sizeUnits}×{selectedToken.sizeUnits}</span>
+              </div>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map(n => (
+                  <Button
+                    key={n}
+                    size="sm"
+                    variant={selectedToken.sizeUnits === n ? "default" : "outline"}
+                    className="flex-1 h-7 text-xs"
+                    onClick={() => resizeToken(selectedToken.id, n)}
+                  >
+                    {n}×{n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             {selectedToken.hp !== undefined && (
               <>
                 <Separator />
@@ -999,8 +1330,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 </div>
               </>
             )}
-            
+
             <Separator />
+            <div className="grid grid-cols-2 gap-1">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateToken(selectedToken.id)} title="Ctrl+D">
+                <Copy className="mr-1 h-3 w-3" /> Dupliquer
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => centerOnToken(selectedToken.id)} title="F">
+                <Crosshair className="mr-1 h-3 w-3" /> Centrer
+              </Button>
+            </div>
             <Button size="sm" variant="destructive" className="w-full h-7 text-xs" onClick={() => removeToken(selectedToken.id)}>
               <Trash2 className="mr-1 h-3 w-3" /> Retirer
             </Button>
