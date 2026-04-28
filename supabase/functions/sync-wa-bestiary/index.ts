@@ -23,8 +23,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Scrape the WA bestiary page
-    console.log('Scraping Worlds Awakening bestiary...');
+    console.log('Scraping Worlds Awakening bestiary index...');
     const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -49,27 +48,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    const markdown = scrapeData.data?.markdown || scrapeData.markdown || '';
+    const markdown: string = scrapeData.data?.markdown || scrapeData.markdown || '';
     console.log(`Scraped ${markdown.length} chars of markdown`);
 
-    // Parse creatures from markdown
-    // WA bestiary pages typically list creatures with stats
     const creatures = parseWACreatures(markdown);
     console.log(`Parsed ${creatures.length} creatures`);
 
     if (creatures.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: 'No new creatures found in scraped data', parsed: 0 }),
+        JSON.stringify({ success: true, message: 'Aucune créature trouvée', parsed: 0, debug: markdown.substring(0, 500) }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Upsert creatures (match by name to avoid duplicates)
     let inserted = 0;
     let updated = 0;
+    let errors = 0;
 
     for (const creature of creatures) {
-      // Check if creature already exists (official ones have created_by = null)
       const { data: existing } = await supabase
         .from('wa_creatures')
         .select('id')
@@ -82,19 +78,21 @@ Deno.serve(async (req) => {
           .from('wa_creatures')
           .update(creature)
           .eq('id', existing.id);
-        if (!error) updated++;
+        if (error) { errors++; console.error('Update err', creature.name, error.message); }
+        else updated++;
       } else {
         const { error } = await supabase
           .from('wa_creatures')
           .insert(creature);
-        if (!error) inserted++;
+        if (error) { errors++; console.error('Insert err', creature.name, error.message); }
+        else inserted++;
       }
     }
 
-    console.log(`Sync complete: ${inserted} inserted, ${updated} updated`);
+    console.log(`Sync complete: ${inserted} inserted, ${updated} updated, ${errors} errors`);
 
     return new Response(
-      JSON.stringify({ success: true, inserted, updated, total: creatures.length }),
+      JSON.stringify({ success: true, inserted, updated, errors, total: creatures.length }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -122,59 +120,66 @@ interface ParsedCreature {
   charisma: number;
   description: string;
   author: string;
+  image_url?: string | null;
 }
 
+/**
+ * Parse the WA bestiary index markdown.
+ * Each creature block follows this pattern:
+ *
+ *   [![](https://.../field_image/.../xxx.png.webp?...)](https://.../user/NN/bestiary/ID)
+ *   [Nom Créature](https://.../user/NN/bestiary/ID)
+ *   Puissance - Taille - Profil
+ *   [Imprimer](.../wa/creature/ID/print)
+ *   **RA:** X/Y
+ *   **FOR** +N ... etc
+ *   Publié par [Auteur](...)
+ */
 function parseWACreatures(markdown: string): ParsedCreature[] {
   const creatures: ParsedCreature[] = [];
 
-  // Try to find creature entries in the markdown
-  // WA bestiary format can vary, we try multiple patterns
-  
-  // Pattern 1: Heading-based sections (## Creature Name)
-  const sections = markdown.split(/^#{1,3}\s+/m).filter(s => s.trim());
+  // Regex capturing each creature block by anchoring on the "Imprimer" line + RA + 6 stats
+  const blockRegex = /\[([^\]\n]+?)\]\(https:\/\/www\.worlds-awakening\.com\/[^)]*?\/bestiary\/(\d+)\)\s*\n+\s*([^\n]+?)\s*\n[\s\S]*?\*\*RA:\*\*\s*([^\n]+)\n+[\s\S]*?\*\*FOR\*\*\s*([+-]?\d+)\n+[\s\S]*?\*\*DEX\*\*\s*([+-]?\d+)\n+[\s\S]*?\*\*CON\*\*\s*([+-]?\d+)\n+[\s\S]*?\*\*INT\*\*\s*([+-]?\d+)\n+[\s\S]*?\*\*SAG\*\*\s*([+-]?\d+)\n+[\s\S]*?\*\*CHA\*\*\s*([+-]?\d+)[\s\S]*?Publié par\s*\[([^\]]+)\]/g;
 
-  for (const section of sections) {
-    const lines = section.trim().split('\n');
-    const name = lines[0]?.trim();
-    
-    if (!name || name.length < 2 || name.length > 100) continue;
-    // Skip non-creature headings
-    if (/bestiaire|accueil|menu|navigation|filtres?|recherche/i.test(name)) continue;
+  // Build a quick lookup of creature ID -> image URL by scanning image lines
+  const imageMap = new Map<string, string>();
+  const imgRegex = /\[!\[\]\((https:\/\/[^)]+\.webp[^)]*)\)\]\(https:\/\/www\.worlds-awakening\.com\/[^)]*?\/bestiary\/(\d+)\)/g;
+  let imgMatch;
+  while ((imgMatch = imgRegex.exec(markdown)) !== null) {
+    imageMap.set(imgMatch[2], imgMatch[1]);
+  }
 
-    const text = lines.slice(1).join('\n');
-    
-    // Try to extract stats
-    const creature: ParsedCreature = {
+  let m;
+  const seen = new Set<string>();
+  while ((m = blockRegex.exec(markdown)) !== null) {
+    const [, rawName, id, meta, ra, forStr, dexStr, conStr, intStr, sagStr, chaStr, author] = m;
+    const name = rawName.trim();
+    if (seen.has(name)) continue;
+    seen.add(name);
+
+    // meta = "Puissance - Taille - Profil"
+    const parts = meta.split(/\s+-\s+/).map(s => s.trim());
+    const power_level = parts[0] || 'Standard';
+    const size = parts[1] || 'Moyen';
+    const profile = parts[2] || 'Équilibré';
+
+    creatures.push({
       name,
-      size: extractField(text, /taille\s*[:：]\s*(\S+)/i) || 'Moyen',
-      power_level: extractField(text, /puissance\s*[:：]\s*([^\n]+)/i) || 'Standard',
-      profile: extractField(text, /profil\s*[:：]\s*([^\n]+)/i) || 'Équilibré',
-      ra: extractField(text, /ra\s*[:：]\s*(\S+)/i) || '1/1',
-      strength: extractStat(text, /for(?:ce)?\s*[:：]?\s*([+-]?\d+)/i),
-      dexterity: extractStat(text, /dex(?:térité)?\s*[:：]?\s*([+-]?\d+)/i),
-      constitution: extractStat(text, /con(?:stitution)?\s*[:：]?\s*([+-]?\d+)/i),
-      intelligence: extractStat(text, /int(?:elligence)?\s*[:：]?\s*([+-]?\d+)/i),
-      wisdom: extractStat(text, /sag(?:esse)?\s*[:：]?\s*([+-]?\d+)/i),
-      charisma: extractStat(text, /cha(?:risme)?\s*[:：]?\s*([+-]?\d+)/i),
-      description: text.substring(0, 500).trim() || `Créature de Worlds Awakening`,
-      author: 'Worlds Awakening (auto-sync)',
-    };
-
-    // Only add if it looks like a creature (has at least a name)
-    if (creature.name && creature.name !== '') {
-      creatures.push(creature);
-    }
+      size,
+      power_level,
+      profile,
+      ra: ra.trim(),
+      strength: parseInt(forStr) || 0,
+      dexterity: parseInt(dexStr) || 0,
+      constitution: parseInt(conStr) || 0,
+      intelligence: parseInt(intStr) || 0,
+      wisdom: parseInt(sagStr) || 0,
+      charisma: parseInt(chaStr) || 0,
+      description: `${name} — ${power_level}, ${size}, profil ${profile}. Créature officielle du bestiaire communautaire Worlds Awakening.`,
+      author: author.trim(),
+      image_url: imageMap.get(id) || null,
+    });
   }
 
   return creatures;
-}
-
-function extractField(text: string, pattern: RegExp): string | null {
-  const match = text.match(pattern);
-  return match ? match[1].trim() : null;
-}
-
-function extractStat(text: string, pattern: RegExp): number {
-  const match = text.match(pattern);
-  return match ? parseInt(match[1]) : 0;
 }
