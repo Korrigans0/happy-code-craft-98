@@ -1,4 +1,10 @@
 // Game system definitions — Aetheria VTT
+//
+// Source de données centrale : src/lib/aetheria-data.ts
+// Ce fichier ré-exporte les données Aetheria et conserve les constantes
+// "Worlds Awakening" historiques (mécaniques de fiches) pour compatibilité.
+
+export * from "./aetheria-data";
 
 export const GAME_SYSTEMS = [
   { value: "Aetheria", label: "Aetheria" },
