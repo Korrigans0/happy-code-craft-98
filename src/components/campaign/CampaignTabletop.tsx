@@ -704,6 +704,143 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return () => container.removeEventListener("wheel", handleWheel);
   }, [selectedTokenId, panOffset]);
 
+  // Touch support: 1 finger = pan/drag, 2 fingers = pinch-to-zoom
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let mode: "none" | "pan" | "pinch" | "token" = "none";
+    let lastTouch = { x: 0, y: 0 };
+    let lastDist = 0;
+    let lastCenter = { x: 0, y: 0 };
+    let activeTokenId: string | null = null;
+    let tokenOffset = { x: 0, y: 0 };
+
+    const dist = (a: Touch, b: Touch) =>
+      Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const center = (a: Touch, b: Touch) => ({
+      x: (a.clientX + b.clientX) / 2,
+      y: (a.clientY + b.clientY) / 2,
+    });
+    const toWorld = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left - panOffset.x) / zoom,
+        y: (clientY - rect.top - panOffset.y) / zoom,
+      };
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        lastTouch = { x: t.clientX, y: t.clientY };
+        const tokensLayer = layers.find(l => l.id === "tokens");
+        if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
+          const w = toWorld(t.clientX, t.clientY);
+          const hit = findTokenAt(w.x, w.y);
+          if (hit) {
+            activeTokenId = hit.id;
+            tokenOffset = { x: w.x - hit.x, y: w.y - hit.y };
+            setSelectedTokenId(hit.id);
+            setDraggedToken(hit.id);
+            mode = "token";
+            return;
+          }
+          setSelectedTokenId(null);
+        }
+        mode = "pan";
+      } else if (e.touches.length === 2) {
+        mode = "pinch";
+        lastDist = dist(e.touches[0], e.touches[1]);
+        lastCenter = center(e.touches[0], e.touches[1]);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (mode === "token" && e.touches.length === 1 && activeTokenId) {
+        const t = e.touches[0];
+        const w = toWorld(t.clientX, t.clientY);
+        const rawX = w.x - tokenOffset.x;
+        const rawY = w.y - tokenOffset.y;
+        const sx = snapValue(rawX);
+        const sy = snapValue(rawY);
+        const tokenId = activeTokenId;
+        setTokens(prev => prev.map(tok => {
+          if (tok.id !== tokenId) return tok;
+          if (collisionEnabled) {
+            const overlaps = prev.some(o =>
+              o.id !== tokenId && o.visible &&
+              tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size })
+            );
+            if (overlaps) return tok;
+          }
+          return { ...tok, x: sx, y: sy };
+        }));
+        return;
+      }
+      if (mode === "pan" && e.touches.length === 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - lastTouch.x;
+        const dy = t.clientY - lastTouch.y;
+        setPanOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+        lastTouch = { x: t.clientX, y: t.clientY };
+        return;
+      }
+      if (mode === "pinch" && e.touches.length === 2) {
+        const newDist = dist(e.touches[0], e.touches[1]);
+        const newCenter = center(e.touches[0], e.touches[1]);
+        const rect = canvas.getBoundingClientRect();
+        const cx = newCenter.x - rect.left;
+        const cy = newCenter.y - rect.top;
+        const factor = newDist / (lastDist || newDist);
+        setZoom(prev => {
+          const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * factor));
+          if (next === prev) {
+            // still pan with center movement
+            const cdx = newCenter.x - lastCenter.x;
+            const cdy = newCenter.y - lastCenter.y;
+            setPanOffset(p => ({ x: p.x + cdx, y: p.y + cdy }));
+            return prev;
+          }
+          const wx = (cx - panOffset.x) / prev;
+          const wy = (cy - panOffset.y) / prev;
+          const cdx = newCenter.x - lastCenter.x;
+          const cdy = newCenter.y - lastCenter.y;
+          setPanOffset({ x: cx - wx * next + cdx, y: cy - wy * next + cdy });
+          return next;
+        });
+        lastDist = newDist;
+        lastCenter = newCenter;
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        mode = "none";
+        activeTokenId = null;
+        setDraggedToken(null);
+      } else if (e.touches.length === 1 && mode === "pinch") {
+        // transition pinch -> pan
+        const t = e.touches[0];
+        lastTouch = { x: t.clientX, y: t.clientY };
+        mode = "pan";
+      }
+    };
+
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [panOffset, zoom, tool, layers, collisionEnabled]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const isEditable = (el: EventTarget | null): boolean => {
