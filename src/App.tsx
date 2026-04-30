@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import CookieBanner from "@/components/CookieBanner";
 import Index from "./pages/Index";
 import Campaigns from "./pages/Campaigns";
 import Characters from "./pages/Characters";
@@ -39,6 +41,8 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <MobileBottomNav />
+            <CookieBanner />
           </TooltipProvider>
         </AuthProvider>
       </BrowserRouter>

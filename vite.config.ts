@@ -15,4 +15,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Cibles larges pour assurer la compatibilité avec les navigateurs UE
+  // (Safari iOS 14+, Chrome/Edge/Firefox récents inclus).
+  build: {
+    target: ["es2020", "edge90", "firefox90", "chrome90", "safari14"],
+    cssTarget: ["chrome90", "edge90", "firefox90", "safari14"],
+  },
 }));
