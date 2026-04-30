@@ -1223,6 +1223,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onMouseLeave={handleMouseUp}
             onContextMenu={(e) => e.preventDefault()}
             className="block h-full w-full"
+            style={{ touchAction: "none" }}
           />
 
           {isDragOverCanvas && (
