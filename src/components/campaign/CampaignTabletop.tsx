@@ -91,7 +91,7 @@ interface CampaignTabletopProps {
 const GRID_SIZE = 40;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
-const FT_PER_SQUARE = 5;
+const M_PER_SQUARE = 1.5;
 
 const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -428,7 +428,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (isMajor) continue;
         ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
       }
-      // Major grid (every 5 squares = 25 ft)
+      // Major grid (every 5 squares = 7,5 m)
       ctx.strokeStyle = "hsl(42, 50%, 45%)";
       ctx.lineWidth = 1 / zoom;
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
@@ -480,12 +480,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const dy = last.y - action.points[0].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const squares = Math.round(dist / GRID_SIZE);
-          const feet = squares * FT_PER_SQUARE;
+          const meters = squares * M_PER_SQUARE;
           ctx.font = `${14 / zoom}px 'Lora', serif`;
           ctx.fillStyle = action.color;
           const midX = (action.points[0].x + last.x) / 2;
           const midY = (action.points[0].y + last.y) / 2;
-          ctx.fillText(`${feet} ft (${squares} cases)`, midX + 8, midY - 8);
+          ctx.fillText(`${meters.toLocaleString("fr-BE")} m (${squares} cases)`, midX + 8, midY - 8);
         } else if (action.type === "rect" && action.points.length >= 2) {
           const last = action.points[action.points.length - 1];
           ctx.strokeRect(action.points[0].x, action.points[0].y, last.x - action.points[0].x, last.y - action.points[0].y);
@@ -627,7 +627,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const dyw = cy - sy;
           const dist = Math.sqrt(dxw * dxw + dyw * dyw);
           const squares = Math.round(dist / GRID_SIZE);
-          const feet = squares * FT_PER_SQUARE;
+          const meters = squares * M_PER_SQUARE;
           ctx.save();
           ctx.strokeStyle = "hsl(42, 65%, 58%)";
           ctx.lineWidth = 2 / zoom;
@@ -639,7 +639,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.setLineDash([]);
           ctx.fillStyle = "hsl(42, 65%, 58%)";
           ctx.font = `bold ${14 / zoom}px 'Lora', serif`;
-          ctx.fillText(`${feet} ft (${squares} cases)`, cx + 12, cy - 12);
+          ctx.fillText(`${meters.toLocaleString("fr-BE")} m (${squares} cases)`, cx + 12, cy - 12);
           ctx.restore();
         }
       }
