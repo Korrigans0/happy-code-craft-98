@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      aetheria_creatures: {
+        Row: {
+          agilite: number
+          attaque: string | null
+          campaign_id: string | null
+          capacites: Json
+          conditions_immunites: string[]
+          created_at: string
+          created_by: string
+          def_magique: number
+          def_physique: number
+          degats: string | null
+          description: string
+          endurance: number
+          esprit: number
+          force: number
+          id: string
+          image_url: string | null
+          initiative_bonus: number
+          is_public: boolean
+          lore: string | null
+          name: string
+          pe: number
+          pe_max: number
+          pv: number
+          pv_max: number
+          reduction_magique: number
+          reduction_physique: number
+          size: string
+          updated_at: string
+        }
+        Insert: {
+          agilite?: number
+          attaque?: string | null
+          campaign_id?: string | null
+          capacites?: Json
+          conditions_immunites?: string[]
+          created_at?: string
+          created_by: string
+          def_magique?: number
+          def_physique?: number
+          degats?: string | null
+          description?: string
+          endurance?: number
+          esprit?: number
+          force?: number
+          id?: string
+          image_url?: string | null
+          initiative_bonus?: number
+          is_public?: boolean
+          lore?: string | null
+          name: string
+          pe?: number
+          pe_max?: number
+          pv?: number
+          pv_max?: number
+          reduction_magique?: number
+          reduction_physique?: number
+          size?: string
+          updated_at?: string
+        }
+        Update: {
+          agilite?: number
+          attaque?: string | null
+          campaign_id?: string | null
+          capacites?: Json
+          conditions_immunites?: string[]
+          created_at?: string
+          created_by?: string
+          def_magique?: number
+          def_physique?: number
+          degats?: string | null
+          description?: string
+          endurance?: number
+          esprit?: number
+          force?: number
+          id?: string
+          image_url?: string | null
+          initiative_bonus?: number
+          is_public?: boolean
+          lore?: string | null
+          name?: string
+          pe?: number
+          pe_max?: number
+          pv?: number
+          pv_max?: number
+          reduction_magique?: number
+          reduction_physique?: number
+          size?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aetheria_creatures_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_members: {
         Row: {
           campaign_id: string
@@ -673,6 +774,53 @@ export type Database = {
           school?: string
         }
         Relationships: []
+      }
+      tabletop_state: {
+        Row: {
+          campaign_id: string
+          drawings: Json
+          fog_visible: boolean
+          id: string
+          map_image_url: string | null
+          pan_offset: Json
+          tokens: Json
+          updated_at: string
+          updated_by: string | null
+          zoom: number
+        }
+        Insert: {
+          campaign_id: string
+          drawings?: Json
+          fog_visible?: boolean
+          id?: string
+          map_image_url?: string | null
+          pan_offset?: Json
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
+          zoom?: number
+        }
+        Update: {
+          campaign_id?: string
+          drawings?: Json
+          fog_visible?: boolean
+          id?: string
+          map_image_url?: string | null
+          pan_offset?: Json
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
+          zoom?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tabletop_state_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wa_creatures: {
         Row: {
