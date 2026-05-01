@@ -889,7 +889,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [panOffset, zoom, tool, layers, collisionEnabled]);
+  }, [panOffset, zoom, tool, layers, collisionEnabled, color, brushSize, activeDrawLayer]);
 
   // Keyboard shortcuts
   useEffect(() => {
