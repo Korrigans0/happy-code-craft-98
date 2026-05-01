@@ -91,7 +91,7 @@ interface CampaignTabletopProps {
 const GRID_SIZE = 40;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
-const FT_PER_SQUARE = 5;
+const M_PER_SQUARE = 1.5;
 
 const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
