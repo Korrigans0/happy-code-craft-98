@@ -28,6 +28,8 @@ import {
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTabletopSync } from "@/hooks/useTabletopSync";
+import { useAuth } from "@/hooks/useAuth";
 
 type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
 
@@ -131,6 +133,47 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 70 },
   ]);
+
+  // ── Synchronisation temps réel du plateau ────────────────────
+  const { user } = useAuth();
+  const { saveState } = useTabletopSync({
+    campaignId,
+    userId: user?.id || "",
+    onStateReceived: (state) => {
+      setTokens(state.tokens as TokenItem[]);
+      setActions(state.drawings as DrawAction[]);
+      const currentMapUrl = layers.find(l => l.id === "map")?.imageUrl;
+      if (state.map_image_url && state.map_image_url !== currentMapUrl) {
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          mapImageRef.current = img;
+          setLayers(prev => prev.map(l =>
+            l.id === "map" ? { ...l, imageUrl: state.map_image_url! } : l
+          ));
+        };
+        img.src = state.map_image_url;
+      } else if (!state.map_image_url && currentMapUrl) {
+        mapImageRef.current = null;
+        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+      }
+      setLayers(prev => prev.map(l =>
+        l.id === "fog" ? { ...l, visible: state.fog_visible } : l
+      ));
+    },
+    debounceMs: 250,
+  });
+
+  // Sauvegarde automatique des jetons et dessins
+  useEffect(() => {
+    if (!user?.id) return;
+    saveState({ tokens });
+  }, [tokens, saveState, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    saveState({ drawings: actions });
+  }, [actions, saveState, user?.id]);
 
   // Fetch WA creatures
   const { data: waCreatures = [] } = useQuery({
@@ -322,7 +365,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const toggleLayerVisibility = (layerId: string) => {
-    setLayers(prev => prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l));
+    setLayers(prev => {
+      const next = prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l);
+      if (layerId === "fog") {
+        const fogVisible = next.find(l => l.id === "fog")?.visible ?? false;
+        saveState({ fog_visible: fogVisible });
+      }
+      return next;
+    });
   };
 
   const updateLayerOpacity = (layerId: string, opacity: number) => {
@@ -334,13 +384,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
       const img = new window.Image();
       img.onload = () => {
         mapImageRef.current = img;
-        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: ev.target?.result as string } : l));
+        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: dataUrl } : l));
+        saveState({ map_image_url: dataUrl });
         redrawCanvas();
       };
-      img.src = ev.target?.result as string;
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -1318,7 +1370,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
                   </label>
                   {layers.find(l => l.id === "map")?.imageUrl && (
-                    <Button variant="destructive" size="sm" className="w-full" onClick={() => { mapImageRef.current = null; setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l)); }}>
+                    <Button variant="destructive" size="sm" className="w-full" onClick={() => { mapImageRef.current = null; setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l)); saveState({ map_image_url: null }); }}>
                       <X className="mr-1 h-3 w-3" /> Retirer la carte
                     </Button>
                   )}
