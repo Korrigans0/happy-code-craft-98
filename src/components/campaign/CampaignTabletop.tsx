@@ -709,7 +709,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let mode: "none" | "pan" | "pinch" | "token" = "none";
+    let mode: "none" | "pan" | "pinch" | "token" | "draw" = "none";
     let lastTouch = { x: 0, y: 0 };
     let lastDist = 0;
     let lastCenter = { x: 0, y: 0 };
@@ -744,13 +744,38 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             tokenOffset = { x: w.x - hit.x, y: w.y - hit.y };
             setSelectedTokenId(hit.id);
             setDraggedToken(hit.id);
+            setDragStart({ x: hit.x, y: hit.y });
             mode = "token";
             return;
           }
           setSelectedTokenId(null);
         }
+        // Drawing tools (règle, rectangle, cercle, crayon, gomme, texte)
+        if (tool === "line" || tool === "rect" || tool === "circle" || tool === "pencil" || tool === "eraser") {
+          const w = toWorld(t.clientX, t.clientY);
+          setCurrentAction({ type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
+          setIsDrawing(true);
+          mode = "draw";
+          return;
+        }
+        if (tool === "text") {
+          const w = toWorld(t.clientX, t.clientY);
+          const text = prompt("Texte à ajouter :");
+          if (text) {
+            const action: DrawAction = { type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
+            setActions(prev => [...prev, action]);
+            setUndoneActions([]);
+          }
+          mode = "none";
+          return;
+        }
         mode = "pan";
       } else if (e.touches.length === 2) {
+        // 2 doigts annulent un dessin en cours
+        if (mode === "draw") {
+          setCurrentAction(null);
+          setIsDrawing(false);
+        }
         mode = "pinch";
         lastDist = dist(e.touches[0], e.touches[1]);
         lastCenter = center(e.touches[0], e.touches[1]);
@@ -778,6 +803,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           }
           return { ...tok, x: sx, y: sy };
         }));
+        return;
+      }
+      if (mode === "draw" && e.touches.length === 1) {
+        const t = e.touches[0];
+        const w = toWorld(t.clientX, t.clientY);
+        setCurrentAction(prev => {
+          if (!prev) return prev;
+          if (tool === "pencil" || tool === "eraser") {
+            return { ...prev, points: [...prev.points, w] };
+          }
+          return { ...prev, points: [prev.points[0], w] };
+        });
         return;
       }
       if (mode === "pan" && e.touches.length === 1) {
@@ -818,6 +855,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     const onTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
+        if (mode === "draw") {
+          setCurrentAction(prev => {
+            if (prev) {
+              setActions(a => [...a, prev]);
+              setUndoneActions([]);
+            }
+            return null;
+          });
+          setIsDrawing(false);
+        }
+        if (mode === "token") {
+          setDragStart(null);
+        }
         mode = "none";
         activeTokenId = null;
         setDraggedToken(null);
