@@ -108,14 +108,15 @@ export function useTabletopSync({
           updated_at: new Date().toISOString(),
         };
 
-        if (state.tokens !== undefined) payload.tokens = state.tokens;
-        if (state.drawings !== undefined) payload.drawings = state.drawings;
+        if (state.tokens !== undefined) payload.tokens = state.tokens as unknown;
+        if (state.drawings !== undefined) payload.drawings = state.drawings as unknown;
         if (state.map_image_url !== undefined) payload.map_image_url = state.map_image_url;
         if (state.fog_visible !== undefined) payload.fog_visible = state.fog_visible;
 
         const { error } = await supabase
           .from("tabletop_state")
-          .upsert(payload, { onConflict: "campaign_id" });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .upsert(payload as any, { onConflict: "campaign_id" });
 
         if (error) {
           console.error("[Tabletop] Erreur sauvegarde:", error);
