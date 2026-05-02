@@ -6,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { X, Save, Sword, Shield, Sparkles, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
+
+import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -22,16 +22,6 @@ interface CharacterFormProps {
   gameSystem?: string;
 }
 
-// WA Skills & Languages
-const WA_SKILLS = [
-  "Acrobaties", "Athlétisme", "Discrétion", "Escalade", "Intimidation",
-  "Investigation", "Médecine", "Nature", "Perception", "Persuasion",
-  "Survie", "Tromperie", "Arcanes", "Religion", "Histoire"
-];
-
-const WA_LANGUAGES = [
-  "Commun", "Elfique", "Nain", "Orc", "Halfelin", "Ancien", "Draconique", "Abyssal"
-];
 
 const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const systemConfig = getSystemConfig();
@@ -62,42 +52,20 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     gold: 0,
     campaign: "Worlds Awakening",
     saving_throws: [],
-    skills: [],
-    languages: ["Commun"],
     ...character,
   });
 
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(formData.skills || []);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(formData.languages || ["Commun"]);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (character) {
       setFormData({ ...character });
-      setSelectedSkills(character.skills || []);
-      setSelectedLanguages(character.languages || ["Commun"]);
     }
   }, [character]);
 
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const toggleSkill = (skill: string) => {
-    const newSkills = selectedSkills.includes(skill)
-      ? selectedSkills.filter((s) => s !== skill)
-      : [...selectedSkills, skill];
-    setSelectedSkills(newSkills);
-    updateField("skills", newSkills);
-  };
-
-  const toggleLanguage = (lang: string) => {
-    const newLangs = selectedLanguages.includes(lang)
-      ? selectedLanguages.filter((l) => l !== lang)
-      : [...selectedLanguages, lang];
-    setSelectedLanguages(newLangs);
-    updateField("languages", newLangs);
   };
 
   const handleSubmit = () => {
@@ -169,7 +137,7 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
       <ScrollArea className="flex-1 p-4">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-5 bg-muted">
+          <TabsList className="mb-6 grid w-full grid-cols-4 bg-muted">
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Base</span>
@@ -185,10 +153,6 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
             <TabsTrigger value="lore" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Lore</span>
-            </TabsTrigger>
-            <TabsTrigger value="skills" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">Compét.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -662,40 +626,6 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
             </div>
           </TabsContent>
 
-          {/* Skills & Languages */}
-          <TabsContent value="skills" className="space-y-6">
-            <div>
-              <Label className="mb-3 block">Compétences Maîtrisées</Label>
-              <div className="flex flex-wrap gap-2">
-                {WA_SKILLS.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant={selectedSkills.includes(skill) ? "default" : "outline"}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-3 block">Langues Connues</Label>
-              <div className="flex flex-wrap gap-2">
-                {WA_LANGUAGES.map((lang) => (
-                  <Badge
-                    key={lang}
-                    variant={selectedLanguages.includes(lang) ? "default" : "outline"}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleLanguage(lang)}
-                  >
-                    {lang}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
       </ScrollArea>
     </div>
