@@ -49,7 +49,10 @@ const Compendium = () => {
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <TabsList className="flex gap-1 bg-muted/50 p-1">
                 <TabsTrigger value="wa-bestiary" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
-                  <Swords className="h-3.5 w-3.5" /> Bestiaire
+                  <Swords className="h-3.5 w-3.5" /> Bestiaire WA
+                </TabsTrigger>
+                <TabsTrigger value="aetheria-bestiary" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
+                  <Skull className="h-3.5 w-3.5" /> Bestiaire Aetheria
                 </TabsTrigger>
                 <TabsTrigger value="wa-codex" className="flex items-center gap-1.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground sm:text-sm">
                   <BookOpen className="h-3.5 w-3.5" /> Codex
@@ -65,6 +68,9 @@ const Compendium = () => {
 
             <TabsContent value="wa-bestiary">
               <WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} />
+            </TabsContent>
+            <TabsContent value="aetheria-bestiary">
+              <AetheriaBestiary isGM={!!user} />
             </TabsContent>
             <TabsContent value="wa-codex">
               <WACodex />
