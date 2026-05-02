@@ -22,16 +22,6 @@ interface CharacterFormProps {
   gameSystem?: string;
 }
 
-// WA Skills & Languages
-const WA_SKILLS = [
-  "Acrobaties", "Athlétisme", "Discrétion", "Escalade", "Intimidation",
-  "Investigation", "Médecine", "Nature", "Perception", "Persuasion",
-  "Survie", "Tromperie", "Arcanes", "Religion", "Histoire"
-];
-
-const WA_LANGUAGES = [
-  "Commun", "Elfique", "Nain", "Orc", "Halfelin", "Ancien", "Draconique", "Abyssal"
-];
 
 const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const systemConfig = getSystemConfig();
