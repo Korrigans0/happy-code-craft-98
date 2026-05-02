@@ -169,7 +169,7 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
       <ScrollArea className="flex-1 p-4">
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="mb-6 grid w-full grid-cols-5 bg-muted">
+          <TabsList className="mb-6 grid w-full grid-cols-4 bg-muted">
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Base</span>
