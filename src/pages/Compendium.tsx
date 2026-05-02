@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Swords, BookOpen, Globe } from "lucide-react";
+import { Search, Swords, BookOpen, Globe, Skull } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
@@ -8,6 +8,7 @@ import WACreaturesList from "@/components/compendium/WACreaturesList";
 import WACodex from "@/components/compendium/WACodex";
 import WAHistoire from "@/components/compendium/WAHistoire";
 import CreateWACreatureDialog from "@/components/compendium/CreateWACreatureDialog";
+import AetheriaBestiary from "@/components/compendium/AetheriaBestiary";
 import { useAuth } from "@/hooks/useAuth";
 
 const Compendium = () => {
