@@ -52,42 +52,20 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     gold: 0,
     campaign: "Worlds Awakening",
     saving_throws: [],
-    skills: [],
-    languages: ["Commun"],
     ...character,
   });
 
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(formData.skills || []);
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(formData.languages || ["Commun"]);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (character) {
       setFormData({ ...character });
-      setSelectedSkills(character.skills || []);
-      setSelectedLanguages(character.languages || ["Commun"]);
     }
   }, [character]);
 
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const toggleSkill = (skill: string) => {
-    const newSkills = selectedSkills.includes(skill)
-      ? selectedSkills.filter((s) => s !== skill)
-      : [...selectedSkills, skill];
-    setSelectedSkills(newSkills);
-    updateField("skills", newSkills);
-  };
-
-  const toggleLanguage = (lang: string) => {
-    const newLangs = selectedLanguages.includes(lang)
-      ? selectedLanguages.filter((l) => l !== lang)
-      : [...selectedLanguages, lang];
-    setSelectedLanguages(newLangs);
-    updateField("languages", newLangs);
   };
 
   const handleSubmit = () => {
