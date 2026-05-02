@@ -662,40 +662,6 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
             </div>
           </TabsContent>
 
-          {/* Skills & Languages */}
-          <TabsContent value="skills" className="space-y-6">
-            <div>
-              <Label className="mb-3 block">Compétences Maîtrisées</Label>
-              <div className="flex flex-wrap gap-2">
-                {WA_SKILLS.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant={selectedSkills.includes(skill) ? "default" : "outline"}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleSkill(skill)}
-                  >
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-3 block">Langues Connues</Label>
-              <div className="flex flex-wrap gap-2">
-                {WA_LANGUAGES.map((lang) => (
-                  <Badge
-                    key={lang}
-                    variant={selectedLanguages.includes(lang) ? "default" : "outline"}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleLanguage(lang)}
-                  >
-                    {lang}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
       </ScrollArea>
     </div>
