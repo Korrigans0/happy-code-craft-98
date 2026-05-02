@@ -186,10 +186,6 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Lore</span>
             </TabsTrigger>
-            <TabsTrigger value="skills" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">Compét.</span>
-            </TabsTrigger>
           </TabsList>
 
           {/* Basic Info */}
