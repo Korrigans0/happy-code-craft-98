@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Save, Trash2, RefreshCw, Copy } from "lucide-react";
+import { Save, Trash2, RefreshCw, Copy, MessageCircle, ExternalLink, Volume2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Campaign = Tables<"campaigns">;
@@ -21,30 +21,42 @@ interface CampaignSettingsProps {
 const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  
+
   const [title, setTitle] = useState(campaign.title);
   const [description, setDescription] = useState(campaign.description || "");
   const [isActive, setIsActive] = useState(campaign.is_active ?? true);
+  const [discordLink, setDiscordLink] = useState(
+    (campaign as Campaign & { discord_link?: string }).discord_link || ""
+  );
 
-  // Update campaign
+  // ── Mise à jour campagne ────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("campaigns")
-        .update({ title, description, is_active: isActive })
+        .update({
+          title,
+          description,
+          is_active: isActive,
+          // @ts-ignore — champ discord_link ajouté via migration
+          discord_link: discordLink || null,
+        })
         .eq("id", campaign.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaign", campaign.id] });
-      toast({ title: "Campagne mise à jour" });
+      toast({ title: "Campagne mise à jour ✓" });
+    },
+    onError: () => {
+      toast({ title: "Erreur lors de la sauvegarde", variant: "destructive" });
     },
   });
 
-  // Regenerate invite code
+  // ── Régénérer le code d'invitation ─────────────────────
   const regenerateCodeMutation = useMutation({
     mutationFn: async () => {
-      const newCode = Math.random().toString(36).substring(2, 10);
+      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
       const { error } = await supabase
         .from("campaigns")
         .update({ invite_code: newCode })
@@ -53,11 +65,11 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaign", campaign.id] });
-      toast({ title: "Nouveau code généré" });
+      toast({ title: "Nouveau code généré ✓" });
     },
   });
 
-  // Delete campaign
+  // ── Supprimer la campagne ───────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -79,9 +91,15 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
     }
   };
 
+  const isValidDiscordLink = (link: string) => {
+    if (!link) return true;
+    return link.startsWith("https://discord.gg/") || link.startsWith("https://discord.com/");
+  };
+
   return (
     <div className="space-y-6 max-w-2xl">
-      {/* General Settings */}
+
+      {/* ── Paramètres généraux ──────────────────────────── */}
       <Card className="bg-gradient-card border-border">
         <CardHeader>
           <CardTitle>Paramètres généraux</CardTitle>
@@ -115,31 +133,116 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
               onCheckedChange={setIsActive}
             />
           </div>
-          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+          >
             <Save className="mr-2 h-4 w-4" />
-            Sauvegarder
+            {updateMutation.isPending ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Invite Code */}
+      {/* ── Lien Discord ─────────────────────────────────── */}
+      <Card className="bg-gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-indigo-400" />
+            Vocal Discord
+          </CardTitle>
+          <CardDescription>
+            Ajoutez un lien vers votre salon vocal Discord. Vos joueurs pourront rejoindre
+            directement depuis l'interface de campagne.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="discord">Lien d'invitation Discord</Label>
+            <div className="flex gap-2">
+              <Input
+                id="discord"
+                value={discordLink}
+                onChange={(e) => setDiscordLink(e.target.value)}
+                placeholder="https://discord.gg/votre-serveur"
+                className={`flex-1 ${
+                  discordLink && !isValidDiscordLink(discordLink)
+                    ? "border-red-500 focus-visible:ring-red-500"
+                    : ""
+                }`}
+              />
+              {discordLink && isValidDiscordLink(discordLink) && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => window.open(discordLink, "_blank")}
+                  title="Tester le lien"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            {discordLink && !isValidDiscordLink(discordLink) && (
+              <p className="text-xs text-red-400">
+                Le lien doit commencer par https://discord.gg/ ou https://discord.com/
+              </p>
+            )}
+            {!discordLink && (
+              <p className="text-xs text-muted-foreground">
+                Créez un lien d'invitation dans Discord : clic droit sur un salon vocal → "Inviter des personnes"
+              </p>
+            )}
+          </div>
+
+          {/* Aperçu du bouton tel qu'il apparaîtra */}
+          {discordLink && isValidDiscordLink(discordLink) && (
+            <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 p-3">
+              <p className="text-xs text-indigo-400 mb-2 font-semibold">
+                Aperçu — Bouton affiché dans la campagne :
+              </p>
+              <div className="flex items-center gap-2 w-fit rounded-lg bg-indigo-600 px-4 py-2 text-white text-sm font-semibold">
+                <Volume2 className="h-4 w-4" />
+                Rejoindre le vocal
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending || (!!discordLink && !isValidDiscordLink(discordLink))}
+            variant="outline"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Sauvegarder le lien Discord
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Code d'invitation ────────────────────────────── */}
       <Card className="bg-gradient-card border-border">
         <CardHeader>
           <CardTitle>Code d'invitation</CardTitle>
-          <CardDescription>Partagez ce code avec vos joueurs pour qu'ils rejoignent la campagne</CardDescription>
+          <CardDescription>
+            Partagez ce code avec vos joueurs pour qu'ils rejoignent la campagne
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Input
               value={campaign.invite_code || ""}
               readOnly
-              className="font-mono text-lg"
+              className="font-mono text-lg tracking-widest"
             />
-            <Button variant="outline" size="icon" onClick={copyInviteCode}>
+            <Button variant="outline" size="icon" onClick={copyInviteCode} title="Copier le code">
               <Copy className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => regenerateCodeMutation.mutate()}>
-              <RefreshCw className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => regenerateCodeMutation.mutate()}
+              disabled={regenerateCodeMutation.isPending}
+              title="Régénérer"
+            >
+              <RefreshCw className={`h-4 w-4 ${regenerateCodeMutation.isPending ? "animate-spin" : ""}`} />
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -148,7 +251,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
+      {/* ── Zone de danger ───────────────────────────────── */}
       <Card className="bg-gradient-card border-destructive/50">
         <CardHeader>
           <CardTitle className="text-destructive">Zone de danger</CardTitle>
@@ -162,12 +265,14 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
                 deleteMutation.mutate();
               }
             }}
+            disabled={deleteMutation.isPending}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Supprimer la campagne
+            {deleteMutation.isPending ? "Suppression..." : "Supprimer la campagne"}
           </Button>
         </CardContent>
       </Card>
+
     </div>
   );
 };
