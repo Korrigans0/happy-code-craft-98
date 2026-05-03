@@ -1142,293 +1142,377 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-220px)] flex-col gap-3">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2">
-        {tools_list.map(t => (
-          <Button
-            key={t.id}
-            variant={tool === t.id ? "default" : "ghost"}
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => setTool(t.id)}
-            title={t.key ? `${t.label} (${t.key})` : t.label}
-          >
-            {t.icon}
-          </Button>
-        ))}
+  return (
+    <div className="flex h-[calc(100vh-200px)] min-h-[500px] flex-col gap-2">
 
-        <Separator orientation="vertical" className="mx-1 h-6" />
+      {/* ── TOOLBAR PRINCIPALE ────────────────────────────────
+          Sur mobile : 2 rangées compactes
+          Sur desktop : 1 rangée complète
+      ────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 sm:p-2">
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" title="Couleur">
-              <div className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: color }} />
+        {/* Rangée 1 : Outils de dessin */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {tools_list.map(t => (
+            <Button
+              key={t.id}
+              variant={tool === t.id ? "default" : "ghost"}
+              size="icon"
+              className="h-8 w-8 sm:h-9 sm:w-9"
+              onClick={() => setTool(t.id)}
+              title={t.key ? `${t.label} (${t.key})` : t.label}
+            >
+              {t.icon}
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-2">
-            <div className="grid grid-cols-4 gap-1">
-              {COLORS.map(c => (
-                <button key={c} className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? "border-primary scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} onClick={() => setColor(c)} />
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+          ))}
 
-        <div className="flex items-center gap-2 px-2">
-          <Minus className="h-3 w-3 text-muted-foreground" />
-          <Slider value={[brushSize]} onValueChange={([v]) => setBrushSize(v)} min={1} max={20} step={1} className="w-20" />
-          <span className="text-xs text-muted-foreground w-5 text-center">{brushSize}</span>
+          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
+
+          {/* Couleur */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" title="Couleur">
+                <div className="h-4 w-4 rounded-full border border-border sm:h-5 sm:w-5" style={{ backgroundColor: color }} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-4 gap-1">
+                {COLORS.map(c => (
+                  <button
+                    key={c}
+                    className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? "border-primary scale-110" : "border-transparent"}`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setColor(c)}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Taille brosse — masquée sur très petit écran */}
+          <div className="hidden items-center gap-1 px-1 sm:flex">
+            <Minus className="h-3 w-3 text-muted-foreground" />
+            <Slider
+              value={[brushSize]}
+              onValueChange={([v]) => setBrushSize(v)}
+              min={1} max={20} step={1}
+              className="w-16 sm:w-20"
+            />
+            <span className="w-4 text-center text-xs text-muted-foreground">{brushSize}</span>
+          </div>
         </div>
 
-        <Separator orientation="vertical" className="mx-1 h-6" />
+        <Separator orientation="vertical" className="mx-0.5 hidden h-6 sm:block sm:mx-1" />
+        <Separator className="sm:hidden" />
 
-        <Button
-          variant={snapToGrid ? "default" : "ghost"}
-          size="icon"
-          className="h-9 w-9"
-          onClick={() => setSnapToGrid(s => !s)}
-          title={`Magnétisme grille (G) ${snapToGrid ? "ON" : "OFF"}`}
-        >
-          <Magnet className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={collisionEnabled ? "default" : "ghost"}
-          size="icon"
-          className="h-9 w-9"
-          onClick={() => setCollisionEnabled(c => !c)}
-          title={`Collision jetons ${collisionEnabled ? "ON" : "OFF"}`}
-        >
-          <Crosshair className="h-4 w-4" />
-        </Button>
+        {/* Rangée 2 : Contrôles + actions */}
+        <div className="flex items-center gap-1 flex-wrap">
 
-        <Separator orientation="vertical" className="mx-1 h-6" />
+          {/* Magnétisme */}
+          <Button
+            variant={snapToGrid ? "default" : "ghost"}
+            size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
+            onClick={() => setSnapToGrid(s => !s)}
+            title={`Magnétisme (G) ${snapToGrid ? "ON" : "OFF"}`}
+          >
+            <Magnet className="h-4 w-4" />
+          </Button>
 
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomOut} title="Dézoomer"><ZoomOut className="h-4 w-4" /></Button>
-        <button onClick={resetView} className="min-w-[48px] rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted" title="Réinitialiser">{Math.round(zoom * 100)}%</button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={zoomIn} title="Zoomer"><ZoomIn className="h-4 w-4" /></Button>
+          {/* Collision */}
+          <Button
+            variant={collisionEnabled ? "default" : "ghost"}
+            size="icon"
+            className="h-8 w-8 sm:h-9 sm:w-9"
+            onClick={() => setCollisionEnabled(c => !c)}
+            title={`Collision ${collisionEnabled ? "ON" : "OFF"}`}
+          >
+            <Crosshair className="h-4 w-4" />
+          </Button>
 
-        <Separator orientation="vertical" className="mx-1 h-6" />
+          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
 
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undo} title="Annuler (Ctrl+Z)" disabled={actions.length === 0}><Undo2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redo} title="Rétablir (Ctrl+Y)" disabled={undoneActions.length === 0}><Redo2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={clearAll} title="Tout effacer"><Trash2 className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9" onClick={exportCanvas} title="Exporter PNG"><Download className="h-4 w-4" /></Button>
+          {/* Zoom */}
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={zoomOut} title="Dézoomer">
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <button
+            onClick={resetView}
+            className="min-w-[42px] rounded px-1 py-1 text-xs font-medium text-muted-foreground hover:bg-muted sm:min-w-[48px]"
+            title="Réinitialiser"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={zoomIn} title="Zoomer">
+            <ZoomIn className="h-4 w-4" />
+          </Button>
 
-        <div className="flex-1" />
+          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
 
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setDiceOpen(true)}>
-          <Dices className="h-4 w-4" /> Dés
-        </Button>
+          {/* Undo / Redo / Clear / Export */}
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={undo} title="Annuler (Ctrl+Z)" disabled={actions.length === 0}>
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={redo} title="Rétablir" disabled={undoneActions.length === 0}>
+            <Redo2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive sm:h-9 sm:w-9" onClick={clearAll} title="Tout effacer">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden h-9 w-9 sm:flex" onClick={exportCanvas} title="Exporter PNG">
+            <Download className="h-4 w-4" />
+          </Button>
 
-        {/* Personnages joueurs */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Users className="h-4 w-4" /> Personnages
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-96 p-0">
-            <div className="flex h-full flex-col">
-              <SheetHeader className="p-4 pb-2">
-                <SheetTitle className="font-display text-gradient-gold">Mes personnages</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-[calc(100vh-140px)] px-4">
-                  <div className="space-y-1.5 py-2">
-                    {userCharacters.map(char => (
-                      <div
-                        key={char.id}
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggingCharId(char.id);
-                          e.dataTransfer.effectAllowed = "copy";
-                          e.dataTransfer.setData("application/x-aetheria-char", char.id);
-                        }}
-                        onDragEnd={() => setDraggingCharId(null)}
-                        className={`group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing ${draggingCharId === char.id ? "opacity-50" : ""}`}
-                      >
-                        {char.avatar_url ? (
-                          <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover pointer-events-none" />
-                        ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold pointer-events-none">
-                            {char.name.substring(0, 2).toUpperCase()}
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Dés */}
+          <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3" onClick={() => setDiceOpen(true)}>
+            <Dices className="h-4 w-4" />
+            <span className="hidden sm:inline">Dés</span>
+          </Button>
+
+          {/* Personnages */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Persos</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85vw] max-w-sm p-0 sm:w-96">
+              <div className="flex h-full flex-col">
+                <SheetHeader className="p-4 pb-2">
+                  <SheetTitle className="font-display text-gradient-gold">Mes personnages</SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-140px)] px-4">
+                    <div className="space-y-1.5 py-2">
+                      {userCharacters.map(char => (
+                        <div
+                          key={char.id}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggingCharId(char.id);
+                            e.dataTransfer.effectAllowed = "copy";
+                            e.dataTransfer.setData("application/x-aetheria-char", char.id);
+                          }}
+                          onDragEnd={() => setDraggingCharId(null)}
+                          className={`group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing ${draggingCharId === char.id ? "opacity-50" : ""}`}
+                        >
+                          {char.avatar_url ? (
+                            <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover pointer-events-none" />
+                          ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold pointer-events-none">
+                              {char.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 pointer-events-none">
+                            <p className="text-sm font-medium truncate">{char.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">Niv. {char.level} • {char.race} {char.class}</p>
+                            <p className="text-[10px] text-muted-foreground/70">PV {char.hp}/{char.max_hp} • CA {char.armor_class}</p>
                           </div>
-                        )}
-                        <div className="flex-1 min-w-0 pointer-events-none">
-                          <p className="text-sm font-medium truncate">{char.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            Niv. {char.level} • {char.race} {char.class}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground/70">
-                            PV {char.hp}/{char.max_hp} • CA {char.armor_class}
-                          </p>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnCharacter(char)} title="Placer sur la carte">
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnCharacter(char)} title="Placer sur la carte">
-                          <Plus className="h-4 w-4" />
+                      ))}
+                      {userCharacters.length === 0 && (
+                        <p className="py-8 text-center text-sm text-muted-foreground">
+                          Aucun personnage créé.<br />Créez-en un depuis l'onglet Personnages.
+                        </p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Bestiaire */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
+                <Skull className="h-4 w-4" />
+                <span className="hidden sm:inline">Bestiaire</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85vw] max-w-sm p-0 sm:w-96">
+              <div className="flex h-full flex-col">
+                <SheetHeader className="p-4 pb-2">
+                  <SheetTitle className="font-display text-gradient-gold">Bestiaire</SheetTitle>
+                </SheetHeader>
+                <div className="px-4 pb-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher..."
+                      value={bestiarySearch}
+                      onChange={e => setBestiarySearch(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-[calc(100vh-200px)] px-4">
+                    <div className="space-y-1.5 py-2">
+                      {waCreatures.map(creature => (
+                        <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
+                            <Skull className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{creature.name}</p>
+                            <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size}</p>
+                          </div>
+                          {isGM && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      {waCreatures.length === 0 && (
+                        <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Calques */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
+                <Layers className="h-4 w-4" />
+                <span className="hidden sm:inline">Calques</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[85vw] max-w-xs sm:w-80">
+              <SheetHeader>
+                <SheetTitle>Calques & Jetons</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-5">
+                {/* Calques */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Calques</h3>
+                  {layers.map(layer => (
+                    <div key={layer.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
+                      <div className="text-muted-foreground">{getLayerIcon(layer.type)}</div>
+                      <span className="flex-1 text-sm font-medium">{layer.name}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleLayerVisibility(layer.id)}>
+                        {layer.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        <span className="w-7 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
+                        <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-14" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Separator />
+
+                {/* Carte */}
+                {isGM && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground">Carte de fond</h3>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-3 transition-colors hover:border-primary/50 hover:bg-muted/30">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {layers.find(l => l.id === "map")?.imageUrl ? "Changer la carte" : "Charger une carte"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
+                    </label>
+                    {layers.find(l => l.id === "map")?.imageUrl && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => {
+                          mapImageRef.current = null;
+                          setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+                          saveState({ map_image_url: null });
+                        }}
+                      >
+                        <X className="mr-1 h-3 w-3" /> Retirer la carte
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Jetons manuels */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">Jetons manuels</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nom"
+                      value={newTokenName}
+                      onChange={e => setNewTokenName(e.target.value)}
+                      className="flex-1 h-9"
+                      onKeyDown={e => e.key === "Enter" && addToken()}
+                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <div className="grid grid-cols-4 gap-1">
+                          {TOKEN_COLORS.map(c => (
+                            <button
+                              key={c}
+                              className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${newTokenColor === c ? "border-primary scale-110" : "border-transparent"}`}
+                              style={{ backgroundColor: c }}
+                              onClick={() => setNewTokenColor(c)}
+                            />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button size="icon" className="h-9 w-9 shrink-0" onClick={addToken} disabled={!newTokenName.trim()}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="max-h-44 space-y-1 overflow-y-auto">
+                    {tokens.map(token => (
+                      <div
+                        key={token.id}
+                        className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${token.id === selectedTokenId ? "border-primary bg-primary/10" : "border-border bg-muted/20"}`}
+                      >
+                        <div className="h-5 w-5 shrink-0 rounded-full" style={{ backgroundColor: token.color }} />
+                        <button className="flex-1 truncate text-left text-sm" onClick={() => { setSelectedTokenId(token.id); centerOnToken(token.id); }}>
+                          {token.name}
+                        </button>
+                        {token.hp !== undefined && (
+                          <span className="text-xs text-muted-foreground">{token.hp}/{token.maxHp}</span>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTokens(prev => prev.map(t => t.id === token.id ? { ...t, visible: !t.visible } : t))}>
+                          {token.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeToken(token.id)}>
+                          <X className="h-3 w-3" />
                         </Button>
                       </div>
                     ))}
-                    {userCharacters.length === 0 && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">
-                        Aucun personnage créé.<br />
-                        Créez-en un depuis l'onglet Personnages.
-                      </p>
+                    {tokens.length === 0 && (
+                      <p className="py-2 text-center text-xs text-muted-foreground">Aucun jeton placé</p>
                     )}
                   </div>
-                </ScrollArea>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Bestiaire */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Skull className="h-4 w-4" /> Bestiaire
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-96 p-0">
-            <div className="flex h-full flex-col">
-              <SheetHeader className="p-4 pb-2">
-                <SheetTitle className="font-display text-gradient-gold">Bestiaire Aetheria</SheetTitle>
-              </SheetHeader>
-              <div className="px-4 pb-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Rechercher une créature..." value={bestiarySearch} onChange={e => setBestiarySearch(e.target.value)} className="pl-9 h-9" />
                 </div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-[calc(100vh-240px)] px-4">
-                  <div className="space-y-1.5 py-2">
-                    {waCreatures.map(creature => (
-                      <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
-                          <Skull className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{creature.name}</p>
-                          <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size} • {creature.profile}</p>
-                        </div>
-                        {isGM && (
-                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer sur la carte">
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    {waCreatures.length === 0 && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Layers className="h-4 w-4" /> Calques
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-80">
-            <SheetHeader>
-              <SheetTitle>Calques & Jetons</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Calques</h3>
-                {layers.map(layer => (
-                  <div key={layer.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
-                    <div className="text-muted-foreground">{getLayerIcon(layer.type)}</div>
-                    <span className="flex-1 text-sm font-medium">{layer.name}</span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleLayerVisibility(layer.id)}>
-                      {layer.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground w-7 text-right">{layer.opacity}%</span>
-                      <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-16" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Separator />
-
-              {isGM && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-foreground">Carte de fond</h3>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-3 transition-colors hover:border-primary/50 hover:bg-muted/30">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      {layers.find(l => l.id === "map")?.imageUrl ? "Changer la carte" : "Charger une carte"}
-                    </span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
-                  </label>
-                  {layers.find(l => l.id === "map")?.imageUrl && (
-                    <Button variant="destructive" size="sm" className="w-full" onClick={() => { mapImageRef.current = null; setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l)); saveState({ map_image_url: null }); }}>
-                      <X className="mr-1 h-3 w-3" /> Retirer la carte
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              <Separator />
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Jetons manuels</h3>
-                <div className="flex gap-2">
-                  <Input placeholder="Nom" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} className="flex-1 h-9" onKeyDown={e => e.key === "Enter" && addToken()} />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2">
-                      <div className="grid grid-cols-4 gap-1">
-                        {TOKEN_COLORS.map(c => (
-                          <button key={c} className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${newTokenColor === c ? "border-primary scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} onClick={() => setNewTokenColor(c)} />
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Button size="icon" className="h-9 w-9 shrink-0" onClick={addToken} disabled={!newTokenName.trim()}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="max-h-48 space-y-1 overflow-y-auto">
-                  {tokens.map(token => (
-                    <div key={token.id} className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${token.id === selectedTokenId ? "border-primary bg-primary/10" : "border-border bg-muted/20"}`}>
-                      <div className="h-5 w-5 shrink-0 rounded-full" style={{ backgroundColor: token.color }} />
-                      <button className="flex-1 text-sm truncate text-left" onClick={() => { setSelectedTokenId(token.id); centerOnToken(token.id); }}>
-                        {token.name}
-                      </button>
-                      {token.hp !== undefined && (
-                        <span className="text-xs text-muted-foreground">{token.hp}/{token.maxHp}</span>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTokens(prev => prev.map(t => t.id === token.id ? { ...t, visible: !t.visible } : t))}>
-                        {token.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeToken(token.id)}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  {tokens.length === 0 && (
-                    <p className="py-2 text-center text-xs text-muted-foreground">Aucun jeton placé</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
-      {/* Canvas + selected token panel */}
-      <div className="flex flex-1 gap-3 overflow-hidden">
+      {/* ── ZONE CANVAS + PANNEAU TOKEN ───────────────────── */}
+      <div className="flex flex-1 gap-2 overflow-hidden">
+
+        {/* Canvas */}
         <div
           ref={containerRef}
           className={`relative flex-1 overflow-hidden rounded-lg border bg-background transition-colors ${isDragOverCanvas ? "border-primary border-2 ring-2 ring-primary/30" : "border-border"}`}
@@ -1465,6 +1549,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             style={{ touchAction: "none" }}
           />
 
+          {/* Indicateur drop */}
           {isDragOverCanvas && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/5">
               <div className="rounded-lg border-2 border-dashed border-primary bg-card/90 px-6 py-3 font-display text-lg text-gradient-gold shadow-gold animate-fade-in">
@@ -1473,110 +1558,138 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           )}
 
-          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-            <ZoomIn className="h-3 w-3" /> {Math.round(zoom * 100)}%
-          </div>
-          <div className="absolute bottom-3 right-3 flex items-center gap-2 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-            <Layers className="h-3 w-3" /> {layers.filter(l => l.visible).length}/{layers.length}
-            {snapToGrid && <span className="text-primary">• Magnet</span>}
-            {collisionEnabled && <span className="text-primary">• Collision</span>}
+          {/* Infos bas gauche */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+            <ZoomIn className="h-3 w-3" />
+            {Math.round(zoom * 100)}%
+            {snapToGrid && <span className="text-primary">• ⊕</span>}
+            {collisionEnabled && <span className="text-primary">• ⊗</span>}
           </div>
 
-          {/* Help hint */}
-          <div className="pointer-events-none absolute top-3 left-3 rounded-md bg-card/80 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm">
-            Espace = pan • Molette = zoom • Maj+Molette = rotation • R/⇧R = tourner • ←↑→↓ = bouger • Suppr = supprimer • Ctrl+D = dupliquer • F = recentrer
+          {/* Indicateur synchro */}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs backdrop-blur-sm">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-green-400 hidden sm:inline">Synchronisé</span>
+          </div>
+
+          {/* Hint clavier — desktop seulement */}
+          <div className="pointer-events-none absolute top-2 left-2 hidden rounded-md bg-card/70 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm sm:block">
+            Espace=pan • Molette=zoom • ⇧Molette=rotation • R=tourner • ←↑→↓=bouger • Suppr=supprimer
           </div>
 
           <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
         </div>
 
-        {/* Selected token detail panel */}
+        {/* ── PANNEAU TOKEN SÉLECTIONNÉ ─────────────────────
+            Sur mobile : panneau compact en bas
+            Sur desktop : panneau latéral
+        ────────────────────────────────────────────────── */}
         {selectedToken && (
-          <div className="w-60 shrink-0 space-y-3 rounded-lg border border-border bg-card p-3 overflow-y-auto">
+          <div className="w-52 shrink-0 space-y-2.5 overflow-y-auto rounded-lg border border-border bg-card p-3 sm:w-60">
+
+            {/* En-tête token */}
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full shrink-0" style={{ backgroundColor: selectedToken.color }} />
+              <div className="h-8 w-8 shrink-0 rounded-full border-2 border-primary/40" style={{ backgroundColor: selectedToken.color }} />
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
                 {selectedToken.creatureType && (
                   <p className="text-xs text-muted-foreground">
-                    {selectedToken.creatureType === "character" ? "Personnage joueur" : selectedToken.creatureType === "wa_creature" ? "Aetheria" : "Créature"}
+                    {selectedToken.creatureType === "character" ? "Joueur" : "Créature"}
                   </p>
                 )}
               </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto shrink-0 text-muted-foreground" onClick={() => setSelectedTokenId(null)}>
+                <X className="h-3 w-3" />
+              </Button>
             </div>
+
+            <Separator />
 
             {/* Rotation */}
-            <Separator />
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground flex items-center gap-1"><RotateCw className="h-3 w-3" /> Rotation</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <RotateCw className="h-3 w-3" /> Rotation
+                </span>
                 <span className="text-xs font-medium">{selectedToken.rotation}°</span>
               </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</Button>
-                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, -45)}>-45°</Button>
-                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, 45)}>+45°</Button>
-                <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</Button>
+              <div className="grid grid-cols-4 gap-1">
+                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, -45)}>-45°</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, 45)}>+45°</Button>
               </div>
-              <Slider
-                value={[selectedToken.rotation]}
-                onValueChange={([v]) => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, rotation: v } : t))}
-                min={0} max={359} step={1}
-              />
             </div>
 
-            {/* Size */}
             <Separator />
-            <div className="space-y-2">
+
+            {/* Taille */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground flex items-center gap-1"><Maximize2 className="h-3 w-3" /> Taille</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Maximize2 className="h-3 w-3" /> Taille
+                </span>
                 <span className="text-xs font-medium">{selectedToken.sizeUnits}×{selectedToken.sizeUnits}</span>
               </div>
-              <div className="flex gap-1">
+              <div className="grid grid-cols-4 gap-1">
                 {[1, 2, 3, 4].map(n => (
                   <Button
                     key={n}
                     size="sm"
                     variant={selectedToken.sizeUnits === n ? "default" : "outline"}
-                    className="flex-1 h-7 text-xs"
+                    className="h-7 text-xs px-0"
                     onClick={() => resizeToken(selectedToken.id, n)}
                   >
-                    {n}×{n}
+                    {n}×
                   </Button>
                 ))}
               </div>
             </div>
 
+            {/* PV */}
             {selectedToken.hp !== undefined && (
               <>
                 <Separator />
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">PV</span>
-                    <span className="text-sm font-medium">{selectedToken.hp}/{selectedToken.maxHp}</span>
+                    <span className="text-xs text-muted-foreground">❤️ PV</span>
+                    <span className="text-sm font-bold text-red-400">{selectedToken.hp}/{selectedToken.maxHp}</span>
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</Button>
-                    <Button size="sm" variant="destructive" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</Button>
-                    <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</Button>
-                    <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</Button>
+                  {/* Barre PV */}
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.max(0, Math.min(100, ((selectedToken.hp || 0) / (selectedToken.maxHp || 1)) * 100))}%`,
+                        backgroundColor: (selectedToken.hp || 0) / (selectedToken.maxHp || 1) > 0.5
+                          ? "hsl(142, 70%, 45%)"
+                          : (selectedToken.hp || 0) / (selectedToken.maxHp || 1) > 0.25
+                          ? "hsl(42, 65%, 58%)"
+                          : "hsl(0, 72%, 51%)"
+                      }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 gap-1">
+                    <Button size="sm" variant="destructive" className="h-7 text-xs px-0" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</Button>
+                    <Button size="sm" variant="destructive" className="h-7 text-xs px-0" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs px-0 text-green-400 border-green-500/40 hover:bg-green-500/10" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs px-0 text-green-400 border-green-500/40 hover:bg-green-500/10" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</Button>
                   </div>
                   {selectedToken.ac !== undefined && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">CA</span>
-                      <span className="text-sm font-medium">{selectedToken.ac}</span>
-                    </div>
+                    <p className="text-center text-xs text-muted-foreground">🛡️ DEF {selectedToken.ac}</p>
                   )}
                 </div>
               </>
             )}
 
             <Separator />
+
+            {/* Actions */}
             <div className="grid grid-cols-2 gap-1">
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateToken(selectedToken.id)} title="Ctrl+D">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateToken(selectedToken.id)}>
                 <Copy className="mr-1 h-3 w-3" /> Dupliquer
               </Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => centerOnToken(selectedToken.id)} title="F">
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => centerOnToken(selectedToken.id)}>
                 <Crosshair className="mr-1 h-3 w-3" /> Centrer
               </Button>
             </div>
