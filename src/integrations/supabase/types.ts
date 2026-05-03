@@ -287,6 +287,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          discord_link: string | null
           id: string
           image_url: string | null
           invite_code: string | null
@@ -299,6 +300,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          discord_link?: string | null
           id?: string
           image_url?: string | null
           invite_code?: string | null
@@ -311,6 +313,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          discord_link?: string | null
           id?: string
           image_url?: string | null
           invite_code?: string | null
