@@ -62,34 +62,11 @@ export function useTabletopSync({
   const isRemoteUpdateRef = useRef(false);
   const initializedRef = useRef(false);
 
-  // ── Charger l'état initial depuis Supabase ────────────────
-  const loadInitialState = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("tabletop_state")
-      .select("*")
-      .eq("campaign_id", campaignId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("[Tabletop] Erreur chargement état:", error);
-      return;
-    }
-
-    if (data) {
-      isRemoteUpdateRef.current = true;
-      onStateReceived({
-        tokens: (data.tokens as unknown as TokenItem[]) || [],
-        drawings: (data.drawings as unknown as DrawAction[]) || [],
-        map_image_url: data.map_image_url || null,
-        fog_visible: data.fog_visible || false,
-      });
-      setTimeout(() => {
-        isRemoteUpdateRef.current = false;
-      }, 100);
-    }
-
-    initializedRef.current = true;
-  }, [campaignId, onStateReceived]);
+  // Stabilise le callback (le parent peut passer une nouvelle fn à chaque render)
+  const onStateReceivedRef = useRef(onStateReceived);
+  useEffect(() => {
+    onStateReceivedRef.current = onStateReceived;
+  }, [onStateReceived]);
 
   // ── Sauvegarder l'état dans Supabase (avec debounce) ─────
   const saveState = useCallback(
