@@ -1142,7 +1142,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   return (
-  return (
     <div className="flex h-[calc(100vh-200px)] min-h-[500px] flex-col gap-2">
 
       {/* ── TOOLBAR PRINCIPALE ────────────────────────────────
