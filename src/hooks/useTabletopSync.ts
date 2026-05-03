@@ -105,6 +105,39 @@ export function useTabletopSync({
 
   // ── Écouter les changements en temps réel ────────────────
   useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialState = async () => {
+      const { data, error } = await supabase
+        .from("tabletop_state")
+        .select("*")
+        .eq("campaign_id", campaignId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("[Tabletop] Erreur chargement état:", error);
+        initializedRef.current = true;
+        return;
+      }
+
+      if (data) {
+        isRemoteUpdateRef.current = true;
+        onStateReceivedRef.current({
+          tokens: (data.tokens as unknown as TokenItem[]) || [],
+          drawings: (data.drawings as unknown as DrawAction[]) || [],
+          map_image_url: data.map_image_url || null,
+          fog_visible: data.fog_visible || false,
+        });
+        setTimeout(() => {
+          isRemoteUpdateRef.current = false;
+        }, 100);
+      }
+
+      initializedRef.current = true;
+    };
+
     loadInitialState();
 
     const channel = supabase
@@ -123,7 +156,7 @@ export function useTabletopSync({
           if (newData?.updated_by === userId) return;
 
           isRemoteUpdateRef.current = true;
-          onStateReceived({
+          onStateReceivedRef.current({
             tokens: (newData?.tokens as unknown as TokenItem[]) || [],
             drawings: (newData?.drawings as unknown as DrawAction[]) || [],
             map_image_url: (newData?.map_image_url as string) || null,
@@ -138,12 +171,13 @@ export function useTabletopSync({
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [campaignId, userId, loadInitialState, onStateReceived]);
+  }, [campaignId, userId]);
 
   return { saveState };
 }
