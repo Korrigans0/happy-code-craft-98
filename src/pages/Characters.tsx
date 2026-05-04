@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Search, Filter, Loader2 } from "lucide-react";
+import { Plus, Search, Loader2, Swords, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -13,31 +13,99 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CharacterCard from "@/components/characters/CharacterCard";
 import CharacterForm from "@/components/characters/CharacterForm";
+import CharacterSheet from "@/components/characters/CharacterSheet";
 import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Character = Tables<"characters">;
 
+// ── Sélecteur de système ────────────────────────────────────
+interface SystemSelectorProps {
+  onSelect: (system: "aetheria" | "wa") => void;
+  onCancel: () => void;
+}
+
+const SystemSelector = ({ onSelect, onCancel }: SystemSelectorProps) => (
+  <div className="flex h-full flex-col bg-gradient-dark">
+    <div className="flex items-center justify-between border-b border-border p-4">
+      <h2 className="font-display text-xl font-bold text-foreground">
+        Créer un Personnage
+      </h2>
+      <Button variant="ghost" size="sm" onClick={onCancel}>Annuler</Button>
+    </div>
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+      <p className="text-center text-muted-foreground">
+        Choisissez le système de jeu pour votre personnage
+      </p>
+      <div className="grid w-full max-w-md gap-4">
+
+        {/* Aetheria */}
+        <button
+          onClick={() => onSelect("aetheria")}
+          className="group flex flex-col items-center gap-3 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 p-6 text-center transition-all hover:border-amber-500/60 hover:bg-amber-500/10"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20 text-3xl group-hover:bg-amber-500/30 transition-colors">
+            ⚔️
+          </div>
+          <div>
+            <p className="font-display text-lg font-bold text-amber-400">Aetheria</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Système maison — Force, Agilité, Esprit, Endurance
+            </p>
+            <p className="mt-0.5 text-xs text-amber-400/60">
+              17 races • 8 classes core • Réactions avancées
+            </p>
+          </div>
+        </button>
+
+        {/* Worlds Awakening */}
+        <button
+          onClick={() => onSelect("wa")}
+          className="group flex flex-col items-center gap-3 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 p-6 text-center transition-all hover:border-blue-500/60 hover:bg-blue-500/10"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/20 text-3xl group-hover:bg-blue-500/30 transition-colors">
+            🌍
+          </div>
+          <div>
+            <p className="font-display text-lg font-bold text-blue-400">Worlds Awakening</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Système communautaire de Nicolas Bédé
+            </p>
+            <p className="mt-0.5 text-xs text-blue-400/60">
+              Gratuit • Règles génériques • Multivers
+            </p>
+          </div>
+        </button>
+
+      </div>
+    </div>
+  </div>
+);
+
+// ── Page principale ─────────────────────────────────────────
 const Characters = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+
+  // États des modales
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAetheriaFormOpen, setIsAetheriaFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
 
-  // Fetch characters for current user
+  // Fetch personnages
   const { data: characters = [], isLoading } = useQuery({
     queryKey: ["characters", user?.id],
     queryFn: async () => {
@@ -47,14 +115,13 @@ const Characters = () => {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      
       if (error) throw error;
       return data as Character[];
     },
     enabled: !!user,
   });
 
-  // Create character
+  // Créer personnage
   const createMutation = useMutation({
     mutationFn: async (character: Partial<Character>) => {
       if (!user) throw new Error("Non authentifié");
@@ -74,12 +141,12 @@ const Characters = () => {
           bonds: character.bonds,
           flaws: character.flaws,
           appearance: character.appearance,
-          strength: character.strength || 10,
-          dexterity: character.dexterity || 10,
-          constitution: character.constitution || 10,
-          intelligence: character.intelligence || 10,
-          wisdom: character.wisdom || 10,
-          charisma: character.charisma || 10,
+          strength: character.strength || 0,
+          dexterity: character.dexterity || 0,
+          constitution: character.constitution || 0,
+          intelligence: character.intelligence || 0,
+          wisdom: character.wisdom || 0,
+          charisma: character.charisma || 0,
           hp: character.hp || 10,
           max_hp: character.max_hp || 10,
           armor_class: character.armor_class || 10,
@@ -87,7 +154,7 @@ const Characters = () => {
           gold: character.gold || 0,
           campaign: character.campaign,
           skills: character.skills || [],
-          languages: character.languages || ["Commun"],
+          languages: character.languages || [],
           inventory: character.inventory,
           equipped_weapon_id: character.equipped_weapon_id,
           equipped_armor_id: character.equipped_armor_id,
@@ -95,30 +162,22 @@ const Characters = () => {
         })
         .select()
         .single();
-      
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
-      toast({
-        title: "Personnage créé",
-        description: "Votre personnage a été créé avec succès.",
-      });
+      toast({ title: "Personnage créé ✓" });
       setIsFormOpen(false);
+      setIsAetheriaFormOpen(false);
       setSelectedCharacter(null);
     },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer le personnage.",
-        variant: "destructive",
-      });
-      console.error("Create error:", error);
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de créer le personnage.", variant: "destructive" });
     },
   });
 
-  // Update character
+  // Mettre à jour personnage
   const updateMutation = useMutation({
     mutationFn: async (character: Partial<Character>) => {
       const { data, error } = await supabase
@@ -127,58 +186,37 @@ const Characters = () => {
         .eq("id", character.id)
         .select()
         .single();
-      
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
-      toast({
-        title: "Personnage mis à jour",
-        description: "Les modifications ont été enregistrées.",
-      });
+      toast({ title: "Personnage mis à jour ✓" });
       setIsFormOpen(false);
+      setIsAetheriaFormOpen(false);
       setIsSheetOpen(false);
       setSelectedCharacter(null);
     },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le personnage.",
-        variant: "destructive",
-      });
-      console.error("Update error:", error);
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour.", variant: "destructive" });
     },
   });
 
-  // Delete character
+  // Supprimer personnage
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("characters")
-        .delete()
-        .eq("id", id);
-      
+      const { error } = await supabase.from("characters").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
-      toast({
-        title: "Personnage supprimé",
-        description: "Le personnage a été supprimé.",
-      });
+      toast({ title: "Personnage supprimé" });
       setDeleteConfirmOpen(false);
       setCharacterToDelete(null);
     },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le personnage.",
-        variant: "destructive",
-      });
-      console.error("Delete error:", error);
-    },
   });
+
+  // ── Handlers ───────────────────────────────────────────────
 
   const handleSave = (characterData: Partial<Character>) => {
     if (selectedCharacter?.id) {
@@ -188,10 +226,31 @@ const Characters = () => {
     }
   };
 
+  const handleNewCharacter = () => {
+    setSelectedCharacter(null);
+    setIsSelectorOpen(true);
+  };
+
+  const handleSystemSelect = (system: "aetheria" | "wa") => {
+    setIsSelectorOpen(false);
+    if (system === "aetheria") {
+      setIsAetheriaFormOpen(true);
+    } else {
+      setIsFormOpen(true);
+    }
+  };
+
   const handleEdit = (character: Character) => {
     setSelectedCharacter(character);
-    setIsFormOpen(true);
     setIsSheetOpen(false);
+    // Ouvrir le bon formulaire selon le système
+    const isAetheria = character.campaign === "Aetheria" ||
+      (() => { try { return JSON.parse(character.inventory || "{}).__aetheria"; } catch { return false; } })();
+    if (isAetheria) {
+      setIsAetheriaFormOpen(true);
+    } else {
+      setIsFormOpen(true);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -199,33 +258,30 @@ const Characters = () => {
     setDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (characterToDelete) {
-      deleteMutation.mutate(characterToDelete);
-    }
-  };
-
   const handleViewSheet = (character: Character) => {
     setSelectedCharacter(character);
     setIsSheetOpen(true);
   };
 
-  const handleNewCharacter = () => {
-    setSelectedCharacter(null);
-    setIsFormOpen(true);
+  // Déterminer si un personnage est Aetheria
+  const isAetheriaCharacter = (character: Character) => {
+    if (character.campaign === "Aetheria") return true;
+    try {
+      const data = JSON.parse(character.inventory || "{}");
+      return data.__aetheria === true;
+    } catch {
+      return false;
+    }
   };
 
   const uniqueClasses = [...new Set(characters.map(c => c.class))].sort();
-  
-  const filteredCharacters = characters.filter(
-    (c) =>
-      (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.race.toLowerCase().includes(searchQuery.toLowerCase())) &&
-      (classFilter === "all" || c.class === classFilter)
+  const filteredCharacters = characters.filter(c =>
+    (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     c.race.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (classFilter === "all" || c.class === classFilter)
   );
 
-  // Show loading while checking auth
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-dark">
@@ -239,14 +295,12 @@ const Characters = () => {
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">
+
+          {/* Header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">
-                Mes Personnages
-              </h1>
-              <p className="text-muted-foreground">
-                Créez et gérez vos héros d'aventure
-              </p>
+              <h1 className="font-display text-3xl font-bold text-foreground">Mes Personnages</h1>
+              <p className="text-muted-foreground">Créez et gérez vos héros d'aventure</p>
             </div>
             <Button variant="gold" onClick={handleNewCharacter}>
               <Plus className="mr-2 h-4 w-4" />
@@ -254,6 +308,7 @@ const Characters = () => {
             </Button>
           </div>
 
+          {/* Filtres */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -264,7 +319,7 @@ const Characters = () => {
                 className="pl-9"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={classFilter === "all" ? "default" : "outline"}
                 size="sm"
@@ -285,26 +340,25 @@ const Characters = () => {
             </div>
           </div>
 
+          {/* Liste personnages */}
           {isLoading ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-64 animate-pulse rounded-xl border border-border/50 bg-muted"
-                />
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-64 animate-pulse rounded-xl border border-border/50 bg-muted" />
               ))}
             </div>
           ) : filteredCharacters.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-4 rounded-full bg-muted p-6">
-                <Plus className="h-12 w-12 text-muted-foreground" />
+              <div className="mb-6 flex gap-4">
+                <div className="rounded-full bg-amber-500/10 p-4 border border-amber-500/20">
+                  <span className="text-3xl">⚔️</span>
+                </div>
+                <div className="rounded-full bg-blue-500/10 p-4 border border-blue-500/20">
+                  <span className="text-3xl">🌍</span>
+                </div>
               </div>
-              <h3 className="font-display text-xl font-semibold text-foreground">
-                Aucun personnage
-              </h3>
-              <p className="mt-2 text-muted-foreground">
-                Créez votre premier héros pour commencer l'aventure !
-              </p>
+              <h3 className="font-display text-xl font-semibold text-foreground">Aucun personnage</h3>
+              <p className="mt-2 text-muted-foreground">Créez votre premier héros pour commencer l'aventure !</p>
               <Button variant="gold" className="mt-4" onClick={handleNewCharacter}>
                 <Plus className="mr-2 h-4 w-4" />
                 Créer un personnage
@@ -312,7 +366,7 @@ const Characters = () => {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCharacters.map((character) => (
+              {filteredCharacters.map(character => (
                 <CharacterCard
                   key={character.id}
                   character={character}
@@ -327,38 +381,64 @@ const Characters = () => {
       </main>
       <Footer />
 
-      {/* Character Form Sheet */}
+      {/* ── SÉLECTEUR DE SYSTÈME ─────────────────────────── */}
+      <Sheet open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-lg">
+          <SystemSelector
+            onSelect={handleSystemSelect}
+            onCancel={() => setIsSelectorOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* ── FORMULAIRE WA ────────────────────────────────── */}
       <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
           <CharacterForm
             character={selectedCharacter}
             onSave={handleSave}
-            onCancel={() => {
-              setIsFormOpen(false);
-              setSelectedCharacter(null);
-            }}
+            onCancel={() => { setIsFormOpen(false); setSelectedCharacter(null); }}
           />
         </SheetContent>
       </Sheet>
 
-      {/* Character Sheet View */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      {/* ── FORMULAIRE AETHERIA ──────────────────────────── */}
+      <Sheet open={isAetheriaFormOpen} onOpenChange={setIsAetheriaFormOpen}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
-          {selectedCharacter && (
+          {isAetheriaFormOpen && (
             <AetheriaCharacterSheet
-              character={selectedCharacter}
-              onEdit={() => handleEdit(selectedCharacter)}
-              onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
-              onClose={() => {
-                setIsSheetOpen(false);
-                setSelectedCharacter(null);
-              }}
+              character={selectedCharacter || {} as Character}
+              onSave={handleSave}
+              onClose={() => { setIsAetheriaFormOpen(false); setSelectedCharacter(null); }}
+              editable={true}
             />
           )}
         </SheetContent>
       </Sheet>
 
-      {/* Delete Confirmation Dialog */}
+      {/* ── FICHE DE VISUALISATION ───────────────────────── */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
+          {selectedCharacter && (
+            isAetheriaCharacter(selectedCharacter) ? (
+              <AetheriaCharacterSheet
+                character={selectedCharacter}
+                onEdit={() => handleEdit(selectedCharacter)}
+                onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
+                onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
+              />
+            ) : (
+              <CharacterSheet
+                character={selectedCharacter}
+                onEdit={() => handleEdit(selectedCharacter)}
+                onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
+              />
+            )
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── CONFIRMATION SUPPRESSION ─────────────────────── */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>
@@ -368,10 +448,8 @@ const Characters = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
-              Annuler
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Annuler</Button>
+            <Button variant="destructive" onClick={() => characterToDelete && deleteMutation.mutate(characterToDelete)}>
               Supprimer
             </Button>
           </DialogFooter>
