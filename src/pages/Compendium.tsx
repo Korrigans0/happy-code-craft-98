@@ -12,6 +12,7 @@ import WACodex from "@/components/compendium/WACodex";
 import WAHistoire from "@/components/compendium/WAHistoire";
 import CreateWACreatureDialog from "@/components/compendium/CreateWACreatureDialog";
 import AetheriaBestiary from "@/components/compendium/AetheriaBestiary";
+import AetheriaMatchups from "@/components/compendium/AetheriaMatchups";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 
@@ -271,6 +272,13 @@ const Compendium = () => {
                     <BookOpen className="h-3.5 w-3.5" />
                     Codex & Lore
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="aetheria-matchups"
+                    className="flex items-center gap-1.5 text-xs data-[state=active]:bg-amber-500 data-[state=active]:text-white sm:text-sm"
+                  >
+                    <Swords className="h-3.5 w-3.5" />
+                    Matchups
+                  </TabsTrigger>
                 </TabsList>
                 {user && aetheriaTab === "aetheria-bestiary" && (
                   <div className="text-xs text-muted-foreground">
@@ -285,6 +293,10 @@ const Compendium = () => {
 
               <TabsContent value="aetheria-codex">
                 <AetheriaCodexPlaceholder />
+              </TabsContent>
+
+              <TabsContent value="aetheria-matchups">
+                <AetheriaMatchups />
               </TabsContent>
             </Tabs>
           )}
