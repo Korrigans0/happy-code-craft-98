@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, Swords, BookOpen, Users, 
-  Settings, Copy, ArrowLeft, Crown, Map, CalendarDays
+  Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
+  Volume2, ExternalLink
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 import CampaignCombat from "@/components/campaign/CampaignCombat";
@@ -21,7 +22,7 @@ import CampaignTabletop from "@/components/campaign/CampaignTabletop";
 import CampaignSessions from "@/components/campaign/CampaignSessions";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Campaign = Tables<"campaigns">;
+type Campaign = Tables<"campaigns"> & { discord_link?: string };
 
 const CampaignPlay = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,7 +45,7 @@ const CampaignPlay = () => {
         .eq("id", id)
         .single();
       if (error) throw error;
-      return data;
+      return data as Campaign;
     },
     enabled: !!id && !!user,
   });
@@ -73,6 +74,12 @@ const CampaignPlay = () => {
         title: "Code copié !",
         description: "Partagez ce code avec vos joueurs.",
       });
+    }
+  };
+
+  const openDiscord = () => {
+    if (campaign?.discord_link) {
+      window.open(campaign.discord_link, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -133,44 +140,78 @@ const CampaignPlay = () => {
     <div className="flex min-h-screen flex-col bg-gradient-dark">
       <Header />
       <main className="flex flex-1 flex-col">
-        {/* Campaign Header */}
+
+        {/* ── CAMPAIGN HEADER ──────────────────────────────── */}
         <div className="border-b border-border bg-background/50 backdrop-blur-sm">
-          <div className="container mx-auto flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/campaigns")}>
+          <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
+
+            {/* Gauche : retour + infos campagne */}
+            <div className="flex min-w-0 items-center gap-3">
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/campaigns")}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="font-display text-xl font-bold text-foreground">{campaign.title}</h1>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="font-display text-lg font-bold text-foreground truncate sm:text-xl">
+                    {campaign.title}
+                  </h1>
                   {isGM && (
-                    <Badge variant="default" className="bg-primary/20 text-primary">
+                    <Badge variant="default" className="shrink-0 bg-primary/20 text-primary">
                       <Crown className="mr-1 h-3 w-3" />
                       MJ
                     </Badge>
                   )}
                   {campaign.system && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="shrink-0 text-xs">
                       {campaign.system}
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{campaign.description || "Pas de description"}</p>
+                <p className="hidden text-sm text-muted-foreground sm:block truncate">
+                  {campaign.description || "Pas de description"}
+                </p>
               </div>
             </div>
-            {isGM && campaign.invite_code && (
-              <Button variant="outline" size="sm" onClick={copyInviteCode}>
-                <Copy className="mr-2 h-4 w-4" />
-                Code: {campaign.invite_code}
-              </Button>
-            )}
+
+            {/* Droite : boutons actions */}
+            <div className="flex shrink-0 items-center gap-2">
+
+              {/* Bouton Discord — visible par tous si configuré */}
+              {campaign.discord_link && (
+                <Button
+                  onClick={openDiscord}
+                  size="sm"
+                  className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20"
+                >
+                  <Volume2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Vocal</span>
+                  <ExternalLink className="h-3 w-3 opacity-70" />
+                </Button>
+              )}
+
+              {/* Code invitation — MJ seulement */}
+              {isGM && campaign.invite_code && (
+                <Button variant="outline" size="sm" onClick={copyInviteCode} className="hidden sm:flex">
+                  <Copy className="mr-2 h-4 w-4" />
+                  Code: {campaign.invite_code}
+                </Button>
+              )}
+              {isGM && campaign.invite_code && (
+                <Button variant="outline" size="icon" onClick={copyInviteCode} className="sm:hidden">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main Content with Tabs */}
-        <div className="flex-1 container mx-auto px-4 py-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className={`grid w-full bg-muted`} style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+        {/* ── MAIN CONTENT ─────────────────────────────────── */}
+        <div className="container mx-auto flex-1 px-4 py-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
+            <TabsList
+              className="grid w-full bg-muted"
+              style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
+            >
               {tabs.map(tab => (
                 <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
                   <tab.icon className="h-4 w-4" />
@@ -179,33 +220,34 @@ const CampaignPlay = () => {
               ))}
             </TabsList>
 
-            <div className="flex-1 mt-4">
-              <TabsContent value="tabletop" className="h-full m-0">
+            <div className="mt-4 flex-1">
+              <TabsContent value="tabletop" className="m-0 h-full">
                 <CampaignTabletop campaignId={id!} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="chat" className="h-full m-0">
+              <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} userId={user!.id} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="combat" className="h-full m-0">
+              <TabsContent value="combat" className="m-0 h-full">
                 <CampaignCombat campaignId={id!} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="sessions" className="h-full m-0">
+              <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="notes" className="h-full m-0">
+              <TabsContent value="notes" className="m-0 h-full">
                 <CampaignNotes campaignId={id!} userId={user!.id} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="members" className="h-full m-0">
+              <TabsContent value="members" className="m-0 h-full">
                 <CampaignMembers campaignId={id!} isGM={isGM} />
               </TabsContent>
               {isGM && (
-                <TabsContent value="settings" className="h-full m-0">
+                <TabsContent value="settings" className="m-0 h-full">
                   <CampaignSettings campaign={campaign} />
                 </TabsContent>
               )}
             </div>
           </Tabs>
         </div>
+
       </main>
     </div>
   );
