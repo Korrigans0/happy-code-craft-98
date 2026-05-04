@@ -245,7 +245,7 @@ const Characters = () => {
     setIsSheetOpen(false);
     // Ouvrir le bon formulaire selon le système
     const isAetheria = character.campaign === "Aetheria" ||
-      (() => { try { return JSON.parse(character.inventory || "{}).__aetheria"; } catch { return false; } })();
+      (() => { try { return JSON.parse(character.inventory || "{}").__aetheria; } catch { return false; } })();
     if (isAetheria) {
       setIsAetheriaFormOpen(true);
     } else {
