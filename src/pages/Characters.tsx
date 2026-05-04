@@ -13,7 +13,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CharacterCard from "@/components/characters/CharacterCard";
 import CharacterForm from "@/components/characters/CharacterForm";
-import CharacterSheet from "@/components/characters/CharacterSheet";
+import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Character = Tables<"characters">;
@@ -345,9 +345,10 @@ const Characters = () => {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
           {selectedCharacter && (
-            <CharacterSheet
+            <AetheriaCharacterSheet
               character={selectedCharacter}
               onEdit={() => handleEdit(selectedCharacter)}
+              onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
               onClose={() => {
                 setIsSheetOpen(false);
                 setSelectedCharacter(null);
