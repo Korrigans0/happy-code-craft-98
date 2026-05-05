@@ -139,12 +139,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Synchronisation temps réel du plateau ────────────────────
   const { user } = useAuth();
+  const deletedTokenIdsRef = useRef<Set<string>>(new Set());
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
-      setTokens(state.tokens as TokenItem[]);
-      setActions(state.drawings as DrawAction[]);
+      const incomingTokens = (state.tokens as TokenItem[]).filter(t => !deletedTokenIdsRef.current.has(t.id));
+      setTokens(incomingTokens);
+      // Dédupliquer les dessins par id (sécurité contre doublons realtime)
+      const incomingDrawings = state.drawings as DrawAction[];
+      const seen = new Set<string>();
+      const dedup: DrawAction[] = [];
+      for (const d of incomingDrawings) {
+        const id = d.id || newId();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        dedup.push({ ...d, id });
+      }
+      setActions(dedup);
       const currentMapUrl = layers.find(l => l.id === "map")?.imageUrl;
       if (state.map_image_url && state.map_image_url !== currentMapUrl) {
         const img = new window.Image();
