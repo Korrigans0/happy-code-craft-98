@@ -1093,7 +1093,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const handleMouseUp = () => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
-    if (currentAction) { setActions(prev => [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
+    if (currentAction) { setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
     setIsDrawing(false);
   };
 
