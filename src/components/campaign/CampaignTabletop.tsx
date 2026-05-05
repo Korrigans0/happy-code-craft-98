@@ -817,8 +817,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const w = toWorld(t.clientX, t.clientY);
           const text = prompt("Texte à ajouter :");
           if (text) {
-            const action: DrawAction = { type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
-            setActions(prev => [...prev, action]);
+            const action: DrawAction = { id: newId(), type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
+            setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
             setUndoneActions([]);
           }
           mode = "none";
