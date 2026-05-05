@@ -435,8 +435,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const removeToken = (tokenId: string) => {
-    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    deletedTokenIdsRef.current.add(tokenId);
+    // Oublier l'id supprimé après quelques secondes (le temps que la sync realtime se propage)
+    setTimeout(() => deletedTokenIdsRef.current.delete(tokenId), 5000);
+    const updatedTokens = tokens.filter(t => t.id !== tokenId);
+    setTokens(updatedTokens);
     if (selectedTokenId === tokenId) setSelectedTokenId(null);
+    // Sauvegarde immédiate avec la liste sans le token (en plus du useEffect)
+    saveState({ tokens: updatedTokens });
   };
 
   const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
