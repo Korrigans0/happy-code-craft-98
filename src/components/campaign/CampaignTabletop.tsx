@@ -913,7 +913,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (mode === "draw") {
           setCurrentAction(prev => {
             if (prev) {
-              setActions(a => [...a, prev]);
+              setActions(a => a.some(x => x.id === prev.id) ? a : [...a, prev]);
               setUndoneActions([]);
             }
             return null;
