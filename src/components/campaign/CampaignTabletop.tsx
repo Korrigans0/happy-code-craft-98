@@ -34,6 +34,7 @@ import { useAuth } from "@/hooks/useAuth";
 type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
 
 interface DrawAction {
+  id: string;
   type: Tool;
   points: { x: number; y: number }[];
   color: string;
@@ -41,6 +42,8 @@ interface DrawAction {
   text?: string;
   layer: string;
 }
+
+const newId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 interface TokenItem {
   id: string;
