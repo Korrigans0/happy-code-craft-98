@@ -808,7 +808,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         // Drawing tools (règle, rectangle, cercle, crayon, gomme, texte)
         if (tool === "line" || tool === "rect" || tool === "circle" || tool === "pencil" || tool === "eraser") {
           const w = toWorld(t.clientX, t.clientY);
-          setCurrentAction({ type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
+          setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
           setIsDrawing(true);
           mode = "draw";
           return;
