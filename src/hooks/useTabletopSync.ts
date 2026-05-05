@@ -2,9 +2,6 @@
 // HOOK DE SYNCHRONISATION TEMPS RÉEL — AETHERIA VTT
 // Fichier : src/hooks/useTabletopSync.ts
 // ============================================================
-// Ce hook gère toute la synchronisation Supabase Realtime
-// du plateau. À importer dans CampaignTabletop.tsx
-// ============================================================
 
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +27,7 @@ interface TokenItem {
 }
 
 interface DrawAction {
+  id: string; // ✅ FIX : champ id ajouté — nécessaire pour la déduplication
   type: string;
   points: { x: number; y: number }[];
   color: string;
@@ -52,6 +50,13 @@ interface UseTabletopSyncOptions {
   debounceMs?: number;
 }
 
+// ✅ FIX : garantit qu'un dessin a toujours un id stable
+// (pour les données anciennes en base qui n'en auraient pas)
+const ensureId = (d: Partial<DrawAction>): DrawAction => ({
+  ...d,
+  id: d.id || `legacy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+} as DrawAction);
+
 export function useTabletopSync({
   campaignId,
   userId,
@@ -62,13 +67,11 @@ export function useTabletopSync({
   const isRemoteUpdateRef = useRef(false);
   const initializedRef = useRef(false);
 
-  // Stabilise le callback (le parent peut passer une nouvelle fn à chaque render)
   const onStateReceivedRef = useRef(onStateReceived);
   useEffect(() => {
     onStateReceivedRef.current = onStateReceived;
   }, [onStateReceived]);
 
-  // ── Sauvegarder l'état dans Supabase (avec debounce) ─────
   const saveState = useCallback(
     (state: Partial<TabletopState>) => {
       if (isRemoteUpdateRef.current) return;
@@ -103,7 +106,6 @@ export function useTabletopSync({
     [campaignId, userId, debounceMs]
   );
 
-  // ── Écouter les changements en temps réel ────────────────
   useEffect(() => {
     let cancelled = false;
 
@@ -124,9 +126,11 @@ export function useTabletopSync({
 
       if (data) {
         isRemoteUpdateRef.current = true;
+        // ✅ FIX : ensureId sur chaque dessin avant de passer au parent
+        const rawDrawings = (data.drawings as unknown as Partial<DrawAction>[]) || [];
         onStateReceivedRef.current({
           tokens: (data.tokens as unknown as TokenItem[]) || [],
-          drawings: (data.drawings as unknown as DrawAction[]) || [],
+          drawings: rawDrawings.map(ensureId),
           map_image_url: data.map_image_url || null,
           fog_visible: data.fog_visible || false,
         });
@@ -151,14 +155,15 @@ export function useTabletopSync({
           filter: `campaign_id=eq.${campaignId}`,
         },
         (payload) => {
-          // Ignorer nos propres mises à jour
           const newData = payload.new as Record<string, unknown>;
           if (newData?.updated_by === userId) return;
 
           isRemoteUpdateRef.current = true;
+          // ✅ FIX : ensureId sur chaque dessin reçu via realtime
+          const rawDrawings = (newData?.drawings as unknown as Partial<DrawAction>[]) || [];
           onStateReceivedRef.current({
             tokens: (newData?.tokens as unknown as TokenItem[]) || [],
-            drawings: (newData?.drawings as unknown as DrawAction[]) || [],
+            drawings: rawDrawings.map(ensureId),
             map_image_url: (newData?.map_image_url as string) || null,
             fog_visible: (newData?.fog_visible as boolean) || false,
           });
