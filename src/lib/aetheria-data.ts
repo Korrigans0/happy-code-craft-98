@@ -1206,9 +1206,9 @@ export const CLASSES: AetheriaClass[] = [
 export const AFFINITIES: RaceClassAffinity[] = [
   {
     raceId: "ignaris",
-    classId: "berserker",
+    classId: "guerrier",
     level: "majeure",
-    loreReason: "Le feu intérieur des Ignaris s'embrasse naturellement dans la rage du Berserker.",
+    loreReason: "Le feu intérieur des Ignaris s'embrasse naturellement dans la Voie du Berserker du Guerrier.",
     bonusChoices: [
       { id: "ignaris-berserk-1", description: "+1 dégâts en Rage" },
       { id: "ignaris-berserk-2", description: "Réduction de feu +1" },
@@ -1227,9 +1227,9 @@ export const AFFINITIES: RaceClassAffinity[] = [
   },
   {
     raceId: "varagn",
-    classId: "berserker",
+    classId: "guerrier",
     level: "mineure",
-    loreReason: "La bête intérieure du Varagn résonne avec la rage du Berserker.",
+    loreReason: "La bête intérieure du Varagn résonne avec la Voie du Berserker du Guerrier.",
     bonusChoices: [
       { id: "varagn-berserk-1", description: "+1 aux jets de Rage" },
       { id: "varagn-berserk-2", description: "+1 dégâts en forme de fusion" },
@@ -1347,9 +1347,9 @@ export const AFFINITIES: RaceClassAffinity[] = [
   },
   {
     raceId: "demi-orc",
-    classId: "berserker",
+    classId: "guerrier",
     level: "majeure",
-    loreReason: "Le sang orc résonne naturellement avec la rage du Berserker.",
+    loreReason: "Le sang orc résonne naturellement avec la Voie du Berserker du Guerrier.",
     bonusChoices: [
       { id: "demiorc-berserk-1", description: "+2 PV en Rage" },
       { id: "demiorc-berserk-2", description: "+1 dégâts sur attaques lourdes" },
