@@ -1040,14 +1040,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (tool === "text") {
       const text = prompt("Texte à ajouter :");
       if (text) {
-        const action: DrawAction = { type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
-        setActions(prev => [...prev, action]);
+        const action: DrawAction = { id: newId(), type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
+        setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
         setUndoneActions([]);
       }
       return;
     }
     setIsDrawing(true);
-    setCurrentAction({ type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
+    setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
