@@ -34,6 +34,7 @@ import { useAuth } from "@/hooks/useAuth";
 type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
 
 interface DrawAction {
+  id: string;
   type: Tool;
   points: { x: number; y: number }[];
   color: string;
@@ -41,6 +42,8 @@ interface DrawAction {
   text?: string;
   layer: string;
 }
+
+const newId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 interface TokenItem {
   id: string;
@@ -136,12 +139,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Synchronisation temps réel du plateau ────────────────────
   const { user } = useAuth();
+  const deletedTokenIdsRef = useRef<Set<string>>(new Set());
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
-      setTokens(state.tokens as TokenItem[]);
-      setActions(state.drawings as DrawAction[]);
+      const incomingTokens = (state.tokens as TokenItem[]).filter(t => !deletedTokenIdsRef.current.has(t.id));
+      setTokens(incomingTokens);
+      // Dédupliquer les dessins par id (sécurité contre doublons realtime)
+      const incomingDrawings = state.drawings as DrawAction[];
+      const seen = new Set<string>();
+      const dedup: DrawAction[] = [];
+      for (const d of incomingDrawings) {
+        const id = d.id || newId();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        dedup.push({ ...d, id });
+      }
+      setActions(dedup);
       const currentMapUrl = layers.find(l => l.id === "map")?.imageUrl;
       if (state.map_image_url && state.map_image_url !== currentMapUrl) {
         const img = new window.Image();
@@ -420,8 +435,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const removeToken = (tokenId: string) => {
-    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    deletedTokenIdsRef.current.add(tokenId);
+    // Oublier l'id supprimé après quelques secondes (le temps que la sync realtime se propage)
+    setTimeout(() => deletedTokenIdsRef.current.delete(tokenId), 5000);
+    const updatedTokens = tokens.filter(t => t.id !== tokenId);
+    setTokens(updatedTokens);
     if (selectedTokenId === tokenId) setSelectedTokenId(null);
+    // Sauvegarde immédiate avec la liste sans le token (en plus du useEffect)
+    saveState({ tokens: updatedTokens });
   };
 
   const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -805,7 +826,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         // Drawing tools (règle, rectangle, cercle, crayon, gomme, texte)
         if (tool === "line" || tool === "rect" || tool === "circle" || tool === "pencil" || tool === "eraser") {
           const w = toWorld(t.clientX, t.clientY);
-          setCurrentAction({ type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
+          setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
           setIsDrawing(true);
           mode = "draw";
           return;
@@ -814,8 +835,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const w = toWorld(t.clientX, t.clientY);
           const text = prompt("Texte à ajouter :");
           if (text) {
-            const action: DrawAction = { type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
-            setActions(prev => [...prev, action]);
+            const action: DrawAction = { id: newId(), type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
+            setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
             setUndoneActions([]);
           }
           mode = "none";
@@ -910,7 +931,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (mode === "draw") {
           setCurrentAction(prev => {
             if (prev) {
-              setActions(a => [...a, prev]);
+              setActions(a => a.some(x => x.id === prev.id) ? a : [...a, prev]);
               setUndoneActions([]);
             }
             return null;
@@ -1037,14 +1058,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (tool === "text") {
       const text = prompt("Texte à ajouter :");
       if (text) {
-        const action: DrawAction = { type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
-        setActions(prev => [...prev, action]);
+        const action: DrawAction = { id: newId(), type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
+        setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
         setUndoneActions([]);
       }
       return;
     }
     setIsDrawing(true);
-    setCurrentAction({ type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
+    setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1090,7 +1111,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const handleMouseUp = () => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
-    if (currentAction) { setActions(prev => [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
+    if (currentAction) { setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
     setIsDrawing(false);
   };
 
