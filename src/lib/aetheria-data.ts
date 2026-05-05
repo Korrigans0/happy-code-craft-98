@@ -917,7 +917,6 @@ export const CLASSES: AetheriaClass[] = [
     outfits: [],
   },
   {
-  {
     id: "guerrier",
     name: "Guerrier",
     emoji: "🛡️",
