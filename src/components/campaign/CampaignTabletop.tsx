@@ -1163,6 +1163,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const undo = () => { setActions(prev => { if (!prev.length) return prev; setUndoneActions(u => [...u, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
   const redo = () => { setUndoneActions(prev => { if (!prev.length) return prev; setActions(a => [...a, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
   const clearAll = () => {
+    if (!perms.canClearBoard) { denied("Seul le MJ peut effacer le plateau"); return; }
     if (!confirm("Effacer tout le plateau ?")) return;
     setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1);
     mapImageRef.current = null;
