@@ -842,6 +842,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const w = toWorld(t.clientX, t.clientY);
           const hit = findTokenAt(w.x, w.y);
           if (hit) {
+            if (!perms.canMoveToken(hit)) {
+              // Joueur : ne peut pas déplacer un jeton qui n'est pas le sien
+              setSelectedTokenId(perms.canSelectToken(hit) ? hit.id : null);
+              mode = "pan";
+              return;
+            }
             activeTokenId = hit.id;
             tokenOffset = { x: w.x - hit.x, y: w.y - hit.y };
             setSelectedTokenId(hit.id);
