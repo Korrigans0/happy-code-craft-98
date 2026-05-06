@@ -375,6 +375,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const duplicateToken = (tokenId: string) => {
     const src = tokens.find(t => t.id === tokenId);
     if (!src) return;
+    if (!perms.canAddToken) { denied("Seul le MJ peut dupliquer un jeton"); return; }
     const targetX = src.x + GRID_SIZE;
     const targetY = src.y;
     const free = findFreePosition(targetX, targetY, src.size);
