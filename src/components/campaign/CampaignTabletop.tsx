@@ -1074,6 +1074,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
+        if (!perms.canMoveToken(tokenHit)) {
+          // Joueur : sélection visuelle autorisée si on peut au moins le voir, mais pas de drag
+          setSelectedTokenId(perms.canSelectToken(tokenHit) ? tokenHit.id : null);
+          // Bascule en pan
+          setLastPanPoint({ x: e.clientX, y: e.clientY });
+          setIsDrawing(true);
+          return;
+        }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
