@@ -163,6 +163,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const denied = (msg = "Action réservée au MJ") =>
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
 
+  const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
