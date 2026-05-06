@@ -30,6 +30,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { toast } from "@/hooks/use-toast";
 
 type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
 
@@ -140,6 +142,27 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Synchronisation temps réel du plateau ────────────────────
   const { user } = useAuth();
   const deletedTokenIdsRef = useRef<Set<string>>(new Set());
+
+  // Récupère le character_id du joueur courant pour cette campagne
+  const { data: ownCharacterId } = useQuery({
+    queryKey: ["campaign-member-character", campaignId, user?.id],
+    enabled: !!user?.id && !!campaignId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("campaign_members")
+        .select("character_id")
+        .eq("campaign_id", campaignId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data?.character_id ?? null;
+    },
+  });
+
+  const perms = usePermissions({ isGM, userId: user?.id, ownCharacterId });
+
+  const denied = (msg = "Action réservée au MJ") =>
+    toast({ title: "Permission refusée", description: msg, variant: "destructive" });
+
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
@@ -302,6 +325,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const sizeUnits = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
     const size = GRID_SIZE * sizeUnits;
     const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
@@ -351,6 +375,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const duplicateToken = (tokenId: string) => {
     const src = tokens.find(t => t.id === tokenId);
     if (!src) return;
+    if (!perms.canAddToken) { denied("Seul le MJ peut dupliquer un jeton"); return; }
     const targetX = src.x + GRID_SIZE;
     const targetY = src.y;
     const free = findFreePosition(targetX, targetY, src.size);
@@ -380,6 +405,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const toggleLayerVisibility = (layerId: string) => {
+    if (layerId === "fog" && !perms.canToggleFog) { denied("Le brouillard est contrôlé par le MJ"); return; }
+    if (layerId === "map" && !perms.canEditMap) { denied("Le calque carte est contrôlé par le MJ"); return; }
     setLayers(prev => {
       const next = prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l);
       if (layerId === "fog") {
@@ -395,6 +422,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!perms.canUploadMap) { denied("Seul le MJ peut charger une carte"); return; }
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -413,6 +441,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const addToken = () => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut ajouter des jetons"); return; }
     if (!newTokenName.trim()) return;
     const wx = snapValue((-panOffset.x / zoom) + 200);
     const wy = snapValue((-panOffset.y / zoom) + 200);
@@ -435,6 +464,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const removeToken = (tokenId: string) => {
+    const target = tokens.find(t => t.id === tokenId);
+    if (!perms.canDeleteToken(target)) { denied("Vous ne pouvez supprimer que vos propres jetons"); return; }
     deletedTokenIdsRef.current.add(tokenId);
     // Oublier l'id supprimé après quelques secondes (le temps que la sync realtime se propage)
     setTimeout(() => deletedTokenIdsRef.current.delete(tokenId), 5000);
@@ -813,6 +844,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const w = toWorld(t.clientX, t.clientY);
           const hit = findTokenAt(w.x, w.y);
           if (hit) {
+            if (!perms.canMoveToken(hit)) {
+              // Joueur : ne peut pas déplacer un jeton qui n'est pas le sien
+              setSelectedTokenId(perms.canSelectToken(hit) ? hit.id : null);
+              mode = "pan";
+              return;
+            }
             activeTokenId = hit.id;
             tokenOffset = { x: w.x - hit.x, y: w.y - hit.y };
             setSelectedTokenId(hit.id);
@@ -1039,6 +1076,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
+        if (!perms.canMoveToken(tokenHit)) {
+          // Joueur : sélection visuelle autorisée si on peut au moins le voir, mais pas de drag
+          setSelectedTokenId(perms.canSelectToken(tokenHit) ? tokenHit.id : null);
+          // Bascule en pan
+          setLastPanPoint({ x: e.clientX, y: e.clientY });
+          setIsDrawing(true);
+          return;
+        }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
@@ -1118,6 +1163,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const undo = () => { setActions(prev => { if (!prev.length) return prev; setUndoneActions(u => [...u, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
   const redo = () => { setUndoneActions(prev => { if (!prev.length) return prev; setActions(a => [...a, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
   const clearAll = () => {
+    if (!perms.canClearBoard) { denied("Seul le MJ peut effacer le plateau"); return; }
     if (!confirm("Effacer tout le plateau ?")) return;
     setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1);
     mapImageRef.current = null;
