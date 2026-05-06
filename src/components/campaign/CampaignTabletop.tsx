@@ -142,7 +142,27 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Synchronisation temps réel du plateau ────────────────────
   const { user } = useAuth();
   const deletedTokenIdsRef = useRef<Set<string>>(new Set());
-  const { saveState } = useTabletopSync({
+
+  // Récupère le character_id du joueur courant pour cette campagne
+  const { data: ownCharacterId } = useQuery({
+    queryKey: ["campaign-member-character", campaignId, user?.id],
+    enabled: !!user?.id && !!campaignId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("campaign_members")
+        .select("character_id")
+        .eq("campaign_id", campaignId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data?.character_id ?? null;
+    },
+  });
+
+  const perms = usePermissions({ isGM, userId: user?.id, ownCharacterId });
+
+  const denied = (msg = "Action réservée au MJ") =>
+    toast({ title: "Permission refusée", description: msg, variant: "destructive" });
+
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
