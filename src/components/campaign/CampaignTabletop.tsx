@@ -325,6 +325,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const spawnWACreature = (creature: typeof waCreatures[0]) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const sizeUnits = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
     const size = GRID_SIZE * sizeUnits;
     const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
