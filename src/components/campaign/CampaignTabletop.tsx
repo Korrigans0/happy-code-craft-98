@@ -403,6 +403,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const toggleLayerVisibility = (layerId: string) => {
+    if (layerId === "fog" && !perms.canToggleFog) { denied("Le brouillard est contrôlé par le MJ"); return; }
+    if (layerId === "map" && !perms.canEditMap) { denied("Le calque carte est contrôlé par le MJ"); return; }
     setLayers(prev => {
       const next = prev.map(l => l.id === layerId ? { ...l, visible: !l.visible } : l);
       if (layerId === "fog") {
