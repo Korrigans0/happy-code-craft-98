@@ -420,6 +420,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!perms.canUploadMap) { denied("Seul le MJ peut charger une carte"); return; }
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -438,6 +439,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const addToken = () => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut ajouter des jetons"); return; }
     if (!newTokenName.trim()) return;
     const wx = snapValue((-panOffset.x / zoom) + 200);
     const wy = snapValue((-panOffset.y / zoom) + 200);
@@ -460,6 +462,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const removeToken = (tokenId: string) => {
+    const target = tokens.find(t => t.id === tokenId);
+    if (!perms.canDeleteToken(target)) { denied("Vous ne pouvez supprimer que vos propres jetons"); return; }
     deletedTokenIdsRef.current.add(tokenId);
     // Oublier l'id supprimé après quelques secondes (le temps que la sync realtime se propage)
     setTimeout(() => deletedTokenIdsRef.current.delete(tokenId), 5000);
