@@ -6,91 +6,93 @@
 
 @layer base {
   :root {
-    /* Dark fantasy theme - Deep blue-black */
-    --background: 216 28% 7%;
-    --foreground: 45 20% 90%;
+    /* ── AETHERIA — Bleu marine #1e3a5f + Or #c9a227 + Parchemin ── */
 
-    --card: 216 25% 10%;
-    --card-foreground: 45 20% 90%;
+    /* Fond principal : bleu marine doux */
+    --background: 213 52% 24%;        /* #1e3a5f */
+    --foreground: 43 25% 88%;         /* crème chaude */
 
-    --popover: 216 25% 10%;
-    --popover-foreground: 45 20% 90%;
+    /* Cartes : bleu légèrement plus sombre avec teinte parchemin */
+    --card: 213 48% 20%;
+    --card-foreground: 43 25% 88%;
 
-    /* Gold/Amber accent as primary */
-    --primary: 42 65% 58%;
-    --primary-foreground: 216 28% 7%;
+    --popover: 213 48% 18%;
+    --popover-foreground: 43 25% 88%;
 
-    --secondary: 216 20% 15%;
-    --secondary-foreground: 45 20% 90%;
+    /* Or Aetheria */
+    --primary: 43 67% 47%;            /* #c9a227 */
+    --primary-foreground: 213 52% 12%;
 
-    --muted: 216 20% 18%;
-    --muted-foreground: 216 15% 55%;
+    --secondary: 213 40% 28%;
+    --secondary-foreground: 43 25% 88%;
 
-    --accent: 216 25% 14%;
-    --accent-foreground: 45 20% 90%;
+    --muted: 213 38% 22%;
+    --muted-foreground: 213 20% 60%;
+
+    --accent: 213 42% 26%;
+    --accent-foreground: 43 25% 88%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 45 20% 95%;
+    --destructive-foreground: 43 25% 95%;
 
-    --border: 216 20% 18%;
-    --input: 216 20% 18%;
-    --ring: 42 65% 58%;
+    --border: 213 35% 30%;
+    --input: 213 38% 22%;
+    --ring: 43 67% 47%;
 
     --radius: 0.75rem;
 
-    /* Feature card colors */
+    /* ── Parchemin — utilisé pour les zones de contenu chaudes ── */
+    --parchment: 43 60% 88%;          /* #f0deb0 */
+    --parchment-dark: 38 45% 78%;     /* #e8cfa0 */
+    --parchment-border: 38 55% 55%;   /* #c9a227 medium */
+
+    /* ── Feature colors ── */
     --feature-dice: 142 70% 45%;
     --feature-maps: 32 95% 55%;
     --feature-compendium: 270 70% 60%;
     --feature-character: 340 75% 55%;
 
-    /* Gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(42, 65%, 58%) 0%, hsl(35, 80%, 45%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(216, 28%, 7%) 0%, hsl(216, 30%, 5%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(216, 25%, 12%) 0%, hsl(216, 25%, 8%) 100%);
+    /* ── Gradients ── */
+    --gradient-gold: linear-gradient(135deg, hsl(43, 67%, 52%) 0%, hsl(35, 80%, 40%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(213, 52%, 20%) 0%, hsl(213, 55%, 15%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(213, 48%, 22%) 0%, hsl(213, 48%, 17%) 100%);
+    --gradient-parchment: linear-gradient(160deg, hsl(43, 60%, 92%) 0%, hsl(38, 50%, 84%) 40%, hsl(35, 45%, 80%) 100%);
 
-    /* Shadows */
-    --shadow-gold: 0 0 20px hsl(42, 65%, 58%, 0.2);
-    --shadow-card: 0 8px 32px hsl(0, 0%, 0%, 0.3);
+    /* ── Shadows ── */
+    --shadow-gold: 0 0 20px hsl(43, 67%, 47%, 0.25);
+    --shadow-card: 0 8px 32px hsl(0, 0%, 0%, 0.35);
 
-    --sidebar-background: 216 28% 7%;
-    --sidebar-foreground: 45 20% 90%;
-    --sidebar-primary: 42 65% 58%;
-    --sidebar-primary-foreground: 216 28% 7%;
-    --sidebar-accent: 216 25% 14%;
-    --sidebar-accent-foreground: 45 20% 90%;
-    --sidebar-border: 216 20% 18%;
-    --sidebar-ring: 42 65% 58%;
+    /* ── Sidebar ── */
+    --sidebar-background: 213 55% 18%;
+    --sidebar-foreground: 43 25% 88%;
+    --sidebar-primary: 43 67% 47%;
+    --sidebar-primary-foreground: 213 52% 12%;
+    --sidebar-accent: 213 42% 24%;
+    --sidebar-accent-foreground: 43 25% 88%;
+    --sidebar-border: 213 35% 28%;
+    --sidebar-ring: 43 67% 47%;
   }
 
   .dark {
-    --background: 216 28% 7%;
-    --foreground: 45 20% 90%;
-
-    --card: 216 25% 10%;
-    --card-foreground: 45 20% 90%;
-
-    --popover: 216 25% 10%;
-    --popover-foreground: 45 20% 90%;
-
-    --primary: 42 65% 58%;
-    --primary-foreground: 216 28% 7%;
-
-    --secondary: 216 20% 15%;
-    --secondary-foreground: 45 20% 90%;
-
-    --muted: 216 20% 18%;
-    --muted-foreground: 216 15% 55%;
-
-    --accent: 216 25% 14%;
-    --accent-foreground: 45 20% 90%;
-
+    --background: 213 52% 24%;
+    --foreground: 43 25% 88%;
+    --card: 213 48% 20%;
+    --card-foreground: 43 25% 88%;
+    --popover: 213 48% 18%;
+    --popover-foreground: 43 25% 88%;
+    --primary: 43 67% 47%;
+    --primary-foreground: 213 52% 12%;
+    --secondary: 213 40% 28%;
+    --secondary-foreground: 43 25% 88%;
+    --muted: 213 38% 22%;
+    --muted-foreground: 213 20% 60%;
+    --accent: 213 42% 26%;
+    --accent-foreground: 43 25% 88%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 45 20% 95%;
-
-    --border: 216 20% 18%;
-    --input: 216 20% 18%;
-    --ring: 42 65% 58%;
+    --destructive-foreground: 43 25% 95%;
+    --border: 213 35% 30%;
+    --input: 213 38% 22%;
+    --ring: 43 67% 47%;
   }
 }
 
@@ -100,7 +102,6 @@
   }
 
   html, body {
-    /* Évite le tap-highlight bleu et le surpan iOS */
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
     text-size-adjust: 100%;
@@ -110,8 +111,11 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Lora', serif;
-    /* Espace pour la barre de navigation mobile + safe-area iOS */
     padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
+    /* Texture subtile bleu nuit */
+    background-image:
+      radial-gradient(ellipse at 20% 0%, hsl(213, 60%, 30%) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, hsl(213, 55%, 18%) 0%, transparent 60%);
   }
 
   @media (min-width: 768px) {
@@ -124,154 +128,178 @@
     font-family: 'Cinzel', serif;
   }
 
-  /* iOS : empêche le zoom auto au focus si la taille du champ < 16px */
   input, select, textarea {
     font-size: 16px;
   }
 
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Better focus styles */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: hsl(216, 28%, 7%);
-  }
+  /* Scrollbar assortie */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: hsl(213, 52%, 18%); }
   ::-webkit-scrollbar-thumb {
-    background: hsl(216, 20%, 22%);
+    background: hsl(213, 35%, 32%);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(42, 65%, 58%, 0.4);
+    background: hsl(43, 67%, 47%, 0.5);
   }
 
-  /* Utilitaires safe-area iOS */
   .safe-pt { padding-top: env(safe-area-inset-top); }
   .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 @layer utilities {
+
+  /* ── Texte or gradient ── */
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(42, 65%, 62%) 0%, hsl(35, 80%, 50%) 50%, hsl(42, 70%, 55%) 100%);
+    background: linear-gradient(135deg, hsl(43, 75%, 65%) 0%, hsl(35, 80%, 50%) 50%, hsl(43, 70%, 58%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
+  /* ── Fond or gradient ── */
   .bg-gradient-gold {
-    background: linear-gradient(135deg, hsl(42, 65%, 58%) 0%, hsl(35, 80%, 45%) 100%);
+    background: linear-gradient(135deg, hsl(43, 67%, 47%) 0%, hsl(35, 80%, 38%) 100%);
   }
 
+  /* ── Fond bleu nuit (pages) ── */
   .bg-gradient-dark {
-    background: linear-gradient(180deg, hsl(216, 28%, 7%) 0%, hsl(216, 30%, 5%) 100%);
+    background: linear-gradient(180deg, hsl(213, 52%, 22%) 0%, hsl(213, 55%, 17%) 100%);
   }
 
+  /* ── Fond carte standard ── */
   .bg-gradient-card {
-    background: linear-gradient(145deg, hsl(216, 25%, 12%) 0%, hsl(216, 25%, 8%) 100%);
+    background: linear-gradient(145deg, hsl(213, 48%, 23%) 0%, hsl(213, 48%, 18%) 100%);
   }
 
+  /* ── Fond parchemin — pour cartes de contenu chaudes ── */
+  .bg-parchment {
+    background: linear-gradient(160deg, hsl(43, 60%, 92%) 0%, hsl(38, 50%, 85%) 40%, hsl(35, 45%, 80%) 100%);
+    color: hsl(30, 40%, 15%);
+  }
+
+  /* ── Carte parchemin (utilisée dans Compendium, fiches) ── */
+  .card-parchment {
+    background: linear-gradient(145deg, hsl(43, 55%, 90%) 0%, hsl(38, 48%, 83%) 100%);
+    border: 1px solid hsl(38, 55%, 60%);
+    color: hsl(30, 40%, 15%);
+    box-shadow: 0 4px 20px hsl(38, 55%, 40%, 0.15), inset 0 1px 0 hsl(43, 70%, 95%);
+  }
+
+  /* ── Séparateur parchemin ── */
+  .border-parchment { border-color: hsl(38, 55%, 60%); }
+  .text-parchment { color: hsl(43, 55%, 85%); }
+  .text-parchment-dark { color: hsl(30, 40%, 15%); }
+
+  /* ── Shadows ── */
   .shadow-gold {
-    box-shadow: 0 0 20px hsl(42, 65%, 58%, 0.15), 0 0 60px hsl(42, 65%, 58%, 0.05);
+    box-shadow: 0 0 20px hsl(43, 67%, 47%, 0.2), 0 0 60px hsl(43, 67%, 47%, 0.07);
   }
-
   .shadow-card {
-    box-shadow: 0 8px 32px hsl(0, 0%, 0%, 0.3);
+    box-shadow: 0 8px 32px hsl(0, 0%, 0%, 0.35);
   }
-
   .glow-gold {
-    filter: drop-shadow(0 0 8px hsl(42, 65%, 58%, 0.4)) drop-shadow(0 0 24px hsl(42, 65%, 58%, 0.15));
+    filter: drop-shadow(0 0 8px hsl(43, 67%, 47%, 0.45)) drop-shadow(0 0 24px hsl(43, 67%, 47%, 0.15));
   }
 
+  /* ── Plateau — Mode Ciel ── */
+  .tabletop-sky {
+    background-color: #c8d8e8;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
+  }
+
+  /* ── Plateau — Mode Sombre ── */
+  .tabletop-dark {
+    background-color: #0f1520;
+    background-image:
+      linear-gradient(rgba(201, 162, 39, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201, 162, 39, 0.08) 1px, transparent 1px);
+  }
+
+  /* ── Animations ── */
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
-
   @keyframes float {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 
   .animate-pulse-slow {
     animation: pulse-slow 4s ease-in-out infinite;
   }
-
   @keyframes pulse-slow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
-  /* Fade in animation for page transitions */
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
+    animation: fade-in 0.4s ease-out;
   }
-
   @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* === Dice roller animations === */
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── Dice roller ── */
   .dice-piece {
     transform-style: preserve-3d;
     perspective: 600px;
   }
 
   @keyframes dice-roll {
-    0% {
-      transform: translate(0, -120px) rotate(0deg) scale(0.6);
-      opacity: 0;
-    }
-    15% {
-      opacity: 1;
-      transform: translate(calc(var(--tx) * 0.2), -40px) rotate(180deg) scale(1.1);
-    }
-    40% {
-      transform: translate(calc(var(--tx) * 0.6), 30px) rotate(540deg) scale(1);
-    }
-    70% {
-      transform: translate(calc(var(--tx) * 0.9), calc(var(--ty) * 0.85)) rotate(900deg) scale(1);
-    }
-    85% {
-      transform: translate(var(--tx), calc(var(--ty) - 8px)) rotate(calc(var(--tr) - 20deg)) scale(1.05);
-    }
-    100% {
-      transform: translate(var(--tx), var(--ty)) rotate(var(--tr)) scale(1);
-    }
+    0% { transform: translate(0, -120px) rotate(0deg) scale(0.6); opacity: 0; }
+    15% { opacity: 1; transform: translate(calc(var(--tx) * 0.2), -40px) rotate(180deg) scale(1.1); }
+    40% { transform: translate(calc(var(--tx) * 0.6), 20px) rotate(320deg) scale(0.95); }
+    60% { transform: translate(calc(var(--tx) * 0.8), -10px) rotate(400deg) scale(1.02); }
+    80% { transform: translate(calc(var(--tx) * 0.95), 5px) rotate(440deg) scale(0.98); }
+    100% { transform: translate(var(--tx), 0px) rotate(var(--final-rot)) scale(1); opacity: 1; }
   }
 
-  .dice-tumble {
-    animation: dice-tumble 0.18s linear infinite;
+  .animate-dice-roll {
+    animation: dice-roll var(--duration, 0.8s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   }
 
-  @keyframes dice-tumble {
-    0%   { transform: rotateX(0deg) rotateY(0deg); }
-    25%  { transform: rotateX(90deg) rotateY(45deg); }
-    50%  { transform: rotateX(180deg) rotateY(180deg); }
-    75%  { transform: rotateX(270deg) rotateY(225deg); }
-    100% { transform: rotateX(360deg) rotateY(360deg); }
+  @keyframes dice-bounce {
+    0%, 100% { transform: translate(var(--tx), 0) rotate(var(--final-rot)) scale(1); }
+    30% { transform: translate(var(--tx), -8px) rotate(calc(var(--final-rot) + 5deg)) scale(1.05); }
+    60% { transform: translate(var(--tx), -3px) rotate(calc(var(--final-rot) - 2deg)) scale(1.02); }
+  }
+
+  .animate-dice-bounce {
+    animation: dice-bounce 0.4s ease-in-out forwards;
+  }
+
+  /* ── Bordure dorée animée ── */
+  .border-gold-glow {
+    border: 1px solid hsl(43, 67%, 47%, 0.4);
+    box-shadow: 0 0 0 1px hsl(43, 67%, 47%, 0.1), inset 0 0 20px hsl(43, 67%, 47%, 0.03);
+  }
+
+  /* ── Hover card lift ── */
+  .card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px hsl(0, 0%, 0%, 0.4), 0 0 20px hsl(43, 67%, 47%, 0.1);
   }
 }
