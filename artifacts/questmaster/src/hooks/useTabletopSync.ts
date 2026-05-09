@@ -1,0 +1,136 @@
+// ============================================================
+// HOOK DE SYNCHRONISATION VTT — version REST API
+// Fichier : src/hooks/useTabletopSync.ts
+// ============================================================
+
+import { useEffect, useRef, useCallback } from "react";
+import { campaignsApi } from "@/lib/api";
+
+interface TokenItem {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  size: number;
+  sizeUnits: number;
+  rotation: number;
+  color: string;
+  label: string;
+  layer: string;
+  visible: boolean;
+  creatureId?: string;
+  creatureType?: "wa_creature" | "monster" | "character" | "aetheria_creature";
+  hp?: number;
+  maxHp?: number;
+  ac?: number;
+  imageUrl?: string;
+}
+
+interface DrawAction {
+  id: string;
+  type: string;
+  points: { x: number; y: number }[];
+  color: string;
+  size: number;
+  text?: string;
+  layer: string;
+}
+
+interface TabletopState {
+  tokens: TokenItem[];
+  drawings: DrawAction[];
+  map_image_url: string | null;
+  fog_visible: boolean;
+}
+
+interface UseTabletopSyncOptions {
+  campaignId: string;
+  userId: string;
+  onStateReceived: (state: TabletopState) => void;
+  debounceMs?: number;
+}
+
+const ensureId = (d: Partial<DrawAction>): DrawAction => ({
+  ...d,
+  id: d.id || `legacy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+} as DrawAction);
+
+export function useTabletopSync({
+  campaignId,
+  userId,
+  onStateReceived,
+  debounceMs = 600,
+}: UseTabletopSyncOptions) {
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
+  const onStateReceivedRef = useRef(onStateReceived);
+
+  useEffect(() => {
+    onStateReceivedRef.current = onStateReceived;
+  }, [onStateReceived]);
+
+  const saveState = useCallback(
+    (state: Partial<TabletopState>) => {
+      if (!initializedRef.current) return;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          await campaignsApi.saveTabletop(campaignId, userId, state);
+        } catch (e) {
+          console.error("[Tabletop] Erreur sauvegarde:", e);
+        }
+      }, debounceMs);
+    },
+    [campaignId, userId, debounceMs]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialState = async () => {
+      try {
+        const data = await campaignsApi.getTabletop(campaignId);
+        if (cancelled) return;
+        if (data) {
+          const rawDrawings = (data.drawings as unknown as Partial<DrawAction>[]) || [];
+          onStateReceivedRef.current({
+            tokens: (data.tokens as unknown as TokenItem[]) || [],
+            drawings: rawDrawings.map(ensureId),
+            map_image_url: data.map_image_url || null,
+            fog_visible: data.fog_visible || false,
+          });
+        }
+      } catch (e) {
+        console.error("[Tabletop] Erreur chargement:", e);
+      }
+      initializedRef.current = true;
+    };
+
+    loadInitialState();
+
+    // Poll for remote updates every 3 seconds
+    const pollInterval = setInterval(async () => {
+      if (cancelled) return;
+      try {
+        const data = await campaignsApi.getTabletop(campaignId);
+        if (data && data.updated_by && data.updated_by !== userId) {
+          const rawDrawings = (data.drawings as unknown as Partial<DrawAction>[]) || [];
+          onStateReceivedRef.current({
+            tokens: (data.tokens as unknown as TokenItem[]) || [],
+            drawings: rawDrawings.map(ensureId),
+            map_image_url: data.map_image_url || null,
+            fog_visible: data.fog_visible || false,
+          });
+        }
+      } catch {}
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(pollInterval);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [campaignId, userId]);
+
+  return { saveState };
+}

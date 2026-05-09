@@ -1,0 +1,58 @@
+import { pgTable, text, integer, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
+
+export const charactersTable = pgTable("characters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id"),
+  name: text("name").notNull(),
+  race: text("race").notNull().default("Humain"),
+  class: text("class").notNull().default("Guerrier"),
+  subclass: text("subclass"),
+  level: integer("level").default(1).notNull(),
+  background: text("background"),
+  alignment: text("alignment"),
+  campaign: text("campaign"),
+  strength: integer("strength").default(10).notNull(),
+  dexterity: integer("dexterity").default(10).notNull(),
+  constitution: integer("constitution").default(10).notNull(),
+  intelligence: integer("intelligence").default(10).notNull(),
+  wisdom: integer("wisdom").default(10).notNull(),
+  charisma: integer("charisma").default(10).notNull(),
+  hp: integer("hp").default(10).notNull(),
+  maxHp: integer("max_hp").default(10).notNull(),
+  tempHp: integer("temp_hp").default(0),
+  armorClass: integer("armor_class").default(10).notNull(),
+  initiative: integer("initiative").default(0),
+  speed: integer("speed").default(30),
+  proficiencyBonus: integer("proficiency_bonus").default(2),
+  experiencePoints: integer("experience_points").default(0),
+  gold: integer("gold").default(0),
+  hitDice: text("hit_dice"),
+  savingThrows: text("saving_throws"),
+  skills: text("skills"),
+  languages: text("languages"),
+  equippedWeaponId: text("equipped_weapon_id"),
+  equippedArmorId: text("equipped_armor_id"),
+  equippedItems: text("equipped_items"),
+  inventory: text("inventory"),
+  knownSpells: text("known_spells"),
+  preparedSpells: text("prepared_spells"),
+  spellSlots: text("spell_slots"),
+  spellcastingAbility: text("spellcasting_ability"),
+  spellAttackBonus: integer("spell_attack_bonus"),
+  spellSaveDc: integer("spell_save_dc"),
+  personality: text("personality_traits"),
+  ideals: text("ideals"),
+  bonds: text("bonds"),
+  flaws: text("flaws"),
+  backstory: text("backstory"),
+  appearance: text("appearance"),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCharacterSchema = createInsertSchema(charactersTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCharacter = z.infer<typeof insertCharacterSchema>;
+export type Character = typeof charactersTable.$inferSelect;
