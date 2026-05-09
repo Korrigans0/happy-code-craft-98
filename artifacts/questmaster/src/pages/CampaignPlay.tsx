@@ -41,7 +41,7 @@ const CampaignPlay = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      navigate('/sign-in');
     }
   }, [user, authLoading, navigate]);
 
@@ -222,7 +222,7 @@ const CampaignPlay = () => {
                 <CampaignTabletop campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="chat" className="m-0 h-full">
-                <CampaignChat campaignId={id!} userId={user!.id} isGM={isGM} />
+                <CampaignChat campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="combat" className="m-0 h-full">
                 <CampaignCombat campaignId={id!} isGM={isGM} />
@@ -231,7 +231,7 @@ const CampaignPlay = () => {
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="notes" className="m-0 h-full">
-                <CampaignNotes campaignId={id!} userId={user!.id} isGM={isGM} />
+                <CampaignNotes campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="members" className="m-0 h-full">
                 <CampaignMembers campaignId={id!} isGM={isGM} />

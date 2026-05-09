@@ -134,7 +134,7 @@ const Characters = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      navigate('/sign-in');
     }
   }, [user, authLoading, navigate]);
 
@@ -143,7 +143,7 @@ const Characters = () => {
     queryKey: ["characters", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      return charactersApi.list(user.id);
+      return charactersApi.list();
     },
     enabled: !!user,
   });
@@ -152,7 +152,7 @@ const Characters = () => {
   const createMutation = useMutation({
     mutationFn: async (character: Partial<Character>) => {
       if (!user) throw new Error("Non authentifié");
-      return charactersApi.create(user.id, character);
+      return charactersApi.create(character);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
@@ -171,7 +171,7 @@ const Characters = () => {
     mutationFn: async (character: Partial<Character>) => {
       if (!character.id) throw new Error("ID manquant");
       if (!user) throw new Error("Non authentifié");
-      return charactersApi.update(character.id, user.id, character);
+      return charactersApi.update(character.id, character);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
@@ -190,7 +190,7 @@ const Characters = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error("Non authentifié");
-      return charactersApi.delete(id, user.id);
+      return charactersApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });

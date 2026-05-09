@@ -28,7 +28,7 @@ const CreateMonsterDialog = ({ onCreated }: CreateMonsterDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createMonster(user.id, { ...form, armor_class: parseInt(form.armor_class) }); }
+    try { await compendiumApi.createMonster({ ...form, armor_class: parseInt(form.armor_class) }); }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Monstre créé !");

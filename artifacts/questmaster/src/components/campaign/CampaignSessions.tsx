@@ -36,7 +36,7 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
   const createMutation = useMutation({
     mutationFn: async (data: typeof newSession) => {
       const nextNumber = sessions.length > 0 ? Math.max(...(sessions as any[]).map((s: any) => s.session_number || 0)) + 1 : 1;
-      return campaignsApi.createSession(campaignId, "gm", {
+      return campaignsApi.createSession(campaignId, {
         ...data,
         session_number: nextNumber,
         title: data.title || `Session ${nextNumber}`,

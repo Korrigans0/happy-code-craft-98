@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@clerk/react";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,6 @@ import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
   campaignId: string;
-  userId: string;
   isGM: boolean;
 }
 
@@ -35,7 +35,9 @@ const QUICK_ACTIONS = [
   { label: "Dégâts (dague)", dice: "1d4", skill: "Dégâts" },
 ];
 
-const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
+const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
+  const { user: clerkUser } = useUser();
+  const userId = clerkUser?.id ?? "";
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [diceInput, setDiceInput] = useState("1d20");
@@ -69,7 +71,7 @@ const CampaignChat = ({ campaignId, userId, isGM }: CampaignChatProps) => {
   // Send message mutation
   const sendMutation = useMutation({
     mutationFn: async (data: { content: string; message_type: string; metadata?: any }) => {
-      return campaignsApi.postMessage(campaignId, userId, {
+      return campaignsApi.postMessage(campaignId, {
         content: data.content,
         message_type: data.message_type,
         metadata: data.metadata,

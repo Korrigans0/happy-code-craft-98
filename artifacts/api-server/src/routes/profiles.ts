@@ -2,13 +2,13 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { profilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
 // GET /api/profiles/me
-router.get("/me", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.get("/me", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
 
   let [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, userId));
   if (!profile) {
@@ -18,9 +18,8 @@ router.get("/me", async (req, res) => {
 });
 
 // PATCH /api/profiles/me
-router.patch("/me", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.patch("/me", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const { display_name, avatar_url } = req.body;
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -36,10 +35,10 @@ router.patch("/me", async (req, res) => {
   res.json(profile);
 });
 
-// GET /api/profiles/:userId
+// GET /api/profiles/:userId — public profile lookup
 router.get("/:userId", async (req, res) => {
   const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, req.params.userId));
-  if (!profile) return res.status(404).json({ error: "Not found" });
+  if (!profile) { res.status(404).json({ error: "Not found" }); return; }
   res.json(profile);
 });
 

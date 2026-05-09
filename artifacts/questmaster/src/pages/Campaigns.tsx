@@ -49,7 +49,7 @@ const Campaigns = () => {
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      navigate('/sign-in');
     }
   }, [user, authLoading, navigate]);
 
@@ -57,7 +57,7 @@ const Campaigns = () => {
     queryKey: ["campaigns", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      return campaignsApi.list(user.id);
+      return campaignsApi.list();
     },
     enabled: !!user,
   });
@@ -65,7 +65,7 @@ const Campaigns = () => {
   const createMutation = useMutation({
     mutationFn: async (campaign: { title: string; description: string; system: string; is_active: boolean }) => {
       if (!user) throw new Error("Non authentifié");
-      return campaignsApi.create(user.id, campaign);
+      return campaignsApi.create(campaign);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns", user?.id] });
@@ -91,7 +91,7 @@ const Campaigns = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error("Non authentifié");
-      return campaignsApi.delete(id, user.id);
+      return campaignsApi.delete(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns", user?.id] });
@@ -114,7 +114,7 @@ const Campaigns = () => {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       if (!user) throw new Error("Non authentifié");
-      return campaignsApi.update(id, user.id, { is_active });
+      return campaignsApi.update(id, { is_active });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns", user?.id] });
@@ -124,7 +124,7 @@ const Campaigns = () => {
   const joinMutation = useMutation({
     mutationFn: async (code: string) => {
       if (!user) throw new Error("Non authentifié");
-      const result = await campaignsApi.join(user.id, code.trim());
+      const result = await campaignsApi.join(code.trim());
       return result.campaign_id;
     },
     onSuccess: (campaignId) => {

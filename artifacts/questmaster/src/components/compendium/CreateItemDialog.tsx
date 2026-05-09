@@ -28,7 +28,7 @@ const CreateItemDialog = ({ onCreated }: CreateItemDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createItem(user.id, { ...form, properties: form.properties || null }); }
+    try { await compendiumApi.createItem({ ...form, properties: form.properties || null }); }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Objet créé !");

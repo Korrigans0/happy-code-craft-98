@@ -32,7 +32,7 @@ const Header = () => {
     queryKey: ["headerProfile", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      try { return await profilesApi.getMe(user.id); } catch { return null; }
+      try { return await profilesApi.getMe(); } catch { return null; }
     },
     enabled: !!user,
   });

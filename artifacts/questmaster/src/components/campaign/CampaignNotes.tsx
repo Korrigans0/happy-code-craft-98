@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useUser } from "@clerk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -15,11 +16,12 @@ import { Plus, BookOpen, Edit, Trash2, Lock, Eye, Calendar } from "lucide-react"
 
 interface CampaignNotesProps {
   campaignId: string;
-  userId: string;
   isGM: boolean;
 }
 
-const CampaignNotes = ({ campaignId, userId, isGM }: CampaignNotesProps) => {
+const CampaignNotes = ({ campaignId, isGM }: CampaignNotesProps) => {
+  const { user: clerkUser } = useUser();
+  const userId = clerkUser?.id ?? "";
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);
@@ -28,12 +30,12 @@ const CampaignNotes = ({ campaignId, userId, isGM }: CampaignNotesProps) => {
   // Fetch notes
   const { data: notes = [] } = useQuery({
     queryKey: ["campaignNotes", campaignId],
-    queryFn: () => campaignsApi.getNotes(campaignId, userId),
+    queryFn: () => campaignsApi.getNotes(campaignId),
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof newNote) => {
-      return campaignsApi.createNote(campaignId, userId, data);
+      return campaignsApi.createNote(campaignId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignNotes", campaignId] });
@@ -46,7 +48,7 @@ const CampaignNotes = ({ campaignId, userId, isGM }: CampaignNotesProps) => {
   // Update note
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; title: string; content: string; is_gm_only: boolean }) => {
-      return campaignsApi.createNote(campaignId, userId, data);
+      return campaignsApi.createNote(campaignId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignNotes", campaignId] });
@@ -58,7 +60,7 @@ const CampaignNotes = ({ campaignId, userId, isGM }: CampaignNotesProps) => {
   // Delete note
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return campaignsApi.deleteNote(campaignId, id, userId);
+      return campaignsApi.deleteNote(campaignId, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignNotes", campaignId] });

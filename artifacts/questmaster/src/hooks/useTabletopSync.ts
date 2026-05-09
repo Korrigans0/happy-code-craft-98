@@ -75,7 +75,7 @@ export function useTabletopSync({
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(async () => {
         try {
-          await campaignsApi.saveTabletop(campaignId, userId, state);
+          await campaignsApi.saveTabletop(campaignId, state);
         } catch (e) {
           console.error("[Tabletop] Erreur sauvegarde:", e);
         }

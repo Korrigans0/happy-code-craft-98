@@ -28,7 +28,7 @@ const CreateWACreatureDialog = ({ onCreated }: CreateWACreatureDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createWaCreature(user.id, { ...form, strength: parseInt(form.strength), dexterity: parseInt(form.dexterity), constitution: parseInt(form.constitution), intelligence: parseInt(form.intelligence), wisdom: parseInt(form.wisdom), charisma: parseInt(form.charisma), author: "Personnalisé" }); }
+    try { await compendiumApi.createWaCreature({ ...form, strength: parseInt(form.strength), dexterity: parseInt(form.dexterity), constitution: parseInt(form.constitution), intelligence: parseInt(form.intelligence), wisdom: parseInt(form.wisdom), charisma: parseInt(form.charisma), author: "Personnalisé" }); }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Créature WA créée !");

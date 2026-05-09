@@ -35,7 +35,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   // ── Mise à jour campagne ────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: async () => {
-      return campaignsApi.update(campaign.id, campaign.gm_id || "", { title, description, is_active: isActive, discord_link: discordLink || null });
+      return campaignsApi.update(campaign.id, { title, description, is_active: isActive, discord_link: discordLink || null });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaign", campaign.id] });
@@ -50,7 +50,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const regenerateCodeMutation = useMutation({
     mutationFn: async () => {
       const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-      return campaignsApi.update(campaign.id, campaign.gm_id || "", { invite_code: newCode });
+      return campaignsApi.update(campaign.id, { invite_code: newCode });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaign", campaign.id] });
@@ -61,7 +61,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   // ── Supprimer la campagne ───────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return campaignsApi.delete(campaign.id, campaign.gm_id || "");
+      return campaignsApi.delete(campaign.id);
     },
     onSuccess: () => {
       toast({ title: "Campagne supprimée" });

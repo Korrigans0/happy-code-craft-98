@@ -2,13 +2,13 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { charactersTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
 // GET /api/characters
-router.get("/", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.get("/", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const characters = await db.select().from(charactersTable)
     .where(eq(charactersTable.userId, userId))
     .orderBy(desc(charactersTable.createdAt));
@@ -16,9 +16,8 @@ router.get("/", async (req, res) => {
 });
 
 // POST /api/characters
-router.post("/", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.post("/", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
 
   const [character] = await db.insert(charactersTable).values({
@@ -70,15 +69,16 @@ router.post("/", async (req, res) => {
 
 // GET /api/characters/:id
 router.get("/:id", async (req, res) => {
-  const [character] = await db.select().from(charactersTable).where(eq(charactersTable.id, req.params.id));
-  if (!character) return res.status(404).json({ error: "Not found" });
+  const id = String(req.params.id);
+  const [character] = await db.select().from(charactersTable).where(eq(charactersTable.id, id));
+  if (!character) { res.status(404).json({ error: "Not found" }); return; }
   res.json(character);
 });
 
 // PATCH /api/characters/:id
-router.patch("/:id", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.patch("/:id", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = (req as any).userId as string;
   const body = req.body;
 
   const updates: Record<string, unknown> = {};
@@ -104,24 +104,24 @@ router.patch("/:id", async (req, res) => {
   const arrayFields = ["saving_throws", "skills", "languages", "known_spells", "prepared_spells", "equipped_items"];
   for (const f of arrayFields) {
     if (body[f] !== undefined) {
-      const col = f.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+      const col = f.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
       updates[col] = Array.isArray(body[f]) ? JSON.stringify(body[f]) : body[f];
     }
   }
   if (body.spell_slots !== undefined) updates.spellSlots = JSON.stringify(body.spell_slots);
 
   const [character] = await db.update(charactersTable).set(updates)
-    .where(and(eq(charactersTable.id, req.params.id), eq(charactersTable.userId, userId)))
+    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)))
     .returning();
-  if (!character) return res.status(404).json({ error: "Not found" });
+  if (!character) { res.status(404).json({ error: "Not found" }); return; }
   res.json(character);
 });
 
 // DELETE /api/characters/:id
-router.delete("/:id", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
-  await db.delete(charactersTable).where(and(eq(charactersTable.id, req.params.id), eq(charactersTable.userId, userId)));
+router.delete("/:id", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  await db.delete(charactersTable).where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)));
   res.json({ success: true });
 });
 

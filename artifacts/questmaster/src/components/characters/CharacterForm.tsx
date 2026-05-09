@@ -313,8 +313,8 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 {WA_STATS.map((stat) => {
-                  const ascBonus = WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat] ?? 0;
-                  const classBonus = WA_CLASS_BONUSES[formData.class || ""]?.[stat] ?? 0;
+                  const ascBonus = WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat as string] ?? 0;
+                  const classBonus = WA_CLASS_BONUSES[formData.class || ""]?.[stat as string] ?? 0;
                   const totalBase = ascBonus + classBonus;
                   const fieldMap: Record<string, keyof Character> = {
                     FOR: "strength", DEX: "dexterity", CON: "constitution",
@@ -324,12 +324,12 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
                     FOR: "Force", DEX: "Dextérité", CON: "Constitution",
                     INT: "Intelligence", SAG: "Sagesse", CHA: "Charisme"
                   };
-                  const field = fieldMap[stat];
-                  const currentVal = (formData[field] as number) ?? 0;
+                  const field = fieldMap[stat as string] as keyof Character;
+                  const currentVal = ((formData as Record<string, unknown>)[field as string] as number) ?? 0;
 
                   return (
                     <div key={stat} className="flex flex-col items-center rounded-lg border border-border bg-card p-3">
-                      <Label className="mb-1 text-xs text-muted-foreground">{labelMap[stat]}</Label>
+                      <Label className="mb-1 text-xs text-muted-foreground">{labelMap[stat as string]}</Label>
                       <span className="text-[10px] text-muted-foreground">
                         Base: {totalBase >= 0 ? `+${totalBase}` : totalBase}
                       </span>

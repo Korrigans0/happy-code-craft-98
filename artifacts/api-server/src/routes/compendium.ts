@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { spellsTable, monstersTable, magicItemsTable, waCreaturesTable, aetheriaCreaturesTable } from "@workspace/db";
-import { eq, desc, asc, or } from "drizzle-orm";
+import { asc } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -10,11 +11,11 @@ router.get("/spells", async (req, res) => {
   const spells = await db.select().from(spellsTable).orderBy(asc(spellsTable.name));
   res.json(spells);
 });
-router.post("/spells", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
+router.post("/spells", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
   const [spell] = await db.insert(spellsTable).values({
-    createdBy: userId || null,
+    createdBy: userId,
     name: body.name, level: body.level || 0, school: body.school || "Evocation",
     castingTime: body.casting_time || "1 action", range: body.range || "Personnelle",
     components: body.components || "V", duration: body.duration || "Instantanée",
@@ -29,11 +30,11 @@ router.get("/monsters", async (req, res) => {
   const monsters = await db.select().from(monstersTable).orderBy(asc(monstersTable.name));
   res.json(monsters);
 });
-router.post("/monsters", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
+router.post("/monsters", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
   const [monster] = await db.insert(monstersTable).values({
-    createdBy: userId || null,
+    createdBy: userId,
     name: body.name, type: body.type || "Bête", size: body.size || "Moyen",
     alignment: body.alignment || "Neutre", armorClass: body.armor_class || 10,
     hitPoints: body.hit_points || "10", speed: body.speed || "9 m",
@@ -47,11 +48,11 @@ router.get("/items", async (req, res) => {
   const items = await db.select().from(magicItemsTable).orderBy(asc(magicItemsTable.name));
   res.json(items);
 });
-router.post("/items", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
+router.post("/items", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
   const [item] = await db.insert(magicItemsTable).values({
-    createdBy: userId || null,
+    createdBy: userId,
     name: body.name, type: body.type || "Objet merveilleux",
     rarity: body.rarity || "Commun", attunement: body.attunement || false,
     description: body.description, properties: body.properties,
@@ -64,11 +65,11 @@ router.get("/wa-creatures", async (req, res) => {
   const creatures = await db.select().from(waCreaturesTable).orderBy(asc(waCreaturesTable.name));
   res.json(creatures);
 });
-router.post("/wa-creatures", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
+router.post("/wa-creatures", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
   const [creature] = await db.insert(waCreaturesTable).values({
-    createdBy: userId || null,
+    createdBy: userId,
     name: body.name, description: body.description || "",
     profile: body.profile || "", powerLevel: body.power_level || "",
     size: body.size || "Moyen", strength: body.strength || 10,
@@ -82,17 +83,17 @@ router.post("/wa-creatures", async (req, res) => {
 
 // AETHERIA CREATURES
 router.get("/aetheria-creatures", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  const creatures = await db.select().from(aetheriaCreaturesTable)
-    .orderBy(asc(aetheriaCreaturesTable.name));
+  const { getAuth: clerkGetAuth } = await import("@clerk/express");
+  const auth = clerkGetAuth(req as any);
+  const userId = auth?.userId;
+  const creatures = await db.select().from(aetheriaCreaturesTable).orderBy(asc(aetheriaCreaturesTable.name));
   const filtered = userId
     ? creatures.filter(c => c.isPublic || c.createdBy === userId)
     : creatures.filter(c => c.isPublic);
   res.json(filtered);
 });
-router.post("/aetheria-creatures", async (req, res) => {
-  const userId = req.headers["x-user-id"] as string;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+router.post("/aetheria-creatures", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
   const body = req.body;
   const [creature] = await db.insert(aetheriaCreaturesTable).values({
     createdBy: userId,

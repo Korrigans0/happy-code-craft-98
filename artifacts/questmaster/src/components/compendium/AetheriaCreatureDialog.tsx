@@ -46,11 +46,11 @@ export default function AetheriaCreatureDialog({ campaignId }: Props) {
     setForm(p => ({ ...p, [k]: v }));
 
   const save = async () => {
-    if (!user) return toast.error("Connexion requise");
-    if (!form.name.trim()) return toast.error("Nom requis");
+    if (!user) { toast.error("Connexion requise"); return; }
+    if (!form.name.trim()) { toast.error("Nom requis"); return; }
     setSaving(true);
     try {
-      await compendiumApi.createAetheriaCreature(user.id, { ...form, campaign_id: campaignId ?? null, capacites: [], conditions_immunites: [] });
+      await compendiumApi.createAetheriaCreature({ ...form, campaign_id: campaignId ?? null, capacites: [], conditions_immunites: [] });
     } catch (e: any) {
       setSaving(false);
       toast.error("Erreur : " + e.message);

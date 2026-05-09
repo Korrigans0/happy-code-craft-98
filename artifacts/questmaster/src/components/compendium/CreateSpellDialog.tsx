@@ -28,7 +28,7 @@ const CreateSpellDialog = ({ onCreated }: CreateSpellDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createSpell(user.id, { ...form, level: parseInt(form.level), classes: form.classes.split(",").map(c => c.trim()).filter(Boolean) }); }
+    try { await compendiumApi.createSpell({ ...form, level: parseInt(form.level), classes: form.classes.split(",").map(c => c.trim()).filter(Boolean) }); }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Sort créé !");

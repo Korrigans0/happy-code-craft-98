@@ -225,7 +225,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
   const { data: creatures = [], isLoading } = useQuery({
     queryKey: ["aetheria-creatures", campaignId],
     queryFn: async () => {
-      const data = await compendiumApi.getAetheriaCreatures(user?.id);
+      const data = await compendiumApi.getAetheriaCreatures();
       return (data || []) as unknown as AetheriaCreature[];
     },
   });

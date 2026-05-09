@@ -18,7 +18,7 @@ const CampaignsSection = () => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const data = await campaignsApi.list("public");
+        const data = await campaignsApi.list();
         setCampaigns((data || []).filter(c => c.is_active).slice(0, 6));
       } catch {
         setCampaigns([]);

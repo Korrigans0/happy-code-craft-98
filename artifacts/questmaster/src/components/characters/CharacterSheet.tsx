@@ -161,7 +161,7 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
               <div className="space-y-4">
                 {Object.entries(spellsByLevel)
                   .sort(([a], [b]) => Number(a) - Number(b))
-                  .map(([level, spells]) => (
+                  .map(([level, spells]: [string, any[]]) => (
                     <div key={level} className="rounded-lg border border-purple-500/20 bg-purple-500/5 p-3">
                       <h4 className="mb-2 text-xs font-semibold text-purple-400">
                         {Number(level) === 0 ? "Cantrips" : `Niveau ${level}`}
@@ -259,7 +259,7 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
                     Compétences
                   </h3>
                   <div className="flex flex-wrap gap-1">
-                    {character.skills.map((skill) => (
+                    {character.skills.map((skill: any) => (
                       <Badge key={skill} variant="default" className="text-xs">
                         {skill}
                       </Badge>
@@ -274,7 +274,7 @@ const CharacterSheet = ({ character, onEdit, onClose }: CharacterSheetProps) => 
                     Langues
                   </h3>
                   <div className="flex flex-wrap gap-1">
-                    {character.languages.map((lang) => (
+                    {character.languages.map((lang: any) => (
                       <Badge key={lang} variant="outline" className="text-xs">
                         {lang}
                       </Badge>

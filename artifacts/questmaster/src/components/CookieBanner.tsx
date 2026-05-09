@@ -10,13 +10,13 @@ const CookieBanner = () => {
   useEffect(() => {
     try {
       if (!localStorage.getItem(STORAGE_KEY)) {
-        // Affichage différé pour ne pas bloquer le LCP
         const t = setTimeout(() => setVisible(true), 800);
         return () => clearTimeout(t);
       }
     } catch {
       // localStorage indisponible (mode privé Safari) : on n'affiche rien
     }
+    return undefined;
   }, []);
 
   const persist = (value: "accepted" | "rejected") => {

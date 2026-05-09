@@ -18,6 +18,7 @@ interface ProfileData {
   user_id: string;
   display_name?: string | null;
   avatar_url?: string | null;
+  created_at?: string | null;
 }
 
 const Profile = () => {
@@ -32,7 +33,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      navigate('/sign-in');
     }
   }, [user, authLoading, navigate]);
 
@@ -40,7 +41,7 @@ const Profile = () => {
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      return profilesApi.getMe(user.id) as Promise<ProfileData | null>;
+      return profilesApi.getMe() as Promise<ProfileData | null>;
     },
     enabled: !!user,
   });
@@ -54,7 +55,7 @@ const Profile = () => {
   const updateMutation = useMutation({
     mutationFn: async (updates: { display_name?: string; avatar_url?: string | null }) => {
       if (!user) throw new Error('Non authentifié');
-      return profilesApi.updateMe(user.id, updates);
+      return profilesApi.updateMe(updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
@@ -140,7 +141,7 @@ const Profile = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-foreground"><Calendar className="h-4 w-4" />Membre depuis</Label>
-                  <Input value={user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : ''} disabled className="bg-muted border-border text-muted-foreground" />
+                  <Input value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) : ''} disabled className="bg-muted border-border text-muted-foreground" />
                 </div>
                 <Button onClick={handleSave} className="w-full bg-gradient-gold hover:opacity-90" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Enregistrer

@@ -149,7 +149,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     queryFn: async () => {
       try {
         const members = await campaignsApi.getMembers(campaignId);
-        const mine = members.find((m: any) => m.user_id === user!.id);
+        const mine = members.find((m: any) => m.user_id === user?.id);
         return mine?.character_id ?? null;
       } catch { return null; }
     },
@@ -222,7 +222,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     queryKey: ['vtt-user-characters', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      try { return await (await import("@/lib/api")).charactersApi.list(user!.id); }
+      try { return await (await import("@/lib/api")).charactersApi.list(); }
       catch { return []; }
     },
   });
