@@ -101,6 +101,23 @@ router.post("/wa-creatures", requireAuth, async (req, res) => {
   res.status(201).json(creature);
 });
 
+function serializeAetheriaCreature(c: any) {
+  const parseJson = (v: any) => { try { return v ? JSON.parse(v) : []; } catch { return v ?? []; } };
+  return {
+    id: c.id, created_by: c.createdBy, campaign_id: c.campaignId,
+    name: c.name, description: c.description, lore: c.lore, size: c.size,
+    force: c.force, agilite: c.agilite, endurance: c.endurance, esprit: c.esprit,
+    pv: c.pv, pv_max: c.pvMax, pe: c.pe, pe_max: c.peMax,
+    def_physique: c.defPhysique, def_magique: c.defMagique,
+    reduction_physique: c.reductionPhysique, reduction_magique: c.reductionMagique,
+    initiative_bonus: c.initiativeBonus, attaque: c.attaque, degats: c.degats,
+    capacites: parseJson(c.capacites),
+    conditions_immunites: parseJson(c.conditionsImmunites),
+    image_url: c.imageUrl, is_public: c.isPublic,
+    created_at: c.createdAt, updated_at: c.updatedAt,
+  };
+}
+
 // AETHERIA CREATURES
 router.get("/aetheria-creatures", async (req, res) => {
   const { getAuth: clerkGetAuth } = await import("@clerk/express");
@@ -110,7 +127,7 @@ router.get("/aetheria-creatures", async (req, res) => {
   const filtered = userId
     ? creatures.filter(c => c.isPublic || c.createdBy === userId)
     : creatures.filter(c => c.isPublic);
-  res.json(filtered);
+  res.json(filtered.map(serializeAetheriaCreature));
 });
 router.post("/aetheria-creatures", requireAuth, async (req, res) => {
   const userId = req.userId! as string;
@@ -129,7 +146,7 @@ router.post("/aetheria-creatures", requireAuth, async (req, res) => {
     conditionsImmunites: Array.isArray(body.conditions_immunites) ? JSON.stringify(body.conditions_immunites) : (body.conditions_immunites || "[]"),
     imageUrl: body.image_url, isPublic: body.is_public || false,
   }).returning();
-  res.status(201).json(creature);
+  res.status(201).json(serializeAetheriaCreature(creature));
 });
 
 export default router;

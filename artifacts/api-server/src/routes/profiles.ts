@@ -6,6 +6,17 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
+function serializeProfile(p: any) {
+  return {
+    id: p.id,
+    user_id: p.userId,
+    display_name: p.displayName ?? null,
+    avatar_url: p.avatarUrl ?? null,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  };
+}
+
 // GET /api/profiles/me
 router.get("/me", requireAuth, async (req, res) => {
   const userId = req.userId!;
@@ -14,7 +25,7 @@ router.get("/me", requireAuth, async (req, res) => {
   if (!profile) {
     [profile] = await db.insert(profilesTable).values({ userId }).returning();
   }
-  res.json(profile);
+  res.json(serializeProfile(profile));
 });
 
 // PATCH /api/profiles/me
@@ -32,14 +43,14 @@ router.patch("/me", requireAuth, async (req, res) => {
   } else {
     [profile] = await db.update(profilesTable).set(updates).where(eq(profilesTable.userId, userId)).returning();
   }
-  res.json(profile);
+  res.json(serializeProfile(profile));
 });
 
 // GET /api/profiles/:userId — public profile lookup
 router.get("/:userId", async (req, res) => {
   const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, req.params.userId));
   if (!profile) { res.status(404).json({ error: "Not found" }); return; }
-  res.json(profile);
+  res.json(serializeProfile(profile));
 });
 
 export default router;

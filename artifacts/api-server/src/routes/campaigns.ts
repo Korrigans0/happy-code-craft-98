@@ -323,6 +323,8 @@ router.patch("/:id/notes/:noteId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const noteId = String(req.params.noteId);
   const userId = req.userId! as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   const isGm = gm?.userId === userId;
@@ -333,12 +335,14 @@ router.patch("/:id/notes/:noteId", requireAuth, async (req, res) => {
   if (content !== undefined) updates.content = content;
   if (is_gm_only !== undefined && isGm) updates.isGmOnly = is_gm_only;
 
-  const ownerOrGmClause = isGm
-    ? eq(campaignNotesTable.id, noteId)
-    : and(eq(campaignNotesTable.id, noteId), eq(campaignNotesTable.userId, userId));
+  const ownerClause = and(
+    eq(campaignNotesTable.campaignId, id),
+    eq(campaignNotesTable.id, noteId),
+    isGm ? undefined : eq(campaignNotesTable.userId, userId),
+  );
 
   const [note] = await db.update(campaignNotesTable).set(updates)
-    .where(ownerOrGmClause!).returning();
+    .where(ownerClause!).returning();
   if (!note) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeNote(note));
 });
@@ -348,13 +352,17 @@ router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const noteId = String(req.params.noteId);
   const userId = req.userId! as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   const isGm = gm?.userId === userId;
 
-  const clause = isGm
-    ? eq(campaignNotesTable.id, noteId)
-    : and(eq(campaignNotesTable.id, noteId), eq(campaignNotesTable.userId, userId));
+  const clause = and(
+    eq(campaignNotesTable.campaignId, id),
+    eq(campaignNotesTable.id, noteId),
+    isGm ? undefined : eq(campaignNotesTable.userId, userId),
+  );
 
   await db.delete(campaignNotesTable).where(clause!);
   res.json({ success: true });

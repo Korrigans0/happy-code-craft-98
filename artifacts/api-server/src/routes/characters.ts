@@ -6,13 +6,65 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
+function serializeCharacter(c: any) {
+  const parseJson = (v: any) => { try { return v ? JSON.parse(v) : null; } catch { return v ?? null; } };
+  return {
+    id: c.id,
+    user_id: c.userId,
+    name: c.name,
+    race: c.race,
+    class: c.class,
+    subclass: c.subclass,
+    level: c.level,
+    background: c.background,
+    alignment: c.alignment,
+    campaign: c.campaign,
+    strength: c.strength,
+    dexterity: c.dexterity,
+    constitution: c.constitution,
+    intelligence: c.intelligence,
+    wisdom: c.wisdom,
+    charisma: c.charisma,
+    hp: c.hp,
+    max_hp: c.maxHp,
+    temp_hp: c.tempHp,
+    armor_class: c.armorClass,
+    initiative: c.initiative,
+    speed: c.speed,
+    proficiency_bonus: c.proficiencyBonus,
+    experience_points: c.experiencePoints,
+    gold: c.gold,
+    hit_dice: c.hitDice,
+    saving_throws: parseJson(c.savingThrows),
+    skills: parseJson(c.skills),
+    languages: parseJson(c.languages),
+    inventory: c.inventory,
+    known_spells: parseJson(c.knownSpells),
+    prepared_spells: parseJson(c.preparedSpells),
+    spell_slots: parseJson(c.spellSlots),
+    spellcasting_ability: c.spellcastingAbility,
+    spell_attack_bonus: c.spellAttackBonus,
+    spell_save_dc: c.spellSaveDc,
+    personality_traits: c.personality,
+    ideals: c.ideals,
+    bonds: c.bonds,
+    flaws: c.flaws,
+    backstory: c.backstory,
+    appearance: c.appearance,
+    avatar_url: c.avatarUrl,
+    equipped_items: parseJson(c.equippedItems),
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
+  };
+}
+
 // GET /api/characters
 router.get("/", requireAuth, async (req, res) => {
   const userId = req.userId! as string;
   const characters = await db.select().from(charactersTable)
     .where(eq(charactersTable.userId, userId))
     .orderBy(desc(charactersTable.createdAt));
-  res.json(characters);
+  res.json(characters.map(serializeCharacter));
 });
 
 // POST /api/characters
@@ -64,7 +116,7 @@ router.post("/", requireAuth, async (req, res) => {
     avatarUrl: body.avatar_url,
   }).returning();
 
-  res.status(201).json(character);
+  res.status(201).json(serializeCharacter(character));
 });
 
 // GET /api/characters/:id  — owner only
@@ -74,7 +126,7 @@ router.get("/:id", requireAuth, async (req, res) => {
   const [character] = await db.select().from(charactersTable)
     .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)));
   if (!character) { res.status(404).json({ error: "Not found" }); return; }
-  res.json(character);
+  res.json(serializeCharacter(character));
 });
 
 // PATCH /api/characters/:id
@@ -116,7 +168,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
     .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)))
     .returning();
   if (!character) { res.status(404).json({ error: "Not found" }); return; }
-  res.json(character);
+  res.json(serializeCharacter(character));
 });
 
 // DELETE /api/characters/:id
