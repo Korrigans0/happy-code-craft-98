@@ -18,18 +18,24 @@ French-language D&D/tabletop RPG campaign manager and virtual tabletop (VTT). Pl
 ## Where things live
 
 - `artifacts/questmaster/src/lib/api.ts` — central REST client (campaignsApi, charactersApi, compendiumApi, profilesApi)
-- `artifacts/questmaster/src/hooks/useAuth.tsx` — auth hook (localStorage-based, calls /api/auth/*)
+- `artifacts/questmaster/src/hooks/useAuth.tsx` — auth hook (Clerk-based)
 - `artifacts/api-server/src/routes/` — Express routes (auth, campaigns, characters, profiles, compendium)
 - `lib/db/src/schema.ts` — Drizzle ORM schema (source of truth)
-- `artifacts/questmaster/src/integrations/supabase/client.ts` — no-op stub (keep as-is)
+- `artifacts/questmaster/src/integrations/supabase/client.ts` — no-op stub (keep as-is; no live imports remain but kept for safety)
 
 ## Architecture decisions
 
-- Auth: SHA-256 email hash as userId (32 chars), password hashed (SHA-256+salt) stored in profiles.avatarUrl with "auth:" prefix — MVP approach
-- x-user-id header for auth on all API calls (no JWT/session cookies)
+- Auth: Clerk (`@clerk/react` on frontend, `@clerk/express` + `requireAuth` middleware on backend)
+- All API responses serialized to snake_case to match frontend contracts (see serializeCharacter, serializeProfile, serializeAetheriaCreature helpers in each route file)
 - Supabase completely replaced: all DB access goes through Express REST API, realtime replaced with polling (3s interval for messages)
 - CampaignCombat initiative tracker is fully local state (no DB persistence) — in-session only
 - CampaignTabletop (VTT board) syncs via REST polling via useTabletopSync hook
+
+## CORS / Deployment
+
+- CORS allowlist: `localhost`, `REPLIT_DEV_DOMAIN` (auto-detected), and any domains in `ALLOWED_ORIGINS` env var (comma-separated)
+- **Before deploying to a custom domain**, set `ALLOWED_ORIGINS=https://yourdomain.com` as a secret/env var — otherwise CORS will block requests from the production domain
+- Example: `ALLOWED_ORIGINS=https://aetheria.example.com,https://www.aetheria.example.com`
 
 ## Product
 
@@ -41,8 +47,8 @@ French-language D&D/tabletop RPG campaign manager and virtual tabletop (VTT). Pl
 
 ## Gotchas
 
-- API server port is 8080, not 5000 (despite replit.md template saying 5000)
+- API server port is 8080, not 5000
 - Avatar upload not supported (no object storage) — users must paste a URL directly
-- WA Bestiary sync function removed (was a Supabase Edge Function)
-- `supabase/client.ts` must remain as a no-op stub — some old imports may still reference it
 - Always run `pnpm --filter @workspace/db run push` after schema changes before restarting API
+- `supabase/client.ts` is a no-op stub — kept for safety, no files import it
+- `ResetPassword.tsx` is a dead route (not in App.tsx router) — it simply redirects to `/sign-in`
