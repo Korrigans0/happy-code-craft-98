@@ -13,7 +13,7 @@ router.get("/spells", async (req, res) => {
   res.json(spells);
 });
 router.post("/spells", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
   const [spell] = await db.insert(spellsTable).values({
     createdBy: userId,
@@ -32,7 +32,7 @@ router.get("/monsters", async (req, res) => {
   res.json(monsters);
 });
 router.post("/monsters", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
   const [monster] = await db.insert(monstersTable).values({
     createdBy: userId,
@@ -50,7 +50,7 @@ router.get("/items", async (req, res) => {
   res.json(items);
 });
 router.post("/items", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
   const [item] = await db.insert(magicItemsTable).values({
     createdBy: userId,
@@ -86,7 +86,7 @@ router.get("/wa-creatures", async (req, res) => {
   res.json(creatures);
 });
 router.post("/wa-creatures", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
   const [creature] = await db.insert(waCreaturesTable).values({
     createdBy: userId,
@@ -104,7 +104,7 @@ router.post("/wa-creatures", requireAuth, async (req, res) => {
 // AETHERIA CREATURES
 router.get("/aetheria-creatures", async (req, res) => {
   const { getAuth: clerkGetAuth } = await import("@clerk/express");
-  const auth = clerkGetAuth(req as any);
+  const auth = clerkGetAuth(req);
   const userId = auth?.userId;
   const creatures = await db.select().from(aetheriaCreaturesTable).orderBy(asc(aetheriaCreaturesTable.name));
   const filtered = userId
@@ -113,7 +113,7 @@ router.get("/aetheria-creatures", async (req, res) => {
   res.json(filtered);
 });
 router.post("/aetheria-creatures", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
   const [creature] = await db.insert(aetheriaCreaturesTable).values({
     createdBy: userId,

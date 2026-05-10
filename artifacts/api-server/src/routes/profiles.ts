@@ -8,7 +8,7 @@ const router = Router();
 
 // GET /api/profiles/me
 router.get("/me", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId!;
 
   let [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, userId));
   if (!profile) {
@@ -19,7 +19,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
 // PATCH /api/profiles/me
 router.patch("/me", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId!;
   const { display_name, avatar_url } = req.body;
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };

@@ -8,7 +8,7 @@ const router = Router();
 
 // GET /api/characters
 router.get("/", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const characters = await db.select().from(charactersTable)
     .where(eq(charactersTable.userId, userId))
     .orderBy(desc(charactersTable.createdAt));
@@ -17,7 +17,7 @@ router.get("/", requireAuth, async (req, res) => {
 
 // POST /api/characters
 router.post("/", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
 
   const [character] = await db.insert(charactersTable).values({
@@ -70,7 +70,7 @@ router.post("/", requireAuth, async (req, res) => {
 // GET /api/characters/:id  — owner only
 router.get("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [character] = await db.select().from(charactersTable)
     .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)));
   if (!character) { res.status(404).json({ error: "Not found" }); return; }
@@ -80,7 +80,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 // PATCH /api/characters/:id
 router.patch("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const body = req.body;
 
   const updates: Record<string, unknown> = {};
@@ -122,7 +122,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
 // DELETE /api/characters/:id
 router.delete("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   await db.delete(charactersTable).where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)));
   res.json({ success: true });
 });

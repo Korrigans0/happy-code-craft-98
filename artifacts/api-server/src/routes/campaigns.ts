@@ -65,7 +65,7 @@ async function isMember(campaignId: string, userId: string): Promise<boolean> {
 
 // GET /api/campaigns
 router.get("/", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
 
   const owned = await db.select().from(campaignsTable)
     .where(eq(campaignsTable.userId, userId))
@@ -90,7 +90,7 @@ router.get("/", requireAuth, async (req, res) => {
 
 // POST /api/campaigns
 router.post("/", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const { title, description, system, is_active } = req.body;
   if (!title) { res.status(400).json({ error: "title required" }); return; }
 
@@ -106,7 +106,7 @@ router.post("/", requireAuth, async (req, res) => {
 
 // POST /api/campaigns/join (must be before /:id)
 router.post("/join", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const { invite_code } = req.body;
   if (!invite_code) { res.status(400).json({ error: "invite_code required" }); return; }
 
@@ -125,7 +125,7 @@ router.post("/join", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id
 router.get("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!campaign) { res.status(404).json({ error: "Not found" }); return; }
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
@@ -135,7 +135,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 // PATCH /api/campaigns/:id
 router.patch("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const { title, description, system, is_active, discord_link, invite_code } = req.body;
 
   const updates: Record<string, unknown> = {};
@@ -156,7 +156,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
 // DELETE /api/campaigns/:id
 router.delete("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   await db.delete(campaignsTable).where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)));
   res.json({ success: true });
 });
@@ -164,7 +164,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id/members
 router.get("/:id/members", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const members = await db.select().from(campaignMembersTable)
     .where(eq(campaignMembersTable.campaignId, id));
@@ -175,7 +175,7 @@ router.get("/:id/members", requireAuth, async (req, res) => {
 router.delete("/:id/members/:memberId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const memberId = String(req.params.memberId);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!gm || gm.userId !== userId) {
@@ -192,7 +192,7 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res) => {
 router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const memberId = String(req.params.memberId);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!gm || gm.userId !== userId) {
@@ -213,7 +213,7 @@ router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id/messages
 router.get("/:id/messages", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const messages = await db.select().from(campaignMessagesTable)
     .where(eq(campaignMessagesTable.campaignId, id))
@@ -225,7 +225,7 @@ router.get("/:id/messages", requireAuth, async (req, res) => {
 // POST /api/campaigns/:id/messages
 router.post("/:id/messages", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { content, message_type, metadata } = req.body;
   if (!content) { res.status(400).json({ error: "content required" }); return; }
@@ -241,7 +241,7 @@ router.post("/:id/messages", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id/notes
 router.get("/:id/notes", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const notes = await db.select().from(campaignNotesTable)
     .where(eq(campaignNotesTable.campaignId, id))
@@ -252,7 +252,7 @@ router.get("/:id/notes", requireAuth, async (req, res) => {
 // POST /api/campaigns/:id/notes
 router.post("/:id/notes", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { title, content, is_gm_only } = req.body;
   if (!title) { res.status(400).json({ error: "title required" }); return; }
@@ -266,7 +266,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
 // DELETE /api/campaigns/:id/notes/:noteId
 router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
   const noteId = String(req.params.noteId);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   await db.delete(campaignNotesTable).where(and(
     eq(campaignNotesTable.id, noteId),
     eq(campaignNotesTable.userId, userId),
@@ -277,7 +277,7 @@ router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id/sessions
 router.get("/:id/sessions", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const sessions = await db.select().from(campaignSessionsTable)
     .where(eq(campaignSessionsTable.campaignId, id))
@@ -288,7 +288,7 @@ router.get("/:id/sessions", requireAuth, async (req, res) => {
 // POST /api/campaigns/:id/sessions
 router.post("/:id/sessions", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!gm || gm.userId !== userId) {
@@ -308,7 +308,7 @@ router.post("/:id/sessions", requireAuth, async (req, res) => {
 router.patch("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const sessionId = String(req.params.sessionId);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!gm || gm.userId !== userId) {
@@ -338,7 +338,7 @@ router.patch("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
 router.delete("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const sessionId = String(req.params.sessionId);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   const [gm] = await db.select({ userId: campaignsTable.userId })
     .from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!gm || gm.userId !== userId) {
@@ -354,7 +354,7 @@ router.delete("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
 // GET /api/campaigns/:id/tabletop
 router.get("/:id/tabletop", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const [state] = await db.select().from(tabletopStateTable)
     .where(eq(tabletopStateTable.campaignId, id));
@@ -376,7 +376,7 @@ router.get("/:id/tabletop", requireAuth, async (req, res) => {
 // POST /api/campaigns/:id/tabletop
 router.post("/:id/tabletop", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const userId = (req as any).userId as string;
+  const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { tokens, drawings, map_image_url, fog_visible, zoom, pan_offset } = req.body;
 
