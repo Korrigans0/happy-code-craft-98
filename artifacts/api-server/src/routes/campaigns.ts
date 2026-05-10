@@ -2,7 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   campaignsTable, campaignMembersTable, campaignMessagesTable,
-  campaignNotesTable, campaignSessionsTable, tabletopStateTable
+  campaignNotesTable, campaignSessionsTable, tabletopStateTable,
+  profilesTable, charactersTable,
 } from "@workspace/db";
 import { eq, inArray, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
@@ -161,14 +162,62 @@ router.delete("/:id", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// GET /api/campaigns/:id/members
+// GET /api/campaigns/:id/members — enriched with profile + assigned character info
 router.get("/:id/members", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
   const members = await db.select().from(campaignMembersTable)
     .where(eq(campaignMembersTable.campaignId, id));
-  res.json(members.map(serializeMember));
+
+  const userIds = [...new Set(members.map(m => m.userId))];
+  const characterIds = members.map(m => m.characterId).filter((c): c is string => !!c);
+
+  const [profiles, characters] = await Promise.all([
+    userIds.length > 0
+      ? db.select({ userId: profilesTable.userId, displayName: profilesTable.displayName, avatarUrl: profilesTable.avatarUrl })
+          .from(profilesTable).where(inArray(profilesTable.userId, userIds))
+      : Promise.resolve([]),
+    characterIds.length > 0
+      ? db.select({ id: charactersTable.id, name: charactersTable.name, race: charactersTable.race, class: charactersTable.class, level: charactersTable.level })
+          .from(charactersTable).where(inArray(charactersTable.id, characterIds))
+      : Promise.resolve([]),
+  ]);
+
+  const profileMap = Object.fromEntries(profiles.map(p => [p.userId, p]));
+  const characterMap = Object.fromEntries(characters.map(c => [c.id, c]));
+
+  res.json(members.map(m => ({
+    ...serializeMember(m),
+    display_name: profileMap[m.userId]?.displayName ?? null,
+    avatar_url: profileMap[m.userId]?.avatarUrl ?? null,
+    character_name: m.characterId ? (characterMap[m.characterId]?.name ?? null) : null,
+    character_class: m.characterId ? (characterMap[m.characterId]?.class ?? null) : null,
+    character_race: m.characterId ? (characterMap[m.characterId]?.race ?? null) : null,
+    character_level: m.characterId ? (characterMap[m.characterId]?.level ?? null) : null,
+  })));
+});
+
+// GET /api/campaigns/:id/characters — characters of all campaign members (for GM assignment)
+router.get("/:id/characters", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const members = await db.select({ userId: campaignMembersTable.userId })
+    .from(campaignMembersTable).where(eq(campaignMembersTable.campaignId, id));
+  const memberIds = [...new Set(members.map(m => m.userId))];
+  if (memberIds.length === 0) { res.json([]); return; }
+
+  const chars = await db.select({
+    id: charactersTable.id, name: charactersTable.name,
+    race: charactersTable.race, class: charactersTable.class,
+    level: charactersTable.level, hp: charactersTable.hp,
+    maxHp: charactersTable.maxHp, armorClass: charactersTable.armorClass,
+    dexterity: charactersTable.dexterity, userId: charactersTable.userId,
+  }).from(charactersTable).where(inArray(charactersTable.userId, memberIds));
+  res.json(chars.map(c => ({ ...c, max_hp: c.maxHp, armor_class: c.armorClass, user_id: c.userId })));
 });
 
 // DELETE /api/campaigns/:id/members/:memberId
@@ -243,10 +292,16 @@ router.get("/:id/notes", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = req.userId! as string;
   if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  const isGm = gm?.userId === userId;
+
   const notes = await db.select().from(campaignNotesTable)
     .where(eq(campaignNotesTable.campaignId, id))
     .orderBy(desc(campaignNotesTable.createdAt));
-  res.json(notes.map(serializeNote));
+  const filtered = isGm ? notes : notes.filter(n => !n.isGmOnly);
+  res.json(filtered.map(serializeNote));
 });
 
 // POST /api/campaigns/:id/notes
@@ -263,14 +318,45 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
   res.status(201).json(serializeNote(note));
 });
 
-// DELETE /api/campaigns/:id/notes/:noteId
-router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
+// PATCH /api/campaigns/:id/notes/:noteId
+router.patch("/:id/notes/:noteId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
   const noteId = String(req.params.noteId);
   const userId = req.userId! as string;
-  await db.delete(campaignNotesTable).where(and(
-    eq(campaignNotesTable.id, noteId),
-    eq(campaignNotesTable.userId, userId),
-  ));
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  const isGm = gm?.userId === userId;
+
+  const { title, content, is_gm_only } = req.body;
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (title !== undefined) updates.title = title;
+  if (content !== undefined) updates.content = content;
+  if (is_gm_only !== undefined && isGm) updates.isGmOnly = is_gm_only;
+
+  const ownerOrGmClause = isGm
+    ? eq(campaignNotesTable.id, noteId)
+    : and(eq(campaignNotesTable.id, noteId), eq(campaignNotesTable.userId, userId));
+
+  const [note] = await db.update(campaignNotesTable).set(updates)
+    .where(ownerOrGmClause!).returning();
+  if (!note) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(serializeNote(note));
+});
+
+// DELETE /api/campaigns/:id/notes/:noteId
+router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const noteId = String(req.params.noteId);
+  const userId = req.userId! as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  const isGm = gm?.userId === userId;
+
+  const clause = isGm
+    ? eq(campaignNotesTable.id, noteId)
+    : and(eq(campaignNotesTable.id, noteId), eq(campaignNotesTable.userId, userId));
+
+  await db.delete(campaignNotesTable).where(clause!);
   res.json({ success: true });
 });
 

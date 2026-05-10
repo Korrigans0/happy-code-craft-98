@@ -48,7 +48,11 @@ const CampaignNotes = ({ campaignId, isGM }: CampaignNotesProps) => {
   // Update note
   const updateMutation = useMutation({
     mutationFn: async (data: { id: string; title: string; content: string; is_gm_only: boolean }) => {
-      return campaignsApi.createNote(campaignId, data);
+      return campaignsApi.updateNote(campaignId, data.id, {
+        title: data.title,
+        content: data.content,
+        is_gm_only: data.is_gm_only,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignNotes", campaignId] });

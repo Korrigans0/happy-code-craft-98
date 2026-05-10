@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,8 +78,28 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
 
   const [encounter, setEncounter] = useState<any>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const monsters: Monster[] = [];
-  const partyCharacters: Character[] = [];
+
+  const { data: monstersData = [] } = useQuery({
+    queryKey: ["compendiumMonsters"],
+    queryFn: async () => {
+      const { compendiumApi } = await import("@/lib/api");
+      return compendiumApi.getMonsters();
+    },
+  });
+  const monsters: Monster[] = (monstersData as any[]).map((m: any) => ({
+    id: m.id, name: m.name,
+    hit_points: m.hit_points || String(m.hitPoints || "10"),
+    armor_class: m.armor_class ?? m.armorClass ?? 10,
+  }));
+
+  const { data: campaignCharactersData = [] } = useQuery({
+    queryKey: ["campaignCharacters", campaignId],
+    queryFn: () => campaignsApi.getCampaignCharacters(campaignId),
+  });
+  const partyCharacters: Character[] = (campaignCharactersData as any[]).map((c: any) => ({
+    id: c.id, name: c.name, hp: c.hp ?? 10, max_hp: c.max_hp ?? c.maxHp ?? 10,
+    armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
+  }));
 
   const createEncounterMutation = useMutation({
     mutationFn: async (name: string) => {

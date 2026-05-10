@@ -6,16 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Crown, User, UserMinus, Shield, Sword } from "lucide-react";
-
-interface Character {
-  id: string;
-  name: string;
-  race: string;
-  class: string;
-  level: number;
-  user_id: string;
-}
+import { Crown, User, UserMinus, Sword } from "lucide-react";
 
 interface CampaignMembersProps {
   campaignId: string;
@@ -30,9 +21,11 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     queryFn: () => campaignsApi.getMembers(campaignId),
   });
 
-  const profiles = members;
-  const characters: Character[] = [];
-  const availableCharacters: Character[] = [];
+  const { data: allCharacters = [] } = useQuery({
+    queryKey: ["campaignCharacters", campaignId],
+    queryFn: () => campaignsApi.getCampaignCharacters(campaignId),
+    enabled: isGM,
+  });
 
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ memberId, characterId }: { memberId: string; characterId: string | null }) => {
@@ -40,12 +33,10 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });
-      queryClient.invalidateQueries({ queryKey: ["memberCharacters", campaignId] });
       toast({ title: "Personnage assigné" });
     },
   });
 
-  // Remove member
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
       return campaignsApi.removeMember(campaignId, memberId);
@@ -56,42 +47,36 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     },
   });
 
-  const getProfile = (userId: string) => profiles.find(p => p.user_id === userId);
-  const getCharacter = (characterId: string | null) => characters.find(c => c.id === characterId);
-  const getUserCharacters = (userId: string) => availableCharacters.filter(c => c.user_id === userId);
-
-  const getInitials = (profile: any) => {
-    if (profile?.display_name) {
-      return profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (member: any) => {
+    if (member.display_name) {
+      return member.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
     }
-    return 'U';
+    return "?";
   };
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
-      
+
       <div className="grid gap-4 md:grid-cols-2">
-        {members.map((member) => {
-          const profile = getProfile(member.user_id);
-          const character = getCharacter(member.character_id);
-          const userChars = getUserCharacters(member.user_id);
-          const isMemberGM = member.role === 'gm';
+        {members.map((member: any) => {
+          const isMemberGM = member.role === "gm";
+          const userChars = (allCharacters as any[]).filter((c: any) => c.user_id === member.user_id);
 
           return (
             <Card key={member.id} className="bg-gradient-card border-border">
               <CardContent className="flex items-center gap-4 p-4">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarImage src={member.avatar_url || undefined} />
                   <AvatarFallback className="bg-primary/20 text-primary">
-                    {getInitials(profile)}
+                    {getInitials(member)}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-foreground truncate">
-                      {profile?.display_name || "Anonyme"}
+                      {member.display_name || "Joueur"}
                     </span>
                     {isMemberGM && (
                       <Badge variant="default" className="bg-primary/20 text-primary">
@@ -101,13 +86,12 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                     )}
                   </div>
 
-                  {/* Character Assignment */}
                   {!isMemberGM && (
                     <div className="mt-2">
                       {isGM ? (
                         <Select
                           value={member.character_id || "none"}
-                          onValueChange={(value) => 
+                          onValueChange={(value) =>
                             updateCharacterMutation.mutate({
                               memberId: member.id,
                               characterId: value === "none" ? null : value,
@@ -119,17 +103,17 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">Aucun personnage</SelectItem>
-                            {userChars.map((char) => (
+                            {userChars.map((char: any) => (
                               <SelectItem key={char.id} value={char.id}>
-                                {char.name} - {char.race} {char.class} Niv.{char.level}
+                                {char.name} — {char.race} {char.class} Niv.{char.level}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      ) : character ? (
+                      ) : member.character_name ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Sword className="h-3 w-3" />
-                          {character.name} - {character.race} {character.class}
+                          {member.character_name} — {member.character_race} {member.character_class}
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">Aucun personnage assigné</span>
@@ -138,7 +122,6 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                   )}
                 </div>
 
-                {/* Remove Button (GM only, can't remove GM) */}
                 {isGM && !isMemberGM && (
                   <Button
                     variant="ghost"
