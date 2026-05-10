@@ -43,7 +43,9 @@ const ALLOWED_ORIGINS = (() => {
     /^https?:\/\/localhost(:\d+)?$/,
     /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
   ];
-  if (devDomain) base.push(new RegExp(`^https?://${devDomain.replace(".", "\\.")}$`));
+  if (devDomain) base.push(new RegExp(`^https?://${devDomain.replace(/\./g, "\\.")}$`));
+  base.push(/^https?:\/\/[\w-]+\.replit\.dev(:\d+)?$/);
+  base.push(/^https?:\/\/[\w-]+\.worf\.replit\.dev(:\d+)?$/);
   extras.forEach(o => base.push(new RegExp(`^${o.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)));
   return base;
 })();
