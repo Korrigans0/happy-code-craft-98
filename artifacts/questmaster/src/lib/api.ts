@@ -68,6 +68,7 @@ export const compendiumApi = {
   createItem: (data: any) => request<any>("POST", "/compendium/items", data),
   getWaCreatures: () => request<any[]>("GET", "/compendium/wa-creatures"),
   createWaCreature: (data: any) => request<any>("POST", "/compendium/wa-creatures", data),
+  syncWaCreatures: () => request<any>("POST", "/compendium/wa-creatures/sync", {}),
   getAetheriaCreatures: () => request<any[]>("GET", "/compendium/aetheria-creatures"),
   createAetheriaCreature: (data: any) => request<any>("POST", "/compendium/aetheria-creatures", data),
 };

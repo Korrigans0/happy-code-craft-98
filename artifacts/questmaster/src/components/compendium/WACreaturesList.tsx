@@ -3,7 +3,7 @@ import { compendiumApi } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Skull, Swords, RefreshCw } from "lucide-react";
+import { Loader2, Skull, Swords, RefreshCw, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -40,7 +40,22 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
   const fetchCreatures = async () => {
     try {
       const data = await compendiumApi.getWaCreatures();
-      setCreatures((data as WACreature[]) || []);
+      setCreatures((data as any[]).map(c => ({
+        id: c.id,
+        name: c.name,
+        power_level: c.powerLevel ?? c.power_level ?? "",
+        size: c.size,
+        profile: c.profile,
+        ra: c.ra,
+        strength: c.strength,
+        dexterity: c.dexterity,
+        constitution: c.constitution,
+        intelligence: c.intelligence,
+        wisdom: c.wisdom,
+        charisma: c.charisma,
+        description: c.description,
+        author: c.author ?? null,
+      })));
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -50,7 +65,19 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
   }, []);
 
   const syncFromWA = async () => {
-    toast.error("Synchronisation WA non disponible dans cette version.");
+    setSyncing(true);
+    try {
+      const result: any = await compendiumApi.syncWaCreatures();
+      if (result.inserted > 0) {
+        toast.success(`${result.inserted} nouvelle(s) créature(s) ajoutée(s) au bestiaire !`);
+        await fetchCreatures();
+      } else {
+        toast.success("Le bestiaire est déjà à jour.", { icon: <CheckCircle className="h-4 w-4" /> });
+      }
+    } catch (e: any) {
+      toast.error("Erreur lors de la synchronisation : " + e.message);
+    }
+    setSyncing(false);
   };
 
   const filtered = creatures.filter((c) => {
@@ -61,8 +88,8 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
     return matchesSearch && matchesPower && matchesSize;
   });
 
-  const powers = [...new Set(creatures.map(c => c.power_level))];
-  const sizes = [...new Set(creatures.map(c => c.size))];
+  const powers = [...new Set(creatures.map(c => c.power_level))].filter(Boolean);
+  const sizes = [...new Set(creatures.map(c => c.size))].filter(Boolean);
 
   const getPowerColor = (power: string) => {
     const colors: Record<string, string> = {
@@ -86,58 +113,78 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
 
   return (
     <div>
+      {/* Bandeau si vide */}
+      {creatures.length === 0 && (
+        <div className="mb-6 rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 text-xl">🌍</div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-blue-400 mb-1">Bestiaire vide</h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Cliquez sur "Importer le bestiaire officiel WA" pour charger toutes les créatures Worlds Awakening dans votre compendium.
+            </p>
+            {user && (
+              <Button onClick={syncFromWA} disabled={syncing} size="sm" className="bg-blue-600 hover:bg-blue-500 text-white gap-2">
+                <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                {syncing ? "Import en cours..." : "Importer le bestiaire officiel WA"}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex flex-wrap items-center gap-4">
-        {user && (
-          <Button variant="outline" size="sm" onClick={syncFromWA} disabled={syncing} className="gap-1.5">
+        {user && creatures.length > 0 && (
+          <Button variant="outline" size="sm" onClick={syncFromWA} disabled={syncing} className="gap-1.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Synchronisation..." : "Sync WA"}
+            {syncing ? "Synchronisation..." : "Sync WA — nouveaux monstres"}
           </Button>
         )}
-        <Select value={powerFilter} onValueChange={setPowerFilter}>
-          <SelectTrigger className="w-[180px] bg-muted/50 border-border/50">
-            <SelectValue placeholder="Puissance" />
-          </SelectTrigger>
-          <SelectContent className="bg-background border-border">
-            <SelectItem value="all">Toutes puissances</SelectItem>
-            {powers.map(p => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {creatures.length > 0 && (
+          <>
+            <Select value={powerFilter} onValueChange={setPowerFilter}>
+              <SelectTrigger className="w-[180px] bg-muted/50 border-border/50">
+                <SelectValue placeholder="Puissance" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="all">Toutes puissances</SelectItem>
+                {powers.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-        <Select value={sizeFilter} onValueChange={setSizeFilter}>
-          <SelectTrigger className="w-[160px] bg-muted/50 border-border/50">
-            <SelectValue placeholder="Taille" />
-          </SelectTrigger>
-          <SelectContent className="bg-background border-border">
-            <SelectItem value="all">Toutes tailles</SelectItem>
-            {sizes.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select value={sizeFilter} onValueChange={setSizeFilter}>
+              <SelectTrigger className="w-[160px] bg-muted/50 border-border/50">
+                <SelectValue placeholder="Taille" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-border">
+                <SelectItem value="all">Toutes tailles</SelectItem>
+                {sizes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
 
-      <p className="mb-4 text-sm text-muted-foreground">
-        {filtered.length} créature{filtered.length > 1 ? "s" : ""} trouvée{filtered.length > 1 ? "s" : ""}
-      </p>
+      {creatures.length > 0 && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          {filtered.length} créature{filtered.length > 1 ? "s" : ""} trouvée{filtered.length > 1 ? "s" : ""}
+          {" "}sur {creatures.length} au total
+        </p>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((creature) => (
           <div
             key={creature.id}
-            className="group cursor-pointer rounded-xl border border-border/50 bg-gradient-card p-5 shadow-card transition-all duration-300 hover:border-primary/30"
+            className="group cursor-pointer rounded-xl border border-border/50 bg-gradient-card p-5 shadow-card transition-all duration-300 hover:border-blue-500/30"
             onClick={() => setExpandedCreature(expandedCreature === creature.id ? null : creature.id)}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
                   <Swords className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-display font-semibold text-foreground">
-                    {creature.name}
-                  </h3>
+                  <h3 className="font-display font-semibold text-foreground">{creature.name}</h3>
                   <p className="text-xs text-muted-foreground">
                     {creature.size} • {creature.profile} • RA {creature.ra}
                   </p>
@@ -161,13 +208,13 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
                   ].map(({ label, val }) => (
                     <div key={label} className="flex flex-col items-center rounded-lg bg-muted/30 p-2">
                       <span className="text-xs text-muted-foreground">{label}</span>
-                      <span className="font-semibold text-foreground">{formatMod(val)}</span>
+                      <span className={`font-semibold ${val >= 0 ? "text-green-400" : "text-red-400"}`}>{formatMod(val)}</span>
                     </div>
                   ))}
                 </div>
                 <p className="text-sm text-muted-foreground">{creature.description}</p>
                 {creature.author && (
-                  <p className="text-xs text-muted-foreground/60">Par {creature.author}</p>
+                  <p className="text-xs text-muted-foreground/60">Source : {creature.author}</p>
                 )}
               </div>
             )}
@@ -175,12 +222,10 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {creatures.length > 0 && filtered.length === 0 && (
         <div className="rounded-xl border border-border/50 bg-gradient-card p-8 text-center shadow-card">
           <Skull className="mx-auto h-12 w-12 text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">
-            Aucune créature trouvée avec ces critères
-          </p>
+          <p className="mt-4 text-muted-foreground">Aucune créature trouvée avec ces critères</p>
         </div>
       )}
     </div>

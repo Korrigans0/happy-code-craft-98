@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { spellsTable, monstersTable, magicItemsTable, waCreaturesTable, aetheriaCreaturesTable } from "@workspace/db";
-import { asc } from "drizzle-orm";
+import { asc, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
+import { WA_BESTIARY_SEED } from "../data/wa-bestiary-seed";
 
 const router = Router();
 
@@ -60,7 +61,26 @@ router.post("/items", requireAuth, async (req, res) => {
   res.status(201).json(item);
 });
 
-// WA CREATURES
+// WA CREATURES — seed/sync from official bestiary (inserts only missing names)
+router.post("/wa-creatures/sync", requireAuth, async (req, res) => {
+  const existing = await db.select({ name: waCreaturesTable.name }).from(waCreaturesTable);
+  const existingNames = new Set(existing.map(c => c.name));
+  const toInsert = WA_BESTIARY_SEED.filter(c => !existingNames.has(c.name));
+  if (toInsert.length === 0) {
+    res.json({ inserted: 0, message: "Bestiaire déjà à jour." }); return;
+  }
+  const inserted = await db.insert(waCreaturesTable).values(
+    toInsert.map(c => ({
+      name: c.name, description: c.description, profile: c.profile,
+      powerLevel: c.power_level, size: c.size,
+      strength: c.strength, dexterity: c.dexterity, constitution: c.constitution,
+      intelligence: c.intelligence, wisdom: c.wisdom, charisma: c.charisma,
+      ra: c.ra, author: c.author, createdBy: null,
+    }))
+  ).returning();
+  res.json({ inserted: inserted.length, message: `${inserted.length} créature(s) ajoutée(s).` });
+});
+
 router.get("/wa-creatures", async (req, res) => {
   const creatures = await db.select().from(waCreaturesTable).orderBy(asc(waCreaturesTable.name));
   res.json(creatures);
