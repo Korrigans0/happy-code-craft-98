@@ -66,16 +66,20 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
 
   const syncFromWA = async () => {
     setSyncing(true);
+    toast.info("Synchronisation en cours… Cela peut prendre 1–2 minutes.", { duration: 90000, id: "wa-sync" });
     try {
       const result: any = await compendiumApi.syncWaCreatures();
+      toast.dismiss("wa-sync");
       if (result.inserted > 0) {
-        toast.success(`${result.inserted} nouvelle(s) créature(s) ajoutée(s) au bestiaire !`);
+        toast.success(result.message || `${result.inserted} nouvelle(s) créature(s) ajoutée(s) au bestiaire !`);
         await fetchCreatures();
       } else {
-        toast.success("Le bestiaire est déjà à jour.", { icon: <CheckCircle className="h-4 w-4" /> });
+        toast.success(result.message || "Le bestiaire est déjà à jour.", { icon: <CheckCircle className="h-4 w-4" /> });
+        if (result.total > 0) await fetchCreatures();
       }
     } catch (e: any) {
-      toast.error("Erreur lors de la synchronisation : " + e.message);
+      toast.dismiss("wa-sync");
+      toast.error("Erreur lors de la synchronisation : " + (e.message || "Erreur inconnue"));
     }
     setSyncing(false);
   };
@@ -120,12 +124,12 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
           <div className="flex-1">
             <h3 className="font-semibold text-blue-400 mb-1">Bestiaire vide</h3>
             <p className="text-sm text-muted-foreground mb-3">
-              Cliquez sur "Importer le bestiaire officiel WA" pour charger toutes les créatures Worlds Awakening dans votre compendium.
+              Cliquez sur "Importer le bestiaire WA" pour récupérer toutes les créatures directement depuis worlds-awakening.com. L'import prend environ 1–2 minutes.
             </p>
             {user && (
               <Button onClick={syncFromWA} disabled={syncing} size="sm" className="bg-blue-600 hover:bg-blue-500 text-white gap-2">
                 <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-                {syncing ? "Import en cours..." : "Importer le bestiaire officiel WA"}
+                {syncing ? "Import en cours…" : "Importer le bestiaire WA"}
               </Button>
             )}
           </div>
@@ -136,7 +140,7 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
         {user && creatures.length > 0 && (
           <Button variant="outline" size="sm" onClick={syncFromWA} disabled={syncing} className="gap-1.5 border-blue-500/40 text-blue-400 hover:bg-blue-500/10">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Synchronisation..." : "Sync WA — nouveaux monstres"}
+            {syncing ? "Synchronisation…" : "Sync WA (worlds-awakening.com)"}
           </Button>
         )}
         {creatures.length > 0 && (

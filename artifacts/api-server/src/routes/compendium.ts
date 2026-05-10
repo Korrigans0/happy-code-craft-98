@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { spellsTable, monstersTable, magicItemsTable, waCreaturesTable, aetheriaCreaturesTable } from "@workspace/db";
 import { asc, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
-import { WA_BESTIARY_SEED } from "../data/wa-bestiary-seed";
+import { scrapeWaBestiary } from "../lib/wa-scraper.js";
 
 const router = Router();
 
@@ -61,24 +61,42 @@ router.post("/items", requireAuth, async (req, res) => {
   res.status(201).json(item);
 });
 
-// WA CREATURES — seed/sync from official bestiary (inserts only missing names)
+// WA CREATURES — live scrape from worlds-awakening.com/fr/bestiaire
 router.post("/wa-creatures/sync", requireAuth, async (req, res) => {
-  const existing = await db.select({ name: waCreaturesTable.name }).from(waCreaturesTable);
-  const existingNames = new Set(existing.map(c => c.name));
-  const toInsert = WA_BESTIARY_SEED.filter(c => !existingNames.has(c.name));
-  if (toInsert.length === 0) {
-    res.json({ inserted: 0, message: "Bestiaire déjà à jour." }); return;
+  const logs: string[] = [];
+  try {
+    const scraped = await scrapeWaBestiary((msg) => { logs.push(msg); });
+    if (scraped.length === 0) {
+      res.json({ inserted: 0, updated: 0, total: 0, message: "Aucune créature récupérée.", logs }); return;
+    }
+    const existing = await db.select({ name: waCreaturesTable.name }).from(waCreaturesTable);
+    const existingNames = new Set(existing.map(c => c.name));
+    const toInsert = scraped.filter(c => !existingNames.has(c.name));
+    let inserted = 0;
+    if (toInsert.length > 0) {
+      const rows = await db.insert(waCreaturesTable).values(
+        toInsert.map(c => ({
+          name: c.name, description: "", profile: c.profile,
+          powerLevel: c.power_level, size: c.size,
+          strength: c.strength, dexterity: c.dexterity, constitution: c.constitution,
+          intelligence: c.intelligence, wisdom: c.wisdom, charisma: c.charisma,
+          ra: c.ra, imageUrl: c.image_url || null, author: c.author, createdBy: null,
+        }))
+      ).returning();
+      inserted = rows.length;
+    }
+    res.json({
+      inserted,
+      total: scraped.length,
+      message: toInsert.length === 0
+        ? `Bestiaire déjà à jour (${scraped.length} créatures au total).`
+        : `${inserted} nouvelle(s) créature(s) ajoutée(s) sur ${scraped.length} récupérées.`,
+      logs,
+    });
+  } catch (err: any) {
+    logs.push(`Erreur : ${err?.message || err}`);
+    res.status(500).json({ error: "Échec de la synchronisation.", detail: err?.message, logs });
   }
-  const inserted = await db.insert(waCreaturesTable).values(
-    toInsert.map(c => ({
-      name: c.name, description: c.description, profile: c.profile,
-      powerLevel: c.power_level, size: c.size,
-      strength: c.strength, dexterity: c.dexterity, constitution: c.constitution,
-      intelligence: c.intelligence, wisdom: c.wisdom, charisma: c.charisma,
-      ra: c.ra, author: c.author, createdBy: null,
-    }))
-  ).returning();
-  res.json({ inserted: inserted.length, message: `${inserted.length} créature(s) ajoutée(s).` });
 });
 
 router.get("/wa-creatures", async (req, res) => {
