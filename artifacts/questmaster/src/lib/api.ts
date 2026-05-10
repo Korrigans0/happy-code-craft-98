@@ -44,6 +44,10 @@ export const campaignsApi = {
   deleteNote: (id: string, noteId: string) => request<any>("DELETE", `/campaigns/${id}/notes/${noteId}`),
   getSessions: (id: string) => request<any[]>("GET", `/campaigns/${id}/sessions`),
   createSession: (id: string, data: any) => request<any>("POST", `/campaigns/${id}/sessions`, data),
+  updateSession: (id: string, sessionId: string, data: any) =>
+    request<any>("PATCH", `/campaigns/${id}/sessions/${sessionId}`, data),
+  markSessionComplete: (id: string, sessionId: string) =>
+    request<any>("PATCH", `/campaigns/${id}/sessions/${sessionId}`, { mark_complete: true }),
   deleteSession: (id: string, sessionId: string) => request<any>("DELETE", `/campaigns/${id}/sessions/${sessionId}`),
   getTabletop: (id: string) => request<any>("GET", `/campaigns/${id}/tabletop`),
   saveTabletop: (id: string, data: any) => request<any>("POST", `/campaigns/${id}/tabletop`, data),

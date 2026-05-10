@@ -78,7 +78,7 @@ const HeroSection = () => {
             ) : (
               <>
                 <Button variant="gold" size="lg" asChild className="shadow-gold group">
-                  <Link to="/auth">
+                  <Link to="/sign-in">
                     <Sparkles className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
                     Entrer dans Aetheria
                   </Link>

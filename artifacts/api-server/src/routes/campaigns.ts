@@ -53,6 +53,16 @@ function serializeSession(s: any) {
   };
 }
 
+async function isMember(campaignId: string, userId: string): Promise<boolean> {
+  const [row] = await db.select({ id: campaignMembersTable.id })
+    .from(campaignMembersTable)
+    .where(and(
+      eq(campaignMembersTable.campaignId, campaignId),
+      eq(campaignMembersTable.userId, userId),
+    ));
+  return !!row;
+}
+
 // GET /api/campaigns
 router.get("/", requireAuth, async (req, res) => {
   const userId = (req as any).userId as string;
@@ -94,11 +104,31 @@ router.post("/", requireAuth, async (req, res) => {
   res.status(201).json(serializeCampaign(campaign));
 });
 
+// POST /api/campaigns/join (must be before /:id)
+router.post("/join", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as string;
+  const { invite_code } = req.body;
+  if (!invite_code) { res.status(400).json({ error: "invite_code required" }); return; }
+
+  const [campaign] = await db.select().from(campaignsTable)
+    .where(eq(campaignsTable.inviteCode, String(invite_code).trim().toUpperCase()));
+  if (!campaign) { res.status(404).json({ error: "Code invalide" }); return; }
+
+  const [existing] = await db.select().from(campaignMembersTable)
+    .where(and(eq(campaignMembersTable.campaignId, campaign.id), eq(campaignMembersTable.userId, userId)));
+  if (existing) { res.status(400).json({ error: "Vous êtes déjà membre" }); return; }
+
+  await db.insert(campaignMembersTable).values({ campaignId: campaign.id, userId, role: "player" });
+  res.json({ campaign_id: campaign.id });
+});
+
 // GET /api/campaigns/:id
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
   const [campaign] = await db.select().from(campaignsTable).where(eq(campaignsTable.id, id));
   if (!campaign) { res.status(404).json({ error: "Not found" }); return; }
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   res.json(serializeCampaign(campaign));
 });
 
@@ -131,27 +161,11 @@ router.delete("/:id", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/campaigns/join
-router.post("/join", requireAuth, async (req, res) => {
-  const userId = (req as any).userId as string;
-  const { invite_code } = req.body;
-  if (!invite_code) { res.status(400).json({ error: "invite_code required" }); return; }
-
-  const [campaign] = await db.select().from(campaignsTable)
-    .where(eq(campaignsTable.inviteCode, String(invite_code).trim().toUpperCase()));
-  if (!campaign) { res.status(404).json({ error: "Code invalide" }); return; }
-
-  const [existing] = await db.select().from(campaignMembersTable)
-    .where(and(eq(campaignMembersTable.campaignId, campaign.id), eq(campaignMembersTable.userId, userId)));
-  if (existing) { res.status(400).json({ error: "Vous êtes déjà membre" }); return; }
-
-  await db.insert(campaignMembersTable).values({ campaignId: campaign.id, userId, role: "player" });
-  res.json({ campaign_id: campaign.id });
-});
-
 // GET /api/campaigns/:id/members
-router.get("/:id/members", async (req, res) => {
+router.get("/:id/members", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const members = await db.select().from(campaignMembersTable)
     .where(eq(campaignMembersTable.campaignId, id));
   res.json(members.map(serializeMember));
@@ -167,7 +181,10 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res) => {
   if (!gm || gm.userId !== userId) {
     res.status(403).json({ error: "Seul le MJ peut retirer des membres" }); return;
   }
-  await db.delete(campaignMembersTable).where(eq(campaignMembersTable.id, memberId));
+  await db.delete(campaignMembersTable).where(and(
+    eq(campaignMembersTable.campaignId, id),
+    eq(campaignMembersTable.id, memberId),
+  ));
   res.json({ success: true });
 });
 
@@ -184,15 +201,20 @@ router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
   const { character_id } = req.body;
   const [updated] = await db.update(campaignMembersTable)
     .set({ characterId: character_id || null })
-    .where(eq(campaignMembersTable.id, memberId))
+    .where(and(
+      eq(campaignMembersTable.campaignId, id),
+      eq(campaignMembersTable.id, memberId),
+    ))
     .returning();
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeMember(updated));
 });
 
 // GET /api/campaigns/:id/messages
-router.get("/:id/messages", async (req, res) => {
+router.get("/:id/messages", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const messages = await db.select().from(campaignMessagesTable)
     .where(eq(campaignMessagesTable.campaignId, id))
     .orderBy(desc(campaignMessagesTable.createdAt))
@@ -204,6 +226,7 @@ router.get("/:id/messages", async (req, res) => {
 router.post("/:id/messages", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { content, message_type, metadata } = req.body;
   if (!content) { res.status(400).json({ error: "content required" }); return; }
 
@@ -216,8 +239,10 @@ router.post("/:id/messages", requireAuth, async (req, res) => {
 });
 
 // GET /api/campaigns/:id/notes
-router.get("/:id/notes", async (req, res) => {
+router.get("/:id/notes", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const notes = await db.select().from(campaignNotesTable)
     .where(eq(campaignNotesTable.campaignId, id))
     .orderBy(desc(campaignNotesTable.createdAt));
@@ -228,6 +253,7 @@ router.get("/:id/notes", async (req, res) => {
 router.post("/:id/notes", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { title, content, is_gm_only } = req.body;
   if (!title) { res.status(400).json({ error: "title required" }); return; }
 
@@ -249,8 +275,10 @@ router.delete("/:id/notes/:noteId", requireAuth, async (req, res) => {
 });
 
 // GET /api/campaigns/:id/sessions
-router.get("/:id/sessions", async (req, res) => {
+router.get("/:id/sessions", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const sessions = await db.select().from(campaignSessionsTable)
     .where(eq(campaignSessionsTable.campaignId, id))
     .orderBy(desc(campaignSessionsTable.createdAt));
@@ -260,6 +288,12 @@ router.get("/:id/sessions", async (req, res) => {
 // POST /api/campaigns/:id/sessions
 router.post("/:id/sessions", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut créer des sessions" }); return;
+  }
   const { title, description, notes, session_number } = req.body;
   if (!title) { res.status(400).json({ error: "title required" }); return; }
 
@@ -270,16 +304,58 @@ router.post("/:id/sessions", requireAuth, async (req, res) => {
   res.status(201).json(serializeSession(session));
 });
 
+// PATCH /api/campaigns/:id/sessions/:sessionId
+router.patch("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const sessionId = String(req.params.sessionId);
+  const userId = (req as any).userId as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut modifier les sessions" }); return;
+  }
+
+  const { title, description, notes, scheduled_at, mark_complete } = req.body;
+  const updates: Record<string, unknown> = {};
+  if (title !== undefined) updates.title = title;
+  if (description !== undefined) updates.description = description;
+  if (notes !== undefined) updates.notes = notes;
+  if (scheduled_at !== undefined) updates.scheduledAt = scheduled_at ? new Date(scheduled_at) : null;
+  if (mark_complete === true) updates.completedAt = new Date();
+  if (mark_complete === false) updates.completedAt = null;
+
+  const [session] = await db.update(campaignSessionsTable).set(updates)
+    .where(and(
+      eq(campaignSessionsTable.campaignId, id),
+      eq(campaignSessionsTable.id, sessionId),
+    ))
+    .returning();
+  if (!session) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(serializeSession(session));
+});
+
 // DELETE /api/campaigns/:id/sessions/:sessionId
 router.delete("/:id/sessions/:sessionId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
   const sessionId = String(req.params.sessionId);
-  await db.delete(campaignSessionsTable).where(eq(campaignSessionsTable.id, sessionId));
+  const userId = (req as any).userId as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut supprimer des sessions" }); return;
+  }
+  await db.delete(campaignSessionsTable).where(and(
+    eq(campaignSessionsTable.campaignId, id),
+    eq(campaignSessionsTable.id, sessionId),
+  ));
   res.json({ success: true });
 });
 
 // GET /api/campaigns/:id/tabletop
-router.get("/:id/tabletop", async (req, res) => {
+router.get("/:id/tabletop", requireAuth, async (req, res) => {
   const id = String(req.params.id);
+  const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const [state] = await db.select().from(tabletopStateTable)
     .where(eq(tabletopStateTable.campaignId, id));
   if (!state) {
@@ -301,6 +377,7 @@ router.get("/:id/tabletop", async (req, res) => {
 router.post("/:id/tabletop", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = (req as any).userId as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
   const { tokens, drawings, map_image_url, fog_visible, zoom, pan_offset } = req.body;
 
   const payload = {

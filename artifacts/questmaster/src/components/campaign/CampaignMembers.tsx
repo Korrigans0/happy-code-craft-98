@@ -36,7 +36,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
 
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ memberId, characterId }: { memberId: string; characterId: string | null }) => {
-      return Promise.resolve();
+      return campaignsApi.assignCharacter(campaignId, memberId, characterId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });
@@ -48,7 +48,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   // Remove member
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      return Promise.resolve();
+      return campaignsApi.removeMember(campaignId, memberId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });

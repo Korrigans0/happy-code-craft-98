@@ -207,7 +207,7 @@ const Header = () => {
                 }}
                 className="hidden sm:flex hover:opacity-90 transition-opacity"
               >
-                <Link to="/auth">
+                <Link to="/sign-in">
                   <LogIn className="mr-2 h-4 w-4" />
                   Connexion
                 </Link>
@@ -282,7 +282,7 @@ const Header = () => {
                 </>
               ) : (
                 <Link
-                  to="/auth"
+                  to="/sign-in"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all"
                   style={{

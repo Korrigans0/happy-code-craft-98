@@ -52,7 +52,12 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      return Promise.resolve();
+      return campaignsApi.updateSession(campaignId, data.id, {
+        title: data.title,
+        description: data.description,
+        notes: data.notes,
+        scheduled_at: data.scheduled_at || null,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignSessions", campaignId] });
@@ -73,7 +78,7 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
 
   const markCompleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return Promise.resolve();
+      return campaignsApi.markSessionComplete(campaignId, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignSessions", campaignId] });

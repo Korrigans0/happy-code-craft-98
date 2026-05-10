@@ -67,10 +67,12 @@ router.post("/", requireAuth, async (req, res) => {
   res.status(201).json(character);
 });
 
-// GET /api/characters/:id
-router.get("/:id", async (req, res) => {
+// GET /api/characters/:id  — owner only
+router.get("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
-  const [character] = await db.select().from(charactersTable).where(eq(charactersTable.id, id));
+  const userId = (req as any).userId as string;
+  const [character] = await db.select().from(charactersTable)
+    .where(and(eq(charactersTable.id, id), eq(charactersTable.userId, userId)));
   if (!character) { res.status(404).json({ error: "Not found" }); return; }
   res.json(character);
 });
