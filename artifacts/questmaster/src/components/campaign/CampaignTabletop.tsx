@@ -3,28 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Pencil, Eraser, Ruler, Square, Circle, Type, Move,
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
-  X, Plus, Search, Skull, Dices, RotateCw, Copy, Magnet, Crosshair,
-  Maximize2,
+  X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
+  RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
+  MapPin, Wand2, Keyboard,
 } from "lucide-react";
-import DiceRoller3D from "./DiceRoller3D";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import DiceRoller3D from "./DiceRoller3D";
+import VTTContextMenu from "./vtt/VTTContextMenu";
+import GMPanel from "./vtt/GMPanel";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-
+  Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
+  CONDITIONS, AURA_COLORS,
+} from "./vtt/types";
 
 import { useQuery } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -33,61 +29,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
 
-type Tool = "pencil" | "eraser" | "line" | "rect" | "circle" | "text" | "move" | "token";
-
-interface DrawAction {
-  id: string;
-  type: Tool;
-  points: { x: number; y: number }[];
-  color: string;
-  size: number;
-  text?: string;
-  layer: string;
-}
-
-const newId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-
-interface TokenItem {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  size: number;       // pixels (multiple of GRID_SIZE)
-  sizeUnits: number;  // 1, 2, 3, 4 cases
-  rotation: number;   // degrees
-  color: string;
-  label: string;
-  layer: string;
-  visible: boolean;
-  creatureId?: string;
-  creatureType?: "wa_creature" | "monster" | "character";
-  hp?: number;
-  maxHp?: number;
-  ac?: number;
-  imageUrl?: string;
-}
-
-interface MapLayer {
-  id: string;
-  name: string;
-  type: "map" | "tokens" | "drawings" | "fog";
-  visible: boolean;
-  locked: boolean;
-  opacity: number;
-  imageUrl?: string;
-}
+// ── Constants ──────────────────────────────────────────────
+const GRID_SIZE = 40;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 4;
+const M_PER_SQUARE = 1.5;
+const newId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const COLORS = [
-  "hsl(0, 0%, 100%)", "hsl(0, 0%, 0%)",
-  "hsl(0, 72%, 51%)", "hsl(142, 70%, 45%)",
-  "hsl(217, 91%, 60%)", "hsl(42, 65%, 58%)",
-  "hsl(270, 70%, 60%)", "hsl(32, 95%, 55%)",
+  "#ffffff", "#000000", "#ef4444", "#22c55e",
+  "#3b82f6", "#f59e0b", "#a855f7", "#f97316",
+  "#ec4899", "#06b6d4", "#84cc16", "#6366f1",
 ];
-
 const TOKEN_COLORS = [
-  "hsl(0, 72%, 51%)", "hsl(217, 91%, 60%)", "hsl(142, 70%, 45%)",
-  "hsl(42, 65%, 58%)", "hsl(270, 70%, 60%)", "hsl(32, 95%, 55%)",
-  "hsl(330, 80%, 55%)", "hsl(180, 70%, 45%)",
+  "#ef4444", "#3b82f6", "#22c55e",
+  "#f59e0b", "#a855f7", "#f97316",
+  "#ec4899", "#06b6d4",
 ];
 
 interface CampaignTabletopProps {
@@ -95,17 +52,83 @@ interface CampaignTabletopProps {
   isGM: boolean;
 }
 
-const GRID_SIZE = 40;
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 3;
-const M_PER_SQUARE = 1.5;
+// ── Helper: draw a cone ────────────────────────────────────
+function renderCone(
+  ctx: CanvasRenderingContext2D,
+  action: DrawAction,
+  zoom: number,
+  GRID: number,
+  MPQ: number,
+) {
+  if (action.points.length < 2) return;
+  const start = action.points[0];
+  const end = action.points[action.points.length - 1];
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  if (length < 1) return;
+  const angle = Math.atan2(dy, dx);
+  const spread = 53.13 * (Math.PI / 180);
+  ctx.save();
+  ctx.fillStyle = action.color + "44";
+  ctx.strokeStyle = action.color;
+  ctx.lineWidth = 2 / zoom;
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.arc(start.x, start.y, length, angle - spread / 2, angle + spread / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Distance label
+  const squares = Math.round(length / GRID);
+  ctx.fillStyle = action.color;
+  ctx.font = `bold ${11 / zoom}px sans-serif`;
+  ctx.fillText(`${squares * MPQ}m`, end.x + 6 / zoom, end.y);
+  ctx.restore();
+}
 
+function renderZone(
+  ctx: CanvasRenderingContext2D,
+  action: DrawAction,
+  zoom: number,
+  GRID: number,
+  MPQ: number,
+) {
+  if (action.points.length < 2) return;
+  const [center, edge] = action.points;
+  const dx = edge.x - center.x;
+  const dy = edge.y - center.y;
+  const radius = Math.sqrt(dx * dx + dy * dy);
+  ctx.save();
+  ctx.fillStyle = action.color + "33";
+  ctx.strokeStyle = action.color;
+  ctx.lineWidth = 2 / zoom;
+  ctx.setLineDash([6 / zoom, 4 / zoom]);
+  ctx.beginPath();
+  ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const squares = Math.round(radius / GRID);
+  ctx.fillStyle = action.color;
+  ctx.font = `bold ${11 / zoom}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(`r=${squares * MPQ}m`, center.x, center.y - 4 / zoom);
+  ctx.textAlign = "start";
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════
+// COMPONENT
+// ══════════════════════════════════════════════════════════
 const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
   const tokenImagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const pingAnimRef = useRef<number | null>(null);
 
+  // ── Core tool state ──
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(3);
@@ -116,30 +139,52 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [lastPanPoint, setLastPanPoint] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+
+  // ── Token state ──
   const [tokens, setTokens] = useState<TokenItem[]>([]);
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [tokenDragOffset, setTokenDragOffset] = useState({ x: 0, y: 0 });
-  const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
-  const [newTokenName, setNewTokenName] = useState("");
-  const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
-  const [bestiarySearch, setBestiarySearch] = useState("");
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
-  const [diceOpen, setDiceOpen] = useState(false);
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
-  const [snapToGrid, setSnapToGrid] = useState(true);
-  const [collisionEnabled, setCollisionEnabled] = useState(true);
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
+  // ── Layer state ──
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
     { id: "tokens", name: "Jetons", type: "tokens", visible: true, locked: false, opacity: 100 },
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
-    { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 70 },
+    { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
   ]);
+  const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
 
-  // ── Synchronisation temps réel du plateau ────────────────────
+  // ── UI state ──
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [collisionEnabled, setCollisionEnabled] = useState(true);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [diceOpen, setDiceOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [gmPanelOpen, setGmPanelOpen] = useState(isGM);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
+  const [gridColor, setGridColor] = useState("rgba(255,255,255,0.12)");
+  const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
+
+  // ── Context menu ──
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
+  // ── Ping animations ──
+  const [pings, setPings] = useState<{ id: string; wx: number; wy: number; t: number }[]>([]);
+  const pingsRef = useRef<{ id: string; wx: number; wy: number; t: number }[]>([]);
+  pingsRef.current = pings;
+
+  // ── Initiative ──
+  const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
+  const [initiativeRound, setInitiativeRound] = useState(1);
+  const [initiativeActiveIdx, setInitiativeActiveIdx] = useState(-1);
+
+  // ── Auth & permissions ──
   const { user } = useAuth();
   const deletedTokenIdsRef = useRef<Set<string>>(new Set());
 
@@ -156,17 +201,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   });
 
   const perms = usePermissions({ isGM, userId: user?.id, ownCharacterId });
-
   const denied = (msg = "Action réservée au MJ") =>
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
 
+  // ── Sync ──
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
-      const incomingTokens = (state.tokens as TokenItem[]).filter(t => !deletedTokenIdsRef.current.has(t.id));
+      const incomingTokens = (state.tokens as TokenItem[]).filter(
+        t => !deletedTokenIdsRef.current.has(t.id)
+      );
       setTokens(incomingTokens);
-      // Dédupliquer les dessins par id (sécurité contre doublons realtime)
       const incomingDrawings = state.drawings as DrawAction[];
       const seen = new Set<string>();
       const dedup: DrawAction[] = [];
@@ -199,19 +245,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     debounceMs: 250,
   });
 
-  // Sauvegarde automatique des jetons et dessins
-  useEffect(() => {
-    if (!user?.id) return;
-    saveState({ tokens });
-  }, [tokens, saveState, user?.id]);
+  useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
+  useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    saveState({ drawings: actions });
-  }, [actions, saveState, user?.id]);
-
+  // ── Data fetching ──
   const { data: waCreatures = [] } = useQuery({
-    queryKey: ['vtt-wa-creatures'],
+    queryKey: ["vtt-wa-creatures"],
     queryFn: async () => {
       try { return await (await import("@/lib/api")).compendiumApi.getWaCreatures(); }
       catch { return []; }
@@ -219,7 +258,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   });
 
   const { data: userCharacters = [] } = useQuery({
-    queryKey: ['vtt-user-characters', user?.id],
+    queryKey: ["vtt-user-characters", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       try { return await (await import("@/lib/api")).charactersApi.list(); }
@@ -227,11 +266,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     },
   });
 
-  // Preload token images
+  // ── Preload token images ──
   useEffect(() => {
     for (const token of tokens) {
-      if (!token.imageUrl) continue;
-      if (tokenImagesRef.current.has(token.imageUrl)) continue;
+      if (!token.imageUrl || tokenImagesRef.current.has(token.imageUrl)) continue;
       const img = new window.Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
@@ -242,110 +280,137 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
   }, [tokens]);
 
-  // === Helpers ===
-  const snapValue = useCallback((v: number) => {
-    return snapToGrid ? Math.round(v / GRID_SIZE) * GRID_SIZE : v;
-  }, [snapToGrid]);
+  // ── Ping animation loop ──
+  useEffect(() => {
+    if (pings.length === 0) return;
+    const animate = () => {
+      const now = Date.now();
+      setPings(prev => prev.filter(p => now - p.t < 3000));
+      redrawCanvas();
+      pingAnimRef.current = requestAnimationFrame(animate);
+    };
+    pingAnimRef.current = requestAnimationFrame(animate);
+    return () => { if (pingAnimRef.current) cancelAnimationFrame(pingAnimRef.current); };
+  }, [pings.length]);
 
-  const tokensOverlap = (a: { x: number; y: number; size: number }, b: { x: number; y: number; size: number }) => {
-    return !(a.x + a.size <= b.x || b.x + b.size <= a.x || a.y + a.size <= b.y || b.y + b.size <= a.y);
-  };
+  // ── Helpers ──
+  const snapValue = useCallback(
+    (v: number) => snapToGrid ? Math.round(v / GRID_SIZE) * GRID_SIZE : v,
+    [snapToGrid]
+  );
 
-  const findFreePosition = useCallback((x: number, y: number, size: number, ignoreId?: string): { x: number; y: number } => {
-    if (!collisionEnabled) return { x, y };
-    const others = tokens.filter(t => t.id !== ignoreId && t.visible);
-    if (!others.some(o => tokensOverlap({ x, y, size }, { x: o.x, y: o.y, size: o.size }))) {
-      return { x, y };
-    }
-    // Spiral search around target on grid
-    for (let r = 1; r < 12; r++) {
-      for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-          const nx = x + dx * GRID_SIZE;
-          const ny = y + dy * GRID_SIZE;
-          if (!others.some(o => tokensOverlap({ x: nx, y: ny, size }, { x: o.x, y: o.y, size: o.size }))) {
-            return { x: nx, y: ny };
+  const tokensOverlap = (
+    a: { x: number; y: number; size: number },
+    b: { x: number; y: number; size: number }
+  ) => !(a.x + a.size <= b.x || b.x + b.size <= a.x || a.y + a.size <= b.y || b.y + b.size <= a.y);
+
+  const findFreePosition = useCallback(
+    (x: number, y: number, size: number, ignoreId?: string): { x: number; y: number } => {
+      if (!collisionEnabled) return { x, y };
+      const others = tokens.filter(t => t.id !== ignoreId && t.visible);
+      if (!others.some(o => tokensOverlap({ x, y, size }, { x: o.x, y: o.y, size: o.size }))) return { x, y };
+      for (let r = 1; r < 12; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+            const nx = x + dx * GRID_SIZE, ny = y + dy * GRID_SIZE;
+            if (!others.some(o => tokensOverlap({ x: nx, y: ny, size }, { x: o.x, y: o.y, size: o.size }))) return { x: nx, y: ny };
           }
         }
       }
-    }
-    return { x, y };
-  }, [collisionEnabled, tokens]);
+      return { x, y };
+    },
+    [collisionEnabled, tokens]
+  );
 
-  const buildCharacterToken = (char: typeof userCharacters[0], worldX: number, worldY: number): TokenItem => {
-    const targetX = snapValue(worldX - GRID_SIZE / 2);
-    const targetY = snapValue(worldY - GRID_SIZE / 2);
-    const free = findFreePosition(targetX, targetY, GRID_SIZE);
+  // ── Token builders ──
+  const buildCharacterToken = (char: any, worldX: number, worldY: number): TokenItem => {
+    const tx = snapValue(worldX - GRID_SIZE / 2);
+    const ty = snapValue(worldY - GRID_SIZE / 2);
+    const free = findFreePosition(tx, ty, GRID_SIZE);
     return {
-      id: crypto.randomUUID(),
-      name: char.name,
-      x: free.x,
-      y: free.y,
-      size: GRID_SIZE,
-      sizeUnits: 1,
-      rotation: 0,
-      color: "hsl(42, 65%, 58%)",
-      label: char.name.substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-      creatureId: char.id,
-      creatureType: "character",
-      hp: char.hp ?? char.max_hp ?? 10,
-      maxHp: char.max_hp ?? 10,
-      ac: char.armor_class ?? 10,
-      imageUrl: char.avatar_url || undefined,
+      id: newId(), name: char.name, x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      rotation: 0, color: "#f59e0b", label: char.name.substring(0, 2).toUpperCase(),
+      layer: "tokens", visible: true, creatureId: char.id, creatureType: "character",
+      hp: char.hp ?? char.max_hp ?? 10, maxHp: char.max_hp ?? 10,
+      ac: char.armor_class ?? 10, imageUrl: char.avatar_url || undefined,
+      conditions: [],
     };
   };
 
-  const spawnCharacter = (char: typeof userCharacters[0]) => {
-    const wx = (-panOffset.x / zoom) + 200;
-    const wy = (-panOffset.y / zoom) + 200;
-    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
+  const spawnCharacter = (char: any) => {
+    setTokens(prev => [...prev, buildCharacterToken(char, (-panOffset.x / zoom) + 200, (-panOffset.y / zoom) + 200)]);
   };
 
-  const spawnCharacterAt = (char: typeof userCharacters[0], clientX: number, clientY: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const spawnCharacterAt = (char: any, clientX: number, clientY: number) => {
+    const canvas = canvasRef.current; if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const wx = (clientX - rect.left - panOffset.x) / zoom;
-    const wy = (clientY - rect.top - panOffset.y) / zoom;
-    setTokens(prev => [...prev, buildCharacterToken(char, wx, wy)]);
+    setTokens(prev => [...prev, buildCharacterToken(char,
+      (clientX - rect.left - panOffset.x) / zoom,
+      (clientY - rect.top - panOffset.y) / zoom
+    )]);
   };
 
-  const spawnWACreature = (creature: typeof waCreatures[0]) => {
+  const spawnWACreature = (creature: any) => {
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
-    const sizeUnits = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
-    const size = GRID_SIZE * sizeUnits;
+    const su = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
+    const size = GRID_SIZE * su;
     const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
     const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
     const free = findFreePosition(wx, wy, size);
-    const newToken: TokenItem = {
-      id: crypto.randomUUID(),
-      name: creature.name,
-      x: free.x,
-      y: free.y,
-      size,
-      sizeUnits,
-      rotation: 0,
-      color: "hsl(0, 72%, 51%)",
-      label: creature.name.substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-      creatureId: creature.id,
-      creatureType: "wa_creature",
-      hp: (creature.constitution || 0) * 5 + 10,
-      maxHp: (creature.constitution || 0) * 5 + 10,
-      ac: 10 + (creature.dexterity || 0),
-    };
-    setTokens(prev => [...prev, newToken]);
+    setTokens(prev => [...prev, {
+      id: newId(), name: creature.name, x: free.x, y: free.y, size, sizeUnits: su,
+      rotation: 0, color: "#ef4444", label: creature.name.substring(0, 2).toUpperCase(),
+      layer: "tokens", visible: true, creatureId: creature.id, creatureType: "wa_creature",
+      hp: (creature.constitution || 0) * 5 + 10, maxHp: (creature.constitution || 0) * 5 + 10,
+      ac: 10 + (creature.dexterity || 0), conditions: [],
+    }]);
+  };
+
+  const addToken = () => {
+    if (!newTokenName.trim()) return;
+    if (!perms.canAddToken) { denied(); return; }
+    const wx = snapValue((-panOffset.x / zoom) + 200);
+    const wy = snapValue((-panOffset.y / zoom) + 200);
+    const free = findFreePosition(wx, wy, GRID_SIZE);
+    setTokens(prev => [...prev, {
+      id: newId(), name: newTokenName.trim(), x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      rotation: 0, color: newTokenColor, label: newTokenName.substring(0, 2).toUpperCase(),
+      layer: "tokens", visible: true, conditions: [],
+    }]);
+    setNewTokenName("");
+  };
+
+  const addTokenAt = (wx: number, wy: number) => {
+    if (!perms.canAddToken) { denied(); return; }
+    const name = prompt("Nom du jeton :"); if (!name?.trim()) return;
+    const sx = snapValue(wx - GRID_SIZE / 2);
+    const sy = snapValue(wy - GRID_SIZE / 2);
+    const free = findFreePosition(sx, sy, GRID_SIZE);
+    setTokens(prev => [...prev, {
+      id: newId(), name: name.trim(), x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      rotation: 0, color: "#3b82f6", label: name.substring(0, 2).toUpperCase(),
+      layer: "tokens", visible: true, conditions: [],
+    }]);
+  };
+
+  const removeToken = (tokenId: string) => {
+    deletedTokenIdsRef.current.add(tokenId);
+    setTokens(prev => prev.filter(t => t.id !== tokenId));
+    if (selectedTokenId === tokenId) setSelectedTokenId(null);
   };
 
   const updateTokenHp = (tokenId: string, delta: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
-      const newHp = Math.max(0, Math.min(t.maxHp || 999, (t.hp || 0) + delta));
-      return { ...t, hp: newHp };
+      return { ...t, hp: Math.max(0, Math.min(t.maxHp || 999, (t.hp || 0) + delta)) };
+    }));
+  };
+
+  const setTokenHp = (tokenId: string, hp: number) => {
+    setTokens(prev => prev.map(t => {
+      if (t.id !== tokenId) return t;
+      return { ...t, hp: Math.max(0, Math.min(t.maxHp || 999, hp)) };
     }));
   };
 
@@ -356,19 +421,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const resizeToken = (tokenId: string, sizeUnits: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
-      const newSize = GRID_SIZE * sizeUnits;
-      return { ...t, sizeUnits, size: newSize };
+      return { ...t, sizeUnits, size: GRID_SIZE * sizeUnits };
     }));
   };
 
   const duplicateToken = (tokenId: string) => {
-    const src = tokens.find(t => t.id === tokenId);
-    if (!src) return;
+    const src = tokens.find(t => t.id === tokenId); if (!src) return;
     if (!perms.canAddToken) { denied("Seul le MJ peut dupliquer un jeton"); return; }
-    const targetX = src.x + GRID_SIZE;
-    const targetY = src.y;
-    const free = findFreePosition(targetX, targetY, src.size);
-    const copy: TokenItem = { ...src, id: crypto.randomUUID(), x: free.x, y: free.y };
+    const free = findFreePosition(src.x + GRID_SIZE, src.y, src.size);
+    const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
     setTokens(prev => [...prev, copy]);
     setSelectedTokenId(copy.id);
   };
@@ -376,11 +437,22 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
-      const targetX = t.x + dx;
-      const targetY = t.y + dy;
-      const free = findFreePosition(targetX, targetY, t.size, t.id);
+      const free = findFreePosition(t.x + dx, t.y + dy, t.size, t.id);
       return { ...t, x: free.x, y: free.y };
     }));
+  };
+
+  const toggleTokenCondition = (tokenId: string, condId: string) => {
+    setTokens(prev => prev.map(t => {
+      if (t.id !== tokenId) return t;
+      const conds = t.conditions || [];
+      const next = conds.includes(condId) ? conds.filter(c => c !== condId) : [...conds, condId];
+      return { ...t, conditions: next };
+    }));
+  };
+
+  const toggleTokenHidden = (tokenId: string) => {
+    setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, isHidden: !t.isHidden } : t));
   };
 
   const centerOnToken = (tokenId: string) => {
@@ -393,6 +465,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     });
   };
 
+  // ── Layer helpers ──
   const toggleLayerVisibility = (layerId: string) => {
     if (layerId === "fog" && !perms.canToggleFog) { denied("Le brouillard est contrôlé par le MJ"); return; }
     if (layerId === "map" && !perms.canEditMap) { denied("Le calque carte est contrôlé par le MJ"); return; }
@@ -411,9 +484,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!perms.canUploadMap) { denied("Seul le MJ peut charger une carte"); return; }
-    const file = e.target.files?.[0];
-    if (!file) return;
+    if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
+    const file = e.target.files?.[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
@@ -422,59 +494,77 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         mapImageRef.current = img;
         setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: dataUrl } : l));
         saveState({ map_image_url: dataUrl });
-        redrawCanvas();
       };
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
-  const addToken = () => {
-    if (!perms.canAddToken) { denied("Seul le MJ peut ajouter des jetons"); return; }
-    if (!newTokenName.trim()) return;
-    const wx = snapValue((-panOffset.x / zoom) + 200);
-    const wy = snapValue((-panOffset.y / zoom) + 200);
-    const free = findFreePosition(wx, wy, GRID_SIZE);
-    const newToken: TokenItem = {
-      id: crypto.randomUUID(),
-      name: newTokenName.trim(),
-      x: free.x,
-      y: free.y,
-      size: GRID_SIZE,
-      sizeUnits: 1,
-      rotation: 0,
-      color: newTokenColor,
-      label: newTokenName.trim().substring(0, 2).toUpperCase(),
-      layer: "tokens",
-      visible: true,
-    };
-    setTokens(prev => [...prev, newToken]);
-    setNewTokenName("");
+  // ── Initiative helpers ──
+  const addToInitiative = (entry: Omit<InitiativeEntry, "id">) => {
+    setInitiative(prev => [...prev, { ...entry, id: newId() }]);
   };
 
-  const removeToken = (tokenId: string) => {
-    const target = tokens.find(t => t.id === tokenId);
-    if (!perms.canDeleteToken(target)) { denied("Vous ne pouvez supprimer que vos propres jetons"); return; }
-    deletedTokenIdsRef.current.add(tokenId);
-    // Oublier l'id supprimé après quelques secondes (le temps que la sync realtime se propage)
-    setTimeout(() => deletedTokenIdsRef.current.delete(tokenId), 5000);
-    const updatedTokens = tokens.filter(t => t.id !== tokenId);
-    setTokens(updatedTokens);
-    if (selectedTokenId === tokenId) setSelectedTokenId(null);
-    // Sauvegarde immédiate avec la liste sans le token (en plus du useEffect)
-    saveState({ tokens: updatedTokens });
+  const removeFromInitiative = (id: string) => {
+    setInitiative(prev => prev.filter(e => e.id !== id));
+    setInitiativeActiveIdx(prev => Math.max(-1, prev - 1));
   };
 
-  const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left - panOffset.x) / zoom,
-      y: (e.clientY - rect.top - panOffset.y) / zoom,
-    };
-  }, [panOffset, zoom]);
+  const updateInitiativeHp = (id: string, delta: number) => {
+    setInitiative(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      return { ...e, hp: Math.max(0, Math.min(e.maxHp, e.hp + delta)) };
+    }));
+  };
 
+  const addConditionToInitiative = (id: string, cond: string) => {
+    setInitiative(prev => prev.map(e =>
+      e.id !== id ? e : { ...e, conditions: [...new Set([...e.conditions, cond])] }
+    ));
+  };
+
+  const removeConditionFromInitiative = (id: string, cond: string) => {
+    setInitiative(prev => prev.map(e =>
+      e.id !== id ? e : { ...e, conditions: e.conditions.filter(c => c !== cond) }
+    ));
+  };
+
+  const nextTurn = () => {
+    const sorted = [...initiative].sort((a, b) => b.initiative - a.initiative);
+    if (sorted.length === 0) return;
+    const nextIdx = initiativeActiveIdx + 1;
+    if (nextIdx >= sorted.length) {
+      setInitiativeActiveIdx(0);
+      setInitiativeRound(r => r + 1);
+    } else {
+      setInitiativeActiveIdx(nextIdx);
+    }
+  };
+
+  const resetInitiative = () => {
+    setInitiative([]);
+    setInitiativeRound(1);
+    setInitiativeActiveIdx(-1);
+  };
+
+  const addTokenToInitiative = (token: TokenItem) => {
+    const rollResult = Math.floor(Math.random() * 20) + 1;
+    addToInitiative({
+      name: token.name,
+      initiative: rollResult,
+      modifier: 0,
+      hp: token.hp ?? 10,
+      maxHp: token.maxHp ?? 10,
+      ac: token.ac,
+      conditions: token.conditions || [],
+      tokenId: token.id,
+      type: token.creatureType === "character" ? "player" : "monster",
+      color: token.color,
+    });
+  };
+
+  // ── Canvas rendering ──────────────────────────────────────
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -482,274 +572,432 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
     ctx.scale(zoom, zoom);
-
-    const mapLayer = layers.find(l => l.id === "map");
-    const tokensLayer = layers.find(l => l.id === "tokens");
-    const drawingsLayer = layers.find(l => l.id === "drawings");
-    const fogLayer = layers.find(l => l.id === "fog");
-
-    // === MAP LAYER ===
-    if (mapLayer?.visible && mapImageRef.current) {
-      ctx.globalAlpha = mapLayer.opacity / 100;
-      ctx.drawImage(mapImageRef.current, 0, 0);
-      ctx.globalAlpha = 1;
-    }
 
     const viewLeft = -panOffset.x / zoom;
     const viewTop = -panOffset.y / zoom;
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
-    const startX = Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE;
-    const startY = Math.floor(viewTop / GRID_SIZE) * GRID_SIZE;
 
-    const drawGrid = (alpha: number) => {
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      // Minor grid
-      ctx.strokeStyle = "hsl(216, 20%, 25%)";
+    // ── Grid ─────────────────────────────────────────────────
+    const gridLayer = layers.find(l => l.id === "drawings");
+    if (gridLayer?.visible !== false) {
+      const startX = Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE;
+      const startY = Math.floor(viewTop / GRID_SIZE) * GRID_SIZE;
       ctx.lineWidth = 0.5 / zoom;
+
+      // Minor grid lines
+      ctx.strokeStyle = gridColor;
+      ctx.beginPath();
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
         const isMajor = Math.round(x / GRID_SIZE) % 5 === 0;
-        if (isMajor) continue;
-        ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
+        if (!isMajor) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
       }
       for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
         const isMajor = Math.round(y / GRID_SIZE) % 5 === 0;
-        if (isMajor) continue;
-        ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
+        if (!isMajor) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
       }
-      // Major grid (every 5 squares = 7,5 m)
-      ctx.strokeStyle = "hsl(42, 50%, 45%)";
+      ctx.stroke();
+
+      // Major grid lines
+      ctx.strokeStyle = gridMajorColor;
       ctx.lineWidth = 1 / zoom;
+      ctx.beginPath();
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
-        if (Math.round(x / GRID_SIZE) % 5 !== 0) continue;
-        ctx.beginPath(); ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); ctx.stroke();
+        if (Math.round(x / GRID_SIZE) % 5 === 0) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
       }
       for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
-        if (Math.round(y / GRID_SIZE) % 5 !== 0) continue;
-        ctx.beginPath(); ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); ctx.stroke();
+        if (Math.round(y / GRID_SIZE) % 5 === 0) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
       }
+      ctx.stroke();
+    }
+
+    // ── Map layer ─────────────────────────────────────────────
+    const mapLayer = layers.find(l => l.id === "map");
+    if (mapLayer?.visible && mapImageRef.current) {
+      ctx.save();
+      ctx.globalAlpha = mapLayer.opacity / 100;
+      ctx.drawImage(mapImageRef.current, 0, 0);
       ctx.restore();
-    };
+    }
 
-    drawGrid(1);
-
-    // === DRAWINGS LAYER ===
+    // ── Drawings layer (excluding fogReveal) ──────────────────
+    const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
+      ctx.save();
       ctx.globalAlpha = drawingsLayer.opacity / 100;
-      const allActions = currentAction ? [...actions, currentAction] : actions;
-      for (const action of allActions) {
-        const isEraser = action.type === "eraser";
-        if (isEraser) {
-          ctx.globalCompositeOperation = "destination-out";
-          ctx.strokeStyle = "hsl(0, 0%, 0%)";
-        } else {
-          ctx.globalCompositeOperation = "source-over";
-          ctx.strokeStyle = action.color;
-        }
+
+      const visibleActions = actions.filter(a =>
+        a.layer === "drawings" && (a.type as string) !== "fogReveal"
+      );
+
+      for (const action of visibleActions) {
+        ctx.save();
+        ctx.strokeStyle = action.color;
         ctx.fillStyle = action.color;
-        ctx.lineWidth = action.size;
+        ctx.lineWidth = action.size / zoom;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
-        if (action.type === "pencil" || action.type === "eraser") {
-          if (action.points.length < 2) continue;
-          ctx.beginPath();
-          ctx.moveTo(action.points[0].x, action.points[0].y);
-          for (let i = 1; i < action.points.length; i++) {
-            ctx.lineTo(action.points[i].x, action.points[i].y);
+        switch (action.type) {
+          case "pencil":
+            if (action.points.length < 2) break;
+            ctx.beginPath();
+            ctx.moveTo(action.points[0].x, action.points[0].y);
+            for (const p of action.points.slice(1)) ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            break;
+          case "eraser": {
+            const prev = ctx.globalCompositeOperation;
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.lineWidth = action.size * 3 / zoom;
+            ctx.beginPath();
+            ctx.moveTo(action.points[0].x, action.points[0].y);
+            for (const p of action.points.slice(1)) ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            ctx.globalCompositeOperation = prev;
+            break;
           }
-          ctx.stroke();
-        } else if (action.type === "line" && action.points.length >= 2) {
-          ctx.beginPath();
-          ctx.moveTo(action.points[0].x, action.points[0].y);
-          const last = action.points[action.points.length - 1];
-          ctx.lineTo(last.x, last.y);
-          ctx.stroke();
-          const dx = last.x - action.points[0].x;
-          const dy = last.y - action.points[0].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const squares = Math.round(dist / GRID_SIZE);
-          const meters = squares * M_PER_SQUARE;
-          ctx.font = `${14 / zoom}px 'Lora', serif`;
-          ctx.fillStyle = action.color;
-          const midX = (action.points[0].x + last.x) / 2;
-          const midY = (action.points[0].y + last.y) / 2;
-          ctx.fillText(`${meters.toLocaleString("fr-BE")} m (${squares} cases)`, midX + 8, midY - 8);
-        } else if (action.type === "rect" && action.points.length >= 2) {
-          const last = action.points[action.points.length - 1];
-          ctx.strokeRect(action.points[0].x, action.points[0].y, last.x - action.points[0].x, last.y - action.points[0].y);
-        } else if (action.type === "circle" && action.points.length >= 2) {
-          const last = action.points[action.points.length - 1];
-          const dx = last.x - action.points[0].x;
-          const dy = last.y - action.points[0].y;
-          const radius = Math.sqrt(dx * dx + dy * dy);
-          ctx.beginPath();
-          ctx.arc(action.points[0].x, action.points[0].y, radius, 0, Math.PI * 2);
-          ctx.stroke();
-        } else if (action.type === "text" && action.text) {
-          ctx.font = `${action.size * 5}px 'Cinzel', serif`;
-          ctx.fillText(action.text, action.points[0].x, action.points[0].y);
+          case "line":
+            if (action.points.length >= 2) {
+              ctx.beginPath();
+              ctx.moveTo(action.points[0].x, action.points[0].y);
+              ctx.lineTo(action.points[action.points.length - 1].x, action.points[action.points.length - 1].y);
+              ctx.stroke();
+              // Distance label
+              const p1 = action.points[0], p2 = action.points[action.points.length - 1];
+              const dx = p2.x - p1.x, dy = p2.y - p1.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const sq = Math.round(dist / GRID_SIZE);
+              if (sq > 0) {
+                ctx.font = `${10 / zoom}px sans-serif`;
+                ctx.fillText(`${sq * M_PER_SQUARE}m`, (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
+              }
+            }
+            break;
+          case "rect":
+            if (action.points.length >= 2) {
+              const [a, b] = action.points;
+              ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+            }
+            break;
+          case "circle":
+            if (action.points.length >= 2) {
+              const [a, b] = action.points;
+              const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+              ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, Math.PI * 2); ctx.stroke();
+            }
+            break;
+          case "text":
+            if (action.text && action.points[0]) {
+              ctx.font = `${action.size * 3 / zoom}px 'Lora', serif`;
+              ctx.fillText(action.text, action.points[0].x, action.points[0].y);
+            }
+            break;
+          case "cone":
+            renderCone(ctx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+            break;
+          case "zone":
+            renderZone(ctx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+            break;
+          default:
+            break;
         }
+        ctx.restore();
       }
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1;
+
+      // Current action preview
+      if (currentAction && (currentAction.type as string) !== "fogReveal") {
+        ctx.save();
+        ctx.strokeStyle = currentAction.color;
+        ctx.fillStyle = currentAction.color;
+        ctx.lineWidth = currentAction.size / zoom;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        switch (currentAction.type) {
+          case "pencil":
+            if (currentAction.points.length >= 2) {
+              ctx.beginPath();
+              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+              for (const p of currentAction.points.slice(1)) ctx.lineTo(p.x, p.y);
+              ctx.stroke();
+            }
+            break;
+          case "eraser": {
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.lineWidth = currentAction.size * 3 / zoom;
+            if (currentAction.points.length >= 2) {
+              ctx.beginPath();
+              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+              for (const p of currentAction.points.slice(1)) ctx.lineTo(p.x, p.y);
+              ctx.stroke();
+            }
+            break;
+          }
+          case "line":
+            if (currentAction.points.length >= 2) {
+              ctx.beginPath();
+              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+              ctx.lineTo(currentAction.points[currentAction.points.length - 1].x, currentAction.points[currentAction.points.length - 1].y);
+              ctx.stroke();
+            }
+            break;
+          case "rect":
+            if (currentAction.points.length >= 2) {
+              const [a, b] = currentAction.points;
+              ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+            }
+            break;
+          case "circle":
+            if (currentAction.points.length >= 2) {
+              const [a, b] = currentAction.points;
+              const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+              ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, Math.PI * 2); ctx.stroke();
+            }
+            break;
+          case "cone":
+            renderCone(ctx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+            break;
+          case "zone":
+            renderZone(ctx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+            break;
+          default:
+            break;
+        }
+        ctx.restore();
+      }
+
+      ctx.restore();
     }
 
-    // Re-draw grid ON TOP so it's never erased
-    drawGrid(0.4);
-
-    // === TOKENS LAYER ===
+    // ── Tokens layer ──────────────────────────────────────────
+    const tokensLayer = layers.find(l => l.id === "tokens");
     if (tokensLayer?.visible) {
+      ctx.save();
       ctx.globalAlpha = tokensLayer.opacity / 100;
+
       for (const token of tokens) {
         if (!token.visible) continue;
-        const halfSize = token.size / 2;
-        const cx = token.x + halfSize;
-        const cy = token.y + halfSize;
-        const isSelected = token.id === selectedTokenId;
-        const isDragged = token.id === draggedToken;
+        if (token.isHidden && !isGM) continue;
 
-        // Drop shadow under token
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = isDragged ? 18 : 8;
-        ctx.shadowOffsetY = isDragged ? 6 : 3;
-        ctx.beginPath();
-        ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0,0,0,0.001)";
-        ctx.fill();
-        ctx.restore();
+        const isDragged = token.id === draggedToken;
+        const isSelected = token.id === selectedTokenId;
+        const cx = token.x + token.size / 2;
+        const cy = token.y + token.size / 2;
+        const halfSize = token.size / 2;
+
+        // Dim hidden tokens for GM
+        if (token.isHidden && isGM) ctx.globalAlpha = 0.45;
+
+        // Aura
+        if (token.auraSize && token.auraSize > 0 && token.auraColor) {
+          const auraRadius = (token.auraSize * GRID_SIZE + halfSize) * 0.9;
+          ctx.save();
+          ctx.globalAlpha = 0.28;
+          ctx.fillStyle = token.auraColor;
+          ctx.beginPath();
+          ctx.arc(cx, cy, auraRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = token.auraColor;
+          ctx.lineWidth = 1.5 / zoom;
+          ctx.stroke();
+          ctx.restore();
+        }
 
         // Selection ring
         if (isSelected) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, halfSize + 4, 0, Math.PI * 2);
+          ctx.save();
           ctx.strokeStyle = "hsl(42, 65%, 58%)";
           ctx.lineWidth = 3 / zoom;
           ctx.setLineDash([6 / zoom, 4 / zoom]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, halfSize + 4 / zoom, 0, Math.PI * 2);
           ctx.stroke();
           ctx.setLineDash([]);
+          ctx.restore();
         }
 
-        const ringColor = token.creatureType === "character"
-          ? "hsl(42, 65%, 58%)"
-          : token.creatureId
-          ? "hsl(0, 72%, 51%)"
-          : "hsl(0, 0%, 100%)";
-
-        // Rotate the token's body around its center
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate((token.rotation * Math.PI) / 180);
         ctx.translate(-cx, -cy);
 
-        const cachedImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : undefined;
-        if (cachedImg) {
+        const tokenImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : null;
+        if (tokenImg) {
           ctx.save();
           ctx.beginPath();
-          ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
-          ctx.closePath();
+          ctx.arc(cx, cy, halfSize, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(cachedImg, token.x, token.y, token.size, token.size);
+          ctx.drawImage(tokenImg, token.x, token.y, token.size, token.size);
           ctx.restore();
         } else {
+          const gradient = ctx.createRadialGradient(cx - halfSize * 0.3, cy - halfSize * 0.3, halfSize * 0.1, cx, cy, halfSize);
+          gradient.addColorStop(0, token.color + "ff");
+          gradient.addColorStop(1, token.color + "99");
           ctx.beginPath();
-          ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
-          ctx.fillStyle = token.color;
+          ctx.arc(cx, cy, halfSize, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
           ctx.fill();
-          ctx.fillStyle = "hsl(0, 0%, 100%)";
-          ctx.font = `bold ${Math.max(12, halfSize * 0.5)}px sans-serif`;
+          ctx.strokeStyle = "rgba(255,255,255,0.3)";
+          ctx.lineWidth = 1.5 / zoom;
+          ctx.stroke();
+
+          // Token label
+          const fontSize = Math.max(8, halfSize * 0.55);
+          ctx.fillStyle = "#fff";
+          ctx.font = `bold ${fontSize}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(token.label, cx, cy);
+          ctx.fillText(token.label || token.name.substring(0, 2).toUpperCase(), cx, cy);
           ctx.textAlign = "start";
           ctx.textBaseline = "alphabetic";
         }
 
-        // Outer ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, halfSize - 2, 0, Math.PI * 2);
-        ctx.strokeStyle = ringColor;
-        ctx.lineWidth = (token.creatureId ? 3 : 2) / zoom;
-        ctx.stroke();
-
-        // Direction arrow (small triangle at top of rotated frame)
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - halfSize - 6);
-        ctx.lineTo(cx - 5, cy - halfSize + 2);
-        ctx.lineTo(cx + 5, cy - halfSize + 2);
-        ctx.closePath();
-        ctx.fillStyle = ringColor;
-        ctx.fill();
-
-        ctx.restore(); // end rotation
-
-        // Name below (not rotated)
-        ctx.fillStyle = "hsl(0, 0%, 90%)";
-        ctx.font = `${10}px sans-serif`;
+        // Name label
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(token.x, token.y - 18 / zoom, token.size, 14 / zoom);
+        ctx.fillStyle = "#fff";
+        ctx.font = `${10 / zoom}px sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(token.name, cx, token.y + token.size + 12);
+        ctx.fillText(token.name, cx, token.y - 7 / zoom);
+        ctx.textAlign = "start";
+
+        ctx.restore();
 
         // HP bar
-        if (token.hp !== undefined && token.maxHp) {
+        if (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0) {
           const barWidth = token.size - 4;
           const barHeight = 4;
           const barX = token.x + 2;
-          const barY = token.y + token.size + 16;
+          const barY = token.y + token.size + 4;
           const hpRatio = token.hp / token.maxHp;
-          ctx.fillStyle = "hsl(0, 0%, 20%)";
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
           ctx.fillRect(barX, barY, barWidth, barHeight);
-          ctx.fillStyle = hpRatio > 0.5 ? "hsl(142, 70%, 45%)" : hpRatio > 0.25 ? "hsl(42, 65%, 58%)" : "hsl(0, 72%, 51%)";
+          ctx.fillStyle = hpRatio > 0.5 ? "#22c55e" : hpRatio > 0.25 ? "#f59e0b" : "#ef4444";
           ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
-          ctx.fillStyle = "hsl(0, 0%, 80%)";
-          ctx.font = `${8}px sans-serif`;
-          ctx.fillText(`${token.hp}/${token.maxHp}`, cx, barY + barHeight + 10);
+          ctx.fillStyle = "rgba(255,255,255,0.8)";
+          ctx.font = `bold ${8 / zoom}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(`${token.hp}/${token.maxHp}`, cx, barY + barHeight + 10 / zoom);
+          ctx.textAlign = "start";
         }
 
-        ctx.textAlign = "start";
+        // Conditions badges
+        if (token.conditions && token.conditions.length > 0) {
+          const baseY = token.y + token.size + (token.hp !== undefined ? 22 : 8);
+          const badgeCount = Math.min(token.conditions.length, 6);
+          const totalW = badgeCount * 16 / zoom;
+          let bx = cx - totalW / 2;
+          ctx.font = `${12 / zoom}px serif`;
+          ctx.textAlign = "left";
+          for (let i = 0; i < badgeCount; i++) {
+            const cond = CONDITIONS.find(c => c.id === token.conditions![i]);
+            if (cond) {
+              ctx.fillText(cond.emoji, bx, baseY / zoom);
+              bx += 16 / zoom;
+            }
+          }
+        }
 
-        // Movement measurement while dragging
+        // Hidden indicator
+        if (token.isHidden && isGM) {
+          ctx.font = `${12 / zoom}px serif`;
+          ctx.textAlign = "center";
+          ctx.fillText("👁️‍🗨️", cx, token.y - 22 / zoom);
+          ctx.textAlign = "start";
+          ctx.globalAlpha = tokensLayer.opacity / 100;
+        }
+
+        // Movement trail
         if (isDragged && dragStart) {
-          const sx = dragStart.x + halfSize;
-          const sy = dragStart.y + halfSize;
-          const dxw = cx - sx;
-          const dyw = cy - sy;
-          const dist = Math.sqrt(dxw * dxw + dyw * dyw);
+          const sx = dragStart.x + halfSize, sy = dragStart.y + halfSize;
+          const dist = Math.sqrt((cx - sx) ** 2 + (cy - sy) ** 2);
           const squares = Math.round(dist / GRID_SIZE);
-          const meters = squares * M_PER_SQUARE;
           ctx.save();
-          ctx.strokeStyle = "hsl(42, 65%, 58%)";
+          ctx.strokeStyle = "#f59e0b";
           ctx.lineWidth = 2 / zoom;
           ctx.setLineDash([5 / zoom, 4 / zoom]);
-          ctx.beginPath();
-          ctx.moveTo(sx, sy);
-          ctx.lineTo(cx, cy);
-          ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(cx, cy); ctx.stroke();
           ctx.setLineDash([]);
-          ctx.fillStyle = "hsl(42, 65%, 58%)";
-          ctx.font = `bold ${14 / zoom}px 'Lora', serif`;
-          ctx.fillText(`${meters.toLocaleString("fr-BE")} m (${squares} cases)`, cx + 12, cy - 12);
+          if (squares > 0) {
+            ctx.fillStyle = "#f59e0b";
+            ctx.font = `bold ${12 / zoom}px 'Lora', serif`;
+            ctx.fillText(`${squares * M_PER_SQUARE}m (${squares})`, cx + 12 / zoom, cy - 8 / zoom);
+          }
           ctx.restore();
         }
       }
-      ctx.globalAlpha = 1;
+
+      ctx.restore();
     }
 
-    // === FOG LAYER ===
+    // ── Pings ─────────────────────────────────────────────────
+    const now = Date.now();
+    for (const ping of pingsRef.current) {
+      const elapsed = now - ping.t;
+      if (elapsed > 3000) continue;
+      const progress = elapsed / 3000;
+      const maxRadius = GRID_SIZE * 2.5;
+      const r1 = maxRadius * progress;
+      const r2 = maxRadius * Math.max(0, progress - 0.3);
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 220, 50, ${1 - progress})`;
+      ctx.lineWidth = 2.5 / zoom;
+      if (r1 > 0) { ctx.beginPath(); ctx.arc(ping.wx, ping.wy, r1, 0, Math.PI * 2); ctx.stroke(); }
+      if (r2 > 0) { ctx.beginPath(); ctx.arc(ping.wx, ping.wy, r2, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = `rgba(255, 220, 50, ${0.9 - progress})`;
+      ctx.beginPath(); ctx.arc(ping.wx, ping.wy, 5 / zoom, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.restore(); // ← end world transform
+
+    // ── Fog (screen space composite) ─────────────────────────
+    const fogLayer = layers.find(l => l.id === "fog");
     if (fogLayer?.visible) {
-      ctx.globalAlpha = fogLayer.opacity / 100;
-      ctx.fillStyle = "hsl(0, 0%, 0%)";
-      ctx.fillRect(viewLeft, viewTop, viewRight - viewLeft, viewBottom - viewTop);
-      ctx.globalAlpha = 1;
+      const tmp = document.createElement("canvas");
+      tmp.width = canvas.width;
+      tmp.height = canvas.height;
+      const tCtx = tmp.getContext("2d")!;
+
+      tCtx.fillStyle = `rgba(0, 0, 0, ${fogLayer.opacity / 100})`;
+      tCtx.fillRect(0, 0, tmp.width, tmp.height);
+
+      // Cut reveal holes
+      tCtx.save();
+      tCtx.globalCompositeOperation = "destination-out";
+      tCtx.translate(panOffset.x, panOffset.y);
+      tCtx.scale(zoom, zoom);
+      tCtx.fillStyle = "black";
+
+      const revealActions = actions.filter(a => (a.type as string) === "fogReveal");
+      for (const ra of revealActions) {
+        for (const pt of ra.points) {
+          tCtx.beginPath();
+          tCtx.arc(pt.x, pt.y, ra.size * 2.5, 0, Math.PI * 2);
+          tCtx.fill();
+        }
+      }
+      if (currentAction && (currentAction.type as string) === "fogReveal") {
+        for (const pt of currentAction.points) {
+          tCtx.beginPath();
+          tCtx.arc(pt.x, pt.y, currentAction.size * 2.5, 0, Math.PI * 2);
+          tCtx.fill();
+        }
+      }
+      tCtx.restore();
+
+      ctx.drawImage(tmp, 0, 0);
     }
 
-    ctx.restore();
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart, isGM, gridColor, gridMajorColor]);
 
+  // ── Resize observer ──
   useEffect(() => {
     const resize = () => {
       const canvas = canvasRef.current;
@@ -760,35 +1008,27 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       redrawCanvas();
     };
     resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    const ro = new ResizeObserver(resize);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, [redrawCanvas]);
 
   useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
 
-  // Wheel zoom anchored to cursor + Shift+wheel rotates selected token
+  // ── Wheel zoom ──
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const container = containerRef.current; if (!container) return;
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Shift+wheel rotates selected token
-      if (e.shiftKey && selectedTokenId) {
-        rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15);
-        return;
-      }
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (e.shiftKey && selectedTokenId) { rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
+      const canvas = canvasRef.current; if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
       setZoom(prev => {
         const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta));
         if (next === prev) return prev;
-        // Zoom around cursor
-        const wx = (mx - panOffset.x) / prev;
-        const wy = (my - panOffset.y) / prev;
+        const wx = (mx - panOffset.x) / prev, wy = (my - panOffset.y) / prev;
         setPanOffset({ x: mx - wx * next, y: my - wy * next });
         return next;
       });
@@ -797,30 +1037,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return () => container.removeEventListener("wheel", handleWheel);
   }, [selectedTokenId, panOffset]);
 
-  // Touch support: 1 finger = pan/drag, 2 fingers = pinch-to-zoom
+  // ── Touch support ──
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
+    const canvas = canvasRef.current; if (!canvas) return;
     let mode: "none" | "pan" | "pinch" | "token" | "draw" = "none";
-    let lastTouch = { x: 0, y: 0 };
-    let lastDist = 0;
-    let lastCenter = { x: 0, y: 0 };
-    let activeTokenId: string | null = null;
-    let tokenOffset = { x: 0, y: 0 };
+    let lastTouch = { x: 0, y: 0 }, lastDist = 0, lastCenter = { x: 0, y: 0 };
+    let activeTokenId: string | null = null, tokenOffset = { x: 0, y: 0 };
 
-    const dist = (a: Touch, b: Touch) =>
-      Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    const center = (a: Touch, b: Touch) => ({
-      x: (a.clientX + b.clientX) / 2,
-      y: (a.clientY + b.clientY) / 2,
-    });
+    const dist = (a: Touch, b: Touch) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const center = (a: Touch, b: Touch) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
     const toWorld = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      return {
-        x: (clientX - rect.left - panOffset.x) / zoom,
-        y: (clientY - rect.top - panOffset.y) / zoom,
-      };
+      return { x: (clientX - rect.left - panOffset.x) / zoom, y: (clientY - rect.top - panOffset.y) / zoom };
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -833,48 +1061,23 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const w = toWorld(t.clientX, t.clientY);
           const hit = findTokenAt(w.x, w.y);
           if (hit) {
-            if (!perms.canMoveToken(hit)) {
-              // Joueur : ne peut pas déplacer un jeton qui n'est pas le sien
-              setSelectedTokenId(perms.canSelectToken(hit) ? hit.id : null);
-              mode = "pan";
-              return;
-            }
+            if (!perms.canMoveToken(hit)) { setSelectedTokenId(perms.canSelectToken(hit) ? hit.id : null); mode = "pan"; return; }
             activeTokenId = hit.id;
             tokenOffset = { x: w.x - hit.x, y: w.y - hit.y };
-            setSelectedTokenId(hit.id);
-            setDraggedToken(hit.id);
-            setDragStart({ x: hit.x, y: hit.y });
-            mode = "token";
-            return;
+            setSelectedTokenId(hit.id); setDraggedToken(hit.id); setDragStart({ x: hit.x, y: hit.y });
+            mode = "token"; return;
           }
           setSelectedTokenId(null);
         }
-        // Drawing tools (règle, rectangle, cercle, crayon, gomme, texte)
-        if (tool === "line" || tool === "rect" || tool === "circle" || tool === "pencil" || tool === "eraser") {
+        if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone"].includes(tool)) {
           const w = toWorld(t.clientX, t.clientY);
-          setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer: activeDrawLayer });
-          setIsDrawing(true);
-          mode = "draw";
-          return;
-        }
-        if (tool === "text") {
-          const w = toWorld(t.clientX, t.clientY);
-          const text = prompt("Texte à ajouter :");
-          if (text) {
-            const action: DrawAction = { id: newId(), type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
-            setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
-            setUndoneActions([]);
-          }
-          mode = "none";
-          return;
+          const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
+          setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer });
+          setIsDrawing(true); mode = "draw"; return;
         }
         mode = "pan";
       } else if (e.touches.length === 2) {
-        // 2 doigts annulent un dessin en cours
-        if (mode === "draw") {
-          setCurrentAction(null);
-          setIsDrawing(false);
-        }
+        if (mode === "draw") { setCurrentAction(null); setIsDrawing(false); }
         mode = "pinch";
         lastDist = dist(e.touches[0], e.touches[1]);
         lastCenter = center(e.touches[0], e.touches[1]);
@@ -886,20 +1089,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (mode === "token" && e.touches.length === 1 && activeTokenId) {
         const t = e.touches[0];
         const w = toWorld(t.clientX, t.clientY);
-        const rawX = w.x - tokenOffset.x;
-        const rawY = w.y - tokenOffset.y;
-        const sx = snapValue(rawX);
-        const sy = snapValue(rawY);
-        const tokenId = activeTokenId;
+        const rawX = w.x - tokenOffset.x, rawY = w.y - tokenOffset.y;
+        const sx = snapValue(rawX), sy = snapValue(rawY);
         setTokens(prev => prev.map(tok => {
-          if (tok.id !== tokenId) return tok;
-          if (collisionEnabled) {
-            const overlaps = prev.some(o =>
-              o.id !== tokenId && o.visible &&
-              tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size })
-            );
-            if (overlaps) return tok;
-          }
+          if (tok.id !== activeTokenId) return tok;
+          if (collisionEnabled && prev.some(o => o.id !== activeTokenId && o.visible && tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size }))) return tok;
           return { ...tok, x: sx, y: sy };
         }));
         return;
@@ -909,18 +1103,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         const w = toWorld(t.clientX, t.clientY);
         setCurrentAction(prev => {
           if (!prev) return prev;
-          if (tool === "pencil" || tool === "eraser") {
-            return { ...prev, points: [...prev.points, w] };
-          }
+          if (["pencil", "eraser", "fogReveal"].includes(tool)) return { ...prev, points: [...prev.points, w] };
           return { ...prev, points: [prev.points[0], w] };
         });
         return;
       }
       if (mode === "pan" && e.touches.length === 1) {
         const t = e.touches[0];
-        const dx = t.clientX - lastTouch.x;
-        const dy = t.clientY - lastTouch.y;
-        setPanOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+        setPanOffset(p => ({ x: p.x + t.clientX - lastTouch.x, y: p.y + t.clientY - lastTouch.y }));
         lastTouch = { x: t.clientX, y: t.clientY };
         return;
       }
@@ -928,27 +1118,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         const newDist = dist(e.touches[0], e.touches[1]);
         const newCenter = center(e.touches[0], e.touches[1]);
         const rect = canvas.getBoundingClientRect();
-        const cx = newCenter.x - rect.left;
-        const cy = newCenter.y - rect.top;
+        const cx = newCenter.x - rect.left, cy = newCenter.y - rect.top;
         const factor = newDist / (lastDist || newDist);
         setZoom(prev => {
           const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * factor));
-          if (next === prev) {
-            // still pan with center movement
-            const cdx = newCenter.x - lastCenter.x;
-            const cdy = newCenter.y - lastCenter.y;
-            setPanOffset(p => ({ x: p.x + cdx, y: p.y + cdy }));
-            return prev;
-          }
-          const wx = (cx - panOffset.x) / prev;
-          const wy = (cy - panOffset.y) / prev;
-          const cdx = newCenter.x - lastCenter.x;
-          const cdy = newCenter.y - lastCenter.y;
-          setPanOffset({ x: cx - wx * next + cdx, y: cy - wy * next + cdy });
+          if (next === prev) { setPanOffset(p => ({ x: p.x + newCenter.x - lastCenter.x, y: p.y + newCenter.y - lastCenter.y })); return prev; }
+          const wx = (cx - panOffset.x) / prev, wy = (cy - panOffset.y) / prev;
+          setPanOffset({ x: cx - wx * next + newCenter.x - lastCenter.x, y: cy - wy * next + newCenter.y - lastCenter.y });
           return next;
         });
-        lastDist = newDist;
-        lastCenter = newCenter;
+        lastDist = newDist; lastCenter = newCenter;
       }
     };
 
@@ -956,24 +1135,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (e.touches.length === 0) {
         if (mode === "draw") {
           setCurrentAction(prev => {
-            if (prev) {
-              setActions(a => a.some(x => x.id === prev.id) ? a : [...a, prev]);
-              setUndoneActions([]);
-            }
+            if (prev) { setActions(a => a.some(x => x.id === prev.id) ? a : [...a, prev]); setUndoneActions([]); }
             return null;
           });
           setIsDrawing(false);
         }
-        if (mode === "token") {
-          setDragStart(null);
-        }
-        mode = "none";
-        activeTokenId = null;
-        setDraggedToken(null);
+        if (mode === "token") setDragStart(null);
+        mode = "none"; activeTokenId = null; setDraggedToken(null);
       } else if (e.touches.length === 1 && mode === "pinch") {
-        // transition pinch -> pan
-        const t = e.touches[0];
-        lastTouch = { x: t.clientX, y: t.clientY };
+        lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         mode = "pan";
       }
     };
@@ -988,30 +1158,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [panOffset, zoom, tool, layers, collisionEnabled, color, brushSize, activeDrawLayer]);
+  }, [panOffset, zoom, tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid]);
 
-  // Keyboard shortcuts
+  // ── Keyboard shortcuts ──
   useEffect(() => {
-    const isEditable = (el: EventTarget | null): boolean => {
+    const editable = (el: EventTarget | null) => {
       if (!(el instanceof HTMLElement)) return false;
-      const tag = el.tagName;
-      return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
+      return ["INPUT", "TEXTAREA"].includes(el.tagName) || el.isContentEditable;
     };
     const onKey = (e: KeyboardEvent) => {
-      if (isEditable(e.target)) return;
-      // Space => temp pan
+      if (editable(e.target)) return;
       if (e.code === "Space") { e.preventDefault(); setIsSpacePressed(true); return; }
-
-      // Tools
+      if (e.key === "F" && !e.ctrlKey) { setFullscreen(f => !f); return; }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
         else if (e.key === "l" || e.key === "L") setTool("line");
         else if (e.key === "t" || e.key === "T") setTool("text");
+        else if (e.key === "c" || e.key === "C") setTool("cone");
+        else if (e.key === "z" || e.key === "Z") setTool("zone");
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
+        else if (e.key === "Escape") { setContextMenu(null); if (fullscreen) setFullscreen(false); }
       }
-
       if (selectedTokenId) {
         const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
         if (e.key === "ArrowUp") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, -step); }
@@ -1022,42 +1191,71 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "R") rotateToken(selectedTokenId, -15);
         else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
         else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
-        else if (e.key === "f" || e.key === "F") centerOnToken(selectedTokenId);
+        else if (e.key === "f") centerOnToken(selectedTokenId);
       }
-
-      // Undo / Redo
       if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) { e.preventDefault(); redo(); }
     };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") setIsSpacePressed(false);
-    };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.code === "Space") setIsSpacePressed(false); };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("keyup", onKeyUp);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTokenId, tokens, collisionEnabled]);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
+  }, [selectedTokenId, tokens, collisionEnabled, fullscreen]);
 
+  // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
     for (let i = tokens.length - 1; i >= 0; i--) {
       const t = tokens[i];
+      if (!t.visible) continue;
+      if (t.isHidden && !isGM) continue;
       const half = t.size / 2;
-      const dx = x - (t.x + half);
-      const dy = y - (t.y + half);
+      const dx = x - (t.x + half), dy = y - (t.y + half);
       if (dx * dx + dy * dy <= half * half) return t;
     }
     return null;
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // ── getCanvasCoords ──
+  const getCanvasCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left - panOffset.x) / zoom,
+      y: (e.clientY - rect.top - panOffset.y) / zoom,
+    };
+  }, [panOffset, zoom]);
+
+  // ── Context menu handler ──
+  const handleContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     const coords = getCanvasCoords(e);
-    // Middle click or space => pan
+    const tokenHit = findTokenAt(coords.x, coords.y);
+    setContextMenu({
+      screenX: e.clientX,
+      screenY: e.clientY,
+      worldX: coords.x,
+      worldY: coords.y,
+      type: tokenHit ? "token" : "canvas",
+      tokenId: tokenHit?.id,
+    });
+  };
+
+  // ── Mouse events ──
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.button === 2) return; // handled by onContextMenu
+    const coords = getCanvasCoords(e);
+
     if (e.button === 1 || isSpacePressed) {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       setIsDrawing(true);
+      return;
+    }
+
+    // Ping tool
+    if (tool === "ping") {
+      const ping = { id: newId(), wx: coords.x, wy: coords.y, t: Date.now() };
+      setPings(prev => [...prev, ping]);
       return;
     }
 
@@ -1066,9 +1264,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
-          // Joueur : sélection visuelle autorisée si on peut au moins le voir, mais pas de drag
           setSelectedTokenId(perms.canSelectToken(tokenHit) ? tokenHit.id : null);
-          // Bascule en pan
           setLastPanPoint({ x: e.clientX, y: e.clientY });
           setIsDrawing(true);
           return;
@@ -1083,6 +1279,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         setSelectedTokenId(null);
       }
     }
+
     if (tool === "move") {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       setIsDrawing(true);
@@ -1098,8 +1295,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       return;
     }
+
+    const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
     setIsDrawing(true);
-    setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer: activeDrawLayer });
+    setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1108,13 +1307,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const coords = getCanvasCoords(e);
       const draggedT = tokens.find(t => t.id === draggedToken);
       if (!draggedT) return;
-      const rawX = coords.x - tokenDragOffset.x;
-      const rawY = coords.y - tokenDragOffset.y;
-      const sx = snapValue(rawX);
-      const sy = snapValue(rawY);
-      // Live collision: don't allow overlap; show last valid pos
-      let nextX = sx;
-      let nextY = sy;
+      const rawX = coords.x - tokenDragOffset.x, rawY = coords.y - tokenDragOffset.y;
+      const sx = snapValue(rawX), sy = snapValue(rawY);
+      let nextX = sx, nextY = sy;
       if (collisionEnabled) {
         const overlaps = tokens.some(o =>
           o.id !== draggedToken && o.visible &&
@@ -1126,15 +1321,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       return;
     }
     if ((tool === "move" || isSpacePressed) && lastPanPoint) {
-      const dx = e.clientX - lastPanPoint.x;
-      const dy = e.clientY - lastPanPoint.y;
-      setPanOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      setPanOffset(prev => ({ x: prev.x + e.clientX - lastPanPoint.x, y: prev.y + e.clientY - lastPanPoint.y }));
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       return;
     }
     const coords = getCanvasCoords(e);
     if (currentAction) {
-      if (tool === "pencil" || tool === "eraser") {
+      if (["pencil", "eraser", "fogReveal"].includes(tool)) {
         setCurrentAction(prev => prev ? { ...prev, points: [...prev.points, coords] } : null);
       } else {
         setCurrentAction(prev => prev ? { ...prev, points: [prev.points[0], coords] } : null);
@@ -1145,12 +1338,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const handleMouseUp = () => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
-    if (currentAction) { setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]); setUndoneActions([]); setCurrentAction(null); }
+    if (currentAction) {
+      setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]);
+      setUndoneActions([]);
+      setCurrentAction(null);
+    }
     setIsDrawing(false);
   };
 
-  const undo = () => { setActions(prev => { if (!prev.length) return prev; setUndoneActions(u => [...u, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
-  const redo = () => { setUndoneActions(prev => { if (!prev.length) return prev; setActions(a => [...a, prev[prev.length - 1]]); return prev.slice(0, -1); }); };
+  // ── Undo / redo / clear ──
+  const undo = () => {
+    setActions(prev => {
+      if (!prev.length) return prev;
+      setUndoneActions(u => [...u, prev[prev.length - 1]]);
+      return prev.slice(0, -1);
+    });
+  };
+  const redo = () => {
+    setUndoneActions(prev => {
+      if (!prev.length) return prev;
+      setActions(a => [...a, prev[prev.length - 1]]);
+      return prev.slice(0, -1);
+    });
+  };
   const clearAll = () => {
     if (!perms.canClearBoard) { denied("Seul le MJ peut effacer le plateau"); return; }
     if (!confirm("Effacer tout le plateau ?")) return;
@@ -1160,434 +1370,293 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
   const exportCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
-    const link = document.createElement("a"); link.download = "aetheria-tabletop.png"; link.href = canvas.toDataURL(); link.click();
+    const link = document.createElement("a");
+    link.download = "aetheria-tabletop.png"; link.href = canvas.toDataURL(); link.click();
   };
   const zoomIn = () => setZoom(prev => Math.min(MAX_ZOOM, prev + 0.15));
   const zoomOut = () => setZoom(prev => Math.max(MIN_ZOOM, prev - 0.15));
   const resetView = () => { setZoom(1); setPanOffset({ x: 0, y: 0 }); };
-
-  const selectedToken = tokens.find(t => t.id === selectedTokenId);
-
-  const tools_list: { id: Tool; icon: React.ReactNode; label: string; key: string }[] = [
-    { id: "move", icon: <Move className="h-4 w-4" />, label: "Déplacer", key: "V" },
-    { id: "token", icon: <Users className="h-4 w-4" />, label: "Sélection jeton", key: "" },
-    { id: "pencil", icon: <Pencil className="h-4 w-4" />, label: "Crayon", key: "P" },
-    { id: "eraser", icon: <Eraser className="h-4 w-4" />, label: "Gomme", key: "E" },
-    { id: "line", icon: <Ruler className="h-4 w-4" />, label: "Règle", key: "L" },
-    { id: "rect", icon: <Square className="h-4 w-4" />, label: "Rectangle", key: "" },
-    { id: "circle", icon: <Circle className="h-4 w-4" />, label: "Cercle", key: "" },
-    { id: "text", icon: <Type className="h-4 w-4" />, label: "Texte", key: "T" },
-  ];
-
-  const getLayerIcon = (type: string) => {
-    switch (type) {
-      case "map": return <Image className="h-4 w-4" />;
-      case "tokens": return <Users className="h-4 w-4" />;
-      case "drawings": return <Pencil className="h-4 w-4" />;
-      case "fog": return <PaintBucket className="h-4 w-4" />;
-      default: return <Layers className="h-4 w-4" />;
-    }
-  };
 
   const getCursor = () => {
     if (draggedToken) return "grabbing";
     if (isSpacePressed) return "grab";
     if (tool === "move") return "grab";
     if (tool === "token") return "pointer";
+    if (tool === "ping") return "cell";
+    if (tool === "fogReveal") return "cell";
     return "crosshair";
   };
 
+  const selectedToken = tokens.find(t => t.id === selectedTokenId);
+
+  // ── Tool definitions ──
+  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean }[] = [
+    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V" },
+    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P" },
+    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E" },
+    { id: "line",      icon: <Ruler className="h-4 w-4" />,         label: "Règle",        key: "L" },
+    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle" },
+    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle" },
+    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C" },
+    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z" },
+    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T" },
+    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping" },
+    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true },
+  ];
+
+  const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
+
+  // ── Context menu actions ──
+  const ctxToken = contextMenu?.type === "token"
+    ? tokens.find(t => t.id === contextMenu.tokenId)
+    : undefined;
+
+  // ── Layout: fullscreen vs embedded ──
+  const containerClass = fullscreen
+    ? "fixed inset-0 z-[100] flex flex-col bg-background"
+    : "flex h-[calc(100vh-200px)] min-h-[500px] flex-col";
+
   return (
-    <div className="flex h-[calc(100vh-200px)] min-h-[500px] flex-col gap-2">
+    <div className={containerClass}>
 
-      {/* ── TOOLBAR PRINCIPALE ────────────────────────────────
-          Sur mobile : 2 rangées compactes
-          Sur desktop : 1 rangée complète
-      ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5 sm:p-2">
+      {/* ── TOP TOOLBAR ────────────────────────────────────── */}
+      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm">
 
-        {/* Rangée 1 : Outils de dessin */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {tools_list.map(t => (
-            <Button
+        {/* Zoom */}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} title="Dézoomer">
+          <ZoomOut className="h-3.5 w-3.5" />
+        </Button>
+        <button onClick={resetView}
+          className="min-w-[40px] rounded px-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+          title="Réinitialiser la vue">
+          {Math.round(zoom * 100)}%
+        </button>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} title="Zoomer">
+          <ZoomIn className="h-3.5 w-3.5" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Snap + Collision */}
+        <Button variant={snapToGrid ? "default" : "ghost"} size="icon" className="h-7 w-7"
+          onClick={() => setSnapToGrid(s => !s)} title={`Magnétisme (G) ${snapToGrid ? "ON" : "OFF"}`}>
+          <Magnet className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant={collisionEnabled ? "default" : "ghost"} size="icon" className="h-7 w-7"
+          onClick={() => setCollisionEnabled(c => !c)} title={`Collision ${collisionEnabled ? "ON" : "OFF"}`}>
+          <Crosshair className="h-3.5 w-3.5" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Undo/Redo/Clear/Export */}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={actions.length === 0} title="Annuler (Ctrl+Z)">
+          <Undo2 className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={undoneActions.length === 0} title="Rétablir">
+          <Redo2 className="h-3.5 w-3.5" />
+        </Button>
+        {isGM && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={clearAll} title="Tout effacer">
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" className="h-7 w-7 hidden sm:flex" onClick={exportCanvas} title="Exporter PNG">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Dés */}
+        <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setDiceOpen(true)}>
+          <Dices className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Dés</span>
+        </Button>
+
+        {/* Calques */}
+        <Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+              <Layers className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Calques</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-3" side="bottom" align="start">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Calques</h3>
+              {layers.map(layer => (
+                <div key={layer.id} className="flex items-center gap-2">
+                  <button onClick={() => toggleLayerVisibility(layer.id)}>
+                    {layer.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                  </button>
+                  <span className="flex-1 text-sm">{layer.name}</span>
+                  <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-20" />
+                  <span className="w-8 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
+                </div>
+              ))}
+              {isGM && (
+                <>
+                  <Separator />
+                  <h3 className="text-sm font-semibold">Carte de fond</h3>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-2 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {layers.find(l => l.id === "map")?.imageUrl ? "Changer la carte" : "Charger une carte"}
+                    </span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
+                  </label>
+                  {layers.find(l => l.id === "map")?.imageUrl && (
+                    <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => {
+                      mapImageRef.current = null;
+                      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+                      saveState({ map_image_url: null });
+                    }}>
+                      <X className="mr-1 h-3 w-3" /> Retirer la carte
+                    </Button>
+                  )}
+                  <Separator />
+                  <h3 className="text-sm font-semibold">Couleur de grille</h3>
+                  <div className="flex gap-2 flex-wrap">
+                    {["rgba(255,255,255,0.12)", "rgba(255,255,255,0.3)", "rgba(100,100,255,0.2)", "rgba(255,200,100,0.2)", "rgba(100,255,100,0.15)"].map(c => (
+                      <button key={c} onClick={() => setGridColor(c)}
+                        className={`h-6 w-6 rounded border-2 transition-transform hover:scale-110 ${gridColor === c ? "border-primary scale-110" : "border-border"}`}
+                        style={{ backgroundColor: c.replace(/[\d.]+\)$/, "0.8)") }} />
+                    ))}
+                  </div>
+                  <Separator />
+                  <h3 className="text-sm font-semibold">Jetons manuels</h3>
+                  <div className="flex gap-2">
+                    <Input placeholder="Nom" value={newTokenName} onChange={e => setNewTokenName(e.target.value)}
+                      className="flex-1 h-8" onKeyDown={e => e.key === "Enter" && addToken()} />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="h-8 w-8 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <div className="grid grid-cols-4 gap-1">
+                          {TOKEN_COLORS.map(c => (
+                            <button key={c} onClick={() => setNewTokenColor(c)}
+                              className={`h-7 w-7 rounded-full border-2 ${newTokenColor === c ? "border-primary" : "border-transparent"}`}
+                              style={{ backgroundColor: c }} />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button size="icon" className="h-8 w-8" onClick={addToken} disabled={!newTokenName.trim()}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Keyboard hint */}
+        <div className="hidden lg:flex items-center gap-1 rounded bg-muted/40 px-2 py-0.5 text-[10px] text-muted-foreground">
+          <Keyboard className="h-3 w-3" />
+          F=plein écran • V=déplacer • P=crayon • C=cône • Z=zone
+        </div>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* GM Panel toggle */}
+        <Button variant={gmPanelOpen ? "default" : "ghost"} size="icon" className="h-7 w-7"
+          onClick={() => setGmPanelOpen(o => !o)}
+          title={gmPanelOpen ? "Fermer le panneau" : "Ouvrir le panneau MJ"}>
+          {gmPanelOpen ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRight className="h-3.5 w-3.5" />}
+        </Button>
+
+        {/* Fullscreen toggle */}
+        <Button variant={fullscreen ? "default" : "ghost"} size="icon" className="h-7 w-7"
+          onClick={() => setFullscreen(f => !f)} title={fullscreen ? "Quitter plein écran (F)" : "Plein écran (F)"}>
+          {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+
+      {/* ── MAIN AREA ──────────────────────────────────────── */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── LEFT VERTICAL TOOLBAR ── */}
+        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto py-1.5">
+
+          {visibleTools.map(t => (
+            <button
               key={t.id}
-              variant={tool === t.id ? "default" : "ghost"}
-              size="icon"
-              className="h-8 w-8 sm:h-9 sm:w-9"
               onClick={() => setTool(t.id)}
               title={t.key ? `${t.label} (${t.key})` : t.label}
+              className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                tool === t.id
+                  ? "bg-primary text-primary-foreground shadow-inner"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
             >
               {t.icon}
-            </Button>
+            </button>
           ))}
 
-          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
+          <div className="my-1 w-7 border-t border-border/50" />
 
-          {/* Couleur */}
+          {/* Color picker */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" title="Couleur">
-                <div className="h-4 w-4 rounded-full border border-border sm:h-5 sm:w-5" style={{ backgroundColor: color }} />
-              </Button>
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted transition-colors"
+                title="Couleur"
+              >
+                <div className="h-5 w-5 rounded-full border-2 border-white/20 shadow-md" style={{ backgroundColor: color }} />
+              </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
+            <PopoverContent side="right" className="w-auto p-2">
               <div className="grid grid-cols-4 gap-1">
                 {COLORS.map(c => (
-                  <button
-                    key={c}
-                    className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${color === c ? "border-primary scale-110" : "border-transparent"}`}
-                    style={{ backgroundColor: c }}
-                    onClick={() => setColor(c)}
-                  />
+                  <button key={c} onClick={() => setColor(c)}
+                    className={`h-7 w-7 rounded-full border-2 hover:scale-110 transition-transform ${color === c ? "border-primary scale-110" : "border-transparent"}`}
+                    style={{ backgroundColor: c }} />
                 ))}
               </div>
             </PopoverContent>
           </Popover>
 
-          {/* Taille brosse — masquée sur très petit écran */}
-          <div className="hidden items-center gap-1 px-1 sm:flex">
-            <Minus className="h-3 w-3 text-muted-foreground" />
-            <Slider
-              value={[brushSize]}
-              onValueChange={([v]) => setBrushSize(v)}
-              min={1} max={20} step={1}
-              className="w-16 sm:w-20"
-            />
-            <span className="w-4 text-center text-xs text-muted-foreground">{brushSize}</span>
-          </div>
+          {/* Brush size */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md hover:bg-muted text-muted-foreground transition-colors" title="Taille du pinceau">
+                <Minus className="h-2.5 w-2.5" />
+                <span className="text-[9px] font-bold leading-tight">{brushSize}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="right" className="w-40 p-3">
+              <div className="space-y-2">
+                <p className="text-xs font-medium">Taille : {brushSize}px</p>
+                <Slider value={[brushSize]} onValueChange={([v]) => setBrushSize(v)} min={1} max={30} step={1} />
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <Separator orientation="vertical" className="mx-0.5 hidden h-6 sm:block sm:mx-1" />
-        <Separator className="sm:hidden" />
-
-        {/* Rangée 2 : Contrôles + actions */}
-        <div className="flex items-center gap-1 flex-wrap">
-
-          {/* Magnétisme */}
-          <Button
-            variant={snapToGrid ? "default" : "ghost"}
-            size="icon"
-            className="h-8 w-8 sm:h-9 sm:w-9"
-            onClick={() => setSnapToGrid(s => !s)}
-            title={`Magnétisme (G) ${snapToGrid ? "ON" : "OFF"}`}
-          >
-            <Magnet className="h-4 w-4" />
-          </Button>
-
-          {/* Collision */}
-          <Button
-            variant={collisionEnabled ? "default" : "ghost"}
-            size="icon"
-            className="h-8 w-8 sm:h-9 sm:w-9"
-            onClick={() => setCollisionEnabled(c => !c)}
-            title={`Collision ${collisionEnabled ? "ON" : "OFF"}`}
-          >
-            <Crosshair className="h-4 w-4" />
-          </Button>
-
-          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
-
-          {/* Zoom */}
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={zoomOut} title="Dézoomer">
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <button
-            onClick={resetView}
-            className="min-w-[42px] rounded px-1 py-1 text-xs font-medium text-muted-foreground hover:bg-muted sm:min-w-[48px]"
-            title="Réinitialiser"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={zoomIn} title="Zoomer">
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-
-          <Separator orientation="vertical" className="mx-0.5 h-5 sm:mx-1 sm:h-6" />
-
-          {/* Undo / Redo / Clear / Export */}
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={undo} title="Annuler (Ctrl+Z)" disabled={actions.length === 0}>
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={redo} title="Rétablir" disabled={undoneActions.length === 0}>
-            <Redo2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive sm:h-9 sm:w-9" onClick={clearAll} title="Tout effacer">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="hidden h-9 w-9 sm:flex" onClick={exportCanvas} title="Exporter PNG">
-            <Download className="h-4 w-4" />
-          </Button>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Dés */}
-          <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3" onClick={() => setDiceOpen(true)}>
-            <Dices className="h-4 w-4" />
-            <span className="hidden sm:inline">Dés</span>
-          </Button>
-
-          {/* Personnages */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Persos</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85vw] max-w-sm p-0 sm:w-96">
-              <div className="flex h-full flex-col">
-                <SheetHeader className="p-4 pb-2">
-                  <SheetTitle className="font-display text-gradient-gold">Mes personnages</SheetTitle>
-                </SheetHeader>
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-140px)] px-4">
-                    <div className="space-y-1.5 py-2">
-                      {userCharacters.map(char => (
-                        <div
-                          key={char.id}
-                          draggable
-                          onDragStart={(e) => {
-                            setDraggingCharId(char.id);
-                            e.dataTransfer.effectAllowed = "copy";
-                            e.dataTransfer.setData("application/x-aetheria-char", char.id);
-                          }}
-                          onDragEnd={() => setDraggingCharId(null)}
-                          className={`group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing ${draggingCharId === char.id ? "opacity-50" : ""}`}
-                        >
-                          {char.avatar_url ? (
-                            <img src={char.avatar_url} alt={char.name} className="h-10 w-10 shrink-0 rounded-full border border-primary/40 object-cover pointer-events-none" />
-                          ) : (
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary border border-primary/40 text-sm font-bold pointer-events-none">
-                              {char.name.substring(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0 pointer-events-none">
-                            <p className="text-sm font-medium truncate">{char.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">Niv. {char.level} • {char.race} {char.class}</p>
-                            <p className="text-[10px] text-muted-foreground/70">PV {char.hp}/{char.max_hp} • CA {char.armor_class}</p>
-                          </div>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnCharacter(char)} title="Placer sur la carte">
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      {userCharacters.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">
-                          Aucun personnage créé.<br />Créez-en un depuis l'onglet Personnages.
-                        </p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Bestiaire */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
-                <Skull className="h-4 w-4" />
-                <span className="hidden sm:inline">Bestiaire</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85vw] max-w-sm p-0 sm:w-96">
-              <div className="flex h-full flex-col">
-                <SheetHeader className="p-4 pb-2">
-                  <SheetTitle className="font-display text-gradient-gold">Bestiaire</SheetTitle>
-                </SheetHeader>
-                <div className="px-4 pb-2">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher..."
-                      value={bestiarySearch}
-                      onChange={e => setBestiarySearch(e.target.value)}
-                      className="pl-9 h-9"
-                    />
-                  </div>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-[calc(100vh-200px)] px-4">
-                    <div className="space-y-1.5 py-2">
-                      {waCreatures.map(creature => (
-                        <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2.5 hover:border-primary/30 hover:bg-muted/40 transition-colors">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
-                            <Skull className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{creature.name}</p>
-                            <p className="text-xs text-muted-foreground">{creature.power_level} • {creature.size}</p>
-                          </div>
-                          {isGM && (
-                            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => spawnWACreature(creature)} title="Placer">
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {waCreatures.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">Aucune créature trouvée</p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          {/* Calques */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1 px-2 text-xs sm:h-9 sm:px-3">
-                <Layers className="h-4 w-4" />
-                <span className="hidden sm:inline">Calques</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[85vw] max-w-xs sm:w-80">
-              <SheetHeader>
-                <SheetTitle>Calques & Jetons</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 space-y-5">
-                {/* Calques */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-foreground">Calques</h3>
-                  {layers.map(layer => (
-                    <div key={layer.id} className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
-                      <div className="text-muted-foreground">{getLayerIcon(layer.type)}</div>
-                      <span className="flex-1 text-sm font-medium">{layer.name}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleLayerVisibility(layer.id)}>
-                        {layer.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                      </Button>
-                      <div className="flex items-center gap-1">
-                        <span className="w-7 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
-                        <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-14" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                {/* Carte */}
-                {isGM && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Carte de fond</h3>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border p-3 transition-colors hover:border-primary/50 hover:bg-muted/30">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {layers.find(l => l.id === "map")?.imageUrl ? "Changer la carte" : "Charger une carte"}
-                      </span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
-                    </label>
-                    {layers.find(l => l.id === "map")?.imageUrl && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => {
-                          mapImageRef.current = null;
-                          setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
-                          saveState({ map_image_url: null });
-                        }}
-                      >
-                        <X className="mr-1 h-3 w-3" /> Retirer la carte
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                <Separator />
-
-                {/* Jetons manuels */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">Jetons manuels</h3>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Nom"
-                      value={newTokenName}
-                      onChange={e => setNewTokenName(e.target.value)}
-                      className="flex-1 h-9"
-                      onKeyDown={e => e.key === "Enter" && addToken()}
-                    />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2">
-                        <div className="grid grid-cols-4 gap-1">
-                          {TOKEN_COLORS.map(c => (
-                            <button
-                              key={c}
-                              className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${newTokenColor === c ? "border-primary scale-110" : "border-transparent"}`}
-                              style={{ backgroundColor: c }}
-                              onClick={() => setNewTokenColor(c)}
-                            />
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button size="icon" className="h-9 w-9 shrink-0" onClick={addToken} disabled={!newTokenName.trim()}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="max-h-44 space-y-1 overflow-y-auto">
-                    {tokens.map(token => (
-                      <div
-                        key={token.id}
-                        className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${token.id === selectedTokenId ? "border-primary bg-primary/10" : "border-border bg-muted/20"}`}
-                      >
-                        <div className="h-5 w-5 shrink-0 rounded-full" style={{ backgroundColor: token.color }} />
-                        <button className="flex-1 truncate text-left text-sm" onClick={() => { setSelectedTokenId(token.id); centerOnToken(token.id); }}>
-                          {token.name}
-                        </button>
-                        {token.hp !== undefined && (
-                          <span className="text-xs text-muted-foreground">{token.hp}/{token.maxHp}</span>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setTokens(prev => prev.map(t => t.id === token.id ? { ...t, visible: !t.visible } : t))}>
-                          {token.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeToken(token.id)}>
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    {tokens.length === 0 && (
-                      <p className="py-2 text-center text-xs text-muted-foreground">Aucun jeton placé</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
-
-      {/* ── ZONE CANVAS + PANNEAU TOKEN ───────────────────── */}
-      <div className="flex flex-1 gap-2 overflow-hidden">
-
-        {/* Canvas */}
+        {/* ── CANVAS AREA ── */}
         <div
           ref={containerRef}
-          className={`relative flex-1 overflow-hidden rounded-lg border bg-background transition-colors ${isDragOverCanvas ? "border-primary border-2 ring-2 ring-primary/30" : "border-border"}`}
+          className={`relative flex-1 overflow-hidden bg-[#0d0d14] transition-colors ${
+            isDragOverCanvas ? "ring-2 ring-inset ring-primary/60" : ""
+          }`}
           style={{ cursor: getCursor() }}
           onDragOver={(e) => {
             if (e.dataTransfer.types.includes("application/x-aetheria-char")) {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
+              e.preventDefault(); e.dataTransfer.dropEffect = "copy";
               if (!isDragOverCanvas) setIsDragOverCanvas(true);
             }
           }}
-          onDragLeave={(e) => {
-            if (e.currentTarget === e.target) setIsDragOverCanvas(false);
-          }}
+          onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragOverCanvas(false); }}
           onDrop={(e) => {
             const charId = e.dataTransfer.getData("application/x-aetheria-char");
-            setIsDragOverCanvas(false);
-            setDraggingCharId(null);
+            setIsDragOverCanvas(false); setDraggingCharId(null);
             if (!charId) return;
-            const char = userCharacters.find(c => c.id === charId);
+            const char = userCharacters.find((c: any) => c.id === charId);
             if (!char) return;
             e.preventDefault();
             spawnCharacterAt(char, e.clientX, e.clientY);
@@ -1599,12 +1668,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            onContextMenu={(e) => e.preventDefault()}
+            onContextMenu={handleContextMenu}
             className="block h-full w-full"
             style={{ touchAction: "none" }}
           />
 
-          {/* Indicateur drop */}
+          {/* Drop hint */}
           {isDragOverCanvas && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/5">
               <div className="rounded-lg border-2 border-dashed border-primary bg-card/90 px-6 py-3 font-display text-lg text-gradient-gold shadow-gold animate-fade-in">
@@ -1613,145 +1682,133 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           )}
 
-          {/* Infos bas gauche */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+          {/* Bottom-left HUD */}
+          <div className="absolute bottom-2 left-2 flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
             <ZoomIn className="h-3 w-3" />
             {Math.round(zoom * 100)}%
-            {snapToGrid && <span className="text-primary">• ⊕</span>}
-            {collisionEnabled && <span className="text-primary">• ⊗</span>}
+            {snapToGrid && <span className="text-primary" title="Magnétisme">⊕</span>}
+            {collisionEnabled && <span className="text-primary" title="Collision">⊗</span>}
+            {layers.find(l => l.id === "fog")?.visible && <span className="text-purple-400" title="Brouillard actif">🌫️</span>}
           </div>
 
-          {/* Indicateur synchro */}
-          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-md bg-card/80 px-2 py-1 text-xs backdrop-blur-sm">
+          {/* Bottom-right sync */}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 text-xs backdrop-blur-sm">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-green-400 hidden sm:inline">Synchronisé</span>
+            <span className="text-green-400 hidden sm:inline">Sync</span>
           </div>
 
-          {/* Hint clavier — desktop seulement */}
-          <div className="pointer-events-none absolute top-2 left-2 hidden rounded-md bg-card/70 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur-sm sm:block">
-            Espace=pan • Molette=zoom • ⇧Molette=rotation • R=tourner • ←↑→↓=bouger • Suppr=supprimer
+          {/* Active tool label */}
+          <div className="pointer-events-none absolute top-2 left-2 flex items-center gap-2">
+            <div className="rounded-md bg-black/60 px-2 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+              {TOOLS.find(t => t.id === tool)?.label}
+            </div>
           </div>
+
+          {/* Context menu */}
+          {contextMenu && (
+            <VTTContextMenu
+              screenX={contextMenu.screenX}
+              screenY={contextMenu.screenY}
+              type={contextMenu.type}
+              token={ctxToken}
+              isGM={isGM}
+              onClose={() => setContextMenu(null)}
+              onHealToken={ctxToken ? (n) => updateTokenHp(ctxToken.id, n) : undefined}
+              onDamageToken={ctxToken ? (n) => updateTokenHp(ctxToken.id, -n) : undefined}
+              onSetHp={ctxToken ? (hp) => setTokenHp(ctxToken.id, hp) : undefined}
+              onToggleCondition={ctxToken ? (c) => toggleTokenCondition(ctxToken.id, c) : undefined}
+              onAddToInitiative={ctxToken ? () => addTokenToInitiative(ctxToken) : undefined}
+              onDuplicate={ctxToken ? () => duplicateToken(ctxToken.id) : undefined}
+              onToggleHide={ctxToken ? () => toggleTokenHidden(ctxToken.id) : undefined}
+              onDelete={ctxToken ? () => removeToken(ctxToken.id) : undefined}
+              onCenter={ctxToken ? () => centerOnToken(ctxToken.id) : undefined}
+              onResize={ctxToken ? (n) => resizeToken(ctxToken.id, n) : undefined}
+              onAddToken={() => addTokenAt(contextMenu.worldX, contextMenu.worldY)}
+              onPing={() => setPings(prev => [...prev, { id: newId(), wx: contextMenu.worldX, wy: contextMenu.worldY, t: Date.now() }])}
+              onToggleFog={() => toggleLayerVisibility("fog")}
+              onClearFogHere={() => {
+                const revealAction: DrawAction = {
+                  id: newId(), type: "fogReveal",
+                  points: [{ x: contextMenu.worldX, y: contextMenu.worldY }],
+                  color: "black", size: GRID_SIZE * 1.5, layer: "fog",
+                };
+                setActions(prev => [...prev, revealAction]);
+              }}
+            />
+          )}
+
+          {/* Selected token panel (floating bottom) */}
+          {selectedToken && !gmPanelOpen && (
+            <div className="absolute bottom-12 right-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-full border border-primary/40" style={{ backgroundColor: selectedToken.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
+                </div>
+                <button onClick={() => setSelectedTokenId(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              {selectedToken.hp !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">PV</span>
+                    <span className="font-bold text-red-400">{selectedToken.hp}/{selectedToken.maxHp}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full transition-all" style={{
+                      width: `${Math.max(0, (selectedToken.hp / (selectedToken.maxHp || 1)) * 100)}%`,
+                      backgroundColor: (selectedToken.hp / (selectedToken.maxHp || 1)) > 0.5 ? "#22c55e" : (selectedToken.hp / (selectedToken.maxHp || 1)) > 0.25 ? "#f59e0b" : "#ef4444",
+                    }} />
+                  </div>
+                  <div className="grid grid-cols-4 gap-0.5">
+                    <button className="rounded bg-destructive/20 text-destructive text-xs py-0.5 hover:bg-destructive/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</button>
+                    <button className="rounded bg-destructive/20 text-destructive text-xs py-0.5 hover:bg-destructive/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</button>
+                    <button className="rounded bg-green-500/20 text-green-400 text-xs py-0.5 hover:bg-green-500/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</button>
+                    <button className="rounded bg-green-500/20 text-green-400 text-xs py-0.5 hover:bg-green-500/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</button>
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-4 gap-0.5">
+                <button className="rounded border border-border text-xs py-0.5 hover:bg-muted transition-colors" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</button>
+                <button className="rounded border border-border text-xs py-0.5 hover:bg-muted transition-colors" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</button>
+                {[1, 2, 3, 4].map(n => (
+                  <button key={n} className={`rounded text-xs py-0.5 transition-colors ${selectedToken.sizeUnits === n ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}
+                    onClick={() => resizeToken(selectedToken.id, n)}>{n}×</button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
         </div>
 
-        {/* ── PANNEAU TOKEN SÉLECTIONNÉ ─────────────────────
-            Sur mobile : panneau compact en bas
-            Sur desktop : panneau latéral
-        ────────────────────────────────────────────────── */}
-        {selectedToken && (
-          <div className="w-52 shrink-0 space-y-2.5 overflow-y-auto rounded-lg border border-border bg-card p-3 sm:w-60">
-
-            {/* En-tête token */}
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 shrink-0 rounded-full border-2 border-primary/40" style={{ backgroundColor: selectedToken.color }} />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
-                {selectedToken.creatureType && (
-                  <p className="text-xs text-muted-foreground">
-                    {selectedToken.creatureType === "character" ? "Joueur" : "Créature"}
-                  </p>
-                )}
-              </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto shrink-0 text-muted-foreground" onClick={() => setSelectedTokenId(null)}>
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-
-            <Separator />
-
-            {/* Rotation */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <RotateCw className="h-3 w-3" /> Rotation
-                </span>
-                <span className="text-xs font-medium">{selectedToken.rotation}°</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, -45)}>-45°</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs px-0" onClick={() => rotateToken(selectedToken.id, 45)}>+45°</Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Taille */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Maximize2 className="h-3 w-3" /> Taille
-                </span>
-                <span className="text-xs font-medium">{selectedToken.sizeUnits}×{selectedToken.sizeUnits}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                {[1, 2, 3, 4].map(n => (
-                  <Button
-                    key={n}
-                    size="sm"
-                    variant={selectedToken.sizeUnits === n ? "default" : "outline"}
-                    className="h-7 text-xs px-0"
-                    onClick={() => resizeToken(selectedToken.id, n)}
-                  >
-                    {n}×
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* PV */}
-            {selectedToken.hp !== undefined && (
-              <>
-                <Separator />
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">❤️ PV</span>
-                    <span className="text-sm font-bold text-red-400">{selectedToken.hp}/{selectedToken.maxHp}</span>
-                  </div>
-                  {/* Barre PV */}
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.max(0, Math.min(100, ((selectedToken.hp || 0) / (selectedToken.maxHp || 1)) * 100))}%`,
-                        backgroundColor: (selectedToken.hp || 0) / (selectedToken.maxHp || 1) > 0.5
-                          ? "hsl(142, 70%, 45%)"
-                          : (selectedToken.hp || 0) / (selectedToken.maxHp || 1) > 0.25
-                          ? "hsl(42, 65%, 58%)"
-                          : "hsl(0, 72%, 51%)"
-                      }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 gap-1">
-                    <Button size="sm" variant="destructive" className="h-7 text-xs px-0" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</Button>
-                    <Button size="sm" variant="destructive" className="h-7 text-xs px-0" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs px-0 text-green-400 border-green-500/40 hover:bg-green-500/10" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs px-0 text-green-400 border-green-500/40 hover:bg-green-500/10" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</Button>
-                  </div>
-                  {selectedToken.ac !== undefined && (
-                    <p className="text-center text-xs text-muted-foreground">🛡️ DEF {selectedToken.ac}</p>
-                  )}
-                </div>
-              </>
-            )}
-
-            <Separator />
-
-            {/* Actions */}
-            <div className="grid grid-cols-2 gap-1">
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateToken(selectedToken.id)}>
-                <Copy className="mr-1 h-3 w-3" /> Dupliquer
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => centerOnToken(selectedToken.id)}>
-                <Crosshair className="mr-1 h-3 w-3" /> Centrer
-              </Button>
-            </div>
-            <Button size="sm" variant="destructive" className="w-full h-7 text-xs" onClick={() => removeToken(selectedToken.id)}>
-              <Trash2 className="mr-1 h-3 w-3" /> Retirer
-            </Button>
-          </div>
+        {/* ── GM PANEL ── */}
+        {gmPanelOpen && (
+          <GMPanel
+            campaignId={campaignId}
+            isGM={isGM}
+            currentUserId={user?.id || ""}
+            userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+            tokens={tokens}
+            waCreatures={waCreatures}
+            userCharacters={userCharacters}
+            initiative={initiative}
+            initiativeRound={initiativeRound}
+            initiativeActiveIdx={initiativeActiveIdx}
+            onUpdateTokenHp={updateTokenHp}
+            onSelectToken={(id) => { setSelectedTokenId(id); centerOnToken(id); }}
+            onSpawnCreature={spawnWACreature}
+            onSpawnCharacter={spawnCharacter}
+            onAddToInitiative={addToInitiative}
+            onRemoveFromInitiative={removeFromInitiative}
+            onUpdateInitiativeHp={updateInitiativeHp}
+            onAddConditionToInitiative={addConditionToInitiative}
+            onRemoveConditionFromInitiative={removeConditionFromInitiative}
+            onNextTurn={nextTurn}
+            onResetInitiative={resetInitiative}
+            onClose={() => setGmPanelOpen(false)}
+          />
         )}
       </div>
     </div>
