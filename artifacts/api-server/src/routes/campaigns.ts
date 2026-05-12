@@ -266,7 +266,11 @@ router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
   }
   const { character_id } = req.body;
 
-  if (character_id) {
+  if (character_id !== undefined && character_id !== null) {
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof character_id !== "string" || !UUID_RE.test(character_id)) {
+      res.status(400).json({ error: "Identifiant de personnage invalide" }); return;
+    }
     const [member] = await db.select({ userId: campaignMembersTable.userId })
       .from(campaignMembersTable)
       .where(and(eq(campaignMembersTable.campaignId, id), eq(campaignMembersTable.id, memberId)));
@@ -279,7 +283,7 @@ router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
   }
 
   const [updated] = await db.update(campaignMembersTable)
-    .set({ characterId: character_id || null })
+    .set({ characterId: (typeof character_id === "string" ? character_id : null) })
     .where(and(
       eq(campaignMembersTable.campaignId, id),
       eq(campaignMembersTable.id, memberId),
