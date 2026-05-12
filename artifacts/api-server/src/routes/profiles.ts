@@ -7,11 +7,17 @@ import { requireAuth } from "../middlewares/requireAuth";
 const router = Router();
 
 function serializeProfile(p: any) {
+  // Strip any legacy "auth:" prefixed password hashes that may remain in old rows.
+  // Avatar URLs are user-supplied image URLs and must never start with "auth:".
+  const rawAvatar: string | null = p.avatarUrl ?? null;
+  const avatarUrl =
+    rawAvatar && rawAvatar.startsWith("auth:") ? null : rawAvatar;
+
   return {
     id: p.id,
     user_id: p.userId,
     display_name: p.displayName ?? null,
-    avatar_url: p.avatarUrl ?? null,
+    avatar_url: avatarUrl,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   };
@@ -32,6 +38,13 @@ router.get("/me", requireAuth, async (req, res) => {
 router.patch("/me", requireAuth, async (req, res) => {
   const userId = req.userId!;
   const { display_name, avatar_url } = req.body;
+
+  // Reject any attempt to store legacy auth: prefixed password hashes.
+  // Avatar URLs must be plain image URLs.
+  if (typeof avatar_url === "string" && avatar_url.startsWith("auth:")) {
+    res.status(400).json({ error: "Invalid avatar_url value." });
+    return;
+  }
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (display_name !== undefined) updates.displayName = display_name;

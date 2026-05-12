@@ -6,6 +6,7 @@ French-language D&D/tabletop RPG campaign manager and virtual tabletop (VTT). Pl
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, built then started)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run cleanup:auth-hack` — one-time: null out legacy "auth:" password hashes from avatar_url column
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
