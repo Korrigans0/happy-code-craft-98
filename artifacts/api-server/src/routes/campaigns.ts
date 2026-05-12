@@ -5,6 +5,7 @@ import {
   campaignNotesTable, campaignSessionsTable, tabletopStateTable,
   profilesTable, charactersTable,
   combatEncountersTable, combatParticipantsTable,
+  characterProposalsTable,
 } from "@workspace/db";
 import { eq, inArray, and, desc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
@@ -524,6 +525,178 @@ router.post("/:id/tabletop", requireAuth, async (req, res) => {
   }
   const [created] = await db.insert(tabletopStateTable).values(payload).returning();
   res.json(created);
+});
+
+// ─── Character Proposals ─────────────────────────────────────────────────────
+
+function serializeProposal(p: any) {
+  return {
+    id: p.id, campaign_id: p.campaignId, member_id: p.memberId,
+    character_id: p.characterId, status: p.status,
+    created_at: p.createdAt, updated_at: p.updatedAt,
+  };
+}
+
+// GET /api/campaigns/:id/proposals — GM sees all, players see their own
+router.get("/:id/proposals", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  const isGm = gm?.userId === userId;
+
+  let proposals;
+  if (isGm) {
+    proposals = await db.select().from(characterProposalsTable)
+      .where(eq(characterProposalsTable.campaignId, id))
+      .orderBy(desc(characterProposalsTable.createdAt));
+  } else {
+    const [member] = await db.select({ id: campaignMembersTable.id })
+      .from(campaignMembersTable)
+      .where(and(eq(campaignMembersTable.campaignId, id), eq(campaignMembersTable.userId, userId)));
+    if (!member) { res.json([]); return; }
+    proposals = await db.select().from(characterProposalsTable)
+      .where(and(
+        eq(characterProposalsTable.campaignId, id),
+        eq(characterProposalsTable.memberId, member.id),
+      ))
+      .orderBy(desc(characterProposalsTable.createdAt));
+  }
+
+  if (proposals.length === 0) { res.json([]); return; }
+
+  const characterIds = [...new Set(proposals.map(p => p.characterId))];
+  const memberIds = [...new Set(proposals.map(p => p.memberId))];
+
+  const [characters, members] = await Promise.all([
+    db.select({ id: charactersTable.id, name: charactersTable.name, race: charactersTable.race, class: charactersTable.class, level: charactersTable.level })
+      .from(charactersTable).where(inArray(charactersTable.id, characterIds)),
+    db.select({ id: campaignMembersTable.id, userId: campaignMembersTable.userId })
+      .from(campaignMembersTable).where(inArray(campaignMembersTable.id, memberIds)),
+  ]);
+
+  const memberMap = Object.fromEntries(members.map(m => [m.id, m]));
+  const playerUserIds = [...new Set(members.map(m => m.userId))];
+  const profiles = playerUserIds.length > 0
+    ? await db.select({ userId: profilesTable.userId, displayName: profilesTable.displayName })
+        .from(profilesTable).where(inArray(profilesTable.userId, playerUserIds))
+    : [];
+  const profileMap = Object.fromEntries(profiles.map(p => [p.userId, p]));
+  const characterMap = Object.fromEntries(characters.map(c => [c.id, c]));
+
+  res.json(proposals.map(p => ({
+    ...serializeProposal(p),
+    character_name: characterMap[p.characterId]?.name ?? null,
+    character_race: characterMap[p.characterId]?.race ?? null,
+    character_class: characterMap[p.characterId]?.class ?? null,
+    character_level: characterMap[p.characterId]?.level ?? null,
+    player_name: profileMap[memberMap[p.memberId]?.userId]?.displayName ?? null,
+    player_user_id: memberMap[p.memberId]?.userId ?? null,
+  })));
+});
+
+// POST /api/campaigns/:id/proposals — player proposes a character
+router.post("/:id/proposals", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+
+  const [member] = await db.select().from(campaignMembersTable)
+    .where(and(eq(campaignMembersTable.campaignId, id), eq(campaignMembersTable.userId, userId)));
+  if (!member) { res.status(403).json({ error: "Accès refusé" }); return; }
+  if (member.role === "gm") { res.status(400).json({ error: "Le MJ ne peut pas proposer de personnage" }); return; }
+  if (member.characterId) { res.status(400).json({ error: "Vous avez déjà un personnage assigné" }); return; }
+
+  const { character_id } = req.body;
+  if (!character_id) { res.status(400).json({ error: "character_id requis" }); return; }
+
+  const [character] = await db.select({ id: charactersTable.id, userId: charactersTable.userId })
+    .from(charactersTable).where(eq(charactersTable.id, character_id));
+  if (!character || character.userId !== userId) {
+    res.status(400).json({ error: "Personnage introuvable ou non autorisé" }); return;
+  }
+
+  const [existing] = await db.select({ id: characterProposalsTable.id })
+    .from(characterProposalsTable)
+    .where(and(
+      eq(characterProposalsTable.memberId, member.id),
+      eq(characterProposalsTable.status, "pending"),
+    ));
+  if (existing) { res.status(400).json({ error: "Vous avez déjà une proposition en attente" }); return; }
+
+  const [proposal] = await db.insert(characterProposalsTable).values({
+    campaignId: id, memberId: member.id, characterId: character_id, status: "pending",
+  }).returning();
+
+  res.status(201).json(serializeProposal(proposal));
+});
+
+// PATCH /api/campaigns/:id/proposals/:proposalId — GM accepts or rejects
+router.patch("/:id/proposals/:proposalId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const proposalId = String(req.params.proposalId);
+  const userId = req.userId! as string;
+
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut accepter ou refuser des propositions" }); return;
+  }
+
+  const { status } = req.body;
+  if (status !== "accepted" && status !== "rejected") {
+    res.status(400).json({ error: "status doit être 'accepted' ou 'rejected'" }); return;
+  }
+
+  const [proposal] = await db.select().from(characterProposalsTable)
+    .where(and(eq(characterProposalsTable.campaignId, id), eq(characterProposalsTable.id, proposalId)));
+  if (!proposal) { res.status(404).json({ error: "Proposition introuvable" }); return; }
+  if (proposal.status !== "pending") { res.status(400).json({ error: "Cette proposition a déjà été traitée" }); return; }
+
+  await db.update(characterProposalsTable)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(characterProposalsTable.id, proposalId));
+
+  if (status === "accepted") {
+    await db.update(campaignMembersTable)
+      .set({ characterId: proposal.characterId })
+      .where(eq(campaignMembersTable.id, proposal.memberId));
+    await db.update(characterProposalsTable)
+      .set({ status: "rejected", updatedAt: new Date() })
+      .where(and(
+        eq(characterProposalsTable.memberId, proposal.memberId),
+        eq(characterProposalsTable.status, "pending"),
+      ));
+  }
+
+  const [updated] = await db.select().from(characterProposalsTable)
+    .where(eq(characterProposalsTable.id, proposalId));
+  res.json(serializeProposal(updated));
+});
+
+// DELETE /api/campaigns/:id/proposals/:proposalId — player cancels their own pending proposal
+router.delete("/:id/proposals/:proposalId", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const proposalId = String(req.params.proposalId);
+  const userId = req.userId! as string;
+
+  const [member] = await db.select({ id: campaignMembersTable.id })
+    .from(campaignMembersTable)
+    .where(and(eq(campaignMembersTable.campaignId, id), eq(campaignMembersTable.userId, userId)));
+  if (!member) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const [proposal] = await db.select().from(characterProposalsTable)
+    .where(and(
+      eq(characterProposalsTable.id, proposalId),
+      eq(characterProposalsTable.memberId, member.id),
+      eq(characterProposalsTable.campaignId, id),
+    ));
+  if (!proposal) { res.status(404).json({ error: "Proposition introuvable" }); return; }
+  if (proposal.status !== "pending") { res.status(400).json({ error: "Impossible d'annuler une proposition déjà traitée" }); return; }
+
+  await db.delete(characterProposalsTable).where(eq(characterProposalsTable.id, proposalId));
+  res.json({ success: true });
 });
 
 // ─── Combat Encounters ───────────────────────────────────────────────────────

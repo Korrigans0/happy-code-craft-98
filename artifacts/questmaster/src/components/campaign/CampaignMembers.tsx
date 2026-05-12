@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { campaignsApi } from "@/lib/api";
+import { campaignsApi, charactersApi } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,8 +17,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Crown, User, UserMinus, Sword } from "lucide-react";
+import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send } from "lucide-react";
 
 interface CampaignMembersProps {
   campaignId: string;
@@ -26,7 +35,10 @@ interface CampaignMembersProps {
 
 const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
+  const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
 
   const { data: members = [] } = useQuery({
     queryKey: ["campaignMembers", campaignId],
@@ -38,6 +50,24 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     queryFn: () => campaignsApi.getCampaignCharacters(campaignId),
     enabled: isGM,
   });
+
+  const { data: myCharacters = [] } = useQuery({
+    queryKey: ["myCharacters"],
+    queryFn: () => charactersApi.list(),
+    enabled: !isGM,
+  });
+
+  const { data: proposals = [] } = useQuery({
+    queryKey: ["campaignProposals", campaignId],
+    queryFn: () => campaignsApi.getProposals(campaignId),
+  });
+
+  const pendingProposals = (proposals as any[]).filter((p: any) => p.status === "pending");
+
+  const myMember = (members as any[]).find((m: any) => m.user_id === user?.id);
+  const myPendingProposal = !isGM
+    ? (proposals as any[]).find((p: any) => p.status === "pending")
+    : null;
 
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ memberId, characterId }: { memberId: string; characterId: string | null }) => {
@@ -65,6 +95,51 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     },
   });
 
+  const submitProposalMutation = useMutation({
+    mutationFn: async (characterId: string) => {
+      return campaignsApi.submitProposal(campaignId, characterId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignProposals", campaignId] });
+      setProposeDialogOpen(false);
+      setSelectedCharacterId("");
+      toast({ title: "Proposition envoyée", description: "Le MJ sera notifié de votre proposition." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const cancelProposalMutation = useMutation({
+    mutationFn: async (proposalId: string) => {
+      return campaignsApi.cancelProposal(campaignId, proposalId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignProposals", campaignId] });
+      toast({ title: "Proposition annulée" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const reviewProposalMutation = useMutation({
+    mutationFn: async ({ proposalId, status }: { proposalId: string; status: "accepted" | "rejected" }) => {
+      return campaignsApi.reviewProposal(campaignId, proposalId, status);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["campaignProposals", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });
+      toast({
+        title: vars.status === "accepted" ? "Proposition acceptée" : "Proposition refusée",
+        description: vars.status === "accepted" ? "Le personnage a été assigné au joueur." : undefined,
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
+  });
+
   const getInitials = (member: any) => {
     if (member.display_name) {
       return member.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -76,10 +151,61 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
 
+      {isGM && pendingProposals.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-primary flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Propositions en attente ({pendingProposals.length})
+          </h4>
+          {pendingProposals.map((proposal: any) => (
+            <Card key={proposal.id} className="bg-primary/5 border-primary/30">
+              <CardContent className="flex items-center gap-3 p-3">
+                <Sword className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {proposal.player_name || "Joueur"} propose{" "}
+                    <span className="text-primary">{proposal.character_name}</span>
+                  </p>
+                  {(proposal.character_race || proposal.character_class) && (
+                    <p className="text-xs text-muted-foreground">
+                      {proposal.character_race} {proposal.character_class}
+                      {proposal.character_level ? ` — Niv. ${proposal.character_level}` : ""}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300"
+                    onClick={() => reviewProposalMutation.mutate({ proposalId: proposal.id, status: "accepted" })}
+                    disabled={reviewProposalMutation.isPending}
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Accepter
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={() => reviewProposalMutation.mutate({ proposalId: proposal.id, status: "rejected" })}
+                    disabled={reviewProposalMutation.isPending}
+                  >
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Refuser
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
-        {members.map((member: any) => {
+        {(members as any[]).map((member: any) => {
           const isMemberGM = member.role === "gm";
           const userChars = (allCharacters as any[]).filter((c: any) => c.user_id === member.user_id);
+          const isCurrentUser = member.user_id === user?.id;
 
           return (
             <Card key={member.id} className="bg-gradient-card border-border">
@@ -133,6 +259,34 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                           <Sword className="h-3 w-3" />
                           {member.character_name} — {member.character_race} {member.character_class}
                         </div>
+                      ) : isCurrentUser ? (
+                        myPendingProposal ? (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Proposition en attente
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs text-muted-foreground hover:text-destructive px-1"
+                              onClick={() => cancelProposalMutation.mutate(myPendingProposal.id)}
+                              disabled={cancelProposalMutation.isPending}
+                            >
+                              Annuler
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                            onClick={() => setProposeDialogOpen(true)}
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Proposer un personnage
+                          </Button>
+                        )
                       ) : (
                         <span className="text-xs text-muted-foreground">Aucun personnage assigné</span>
                       )}
@@ -156,7 +310,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
         })}
       </div>
 
-      {members.length === 0 && (
+      {(members as any[]).length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <User className="h-12 w-12 text-muted-foreground mb-4" />
           <h4 className="text-lg font-medium text-foreground">Aucun membre</h4>
@@ -188,6 +342,49 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={proposeDialogOpen} onOpenChange={(open) => { setProposeDialogOpen(open); if (!open) setSelectedCharacterId(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Proposer un personnage</DialogTitle>
+            <DialogDescription>
+              Choisissez l'un de vos personnages à soumettre au MJ pour approbation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            {(myCharacters as any[]).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Vous n'avez aucun personnage. Créez-en un dans la section Personnages.
+              </p>
+            ) : (
+              <Select value={selectedCharacterId} onValueChange={setSelectedCharacterId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un personnage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(myCharacters as any[]).map((char: any) => (
+                    <SelectItem key={char.id} value={char.id}>
+                      {char.name} — {char.race} {char.class} Niv.{char.level}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setProposeDialogOpen(false); setSelectedCharacterId(""); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => { if (selectedCharacterId) submitProposalMutation.mutate(selectedCharacterId); }}
+              disabled={!selectedCharacterId || submitProposalMutation.isPending}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Envoyer la proposition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

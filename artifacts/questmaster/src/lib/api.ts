@@ -71,6 +71,12 @@ export const campaignsApi = {
   deleteSession: (id: string, sessionId: string) => request<any>("DELETE", `/campaigns/${id}/sessions/${sessionId}`),
   getTabletop: (id: string) => request<any>("GET", `/campaigns/${id}/tabletop`),
   saveTabletop: (id: string, data: any) => request<any>("POST", `/campaigns/${id}/tabletop`, data),
+  getProposals: (id: string) => request<any[]>("GET", `/campaigns/${id}/proposals`),
+  submitProposal: (id: string, characterId: string) => request<any>("POST", `/campaigns/${id}/proposals`, { character_id: characterId }),
+  reviewProposal: (id: string, proposalId: string, status: "accepted" | "rejected") =>
+    request<any>("PATCH", `/campaigns/${id}/proposals/${proposalId}`, { status }),
+  cancelProposal: (id: string, proposalId: string) => request<any>("DELETE", `/campaigns/${id}/proposals/${proposalId}`),
+  getMyCharacters: () => request<any[]>("GET", "/characters"),
   getCombat: (id: string) => request<any>("GET", `/campaigns/${id}/combat`),
   createCombat: (id: string, name: string) => request<any>("POST", `/campaigns/${id}/combat`, { name }),
   updateCombat: (id: string, data: any) => request<any>("PATCH", `/campaigns/${id}/combat`, data),

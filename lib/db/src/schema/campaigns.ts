@@ -1,4 +1,5 @@
-import { pgTable, text, boolean, timestamp, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, boolean, timestamp, uuid, pgEnum, index } from "drizzle-orm/pg-core";
+import { charactersTable } from "./characters";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -74,6 +75,20 @@ export const tabletopStateTable = pgTable("tabletop_state", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const characterProposalsTable = pgTable("character_proposals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  campaignId: uuid("campaign_id").notNull().references(() => campaignsTable.id, { onDelete: "cascade" }),
+  memberId: uuid("member_id").notNull().references(() => campaignMembersTable.id, { onDelete: "cascade" }),
+  characterId: uuid("character_id").notNull().references(() => charactersTable.id, { onDelete: "cascade" }),
+  status: text("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => [
+  index("idx_proposals_campaign_id").on(t.campaignId),
+  index("idx_proposals_member_id").on(t.memberId),
+  index("idx_proposals_status").on(t.status),
+]);
+
 export const insertCampaignSchema = createInsertSchema(campaignsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Campaign = typeof campaignsTable.$inferSelect;
@@ -82,3 +97,4 @@ export type CampaignMessage = typeof campaignMessagesTable.$inferSelect;
 export type CampaignNote = typeof campaignNotesTable.$inferSelect;
 export type CampaignSession = typeof campaignSessionsTable.$inferSelect;
 export type TabletopState = typeof tabletopStateTable.$inferSelect;
+export type CharacterProposal = typeof characterProposalsTable.$inferSelect;
