@@ -18,7 +18,8 @@ import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
 import JoinCampaign from "./pages/JoinCampaign";
-import { useUser } from "@clerk/react";
+import { useUser, useSession } from "@clerk/react";
+import { setTokenGetter } from "@/lib/api";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,19 @@ const clerkAppearance = {
   },
 };
 
+// Wires Clerk's session token into the API client (Bearer auth)
+function ClerkTokenSyncer() {
+  const { session } = useSession();
+  useEffect(() => {
+    if (session) {
+      setTokenGetter(() => session.getToken());
+    } else {
+      setTokenGetter(() => Promise.resolve(null));
+    }
+  }, [session]);
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const qc = useQueryClient();
@@ -143,6 +157,7 @@ const App = () => (
       proxyUrl={clerkProxyUrl}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkTokenSyncer />
         <ClerkQueryClientCacheInvalidator />
         <BrowserRouter basename={basePath}>
           <TooltipProvider>

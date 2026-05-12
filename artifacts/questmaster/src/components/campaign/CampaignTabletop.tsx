@@ -174,7 +174,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const plateauColors = plateauMode === "dark"
     ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
-    : { background: "#c8d8e8", gridMinor: "rgba(100,140,180,0.35)", gridMajor: "rgba(70,110,150,0.6)" };
+    : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" };
 
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);

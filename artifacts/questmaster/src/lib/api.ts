@@ -1,14 +1,32 @@
 // Central API client — all calls go to /api/* on the same origin.
-// Clerk session cookies are sent automatically by the browser (credentials: "include").
-// No manual user-id headers needed.
+// Uses Clerk Bearer token (Authorization header) for auth, set via setTokenGetter().
 
 const BASE = "/api";
 
+// Module-level token getter — set by ClerkTokenSyncer in App.tsx
+let _tokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setTokenGetter(fn: () => Promise<string | null>) {
+  _tokenGetter = fn;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  // Attach Clerk Bearer token if available
+  if (_tokenGetter) {
+    try {
+      const token = await _tokenGetter();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    } catch {
+      // silently skip — requireAuth will return 401 if needed
+    }
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     method,
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
