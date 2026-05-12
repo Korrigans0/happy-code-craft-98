@@ -184,6 +184,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const pingsRef = useRef<{ id: string; wx: number; wy: number; t: number }[]>([]);
   pingsRef.current = pings;
 
+  // always-fresh ref so the animation loop never captures a stale redrawCanvas
+  const redrawCanvasRef = useRef<() => void>(() => {});
+
   // ── Initiative ──
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [initiativeRound, setInitiativeRound] = useState(1);
@@ -291,7 +294,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const animate = () => {
       const now = Date.now();
       setPings(prev => prev.filter(p => now - p.t < 3000));
-      redrawCanvas();
+      redrawCanvasRef.current();   // always calls the freshest redrawCanvas
       pingAnimRef.current = requestAnimationFrame(animate);
     };
     pingAnimRef.current = requestAnimationFrame(animate);
@@ -1003,6 +1006,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
   }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode]);
+
+  // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
+  redrawCanvasRef.current = redrawCanvas;
 
   // ── Resize observer ──
   useEffect(() => {

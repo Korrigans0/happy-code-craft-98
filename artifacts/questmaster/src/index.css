@@ -9,13 +9,13 @@
     /* ── AETHERIA — Bleu nuit profond #0d1829 + Or #c9a227 ── */
 
     --background: 215 70% 8%;          /* #050d1a très sombre */
-    --foreground: 43 30% 90%;
+    --foreground: 220 15% 80%;         /* gris-perle doux, non-aveuglant */
 
     --card: 215 60% 12%;
-    --card-foreground: 43 30% 90%;
+    --card-foreground: 220 15% 80%;
 
     --popover: 215 62% 11%;
-    --popover-foreground: 43 30% 90%;
+    --popover-foreground: 220 15% 80%;
 
     /* Or Aetheria */
     --primary: 43 75% 50%;             /* #c9a227 légèrement plus vif */
@@ -73,11 +73,11 @@
 
   .dark {
     --background: 215 70% 8%;
-    --foreground: 43 30% 90%;
+    --foreground: 220 15% 80%;
     --card: 215 60% 12%;
-    --card-foreground: 43 30% 90%;
+    --card-foreground: 220 15% 80%;
     --popover: 215 62% 11%;
-    --popover-foreground: 43 30% 90%;
+    --popover-foreground: 220 15% 80%;
     --primary: 43 75% 50%;
     --primary-foreground: 215 70% 8%;
     --secondary: 215 45% 18%;
