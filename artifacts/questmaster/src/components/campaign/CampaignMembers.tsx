@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Crown, User, UserMinus, Sword } from "lucide-react";
 
@@ -15,6 +26,7 @@ interface CampaignMembersProps {
 
 const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const queryClient = useQueryClient();
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
 
   const { data: members = [] } = useQuery({
     queryKey: ["campaignMembers", campaignId],
@@ -133,7 +145,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeMemberMutation.mutate(member.id)}
+                    onClick={() => setMemberToRemove({ id: member.id, name: member.display_name || "Joueur" })}
                   >
                     <UserMinus className="h-4 w-4" />
                   </Button>
@@ -151,6 +163,31 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
           <p className="text-sm text-muted-foreground">Partagez le code d'invitation pour recruter des joueurs</p>
         </div>
       )}
+
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => { if (!open) setMemberToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retirer ce joueur de la campagne ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToRemove?.name} sera retiré de la campagne. Cette action ne peut pas être annulée depuis l'interface.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (memberToRemove) {
+                  removeMemberMutation.mutate(memberToRemove.id);
+                  setMemberToRemove(null);
+                }
+              }}
+            >
+              Retirer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
