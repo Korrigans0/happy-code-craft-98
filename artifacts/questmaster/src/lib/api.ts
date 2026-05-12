@@ -53,6 +53,13 @@ export const campaignsApi = {
   deleteSession: (id: string, sessionId: string) => request<any>("DELETE", `/campaigns/${id}/sessions/${sessionId}`),
   getTabletop: (id: string) => request<any>("GET", `/campaigns/${id}/tabletop`),
   saveTabletop: (id: string, data: any) => request<any>("POST", `/campaigns/${id}/tabletop`, data),
+  getCombat: (id: string) => request<any>("GET", `/campaigns/${id}/combat`),
+  createCombat: (id: string, name: string) => request<any>("POST", `/campaigns/${id}/combat`, { name }),
+  updateCombat: (id: string, data: any) => request<any>("PATCH", `/campaigns/${id}/combat`, data),
+  endCombat: (id: string) => request<any>("DELETE", `/campaigns/${id}/combat`),
+  addCombatParticipant: (id: string, data: any) => request<any>("POST", `/campaigns/${id}/combat/participants`, data),
+  updateCombatParticipant: (id: string, pid: string, data: any) => request<any>("PATCH", `/campaigns/${id}/combat/participants/${pid}`, data),
+  removeCombatParticipant: (id: string, pid: string) => request<any>("DELETE", `/campaigns/${id}/combat/participants/${pid}`),
 };
 
 // CHARACTERS

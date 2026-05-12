@@ -1,19 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
-import { 
-  Plus, Swords, Shield, Heart, Zap, Play, Pause, 
-  SkipForward, RotateCcw, Trash2, ChevronUp, ChevronDown,
+import {
+  Plus, Swords, Shield, Heart, Zap, Play, Pause,
+  SkipForward, Trash2, ChevronUp, ChevronDown,
   Skull, User, Timer, Target, Flame, Snowflake, Dices
 } from "lucide-react";
 
@@ -37,8 +36,18 @@ interface Participant {
   turn_order: number;
 }
 
+interface Encounter {
+  id: string;
+  campaign_id: string;
+  name: string;
+  round: number;
+  current_turn: number;
+  is_active: boolean;
+  participants: Participant[];
+}
+
 const CONDITIONS = [
-  "Aveuglé", "Charmé", "Assourdi", "Effrayé", "Empoigné", 
+  "Aveuglé", "Charmé", "Assourdi", "Effrayé", "Empoigné",
   "Incapacité", "Invisible", "Paralysé", "Pétrifié", "Empoisonné",
   "À terre", "Entravé", "Étourdi", "Inconscient", "Concentration"
 ];
@@ -50,17 +59,14 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const [hpAmount, setHpAmount] = useState("");
   const [hpMode, setHpMode] = useState<"damage" | "heal">("damage");
   const [newParticipant, setNewParticipant] = useState({
-    name: "",
-    initiative: 10,
-    current_hp: 10,
-    max_hp: 10,
-    armor_class: 10,
-    is_player: true,
+    name: "", initiative: 10, current_hp: 10, max_hp: 10, armor_class: 10, is_player: true,
   });
+  const [conditionsOpenFor, setConditionsOpenFor] = useState<string | null>(null);
+  const [encounterName, setEncounterName] = useState("Combat");
 
-  // Combat timer
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [lastRoll, setLastRoll] = useState<{ dice: string; result: number } | null>(null);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -76,8 +82,15 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const [encounter, setEncounter] = useState<any>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const { data: combatData, isLoading } = useQuery<Encounter | null>({
+    queryKey: ["combat", campaignId],
+    queryFn: () => campaignsApi.getCombat(campaignId),
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+  });
+
+  const encounter = combatData ?? null;
+  const participants: Participant[] = encounter?.participants ?? [];
 
   const { data: monstersData = [] } = useQuery({
     queryKey: ["compendiumMonsters"],
@@ -101,54 +114,63 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
   }));
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] });
+
   const createEncounterMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const enc = { id: crypto.randomUUID(), campaign_id: campaignId, name: name || "Combat", is_active: true, current_turn: 0, round: 1 };
-      setEncounter(enc);
-      return enc;
-    },
+    mutationFn: (name: string) => campaignsApi.createCombat(campaignId, name),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["combatEncounter", campaignId] });
+      invalidate();
       setTimerSeconds(0);
       setTimerRunning(true);
       toast({ title: "Combat créé !" });
     },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const endEncounterMutation = useMutation({
-    mutationFn: async () => { setEncounter(null); setParticipants([]); },
-    onSuccess: () => { setTimerRunning(false); toast({ title: "Combat terminé" }); },
+    mutationFn: () => campaignsApi.endCombat(campaignId),
+    onSuccess: () => {
+      invalidate();
+      setTimerRunning(false);
+      toast({ title: "Combat terminé" });
+    },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const addParticipantMutation = useMutation({
-    mutationFn: async (data: typeof newParticipant) => {
-      const p: Participant = { id: crypto.randomUUID(), name: data.name, initiative: data.initiative, current_hp: data.current_hp, max_hp: data.max_hp, armor_class: data.armor_class, is_player: data.is_player, conditions: [], turn_order: participants.length };
-      setParticipants(prev => [...prev, p].sort((a, b) => b.initiative - a.initiative));
+    mutationFn: (data: typeof newParticipant) => campaignsApi.addCombatParticipant(campaignId, data),
+    onSuccess: () => {
+      invalidate();
+      setIsAddOpen(false);
+      setNewParticipant({ name: "", initiative: 10, current_hp: 10, max_hp: 10, armor_class: 10, is_player: true });
     },
-    onSuccess: () => { setIsAddOpen(false); setNewParticipant({ name: "", initiative: 10, current_hp: 10, max_hp: 10, armor_class: 10, is_player: true }); },
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
-  const updateHPMutation = useMutation({
-    mutationFn: async ({ id, hp }: { id: string; hp: number }) => {
-      setParticipants(prev => prev.map(p => p.id === id ? { ...p, current_hp: Math.max(0, hp) } : p));
-    },
+  const updateParticipantMutation = useMutation({
+    mutationFn: ({ id, ...data }: { id: string; [key: string]: any }) =>
+      campaignsApi.updateCombatParticipant(campaignId, id, data),
+    onSuccess: invalidate,
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
   const removeParticipantMutation = useMutation({
-    mutationFn: async (id: string) => {
-      setParticipants(prev => prev.filter(p => p.id !== id));
-    },
+    mutationFn: (id: string) => campaignsApi.removeCombatParticipant(campaignId, id),
+    onSuccess: invalidate,
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
-  const toggleConditionMutation = useMutation({
-    mutationFn: async ({ id, condition, current }: { id: string; condition: string; current: string[] }) => {
-      const newConditions = current.includes(condition) ? current.filter(c => c !== condition) : [...current, condition];
-      setParticipants(prev => prev.map(p => p.id === id ? { ...p, conditions: newConditions } : p));
+  const nextTurnMutation = useMutation({
+    mutationFn: async () => {
+      if (!encounter || participants.length === 0) return;
+      const nextTurn = (encounter.current_turn + 1) % participants.length;
+      const newRound = nextTurn === 0 ? encounter.round + 1 : encounter.round;
+      return campaignsApi.updateCombat(campaignId, { current_turn: nextTurn, round: newRound });
     },
+    onSuccess: invalidate,
+    onError: (e: any) => toast({ title: e.message, variant: "destructive" }),
   });
 
-  // Quick dice roll
-  const [lastRoll, setLastRoll] = useState<{ dice: string; result: number } | null>(null);
   const rollDice = (sides: number, count: number = 1, modifier: number = 0) => {
     let total = modifier;
     const results: number[] = [];
@@ -157,41 +179,34 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
       results.push(r);
       total += r;
     }
-    const dice = `${count}d${sides}${modifier > 0 ? `+${modifier}` : modifier < 0 ? modifier : ''}`;
+    const dice = `${count}d${sides}${modifier > 0 ? `+${modifier}` : modifier < 0 ? modifier : ""}`;
     setLastRoll({ dice, result: total });
-    
-    // Special messages for nat 20 / nat 1
     if (sides === 20 && count === 1) {
-      if (results[0] === 20) {
-        toast({ title: `🎲 CRITIQUE ! ${dice} = ${total} 🎉` });
-        return;
-      }
-      if (results[0] === 1) {
-        toast({ title: `🎲 ÉCHEC CRITIQUE ! ${dice} = ${total} 💀` });
-        return;
-      }
+      if (results[0] === 20) { toast({ title: `🎲 CRITIQUE ! ${dice} = ${total} 🎉` }); return; }
+      if (results[0] === 1) { toast({ title: `🎲 ÉCHEC CRITIQUE ! ${dice} = ${total} 💀` }); return; }
     }
     toast({ title: `🎲 ${dice} = ${total} [${results.join(", ")}]` });
   };
 
-  const [conditionsOpenFor, setConditionsOpenFor] = useState<string | null>(null);
-  const [encounterName, setEncounterName] = useState("Combat");
-
-  const nextTurnMutation = useMutation({
-    mutationFn: async () => {
-      if (!encounter || participants.length === 0) return;
-      const nextTurn = (encounter.current_turn + 1) % participants.length;
-      const newRound = nextTurn === 0 ? encounter.round + 1 : encounter.round;
-      setEncounter((prev: any) => ({ ...prev, current_turn: nextTurn, round: newRound }));
-    },
-  });
-
   const autoRollInitiative = async () => {
-    setParticipants(prev => prev.map(p => ({ ...p, initiative: Math.floor(Math.random() * 20) + 1 })).sort((a, b) => b.initiative - a.initiative));
-    toast({ title: "Initiative relancée pour tous !" });
+    try {
+      const results = await Promise.allSettled(participants.map(p =>
+        campaignsApi.updateCombatParticipant(campaignId, p.id, {
+          initiative: Math.floor(Math.random() * 20) + 1,
+        })
+      ));
+      const failed = results.filter(r => r.status === "rejected").length;
+      invalidate();
+      if (failed > 0) {
+        toast({ title: `Initiative relancée (${failed} échec${failed > 1 ? "s" : ""})`, variant: "destructive" });
+      } else {
+        toast({ title: "Initiative relancée pour tous !" });
+      }
+    } catch (e: any) {
+      toast({ title: e.message ?? "Erreur lors du lancer d'initiative", variant: "destructive" });
+    }
   };
 
-  // Add all party members at once
   const addAllPartyMembers = () => {
     partyCharacters.forEach(char => {
       const dexMod = Math.floor(((char as any).dexterity - 10) / 2);
@@ -224,21 +239,26 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     if (isNaN(amount) || amount <= 0) return;
     const p = participants.find(p => p.id === participantId);
     if (!p) return;
-    
-    const newHp = hpMode === "damage" 
-      ? Math.max(0, p.current_hp - amount) 
+    const newHp = hpMode === "damage"
+      ? Math.max(0, p.current_hp - amount)
       : Math.min(p.max_hp, p.current_hp + amount);
-    
-    updateHPMutation.mutate({ id: participantId, hp: newHp });
+    updateParticipantMutation.mutate({ id: participantId, current_hp: newHp });
     setHpDialogOpen(null);
     setHpAmount("");
-    
     if (hpMode === "damage") {
       toast({ title: `💥 ${p.name} reçoit ${amount} dégâts (${newHp} PV)` });
     } else {
       toast({ title: `💚 ${p.name} récupère ${amount} PV (${newHp} PV)` });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <span className="text-muted-foreground">Chargement du combat...</span>
+      </div>
+    );
+  }
 
   if (!encounter) {
     return (
@@ -248,13 +268,13 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
         <p className="text-muted-foreground mb-6">Lancez un combat pour commencer le tracker d'initiative</p>
         {isGM && (
           <div className="flex flex-col items-center gap-3">
-            <Input 
-              value={encounterName} 
-              onChange={e => setEncounterName(e.target.value)} 
+            <Input
+              value={encounterName}
+              onChange={e => setEncounterName(e.target.value)}
               placeholder="Nom du combat"
               className="w-64 text-center"
             />
-            <Button variant="gold" onClick={() => createEncounterMutation.mutate(encounterName)}>
+            <Button variant="gold" onClick={() => createEncounterMutation.mutate(encounterName)} disabled={createEncounterMutation.isPending}>
               <Swords className="mr-2 h-4 w-4" />
               Commencer un combat
             </Button>
@@ -265,8 +285,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   }
 
   const currentParticipant = participants[encounter.current_turn];
-
-  // Compute total monsters / players alive
   const playersAlive = participants.filter(p => p.is_player && p.current_hp > 0).length;
   const monstersAlive = participants.filter(p => !p.is_player && p.current_hp > 0).length;
 
@@ -286,8 +304,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                 </span>
               )}
             </div>
-            
-            {/* Stats */}
+
             <div className="flex items-center gap-3 text-sm">
               <span className="text-blue-400 flex items-center gap-1">
                 <User className="h-3 w-3" /> {playersAlive}
@@ -295,7 +312,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
               <span className="text-red-400 flex items-center gap-1">
                 <Skull className="h-3 w-3" /> {monstersAlive}
               </span>
-              {/* Timer */}
               <div className="flex items-center gap-1 border-l border-border pl-3">
                 <Timer className="h-4 w-4 text-muted-foreground" />
                 <span className="font-mono text-foreground">{formatTimer(timerSeconds)}</span>
@@ -308,7 +324,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
 
           {isGM && (
             <div className="flex items-center gap-2 mt-3 flex-wrap">
-              {/* Quick Dice Roller */}
               <div className="flex items-center gap-1 border-r border-border pr-2">
                 {[4, 6, 8, 10, 12, 20].map(d => (
                   <Button key={d} variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => rollDice(d)}>
@@ -321,8 +336,8 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </Badge>
                 )}
               </div>
-              
-              <Button variant="outline" size="sm" onClick={() => nextTurnMutation.mutate()}>
+
+              <Button variant="outline" size="sm" onClick={() => nextTurnMutation.mutate()} disabled={nextTurnMutation.isPending}>
                 <SkipForward className="mr-1 h-4 w-4" />
                 Tour suivant
               </Button>
@@ -330,6 +345,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                 <Dices className="mr-1 h-4 w-4" />
                 Relancer Init.
               </Button>
+
               <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -342,7 +358,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                     <DialogTitle>Ajouter un combattant</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
-                    {/* Quick Add All Party */}
                     {partyCharacters.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -377,7 +392,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                       <ScrollArea className="h-32">
                         <div className="flex flex-wrap gap-2">
                           {monsters.slice(0, 20).map((monster) => (
-                            <Button key={monster.id} variant="outline" size="sm" onClick={() => addMonster(monster as Monster)}>
+                            <Button key={monster.id} variant="outline" size="sm" onClick={() => addMonster(monster)}>
                               <Skull className="mr-1 h-3 w-3" />
                               {monster.name}
                             </Button>
@@ -386,7 +401,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                       </ScrollArea>
                     </div>
 
-                    {/* Manual Add */}
                     <div className="border-t pt-4 grid grid-cols-2 gap-4">
                       <div className="col-span-2 space-y-2">
                         <Label>Nom</Label>
@@ -430,16 +444,16 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                       </div>
                       <div className="col-span-2 flex items-center gap-2">
                         <Label>Type:</Label>
-                        <Button 
-                          variant={newParticipant.is_player ? "default" : "outline"} 
-                          size="sm" 
+                        <Button
+                          variant={newParticipant.is_player ? "default" : "outline"}
+                          size="sm"
                           onClick={() => setNewParticipant(p => ({ ...p, is_player: true }))}
                         >
                           <User className="mr-1 h-3 w-3" /> Joueur
                         </Button>
-                        <Button 
-                          variant={!newParticipant.is_player ? "default" : "outline"} 
-                          size="sm" 
+                        <Button
+                          variant={!newParticipant.is_player ? "default" : "outline"}
+                          size="sm"
                           onClick={() => setNewParticipant(p => ({ ...p, is_player: false }))}
                         >
                           <Skull className="mr-1 h-3 w-3" /> Monstre
@@ -449,11 +463,14 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsAddOpen(false)}>Annuler</Button>
-                    <Button onClick={() => addParticipantMutation.mutate(newParticipant)}>Ajouter</Button>
+                    <Button onClick={() => addParticipantMutation.mutate(newParticipant)} disabled={addParticipantMutation.isPending}>
+                      Ajouter
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              <Button variant="destructive" size="sm" onClick={() => endEncounterMutation.mutate()}>
+
+              <Button variant="destructive" size="sm" onClick={() => endEncounterMutation.mutate()} disabled={endEncounterMutation.isPending}>
                 Terminer
               </Button>
             </div>
@@ -470,21 +487,19 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
           const isBloody = hpPercent <= 50 && hpPercent > 0;
 
           return (
-            <Card 
-              key={p.id} 
+            <Card
+              key={p.id}
               className={`bg-gradient-card border-border transition-all ${
                 isCurrent ? "ring-2 ring-primary shadow-lg" : ""
               } ${isDead ? "opacity-50" : ""}`}
             >
               <CardContent className="flex items-center gap-4 p-4">
-                {/* Initiative */}
                 <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-bold text-lg ${
                   isCurrent ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
                 }`}>
                   {p.initiative}
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {p.is_player ? (
@@ -500,13 +515,12 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                     )}
                   </div>
 
-                  {/* Conditions */}
                   {p.conditions && p.conditions.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
                       {p.conditions.map(c => (
                         <Badge key={c} variant="outline" className={`text-xs ${
-                          c === "Concentration" 
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30" 
+                          c === "Concentration"
+                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
                             : "bg-destructive/10 text-destructive border-destructive/30"
                         }`}>
                           <Zap className="mr-1 h-2 w-2" />{c}
@@ -514,12 +528,11 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                       ))}
                     </div>
                   )}
-                  
-                  {/* HP Bar */}
+
                   <div className="mt-2 flex items-center gap-3">
                     <div className="flex-1">
-                      <Progress 
-                        value={hpPercent} 
+                      <Progress
+                        value={hpPercent}
                         className={`h-3 ${isDead ? "[&>div]:bg-destructive" : isBloody ? "[&>div]:bg-orange-500" : ""}`}
                       />
                     </div>
@@ -530,7 +543,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Shield className="h-4 w-4" />
@@ -538,51 +550,38 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </div>
                 </div>
 
-                {/* HP Controls */}
                 {isGM && (
                   <div className="flex items-center gap-1">
-                    {/* Quick +/- 1 */}
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => updateHPMutation.mutate({ id: p.id, hp: p.current_hp - 1 })}
+                      variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => updateParticipantMutation.mutate({ id: p.id, current_hp: Math.max(0, p.current_hp - 1) })}
                       title="-1 PV"
                     >
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-green-400 hover:text-green-300"
-                      onClick={() => updateHPMutation.mutate({ id: p.id, hp: p.current_hp + 1 })}
+                      variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
+                      onClick={() => updateParticipantMutation.mutate({ id: p.id, current_hp: Math.min(p.max_hp, p.current_hp + 1) })}
                       title="+1 PV"
                     >
                       <ChevronUp className="h-4 w-4" />
                     </Button>
-                    {/* Custom damage/heal dialog */}
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      variant="ghost" size="icon" className="h-8 w-8"
                       onClick={() => { setHpDialogOpen(p.id); setHpAmount(""); setHpMode("damage"); }}
                       title="Dégâts/Soins"
                     >
                       <Target className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
+                      variant="ghost" size="icon" className="h-8 w-8"
                       onClick={() => setConditionsOpenFor(conditionsOpenFor === p.id ? null : p.id)}
                       title="Conditions"
                     >
                       <Zap className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => removeParticipantMutation.mutate(p.id)}
                       title="Retirer"
                     >
@@ -591,8 +590,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                   </div>
                 )}
               </CardContent>
-              
-              {/* Conditions Panel */}
+
               {conditionsOpenFor === p.id && isGM && (
                 <div className="border-t border-border px-4 py-3">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Conditions / Effets</p>
@@ -605,17 +603,18 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                           variant={active ? "default" : "outline"}
                           size="sm"
                           className={`h-7 text-xs ${
-                            active 
-                              ? condition === "Concentration" 
-                                ? "bg-purple-600 hover:bg-purple-700" 
-                                : "bg-destructive hover:bg-destructive/80" 
+                            active
+                              ? condition === "Concentration"
+                                ? "bg-purple-600 hover:bg-purple-700"
+                                : "bg-destructive hover:bg-destructive/80"
                               : ""
                           }`}
-                          onClick={() => toggleConditionMutation.mutate({
-                            id: p.id,
-                            condition,
-                            current: p.conditions || [],
-                          })}
+                          onClick={() => {
+                            const newConditions = (p.conditions || []).includes(condition)
+                              ? (p.conditions || []).filter(c => c !== condition)
+                              : [...(p.conditions || []), condition];
+                            updateParticipantMutation.mutate({ id: p.id, conditions: newConditions });
+                          }}
                         >
                           {condition}
                         </Button>
@@ -669,7 +668,6 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
                 onKeyDown={(e) => e.key === "Enter" && hpDialogOpen && applyHpChange(hpDialogOpen)}
               />
             </div>
-            {/* Quick amounts */}
             <div className="flex flex-wrap gap-2">
               {[1, 2, 5, 10, 15, 20, 25, 50].map(n => (
                 <Button key={n} variant="outline" size="sm" onClick={() => setHpAmount(n.toString())}>
@@ -680,7 +678,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setHpDialogOpen(null)}>Annuler</Button>
-            <Button 
+            <Button
               variant={hpMode === "damage" ? "destructive" : "default"}
               onClick={() => hpDialogOpen && applyHpChange(hpDialogOpen)}
             >

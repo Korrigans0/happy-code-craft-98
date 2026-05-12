@@ -4,6 +4,7 @@ import {
   campaignsTable, campaignMembersTable, campaignMessagesTable,
   campaignNotesTable, campaignSessionsTable, tabletopStateTable,
   profilesTable, charactersTable,
+  combatEncountersTable, combatParticipantsTable,
 } from "@workspace/db";
 import { eq, inArray, and, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
@@ -495,6 +496,263 @@ router.post("/:id/tabletop", requireAuth, async (req, res) => {
   }
   const [created] = await db.insert(tabletopStateTable).values(payload).returning();
   res.json(created);
+});
+
+// ─── Combat Encounters ───────────────────────────────────────────────────────
+
+function serializeEncounter(e: any) {
+  return {
+    id: e.id, campaign_id: e.campaignId, name: e.name,
+    round: e.round, current_turn: e.currentTurn, is_active: e.isActive,
+    created_at: e.createdAt,
+  };
+}
+
+function serializeParticipant(p: any) {
+  return {
+    id: p.id, encounter_id: p.encounterId, name: p.name,
+    initiative: p.initiative, current_hp: p.currentHp, max_hp: p.maxHp,
+    armor_class: p.armorClass, is_player: p.isPlayer,
+    character_id: p.characterId, monster_id: p.monsterId,
+    conditions: p.conditions ? JSON.parse(p.conditions) : [],
+    notes: p.notes, turn_order: p.turnOrder,
+  };
+}
+
+// GET /api/campaigns/:id/combat — active encounter + participants
+router.get("/:id/combat", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  if (!(await isMember(id, userId))) { res.status(403).json({ error: "Accès refusé" }); return; }
+
+  const [encounter] = await db.select().from(combatEncountersTable)
+    .where(and(eq(combatEncountersTable.campaignId, id), eq(combatEncountersTable.isActive, true)))
+    .orderBy(desc(combatEncountersTable.createdAt))
+    .limit(1);
+
+  if (!encounter) { res.json(null); return; }
+
+  const participants = await db.select().from(combatParticipantsTable)
+    .where(eq(combatParticipantsTable.encounterId, encounter.id))
+    .orderBy(combatParticipantsTable.initiative);
+
+  res.json({
+    ...serializeEncounter(encounter),
+    participants: participants.map(serializeParticipant).sort((a, b) => b.initiative - a.initiative),
+  });
+});
+
+// POST /api/campaigns/:id/combat — create encounter (GM only)
+router.post("/:id/combat", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut créer un combat" }); return;
+  }
+
+  await db.update(combatEncountersTable)
+    .set({ isActive: false })
+    .where(and(eq(combatEncountersTable.campaignId, id), eq(combatEncountersTable.isActive, true)));
+
+  const { name } = req.body;
+  const [encounter] = await db.insert(combatEncountersTable).values({
+    campaignId: id, name: name || "Combat", round: 1, currentTurn: 0, isActive: true,
+  }).returning();
+
+  res.status(201).json({ ...serializeEncounter(encounter), participants: [] });
+});
+
+// PATCH /api/campaigns/:id/combat — update encounter (next turn, round, end)
+router.patch("/:id/combat", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut modifier le combat" }); return;
+  }
+
+  const [encounter] = await db.select().from(combatEncountersTable)
+    .where(and(eq(combatEncountersTable.campaignId, id), eq(combatEncountersTable.isActive, true)))
+    .orderBy(desc(combatEncountersTable.createdAt)).limit(1);
+  if (!encounter) { res.status(404).json({ error: "Pas de combat actif" }); return; }
+
+  const updates: Record<string, unknown> = {};
+  if (req.body.current_turn !== undefined) {
+    const t = Number(req.body.current_turn);
+    if (!Number.isInteger(t) || t < 0) { res.status(400).json({ error: "current_turn must be a non-negative integer" }); return; }
+    updates.currentTurn = t;
+  }
+  if (req.body.round !== undefined) {
+    const r = Number(req.body.round);
+    if (!Number.isInteger(r) || r < 1) { res.status(400).json({ error: "round must be a positive integer" }); return; }
+    updates.round = r;
+  }
+  if (req.body.is_active !== undefined) updates.isActive = req.body.is_active;
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No valid fields to update" }); return; }
+
+  const [updated] = await db.update(combatEncountersTable).set(updates)
+    .where(eq(combatEncountersTable.id, encounter.id)).returning();
+
+  const participants = await db.select().from(combatParticipantsTable)
+    .where(eq(combatParticipantsTable.encounterId, encounter.id));
+
+  res.json({
+    ...serializeEncounter(updated),
+    participants: participants.map(serializeParticipant).sort((a, b) => b.initiative - a.initiative),
+  });
+});
+
+// DELETE /api/campaigns/:id/combat — end active encounter
+router.delete("/:id/combat", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut terminer le combat" }); return;
+  }
+
+  await db.update(combatEncountersTable)
+    .set({ isActive: false })
+    .where(and(eq(combatEncountersTable.campaignId, id), eq(combatEncountersTable.isActive, true)));
+
+  res.json({ success: true });
+});
+
+// POST /api/campaigns/:id/combat/participants — add participant (GM only)
+router.post("/:id/combat/participants", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const userId = req.userId! as string;
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, id));
+  if (!gm || gm.userId !== userId) {
+    res.status(403).json({ error: "Seul le MJ peut ajouter des combattants" }); return;
+  }
+
+  const [encounter] = await db.select().from(combatEncountersTable)
+    .where(and(eq(combatEncountersTable.campaignId, id), eq(combatEncountersTable.isActive, true)))
+    .orderBy(desc(combatEncountersTable.createdAt)).limit(1);
+  if (!encounter) { res.status(404).json({ error: "Pas de combat actif" }); return; }
+
+  const { name, initiative, current_hp, max_hp, armor_class, is_player, conditions, turn_order } = req.body;
+  if (!name) { res.status(400).json({ error: "name required" }); return; }
+
+  const existingCount = await db.select({ id: combatParticipantsTable.id })
+    .from(combatParticipantsTable).where(eq(combatParticipantsTable.encounterId, encounter.id));
+
+  const [participant] = await db.insert(combatParticipantsTable).values({
+    encounterId: encounter.id,
+    name, initiative: initiative ?? 10,
+    currentHp: current_hp ?? 10, maxHp: max_hp ?? 10,
+    armorClass: armor_class ?? 10, isPlayer: is_player ?? true,
+    conditions: conditions ? JSON.stringify(conditions) : "[]",
+    turnOrder: turn_order ?? existingCount.length,
+  }).returning();
+
+  res.status(201).json(serializeParticipant(participant));
+});
+
+// Helper: resolve a participant and verify it belongs to an encounter in this campaign (GM only)
+async function resolveParticipantForCampaign(
+  campaignId: string, pid: string, userId: string
+): Promise<{ gm: boolean; participant: typeof combatParticipantsTable.$inferSelect | null }> {
+  const [gm] = await db.select({ userId: campaignsTable.userId })
+    .from(campaignsTable).where(eq(campaignsTable.id, campaignId));
+  if (!gm || gm.userId !== userId) return { gm: false, participant: null };
+
+  const [row] = await db
+    .select({ participant: combatParticipantsTable })
+    .from(combatParticipantsTable)
+    .innerJoin(combatEncountersTable, eq(combatParticipantsTable.encounterId, combatEncountersTable.id))
+    .where(and(
+      eq(combatParticipantsTable.id, pid),
+      eq(combatEncountersTable.campaignId, campaignId),
+    ));
+  return { gm: true, participant: row?.participant ?? null };
+}
+
+// PATCH /api/campaigns/:id/combat/participants/:pid — update HP, conditions, initiative (GM only)
+router.patch("/:id/combat/participants/:pid", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const pid = String(req.params.pid);
+  const userId = req.userId! as string;
+
+  const { gm, participant } = await resolveParticipantForCampaign(id, pid, userId);
+  if (!gm) { res.status(403).json({ error: "Seul le MJ peut modifier les combattants" }); return; }
+  if (!participant) { res.status(404).json({ error: "Not found" }); return; }
+
+  const updates: Record<string, unknown> = {};
+  if (req.body.current_hp !== undefined) {
+    const hp = Number(req.body.current_hp);
+    if (!Number.isInteger(hp) || hp < 0) { res.status(400).json({ error: "current_hp must be a non-negative integer" }); return; }
+    updates.currentHp = hp;
+  }
+  if (req.body.max_hp !== undefined) {
+    const hp = Number(req.body.max_hp);
+    if (!Number.isInteger(hp) || hp < 0) { res.status(400).json({ error: "max_hp must be a non-negative integer" }); return; }
+    updates.maxHp = hp;
+  }
+  if (req.body.armor_class !== undefined) {
+    const ac = Number(req.body.armor_class);
+    if (!Number.isInteger(ac) || ac < 0) { res.status(400).json({ error: "armor_class must be a non-negative integer" }); return; }
+    updates.armorClass = ac;
+  }
+  if (req.body.initiative !== undefined) {
+    const init = Number(req.body.initiative);
+    if (!Number.isInteger(init)) { res.status(400).json({ error: "initiative must be an integer" }); return; }
+    updates.initiative = init;
+  }
+  if (req.body.conditions !== undefined) {
+    if (!Array.isArray(req.body.conditions)) { res.status(400).json({ error: "conditions must be an array" }); return; }
+    updates.conditions = JSON.stringify(req.body.conditions);
+  }
+  if (req.body.notes !== undefined) updates.notes = req.body.notes;
+  if (req.body.turn_order !== undefined) {
+    const to = Number(req.body.turn_order);
+    if (!Number.isInteger(to) || to < 0) { res.status(400).json({ error: "turn_order must be a non-negative integer" }); return; }
+    updates.turnOrder = to;
+  }
+  if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No valid fields to update" }); return; }
+
+  const [updated] = await db.update(combatParticipantsTable).set(updates)
+    .where(eq(combatParticipantsTable.id, pid)).returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+
+  res.json(serializeParticipant(updated));
+});
+
+// DELETE /api/campaigns/:id/combat/participants/:pid — remove participant (GM only)
+router.delete("/:id/combat/participants/:pid", requireAuth, async (req, res) => {
+  const id = String(req.params.id);
+  const pid = String(req.params.pid);
+  const userId = req.userId! as string;
+
+  const { gm, participant } = await resolveParticipantForCampaign(id, pid, userId);
+  if (!gm) { res.status(403).json({ error: "Seul le MJ peut retirer des combattants" }); return; }
+  if (!participant) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(combatParticipantsTable).where(eq(combatParticipantsTable.id, pid));
+
+  // Clamp current_turn so it stays in-bounds after removal
+  const remaining = await db.select({ id: combatParticipantsTable.id })
+    .from(combatParticipantsTable)
+    .where(eq(combatParticipantsTable.encounterId, participant.encounterId));
+  const [enc] = await db.select().from(combatEncountersTable)
+    .where(eq(combatEncountersTable.id, participant.encounterId));
+  if (enc && remaining.length === 0) {
+    await db.update(combatEncountersTable)
+      .set({ currentTurn: 0 })
+      .where(eq(combatEncountersTable.id, enc.id));
+  } else if (enc && remaining.length > 0 && enc.currentTurn >= remaining.length) {
+    await db.update(combatEncountersTable)
+      .set({ currentTurn: Math.max(0, remaining.length - 1) })
+      .where(eq(combatEncountersTable.id, enc.id));
+  }
+
+  res.json({ success: true });
 });
 
 export default router;
