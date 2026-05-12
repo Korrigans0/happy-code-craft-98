@@ -245,10 +245,11 @@ router.delete("/:id/members/:memberId", requireAuth, async (req, res) => {
   if (!gm || gm.userId !== userId) {
     res.status(403).json({ error: "Seul le MJ peut retirer des membres" }); return;
   }
-  await db.delete(campaignMembersTable).where(and(
+  const [deleted] = await db.delete(campaignMembersTable).where(and(
     eq(campaignMembersTable.campaignId, id),
     eq(campaignMembersTable.id, memberId),
-  ));
+  )).returning({ id: campaignMembersTable.id });
+  if (!deleted) { res.status(404).json({ error: "Membre introuvable" }); return; }
   res.json({ success: true });
 });
 
@@ -263,6 +264,19 @@ router.patch("/:id/members/:memberId", requireAuth, async (req, res) => {
     res.status(403).json({ error: "Seul le MJ peut assigner des personnages" }); return;
   }
   const { character_id } = req.body;
+
+  if (character_id) {
+    const [member] = await db.select({ userId: campaignMembersTable.userId })
+      .from(campaignMembersTable)
+      .where(and(eq(campaignMembersTable.campaignId, id), eq(campaignMembersTable.id, memberId)));
+    if (!member) { res.status(404).json({ error: "Membre introuvable" }); return; }
+    const [character] = await db.select({ userId: charactersTable.userId })
+      .from(charactersTable).where(eq(charactersTable.id, character_id));
+    if (!character || character.userId !== member.userId) {
+      res.status(400).json({ error: "Ce personnage n'appartient pas à ce joueur" }); return;
+    }
+  }
+
   const [updated] = await db.update(campaignMembersTable)
     .set({ characterId: character_id || null })
     .where(and(

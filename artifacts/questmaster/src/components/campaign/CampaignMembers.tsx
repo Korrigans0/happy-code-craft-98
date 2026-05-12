@@ -35,6 +35,9 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });
       toast({ title: "Personnage assigné" });
     },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
   });
 
   const removeMemberMutation = useMutation({
@@ -44,6 +47,9 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["campaignMembers", campaignId] });
       toast({ title: "Membre retiré" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
     },
   });
 
