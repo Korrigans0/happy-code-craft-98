@@ -170,6 +170,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [showLayersPanel, setShowLayersPanel] = useState(false);
   const [gridColor, setGridColor] = useState("rgba(255,255,255,0.12)");
   const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
+  const [plateauMode, setPlateauMode] = useState<"dark" | "sky">("dark");
+
+  const plateauColors = plateauMode === "dark"
+    ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
+    : { background: "#c8d8e8", gridMinor: "rgba(100,140,180,0.35)", gridMajor: "rgba(70,110,150,0.6)" };
 
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -572,6 +577,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = plateauColors.background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
     ctx.translate(panOffset.x, panOffset.y);
@@ -590,7 +597,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.lineWidth = 0.5 / zoom;
 
       // Minor grid lines
-      ctx.strokeStyle = gridColor;
+      ctx.strokeStyle = plateauColors.gridMinor;
       ctx.beginPath();
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
         const isMajor = Math.round(x / GRID_SIZE) % 5 === 0;
@@ -603,7 +610,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.stroke();
 
       // Major grid lines
-      ctx.strokeStyle = gridMajorColor;
+      ctx.strokeStyle = plateauColors.gridMajor;
       ctx.lineWidth = 1 / zoom;
       ctx.beginPath();
       for (let x = startX; x <= viewRight; x += GRID_SIZE) {
@@ -1445,6 +1452,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         <Button variant={collisionEnabled ? "default" : "ghost"} size="icon" className="h-7 w-7"
           onClick={() => setCollisionEnabled(c => !c)} title={`Collision ${collisionEnabled ? "ON" : "OFF"}`}>
           <Crosshair className="h-3.5 w-3.5" />
+        </Button>
+
+        <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Plateau mode toggle */}
+        <Button variant="ghost" size="icon" className="h-7 w-7"
+          onClick={() => setPlateauMode(m => m === "dark" ? "sky" : "dark")}
+          title={plateauMode === "dark" ? "Passer en mode ciel" : "Passer en mode sombre"}>
+          <span className="text-sm">{plateauMode === "dark" ? "☀️" : "🌙"}</span>
         </Button>
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
