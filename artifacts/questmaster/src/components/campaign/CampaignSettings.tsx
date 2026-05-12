@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -51,6 +51,28 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const [isActive, setIsActive] = useState(campaign.is_active ?? true);
   const [imageUrl, setImageUrl] = useState(campaign.image_url || "");
   const [imagePreviewError, setImagePreviewError] = useState(false);
+
+  // Foundry VTT
+  const foundryKey = `foundry_url_${campaign.id}`;
+  const [foundryUrl, setFoundryUrl] = useState(() => localStorage.getItem(foundryKey) || "");
+  const [foundryInput, setFoundryInput] = useState(() => localStorage.getItem(foundryKey) || "");
+  const [foundryTestStatus, setFoundryTestStatus] = useState<"idle" | "ok" | "blocked">("idle");
+
+  useEffect(() => {
+    setFoundryTestStatus("idle");
+  }, [foundryInput]);
+
+  const saveFoundryUrl = () => {
+    const url = foundryInput.trim();
+    if (url) {
+      localStorage.setItem(foundryKey, url);
+    } else {
+      localStorage.removeItem(foundryKey);
+    }
+    setFoundryUrl(url);
+    toast({ title: url ? "URL Foundry sauvegardée ✓" : "URL Foundry effacée" });
+    window.dispatchEvent(new StorageEvent("storage", { key: foundryKey, newValue: url || null }));
+  };
 
   // Invite code
   const [inviteCode, setInviteCode] = useState(campaign.invite_code || "");
@@ -481,74 +503,119 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Gamepad2 className="h-5 w-5 text-orange-400" />
-            Intégration Foundry VTT
+            Foundry VTT — Plateau intégré
           </CardTitle>
           <CardDescription>
-            Liez votre campagne Aetheria à une instance Foundry VTT externe pour compléter votre expérience de jeu.
+            Collez l'URL de votre serveur Foundry VTT pour l'afficher directement dans l'onglet "Foundry" de cette campagne.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-3">
+
+          {/* URL input */}
+          <div className="space-y-2">
+            <Label htmlFor="foundry-url">URL de votre instance Foundry VTT</Label>
+            <div className="flex gap-2">
+              <Input
+                id="foundry-url"
+                value={foundryInput}
+                onChange={e => setFoundryInput(e.target.value)}
+                placeholder="https://monserveur.foundry.com:30000"
+                className="flex-1"
+                onKeyDown={e => e.key === "Enter" && saveFoundryUrl()}
+              />
+              <Button variant="outline" size="icon" title="Ouvrir dans un nouvel onglet"
+                disabled={!foundryInput.trim()}
+                onClick={() => window.open(foundryInput.trim(), "_blank")}>
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button variant="default" onClick={saveFoundryUrl} className="gap-1 px-3">
+                <Save className="h-4 w-4" />
+                Sauver
+              </Button>
+            </div>
+            {foundryUrl && (
+              <div className="flex items-center gap-1.5 text-xs text-green-400">
+                <Check className="h-3.5 w-3.5" />
+                Foundry configuré — onglet "Foundry" activé dans la campagne.
+              </div>
+            )}
+            {!foundryUrl && (
+              <p className="text-xs text-muted-foreground">
+                Une fois enregistrée, l'onglet <strong>Foundry</strong> apparaîtra dans la barre de navigation de la campagne pour tous les membres.
+              </p>
+            )}
+          </div>
+
+          {/* Inline preview if URL saved */}
+          {foundryUrl && (
+            <div className="space-y-2">
+              <Label>Aperçu en direct</Label>
+              <div className="relative rounded-lg overflow-hidden border border-orange-500/30 bg-black" style={{ height: 320 }}>
+                <iframe
+                  src={foundryUrl}
+                  className="w-full h-full border-0"
+                  title="Foundry VTT Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  onLoad={() => setFoundryTestStatus("ok")}
+                  onError={() => setFoundryTestStatus("blocked")}
+                />
+                {foundryTestStatus === "blocked" && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-3 p-4 text-center">
+                    <AlertCircle className="h-8 w-8 text-orange-400" />
+                    <p className="text-sm font-medium">Le serveur Foundry bloque l'intégration iframe.</p>
+                    <p className="text-xs text-muted-foreground">Activez l'option <strong>Autoriser l'intégration iframe</strong> dans les paramètres Foundry (Paramètres → Configuration → Sécurité), ou utilisez le bouton "Ouvrir dans un onglet".</p>
+                    <Button size="sm" variant="outline" className="gap-1"
+                      onClick={() => window.open(foundryUrl, "_blank")}>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ouvrir Foundry dans un onglet
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* How-to */}
+          <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-2">
             <div className="flex items-start gap-2">
               <Info className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p className="font-medium text-foreground">Comment connecter Foundry VTT ?</p>
-                <ol className="list-decimal list-inside space-y-1.5 text-xs">
-                  <li>Lancez votre instance <strong className="text-foreground">Foundry VTT</strong> sur votre serveur ou localement.</li>
-                  <li>Dans Foundry, activez le module <strong className="text-foreground">Aetheria Connector</strong> (ou partagez l'URL de votre partie via le menu Paramètres → Partager).</li>
-                  <li>Collez l'URL d'accès public de votre session Foundry ci-dessous.</li>
-                  <li>Vos joueurs pourront ouvrir Foundry directement depuis cette page.</li>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground">Pour activer l'intégration iframe Foundry :</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Dans Foundry : <strong className="text-foreground">Paramètres → Configuration</strong></li>
+                  <li>Activer <strong className="text-foreground">"Autoriser l'intégration iframe"</strong></li>
+                  <li>Redémarrer le serveur Foundry si nécessaire</li>
+                  <li>Coller l'URL publique ci-dessus (ex: <code className="bg-muted px-1 rounded">https://monserveur.com:30000</code>)</li>
                 </ol>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="foundry-url">URL de votre session Foundry VTT</Label>
-            <div className="flex gap-2">
-              <Input
-                id="foundry-url"
-                placeholder="https://monserveur.foundry.com:30000"
-                className="flex-1"
-                disabled
-              />
-              <Button variant="outline" size="icon" disabled title="Tester la connexion">
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Cette fonctionnalité est en cours de développement. Le connecteur Foundry VTT ↔ Aetheria sera disponible dans une prochaine mise à jour.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-            <p className="text-sm font-medium text-foreground">Ressources utiles</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
-                onClick={() => window.open("https://foundryvtt.com", "_blank")}>
-                <Gamepad2 className="h-3.5 w-3.5" />
-                Site officiel Foundry VTT
-                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
-                onClick={() => window.open("https://foundryvtt.com/article/installation/", "_blank")}>
-                <Info className="h-3.5 w-3.5" />
-                Guide d'installation
-                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
-                onClick={() => window.open("https://foundryvtt.com/kb/", "_blank")}>
-                <BookOpen className="h-3.5 w-3.5" />
-                Base de connaissances
-                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
-              </Button>
-              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
-                onClick={() => window.open("https://discord.gg/foundryvtt", "_blank")}>
-                <MessageCircle className="h-3.5 w-3.5" />
-                Discord Foundry
-                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
-              </Button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+              onClick={() => window.open("https://foundryvtt.com", "_blank")}>
+              <Gamepad2 className="h-3.5 w-3.5" />
+              Site officiel Foundry VTT
+              <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+            </Button>
+            <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+              onClick={() => window.open("https://foundryvtt.com/article/installation/", "_blank")}>
+              <Info className="h-3.5 w-3.5" />
+              Guide d'installation
+              <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+            </Button>
+            <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+              onClick={() => window.open("https://foundryvtt.com/kb/", "_blank")}>
+              <BookOpen className="h-3.5 w-3.5" />
+              Base de connaissances
+              <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+            </Button>
+            <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+              onClick={() => window.open("https://discord.gg/foundryvtt", "_blank")}>
+              <MessageCircle className="h-3.5 w-3.5" />
+              Discord Foundry
+              <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+            </Button>
           </div>
         </CardContent>
       </Card>
