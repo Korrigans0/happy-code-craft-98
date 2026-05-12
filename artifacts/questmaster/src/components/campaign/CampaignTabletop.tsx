@@ -9,7 +9,7 @@ import {
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
-  MapPin, Wand2, Keyboard,
+  MapPin, Wand2, Keyboard, Film, ChevronRight,
 } from "lucide-react";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -19,7 +19,7 @@ import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
-  CONDITIONS, AURA_COLORS,
+  CONDITIONS, AURA_COLORS, VTTScene,
 } from "./vtt/types";
 
 import { useQuery } from "@tanstack/react-query";
@@ -175,6 +175,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const plateauColors = plateauMode === "dark"
     ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
     : { background: "#c8d8e8", gridMinor: "rgba(100,140,180,0.35)", gridMajor: "rgba(70,110,150,0.6)" };
+
+  // ── Scenes ──
+  const [scenes, setScenes] = useState<VTTScene[]>([]);
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
+  const [showScenesPanel, setShowScenesPanel] = useState(false);
 
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -756,6 +761,48 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               ctx.stroke();
             }
             break;
+          case "measure":
+            if (currentAction.points.length >= 2) {
+              const mp0 = currentAction.points[0];
+              const mp1 = currentAction.points[currentAction.points.length - 1];
+              const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
+              const mSquares = mDist / GRID_SIZE;
+              const mMeters = (mSquares * M_PER_SQUARE).toFixed(1);
+              ctx.save();
+              ctx.strokeStyle = "#f59e0b";
+              ctx.lineWidth = 2 / zoom;
+              ctx.setLineDash([6 / zoom, 4 / zoom]);
+              ctx.beginPath();
+              ctx.moveTo(mp0.x, mp0.y);
+              ctx.lineTo(mp1.x, mp1.y);
+              ctx.stroke();
+              ctx.setLineDash([]);
+              // Start dot
+              ctx.fillStyle = "#f59e0b";
+              ctx.beginPath();
+              ctx.arc(mp0.x, mp0.y, 4 / zoom, 0, Math.PI * 2);
+              ctx.fill();
+              // End dot
+              ctx.beginPath();
+              ctx.arc(mp1.x, mp1.y, 4 / zoom, 0, Math.PI * 2);
+              ctx.fill();
+              // Label
+              const midX = (mp0.x + mp1.x) / 2;
+              const midY = (mp0.y + mp1.y) / 2;
+              const label = `${mMeters}m (${mSquares.toFixed(1)} cases)`;
+              ctx.font = `bold ${13 / zoom}px 'Lora', serif`;
+              const tw = ctx.measureText(label).width;
+              ctx.fillStyle = "rgba(0,0,0,0.7)";
+              ctx.fillRect(midX - tw / 2 - 4 / zoom, midY - 14 / zoom, tw + 8 / zoom, 18 / zoom);
+              ctx.fillStyle = "#fbbf24";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillText(label, midX, midY - 5 / zoom);
+              ctx.textAlign = "start";
+              ctx.textBaseline = "alphabetic";
+              ctx.restore();
+            }
+            break;
           case "rect":
             if (currentAction.points.length >= 2) {
               const [a, b] = currentAction.points;
@@ -885,7 +932,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const barHeight = 4;
           const barX = token.x + 2;
           const barY = token.y + token.size + 4;
-          const hpRatio = token.hp / token.maxHp;
+          const hpRatio = Math.max(0, token.hp / token.maxHp);
           ctx.fillStyle = "rgba(0,0,0,0.6)";
           ctx.fillRect(barX, barY, barWidth, barHeight);
           ctx.fillStyle = hpRatio > 0.5 ? "#22c55e" : hpRatio > 0.25 ? "#f59e0b" : "#ef4444";
@@ -894,6 +941,25 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.font = `bold ${8 / zoom}px sans-serif`;
           ctx.textAlign = "center";
           ctx.fillText(`${token.hp}/${token.maxHp}`, cx, barY + barHeight + 10 / zoom);
+          ctx.textAlign = "start";
+        }
+
+        // PE / Mana bar (blue, below HP bar)
+        if (token.pe !== undefined && token.maxPe !== undefined && token.maxPe > 0) {
+          const barWidth = token.size - 4;
+          const barHeight = 3;
+          const barX = token.x + 2;
+          const hpOffset = (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0) ? 9 : 0;
+          const barY = token.y + token.size + 4 + hpOffset;
+          const peRatio = Math.max(0, token.pe / token.maxPe);
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(barX, barY, barWidth, barHeight);
+          ctx.fillStyle = peRatio > 0.5 ? "#3b82f6" : peRatio > 0.25 ? "#818cf8" : "#6366f1";
+          ctx.fillRect(barX, barY, barWidth * peRatio, barHeight);
+          ctx.fillStyle = "rgba(180,200,255,0.9)";
+          ctx.font = `bold ${7 / zoom}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(`PE ${token.pe}/${token.maxPe}`, cx, barY + barHeight + 8 / zoom);
           ctx.textAlign = "start";
         }
 
@@ -1188,6 +1254,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
         else if (e.key === "l" || e.key === "L") setTool("line");
+        else if (e.key === "m" || e.key === "M") setTool("measure");
         else if (e.key === "t" || e.key === "T") setTool("text");
         else if (e.key === "c" || e.key === "C") setTool("cone");
         else if (e.key === "z" || e.key === "Z") setTool("zone");
@@ -1352,8 +1419,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
-      setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]);
-      setUndoneActions([]);
+      // "measure" is ephemeral — don't persist to actions list
+      if (currentAction.type !== "measure") {
+        setActions(prev => prev.some(a => a.id === currentAction.id) ? prev : [...prev, currentAction]);
+        setUndoneActions([]);
+      }
       setCurrentAction(null);
     }
     setIsDrawing(false);
@@ -1381,6 +1451,79 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     mapImageRef.current = null;
     setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
   };
+
+  // ── Scene management ──────────────────────────────────────
+  const saveCurrentScene = (): VTTScene => ({
+    id: activeSceneId || newId(),
+    name: scenes.find(s => s.id === activeSceneId)?.name || "Scène sans nom",
+    mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
+    tokens: [...tokens],
+    drawings: [...actions],
+    createdAt: Date.now(),
+  });
+
+  const loadScene = (scene: VTTScene) => {
+    setActiveSceneId(scene.id);
+    setTokens(scene.tokens);
+    setActions(scene.drawings);
+    setUndoneActions([]);
+    mapImageRef.current = null;
+    setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: scene.mapImageUrl } : l));
+    if (scene.mapImageUrl) {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { mapImageRef.current = img; };
+      img.src = scene.mapImageUrl;
+    }
+    setPanOffset({ x: 0, y: 0 });
+    setZoom(1);
+    setSelectedTokenId(null);
+    toast({ title: `Scène chargée : ${scene.name}` });
+  };
+
+  const createScene = () => {
+    if (!isGM) { denied(); return; }
+    const name = prompt("Nom de la nouvelle scène :", `Scène ${scenes.length + 1}`);
+    if (!name?.trim()) return;
+    // Save current state first if we have a scene
+    const updatedScenes = activeSceneId
+      ? scenes.map(s => s.id === activeSceneId ? { ...saveCurrentScene(), id: activeSceneId } : s)
+      : [...scenes];
+    const newScene: VTTScene = {
+      id: newId(), name: name.trim(),
+      tokens: [], drawings: [], createdAt: Date.now(),
+    };
+    setScenes([...updatedScenes, newScene]);
+    loadScene(newScene);
+  };
+
+  const switchScene = (scene: VTTScene) => {
+    if (!isGM) { denied(); return; }
+    // Save current scene state
+    if (activeSceneId) {
+      setScenes(prev => prev.map(s =>
+        s.id === activeSceneId ? { ...s, tokens, drawings: actions, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
+      ));
+    }
+    loadScene(scene);
+    setShowScenesPanel(false);
+  };
+
+  const renameScene = (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const name = prompt("Nouveau nom :", scene.name);
+    if (!name?.trim()) return;
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, name: name.trim() } : s));
+  };
+
+  const deleteScene = (sceneId: string) => {
+    if (scenes.length <= 1) { toast({ title: "Impossible", description: "Il faut au moins une scène", variant: "destructive" }); return; }
+    if (!confirm("Supprimer cette scène ?")) return;
+    const remaining = scenes.filter(s => s.id !== sceneId);
+    setScenes(remaining);
+    if (activeSceneId === sceneId) loadScene(remaining[0]);
+  };
   const exportCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const link = document.createElement("a");
@@ -1407,7 +1550,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V" },
     { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P" },
     { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E" },
-    { id: "line",      icon: <Ruler className="h-4 w-4" />,         label: "Règle",        key: "L" },
+    { id: "line",      icon: <Ruler className="h-4 w-4" />,         label: "Ligne",        key: "L" },
+    { id: "measure",   icon: <span className="text-xs font-bold leading-none">m</span>, label: "Mesure distance", key: "M" },
     { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle" },
     { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle" },
     { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C" },
@@ -1494,6 +1638,105 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <Dices className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Dés</span>
         </Button>
+
+        {/* Scènes */}
+        {isGM && (
+          <Popover open={showScenesPanel} onOpenChange={setShowScenesPanel}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+                <Film className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {scenes.length > 0 ? (scenes.find(s => s.id === activeSceneId)?.name || "Scènes") : "Scènes"}
+                </span>
+                {scenes.length > 0 && (
+                  <span className="ml-0.5 rounded-full bg-primary/30 px-1 text-[9px] font-bold">{scenes.length}</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3" side="bottom" align="start">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Scènes</h3>
+                  <Button size="sm" variant="outline" className="h-7 px-2 text-xs gap-1" onClick={createScene}>
+                    <Plus className="h-3.5 w-3.5" />
+                    Nouvelle
+                  </Button>
+                </div>
+                {scenes.length === 0 && (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    <Film className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p>Aucune scène sauvegardée.</p>
+                    <p className="text-xs mt-1">Créez une scène pour sauvegarder l'état actuel du plateau.</p>
+                    <Button size="sm" variant="gold" className="mt-3 gap-1" onClick={createScene}>
+                      <Plus className="h-3.5 w-3.5" />
+                      Créer ma première scène
+                    </Button>
+                  </div>
+                )}
+                {scenes.map(scene => (
+                  <div
+                    key={scene.id}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                      scene.id === activeSceneId
+                        ? "border-primary/60 bg-primary/10"
+                        : "border-border/60 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{scene.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {scene.tokens.length} jeton{scene.tokens.length !== 1 ? "s" : ""} • {scene.drawings.length} dessin{scene.drawings.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {scene.id !== activeSceneId && (
+                        <button
+                          onClick={() => switchScene(scene)}
+                          className="rounded p-1 text-primary hover:bg-primary/20 transition-colors text-xs font-semibold"
+                          title="Charger cette scène"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => renameScene(scene.id)}
+                        className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Renommer"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => deleteScene(scene.id)}
+                        className="rounded p-1 text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {activeSceneId && (
+                  <>
+                    <Separator />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full h-7 text-xs gap-1"
+                      onClick={() => {
+                        const saved = saveCurrentScene();
+                        setScenes(prev => prev.map(s => s.id === activeSceneId ? { ...saved, id: activeSceneId } : s));
+                        toast({ title: "Scène sauvegardée ✓" });
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Sauvegarder la scène active
+                    </Button>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
 
         {/* Calques */}
         <Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
@@ -1790,6 +2033,48 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     <button className="rounded bg-green-500/20 text-green-400 text-xs py-0.5 hover:bg-green-500/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</button>
                   </div>
                 </div>
+              )}
+              {/* PE / Mana bar */}
+              {selectedToken.maxPe !== undefined && selectedToken.maxPe > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">PE / Mana</span>
+                    <span className="font-bold text-blue-400">{selectedToken.pe ?? 0}/{selectedToken.maxPe}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-blue-500 transition-all" style={{
+                      width: `${Math.max(0, ((selectedToken.pe ?? 0) / selectedToken.maxPe) * 100)}%`,
+                    }} />
+                  </div>
+                  <div className="grid grid-cols-4 gap-0.5">
+                    <button className="rounded bg-blue-900/30 text-blue-400 text-xs py-0.5 hover:bg-blue-900/60 transition-colors"
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.max(0, (t.pe ?? 0) - 5) } : t))}>-5</button>
+                    <button className="rounded bg-blue-900/30 text-blue-400 text-xs py-0.5 hover:bg-blue-900/60 transition-colors"
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.max(0, (t.pe ?? 0) - 1) } : t))}>-1</button>
+                    <button className="rounded bg-blue-500/20 text-blue-300 text-xs py-0.5 hover:bg-blue-500/40 transition-colors"
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.min(t.maxPe ?? 0, (t.pe ?? 0) + 1) } : t))}>+1</button>
+                    <button className="rounded bg-blue-500/20 text-blue-300 text-xs py-0.5 hover:bg-blue-500/40 transition-colors"
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.min(t.maxPe ?? 0, (t.pe ?? 0) + 5) } : t))}>+5</button>
+                  </div>
+                </div>
+              )}
+              {/* Set PE max via a small inline input if no maxPe defined */}
+              {selectedToken.maxPe === undefined && (isGM || true) && (
+                <button
+                  className="text-[10px] text-muted-foreground hover:text-blue-400 transition-colors"
+                  onClick={() => {
+                    const v = prompt("Points d'Énergie maximum (laisser vide pour désactiver) :");
+                    if (v === null) return;
+                    const n = parseInt(v);
+                    if (!v.trim()) {
+                      setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: undefined, maxPe: undefined } : t));
+                    } else if (!isNaN(n) && n >= 0) {
+                      setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: n, maxPe: n } : t));
+                    }
+                  }}
+                >
+                  + Ajouter PE / Mana
+                </button>
               )}
               <div className="grid grid-cols-4 gap-0.5">
                 <button className="rounded border border-border text-xs py-0.5 hover:bg-muted transition-colors" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</button>

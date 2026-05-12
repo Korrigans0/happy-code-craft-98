@@ -29,6 +29,8 @@ export interface TokenItem {
   creatureType?: "wa_creature" | "monster" | "character";
   hp?: number;
   maxHp?: number;
+  pe?: number;
+  maxPe?: number;
   ac?: number;
   imageUrl?: string;
   conditions?: string[];
@@ -68,6 +70,15 @@ export interface ContextMenuState {
   worldY: number;
   type: "canvas" | "token";
   tokenId?: string;
+}
+
+export interface VTTScene {
+  id: string;
+  name: string;
+  mapImageUrl?: string;
+  tokens: TokenItem[];
+  drawings: DrawAction[];
+  createdAt: number;
 }
 
 export const CONDITIONS = [

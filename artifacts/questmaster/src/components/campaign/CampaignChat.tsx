@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Dices, Crown, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
@@ -35,6 +35,91 @@ const QUICK_ACTIONS = [
   { label: "Dégâts (dague)", dice: "1d4", skill: "Dégâts" },
 ];
 
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i;
+const GIF_EXTENSIONS = /\.(gif)(\?.*)?$/i;
+const GIPHY_RE = /giphy\.com/i;
+const TENOR_RE = /tenor\.com/i;
+
+function isImageUrl(text: string): boolean {
+  try {
+    const url = new URL(text.trim());
+    return IMAGE_EXTENSIONS.test(url.pathname) || GIPHY_RE.test(url.hostname) || TENOR_RE.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isGif(text: string): boolean {
+  try {
+    const url = new URL(text.trim());
+    return GIF_EXTENSIONS.test(url.pathname) || GIPHY_RE.test(url.hostname) || TENOR_RE.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function renderMessageContent(content: string, members: any[], onPingClick?: (userId: string) => void) {
+  const parts = content.split(/(\s+)/);
+  const tokens: React.ReactNode[] = [];
+  let textBuffer = "";
+  let key = 0;
+
+  const flushText = () => {
+    if (!textBuffer) return;
+    const boldParts = textBuffer.split("**");
+    boldParts.forEach((part, i) => {
+      if (i % 2 === 1) {
+        tokens.push(<strong key={`b-${key++}`}>{part}</strong>);
+      } else if (part) {
+        tokens.push(<span key={`t-${key++}`}>{part}</span>);
+      }
+    });
+    textBuffer = "";
+  };
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed && isImageUrl(trimmed)) {
+      flushText();
+      tokens.push(
+        <span key={`img-${key++}`} className="block mt-1">
+          <img
+            src={trimmed}
+            alt="image partagée"
+            className="max-w-[260px] max-h-[200px] rounded-lg border border-border/40 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => window.open(trimmed, "_blank")}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
+          {isGif(trimmed) && (
+            <span className="text-[10px] text-muted-foreground ml-1">GIF</span>
+          )}
+        </span>
+      );
+    } else if (trimmed.startsWith("@") && trimmed.length > 1) {
+      flushText();
+      const mention = trimmed.slice(1).toLowerCase();
+      const mentioned = members.find((m: any) =>
+        (m.display_name || "").toLowerCase().startsWith(mention) ||
+        (m.username || "").toLowerCase().startsWith(mention)
+      );
+      tokens.push(
+        <span
+          key={`ping-${key++}`}
+          className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-xs font-semibold bg-primary/20 text-primary cursor-pointer hover:bg-primary/30"
+          onClick={() => mentioned && onPingClick?.(mentioned.user_id)}
+        >
+          <AtSign className="h-2.5 w-2.5" />
+          {trimmed.slice(1)}
+        </span>
+      );
+    } else {
+      textBuffer += part;
+    }
+  }
+  flushText();
+  return tokens;
+}
+
 const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const { user: clerkUser } = useUser();
   const userId = clerkUser?.id ?? "";
@@ -43,6 +128,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const [diceInput, setDiceInput] = useState("1d20");
   const [isWhisper, setIsWhisper] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showImageInput, setShowImageInput] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: messages = [] } = useQuery({
@@ -56,19 +143,14 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     queryFn: () => campaignsApi.getMembers(campaignId),
   });
 
-  // Profiles are embedded in members from the API
   const profiles = members;
 
-  // Auto-poll instead of realtime
-
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Send message mutation
   const sendMutation = useMutation({
     mutationFn: async (data: { content: string; message_type: string; metadata?: any }) => {
       return campaignsApi.postMessage(campaignId, {
@@ -87,15 +169,31 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
 
   const handleSend = () => {
     if (!message.trim()) return;
-    
     const msgType = isWhisper ? "whisper" : "chat";
     const content = isWhisper ? `🔒 [Murmure MJ] ${message}` : message;
-    
-    sendMutation.mutate({ 
-      content, 
+    sendMutation.mutate({
+      content,
       message_type: msgType,
       metadata: isWhisper ? { whisper: true } : undefined,
     });
+  };
+
+  const sendImage = () => {
+    if (!imageUrl.trim()) return;
+    if (!isImageUrl(imageUrl.trim())) {
+      toast({ title: "URL invalide", description: "Entrez une URL d'image valide (jpg, png, gif, webp...)", variant: "destructive" });
+      return;
+    }
+    sendMutation.mutate({ content: imageUrl.trim(), message_type: "chat" });
+    setImageUrl("");
+    setShowImageInput(false);
+  };
+
+  const pingMember = (targetUserId: string) => {
+    const member = members.find((m: any) => m.user_id === targetUserId);
+    if (!member) return;
+    const name = member.display_name || "joueur";
+    setMessage(prev => `${prev}@${name} `.trimStart());
   };
 
   const rollDice = (diceStr?: string) => {
@@ -121,14 +219,13 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     }
     const total = results.reduce((a, b) => a + b, 0) + modifier;
 
-    // Check for nat 20/1
     let prefix = "🎲";
     if (sides === 20 && count === 1) {
       if (results[0] === 20) prefix = "🎲✨ CRITIQUE !";
       if (results[0] === 1) prefix = "🎲💀 ÉCHEC CRITIQUE !";
     }
 
-    const content = modifier !== 0 
+    const content = modifier !== 0
       ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier} = **${total}**`
       : `${prefix} ${input} → [${results.join(", ")}] = **${total}**`;
 
@@ -149,7 +246,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       results.push(Math.floor(Math.random() * sides) + 1);
     }
     const total = results.reduce((a, b) => a + b, 0);
-    
+
     let prefix = "🎲";
     if (sides === 20 && count === 1) {
       if (results[0] === 20) prefix = "🎲✨ CRITIQUE !";
@@ -165,8 +262,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     setShowQuickActions(false);
   };
 
-  const getProfile = (id: string) => profiles.find(p => p.user_id === id);
-  const getMember = (id: string) => members.find(m => m.user_id === id);
+  const getProfile = (id: string) => profiles.find((p: any) => p.user_id === id);
+  const getMember = (id: string) => members.find((m: any) => m.user_id === id);
 
   const getInitials = (profile: any) => {
     if (profile?.display_name) {
@@ -175,8 +272,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     return 'U';
   };
 
-  // Filter whisper messages - only show to GM and sender
-  const visibleMessages = messages.filter(msg => {
+  const visibleMessages = messages.filter((msg: any) => {
     if (msg.message_type === "whisper") {
       return isGM || msg.user_id === userId;
     }
@@ -188,12 +284,13 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
-          {visibleMessages.map((msg) => {
+          {visibleMessages.map((msg: any) => {
             const profile = getProfile(msg.user_id);
             const member = getMember(msg.user_id);
             const isOwn = msg.user_id === userId;
             const isMsgGM = member?.role === 'gm';
             const isMsgWhisper = msg.message_type === "whisper";
+            const isImage = isImageUrl(msg.content?.trim() || "");
 
             return (
               <div
@@ -227,21 +324,36 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
                       {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  <div
-                    className={`mt-1 rounded-lg px-3 py-2 text-sm ${
-                      isMsgWhisper
-                        ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
-                        : msg.message_type === "dice_roll"
-                        ? "bg-primary/20 text-primary border border-primary/30"
-                        : isOwn
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
-                  >
-                    {msg.content.split('**').map((part: string, i: number) => 
-                      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-                    )}
-                  </div>
+                  {isImage ? (
+                    <div className="mt-1">
+                      <img
+                        src={msg.content.trim()}
+                        alt="image"
+                        className="max-w-[260px] max-h-[200px] rounded-lg border border-border/40 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(msg.content.trim(), "_blank")}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      {isGif(msg.content.trim()) && (
+                        <span className="text-[10px] text-muted-foreground">GIF</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={`mt-1 rounded-lg px-3 py-2 text-sm ${
+                        isMsgWhisper
+                          ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
+                          : msg.message_type === "dice_roll"
+                          ? "bg-primary/20 text-primary border border-primary/30"
+                          : isOwn
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      {renderMessageContent(msg.content, members, pingMember)}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -259,6 +371,44 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
                 <Sparkles className="mr-1 h-3 w-3" />
                 {action.label}
               </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Image URL input */}
+        {showImageInput && (
+          <div className="mb-3 flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
+            <Image className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://... (URL image ou GIF)"
+              className="flex-1 h-8 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && sendImage()}
+              autoFocus
+            />
+            <Button size="sm" className="h-8" onClick={sendImage} disabled={!imageUrl.trim()}>
+              Envoyer
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8" onClick={() => { setShowImageInput(false); setImageUrl(""); }}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Ping members dropdown */}
+        {members.length > 1 && (
+          <div className="mb-2 flex flex-wrap gap-1">
+            {members.filter((m: any) => m.user_id !== userId).map((m: any) => (
+              <button
+                key={m.user_id}
+                className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary transition-colors"
+                onClick={() => pingMember(m.user_id)}
+                title={`Mentionner ${m.display_name || 'joueur'}`}
+              >
+                <AtSign className="h-2.5 w-2.5" />
+                {m.display_name || "Joueur"}
+              </button>
             ))}
           </div>
         )}
@@ -312,10 +462,19 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
               {isWhisper ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           )}
+          <Button
+            variant={showImageInput ? "secondary" : "ghost"}
+            size="icon"
+            className="shrink-0"
+            onClick={() => { setShowImageInput(v => !v); setShowQuickActions(false); }}
+            title="Envoyer une image ou un GIF"
+          >
+            <Image className="h-4 w-4" />
+          </Button>
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={isWhisper ? "Murmure MJ (visible seulement par vous)..." : "Écrire un message..."}
+            placeholder={isWhisper ? "Murmure MJ (visible seulement par vous)..." : "Écrire un message... (@nom pour mentionner)"}
             className={`flex-1 ${isWhisper ? "border-purple-500/50" : ""}`}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
           />

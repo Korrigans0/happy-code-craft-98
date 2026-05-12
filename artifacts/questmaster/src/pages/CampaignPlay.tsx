@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, Swords, BookOpen, Users, 
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink
+  Volume2, ExternalLink, Wand2
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 import CampaignCombat from "@/components/campaign/CampaignCombat";
@@ -20,6 +20,7 @@ import CampaignMembers from "@/components/campaign/CampaignMembers";
 import CampaignSettings from "@/components/campaign/CampaignSettings";
 import CampaignTabletop from "@/components/campaign/CampaignTabletop";
 import CampaignSessions from "@/components/campaign/CampaignSessions";
+import GMTools from "@/components/campaign/GMTools";
 
 interface Campaign {
   id: string;
@@ -130,6 +131,7 @@ const CampaignPlay = () => {
     { id: "sessions", icon: CalendarDays, label: "Sessions" },
     { id: "notes", icon: BookOpen, label: "Notes" },
     { id: "members", icon: Users, label: "Joueurs" },
+    ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
     ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
   ];
 
@@ -236,6 +238,11 @@ const CampaignPlay = () => {
               <TabsContent value="members" className="m-0 h-full">
                 <CampaignMembers campaignId={id!} isGM={isGM} />
               </TabsContent>
+              {isGM && (
+                <TabsContent value="gmtools" className="m-0 h-full">
+                  <GMTools />
+                </TabsContent>
+              )}
               {isGM && (
                 <TabsContent value="settings" className="m-0 h-full">
                   <CampaignSettings campaign={campaign} />

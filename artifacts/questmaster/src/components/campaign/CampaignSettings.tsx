@@ -17,7 +17,7 @@ import { GAME_SYSTEMS } from "@/lib/game-systems";
 import {
   Save, Trash2, RefreshCw, Copy, Link2, ExternalLink,
   Volume2, MessageCircle, Image, Shield, Users, Lock,
-  Unlock, Check, AlertCircle, Shuffle,
+  Unlock, Check, AlertCircle, Shuffle, Gamepad2, Info, BookOpen,
 } from "lucide-react";
 
 interface Campaign {
@@ -473,6 +473,83 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
             <Save className="mr-2 h-4 w-4" />
             Sauvegarder le lien Discord
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* ══ INTÉGRATION FOUNDRY VTT ══════════════════════════════════════════ */}
+      <Card className="bg-gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gamepad2 className="h-5 w-5 text-orange-400" />
+            Intégration Foundry VTT
+          </CardTitle>
+          <CardDescription>
+            Liez votre campagne Aetheria à une instance Foundry VTT externe pour compléter votre expérience de jeu.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p className="font-medium text-foreground">Comment connecter Foundry VTT ?</p>
+                <ol className="list-decimal list-inside space-y-1.5 text-xs">
+                  <li>Lancez votre instance <strong className="text-foreground">Foundry VTT</strong> sur votre serveur ou localement.</li>
+                  <li>Dans Foundry, activez le module <strong className="text-foreground">Aetheria Connector</strong> (ou partagez l'URL de votre partie via le menu Paramètres → Partager).</li>
+                  <li>Collez l'URL d'accès public de votre session Foundry ci-dessous.</li>
+                  <li>Vos joueurs pourront ouvrir Foundry directement depuis cette page.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="foundry-url">URL de votre session Foundry VTT</Label>
+            <div className="flex gap-2">
+              <Input
+                id="foundry-url"
+                placeholder="https://monserveur.foundry.com:30000"
+                className="flex-1"
+                disabled
+              />
+              <Button variant="outline" size="icon" disabled title="Tester la connexion">
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cette fonctionnalité est en cours de développement. Le connecteur Foundry VTT ↔ Aetheria sera disponible dans une prochaine mise à jour.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+            <p className="text-sm font-medium text-foreground">Ressources utiles</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+                onClick={() => window.open("https://foundryvtt.com", "_blank")}>
+                <Gamepad2 className="h-3.5 w-3.5" />
+                Site officiel Foundry VTT
+                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+              </Button>
+              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+                onClick={() => window.open("https://foundryvtt.com/article/installation/", "_blank")}>
+                <Info className="h-3.5 w-3.5" />
+                Guide d'installation
+                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+              </Button>
+              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+                onClick={() => window.open("https://foundryvtt.com/kb/", "_blank")}>
+                <BookOpen className="h-3.5 w-3.5" />
+                Base de connaissances
+                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+              </Button>
+              <Button variant="outline" size="sm" className="justify-start gap-2 text-xs h-8"
+                onClick={() => window.open("https://discord.gg/foundryvtt", "_blank")}>
+                <MessageCircle className="h-3.5 w-3.5" />
+                Discord Foundry
+                <ExternalLink className="h-3 w-3 ml-auto opacity-60" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
