@@ -7,7 +7,16 @@
 export * from "./aetheria-data";
 
 export const GAME_SYSTEMS = [
-  { value: "Aetheria", label: "Aetheria" },
+  { value: "Aetheria",        label: "⚔️ Aetheria" },
+  { value: "D&D 5e",          label: "🐉 Donjons & Dragons 5e" },
+  { value: "Pathfinder 2e",   label: "🗺️ Pathfinder 2e" },
+  { value: "Call of Cthulhu", label: "🦑 L'Appel de Cthulhu" },
+  { value: "Warhammer 4",     label: "💀 Warhammer 4e" },
+  { value: "Savage Worlds",   label: "🃏 Savage Worlds" },
+  { value: "Starfinder",      label: "🚀 Starfinder" },
+  { value: "Chroniques Oubliées", label: "📜 Chroniques Oubliées" },
+  { value: "Symbaroum",       label: "🌲 Symbaroum" },
+  { value: "Autre",           label: "🎲 Autre / Homebrew" },
 ] as const;
 
 export type GameSystem = typeof GAME_SYSTEMS[number]["value"];

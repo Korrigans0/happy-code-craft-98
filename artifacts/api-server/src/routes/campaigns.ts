@@ -6,7 +6,7 @@ import {
   profilesTable, charactersTable,
   combatEncountersTable, combatParticipantsTable,
 } from "@workspace/db";
-import { eq, inArray, and, desc } from "drizzle-orm";
+import { eq, inArray, and, desc, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -138,7 +138,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 router.patch("/:id", requireAuth, async (req, res) => {
   const id = String(req.params.id);
   const userId = req.userId! as string;
-  const { title, description, system, is_active, discord_link, invite_code } = req.body;
+  const { title, description, system, is_active, discord_link, invite_code, image_url } = req.body;
 
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates.title = title;
@@ -146,7 +146,21 @@ router.patch("/:id", requireAuth, async (req, res) => {
   if (system !== undefined) updates.system = system;
   if (is_active !== undefined) updates.isActive = is_active;
   if (discord_link !== undefined) updates.discordLink = discord_link;
-  if (invite_code !== undefined) updates.inviteCode = invite_code;
+  if (image_url !== undefined) updates.imageUrl = image_url;
+  if (invite_code !== undefined) {
+    const code = String(invite_code).trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (code.length < 4 || code.length > 16) {
+      res.status(400).json({ error: "Le code doit contenir entre 4 et 16 caractères alphanumériques" });
+      return;
+    }
+    const [existing] = await db.select().from(campaignsTable)
+      .where(and(eq(campaignsTable.inviteCode, code), sql`${campaignsTable.id} != ${id}`));
+    if (existing) {
+      res.status(409).json({ error: "Ce code est déjà utilisé par une autre campagne" });
+      return;
+    }
+    updates.inviteCode = code;
+  }
 
   const [campaign] = await db.update(campaignsTable).set(updates)
     .where(and(eq(campaignsTable.id, id), eq(campaignsTable.userId, userId)))
