@@ -1002,7 +1002,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.drawImage(tmp, 0, 0);
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart, isGM, gridColor, gridMajorColor]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode]);
 
   // ── Resize observer ──
   useEffect(() => {

@@ -17,6 +17,7 @@ import DiceRoller from "./pages/DiceRoller";
 import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
+import JoinCampaign from "./pages/JoinCampaign";
 import { useUser } from "@clerk/react";
 
 const queryClient = new QueryClient();
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
               <Route path="/compendium" element={<Compendium />} />
               <Route path="/dice" element={<DiceRoller />} />
+              <Route path="/join/:code" element={<JoinCampaign />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <MobileBottomNav />

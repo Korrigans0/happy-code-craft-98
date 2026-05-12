@@ -6,45 +6,43 @@
 
 @layer base {
   :root {
-    /* ── AETHERIA — Bleu marine #1e3a5f + Or #c9a227 + Parchemin ── */
+    /* ── AETHERIA — Bleu nuit profond #0d1829 + Or #c9a227 ── */
 
-    /* Fond principal : bleu marine doux */
-    --background: 213 52% 24%;        /* #1e3a5f */
-    --foreground: 43 25% 88%;         /* crème chaude */
+    --background: 215 70% 8%;          /* #050d1a très sombre */
+    --foreground: 43 30% 90%;
 
-    /* Cartes : bleu légèrement plus sombre avec teinte parchemin */
-    --card: 213 48% 20%;
-    --card-foreground: 43 25% 88%;
+    --card: 215 60% 12%;
+    --card-foreground: 43 30% 90%;
 
-    --popover: 213 48% 18%;
-    --popover-foreground: 43 25% 88%;
+    --popover: 215 62% 11%;
+    --popover-foreground: 43 30% 90%;
 
     /* Or Aetheria */
-    --primary: 43 67% 47%;            /* #c9a227 */
-    --primary-foreground: 213 52% 12%;
+    --primary: 43 75% 50%;             /* #c9a227 légèrement plus vif */
+    --primary-foreground: 215 70% 8%;
 
-    --secondary: 213 40% 28%;
-    --secondary-foreground: 43 25% 88%;
+    --secondary: 215 45% 18%;
+    --secondary-foreground: 43 30% 90%;
 
-    --muted: 213 38% 22%;
-    --muted-foreground: 213 20% 60%;
+    --muted: 215 50% 14%;
+    --muted-foreground: 215 20% 55%;
 
-    --accent: 213 42% 26%;
-    --accent-foreground: 43 25% 88%;
+    --accent: 215 48% 17%;
+    --accent-foreground: 43 30% 90%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 43 25% 95%;
+    --destructive-foreground: 43 30% 95%;
 
-    --border: 213 35% 30%;
-    --input: 213 38% 22%;
-    --ring: 43 67% 47%;
+    --border: 215 40% 20%;
+    --input: 215 50% 14%;
+    --ring: 43 75% 50%;
 
     --radius: 0.75rem;
 
-    /* ── Parchemin — utilisé pour les zones de contenu chaudes ── */
-    --parchment: 43 60% 88%;          /* #f0deb0 */
-    --parchment-dark: 38 45% 78%;     /* #e8cfa0 */
-    --parchment-border: 38 55% 55%;   /* #c9a227 medium */
+    /* ── Parchemin ── */
+    --parchment: 43 60% 88%;
+    --parchment-dark: 38 45% 78%;
+    --parchment-border: 38 55% 55%;
 
     /* ── Feature colors ── */
     --feature-dice: 142 70% 45%;
@@ -53,46 +51,46 @@
     --feature-character: 340 75% 55%;
 
     /* ── Gradients ── */
-    --gradient-gold: linear-gradient(135deg, hsl(43, 67%, 52%) 0%, hsl(35, 80%, 40%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(213, 52%, 20%) 0%, hsl(213, 55%, 15%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(213, 48%, 22%) 0%, hsl(213, 48%, 17%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(43, 75%, 55%) 0%, hsl(35, 85%, 42%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(215, 70%, 10%) 0%, hsl(215, 72%, 7%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(215, 60%, 13%) 0%, hsl(215, 62%, 10%) 100%);
     --gradient-parchment: linear-gradient(160deg, hsl(43, 60%, 92%) 0%, hsl(38, 50%, 84%) 40%, hsl(35, 45%, 80%) 100%);
 
     /* ── Shadows ── */
-    --shadow-gold: 0 0 20px hsl(43, 67%, 47%, 0.25);
-    --shadow-card: 0 8px 32px hsl(0, 0%, 0%, 0.35);
+    --shadow-gold: 0 0 30px hsl(43, 75%, 50%, 0.30);
+    --shadow-card: 0 8px 40px hsl(0, 0%, 0%, 0.55);
 
     /* ── Sidebar ── */
-    --sidebar-background: 213 55% 18%;
-    --sidebar-foreground: 43 25% 88%;
-    --sidebar-primary: 43 67% 47%;
-    --sidebar-primary-foreground: 213 52% 12%;
-    --sidebar-accent: 213 42% 24%;
-    --sidebar-accent-foreground: 43 25% 88%;
-    --sidebar-border: 213 35% 28%;
-    --sidebar-ring: 43 67% 47%;
+    --sidebar-background: 215 68% 10%;
+    --sidebar-foreground: 43 30% 90%;
+    --sidebar-primary: 43 75% 50%;
+    --sidebar-primary-foreground: 215 70% 8%;
+    --sidebar-accent: 215 48% 15%;
+    --sidebar-accent-foreground: 43 30% 90%;
+    --sidebar-border: 215 40% 18%;
+    --sidebar-ring: 43 75% 50%;
   }
 
   .dark {
-    --background: 213 52% 24%;
-    --foreground: 43 25% 88%;
-    --card: 213 48% 20%;
-    --card-foreground: 43 25% 88%;
-    --popover: 213 48% 18%;
-    --popover-foreground: 43 25% 88%;
-    --primary: 43 67% 47%;
-    --primary-foreground: 213 52% 12%;
-    --secondary: 213 40% 28%;
-    --secondary-foreground: 43 25% 88%;
-    --muted: 213 38% 22%;
-    --muted-foreground: 213 20% 60%;
-    --accent: 213 42% 26%;
-    --accent-foreground: 43 25% 88%;
+    --background: 215 70% 8%;
+    --foreground: 43 30% 90%;
+    --card: 215 60% 12%;
+    --card-foreground: 43 30% 90%;
+    --popover: 215 62% 11%;
+    --popover-foreground: 43 30% 90%;
+    --primary: 43 75% 50%;
+    --primary-foreground: 215 70% 8%;
+    --secondary: 215 45% 18%;
+    --secondary-foreground: 43 30% 90%;
+    --muted: 215 50% 14%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 215 48% 17%;
+    --accent-foreground: 43 30% 90%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 43 25% 95%;
-    --border: 213 35% 30%;
-    --input: 213 38% 22%;
-    --ring: 43 67% 47%;
+    --destructive-foreground: 43 30% 95%;
+    --border: 215 40% 20%;
+    --input: 215 50% 14%;
+    --ring: 43 75% 50%;
   }
 }
 
@@ -112,10 +110,10 @@
     @apply bg-background text-foreground;
     font-family: 'Lora', serif;
     padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
-    /* Texture subtile bleu nuit */
     background-image:
-      radial-gradient(ellipse at 20% 0%, hsl(213, 60%, 30%) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, hsl(213, 55%, 18%) 0%, transparent 60%);
+      radial-gradient(ellipse at 20% 0%, hsl(215, 80%, 18%) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, hsl(215, 70%, 10%) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, hsl(43, 50%, 10%) 0%, transparent 70%);
   }
 
   @media (min-width: 768px) {
@@ -142,13 +140,13 @@
 
   /* Scrollbar assortie */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: hsl(213, 52%, 18%); }
+  ::-webkit-scrollbar-track { background: hsl(215, 70%, 8%); }
   ::-webkit-scrollbar-thumb {
-    background: hsl(213, 35%, 32%);
+    background: hsl(215, 40%, 22%);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(43, 67%, 47%, 0.5);
+    background: hsl(43, 75%, 50%, 0.5);
   }
 
   .safe-pt { padding-top: env(safe-area-inset-top); }
@@ -159,7 +157,7 @@
 
   /* ── Texte or gradient ── */
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(43, 75%, 65%) 0%, hsl(35, 80%, 50%) 50%, hsl(43, 70%, 58%) 100%);
+    background: linear-gradient(135deg, hsl(43, 85%, 68%) 0%, hsl(35, 90%, 52%) 50%, hsl(43, 80%, 62%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -167,17 +165,17 @@
 
   /* ── Fond or gradient ── */
   .bg-gradient-gold {
-    background: linear-gradient(135deg, hsl(43, 67%, 47%) 0%, hsl(35, 80%, 38%) 100%);
+    background: linear-gradient(135deg, hsl(43, 75%, 50%) 0%, hsl(35, 85%, 40%) 100%);
   }
 
   /* ── Fond bleu nuit (pages) ── */
   .bg-gradient-dark {
-    background: linear-gradient(180deg, hsl(213, 52%, 22%) 0%, hsl(213, 55%, 17%) 100%);
+    background: linear-gradient(180deg, hsl(215, 70%, 10%) 0%, hsl(215, 72%, 7%) 100%);
   }
 
   /* ── Fond carte standard ── */
   .bg-gradient-card {
-    background: linear-gradient(145deg, hsl(213, 48%, 23%) 0%, hsl(213, 48%, 18%) 100%);
+    background: linear-gradient(145deg, hsl(215, 60%, 13%) 0%, hsl(215, 62%, 10%) 100%);
   }
 
   /* ── Fond parchemin — pour cartes de contenu chaudes ── */
@@ -186,7 +184,7 @@
     color: hsl(30, 40%, 15%);
   }
 
-  /* ── Carte parchemin (utilisée dans Compendium, fiches) ── */
+  /* ── Carte parchemin ── */
   .card-parchment {
     background: linear-gradient(145deg, hsl(43, 55%, 90%) 0%, hsl(38, 48%, 83%) 100%);
     border: 1px solid hsl(38, 55%, 60%);
@@ -201,29 +199,23 @@
 
   /* ── Shadows ── */
   .shadow-gold {
-    box-shadow: 0 0 20px hsl(43, 67%, 47%, 0.2), 0 0 60px hsl(43, 67%, 47%, 0.07);
+    box-shadow: 0 0 30px hsl(43, 75%, 50%, 0.25), 0 0 80px hsl(43, 75%, 50%, 0.08);
   }
   .shadow-card {
-    box-shadow: 0 8px 32px hsl(0, 0%, 0%, 0.35);
+    box-shadow: 0 8px 40px hsl(0, 0%, 0%, 0.55);
   }
   .glow-gold {
-    filter: drop-shadow(0 0 8px hsl(43, 67%, 47%, 0.45)) drop-shadow(0 0 24px hsl(43, 67%, 47%, 0.15));
+    filter: drop-shadow(0 0 10px hsl(43, 75%, 50%, 0.55)) drop-shadow(0 0 30px hsl(43, 75%, 50%, 0.18));
   }
 
   /* ── Plateau — Mode Ciel ── */
   .tabletop-sky {
     background-color: #c8d8e8;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
   }
 
   /* ── Plateau — Mode Sombre ── */
   .tabletop-dark {
     background-color: #0f1520;
-    background-image:
-      linear-gradient(rgba(201, 162, 39, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 162, 39, 0.08) 1px, transparent 1px);
   }
 
   /* ── Animations ── */
@@ -290,8 +282,8 @@
 
   /* ── Bordure dorée animée ── */
   .border-gold-glow {
-    border: 1px solid hsl(43, 67%, 47%, 0.4);
-    box-shadow: 0 0 0 1px hsl(43, 67%, 47%, 0.1), inset 0 0 20px hsl(43, 67%, 47%, 0.03);
+    border: 1px solid hsl(43, 75%, 50%, 0.45);
+    box-shadow: 0 0 0 1px hsl(43, 75%, 50%, 0.12), inset 0 0 20px hsl(43, 75%, 50%, 0.04);
   }
 
   /* ── Hover card lift ── */
@@ -299,7 +291,7 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .card-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px hsl(0, 0%, 0%, 0.4), 0 0 20px hsl(43, 67%, 47%, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 50px hsl(0, 0%, 0%, 0.6), 0 0 30px hsl(43, 75%, 50%, 0.12);
   }
 }
