@@ -791,28 +791,33 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
         >
           <Canvas
             shadows
-            camera={{ position: [0, 8, 9], fov: 45 }}
-            gl={{ antialias: true, alpha: false }}
-            style={{ background: "radial-gradient(ellipse at center, #1a1822 0%, #07060c 70%)" }}
+            camera={{ position: [0, 8, 9], fov: 42 }}
+            gl={{
+              antialias: true,
+              alpha: false,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.05,
+            }}
+            style={{ background: "radial-gradient(ellipse at center, #15131c 0%, #050407 70%)" }}
           >
             <Suspense fallback={null}>
-              <ambientLight intensity={0.25} />
+              <ambientLight intensity={0.18} color="#9ca6c2" />
               <directionalLight
-                position={[5, 12, 5]}
-                intensity={1.4}
+                position={[6, 12, 4]}
+                intensity={2.1}
                 castShadow
-                shadow-mapSize-width={1024}
-                shadow-mapSize-height={1024}
+                shadow-mapSize-width={2048}
+                shadow-mapSize-height={2048}
                 shadow-camera-left={-8}
                 shadow-camera-right={8}
                 shadow-camera-top={8}
                 shadow-camera-bottom={-8}
-                color="#fff5d8"
+                shadow-bias={-0.0003}
+                color="#fff1cc"
               />
-              <pointLight position={[-4, 3, -4]} intensity={0.6} color="#6b3df0" />
-              <pointLight position={[4, 3, -4]} intensity={0.5} color="#c9a04a" />
+              <directionalLight position={[-4, 6, -8]} intensity={1.2} color="#7a86c8" />
+              <pointLight position={[4, 2, 4]} intensity={0.4} color="#c9a04a" distance={12} />
 
-              {/* Critical effect lights */}
               {lastCrit === "success" && !throwing && (
                 <pointLight position={[0, 3, 0]} intensity={3} color="#ffd97a" distance={8} />
               )}
@@ -820,7 +825,8 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
                 <pointLight position={[0, 2, 0]} intensity={2} color="#a01818" distance={6} />
               )}
 
-              <Environment preset="night" />
+              <Environment preset="warehouse" environmentIntensity={0.35} />
+
               <DynamicCamera active={throwing} />
 
               <Physics
