@@ -14,6 +14,10 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import DiceRoller3D from "./DiceRoller3D";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
@@ -21,6 +25,7 @@ import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene,
 } from "./vtt/types";
+import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
