@@ -50,6 +50,50 @@ interface DieMaterial {
  *  (face normals are used to determine the "up" face)
  * --------------------------------------------------------- */
 
+/**
+ * Build a true pentagonal trapezohedron (real d10 shape: 10 congruent kite faces).
+ */
+function buildPentagonalTrapezohedron(scale = 1): THREE.BufferGeometry {
+  const apex = 1.0 * scale;
+  const r = 1.0 * scale;
+  const z = 0.18 * scale; // equatorial zigzag offset
+  const top = new THREE.Vector3(0, 0, apex);
+  const bot = new THREE.Vector3(0, 0, -apex);
+  const upper: THREE.Vector3[] = [];
+  const lower: THREE.Vector3[] = [];
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    upper.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, z));
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = ((i + 0.5) / 5) * Math.PI * 2;
+    lower.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, -z));
+  }
+  // 10 kite faces (each split into 2 triangles for buffer)
+  const verts: number[] = [];
+  const pushTri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => {
+    verts.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  };
+  for (let i = 0; i < 5; i++) {
+    const u0 = upper[i], u1 = upper[(i + 1) % 5];
+    const l0 = lower[i];
+    // Upper kite: top, u0, l0, u1
+    pushTri(top, u0, l0);
+    pushTri(top, l0, u1);
+  }
+  for (let i = 0; i < 5; i++) {
+    const l0 = lower[i], l1 = lower[(i + 1) % 5];
+    const u1 = upper[(i + 1) % 5];
+    // Lower kite: bot, l1, u1, l0  (winding for outward normal)
+    pushTri(bot, l1, u1);
+    pushTri(bot, u1, l0);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
 function getPolyhedronData(sides: DieType): {
   geometry: THREE.BufferGeometry;
   faceNormals: THREE.Vector3[];
@@ -63,7 +107,7 @@ function getPolyhedronData(sides: DieType): {
     case 4:  geom = new TetrahedronGeometry(0.95); radius = 0.95; break;
     case 6:  geom = new THREE.BoxGeometry(1.4, 1.4, 1.4); radius = 0.7; break;
     case 8:  geom = new OctahedronGeometry(1); radius = 1; break;
-    case 10: geom = new OctahedronGeometry(1); radius = 1; break;
+    case 10: geom = buildPentagonalTrapezohedron(0.95); radius = 0.95; break;
     case 12: geom = new DodecahedronGeometry(0.95); radius = 0.95; break;
     case 20: geom = new IcosahedronGeometry(0.95); radius = 0.95; break;
   }
@@ -72,7 +116,6 @@ function getPolyhedronData(sides: DieType): {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const triCount = pos.count / 3;
 
-  // Per-triangle: normal + centroid + 3 vertices
   type Tri = { n: THREE.Vector3; c: THREE.Vector3; v: THREE.Vector3[] };
   const tris: Tri[] = [];
   for (let i = 0; i < triCount; i++) {
@@ -84,7 +127,7 @@ function getPolyhedronData(sides: DieType): {
     tris.push({ n, c: cen, v: [a, b, c] });
   }
 
-  // Group coplanar triangles together (same normal)
+  // Group coplanar triangles together (same outward normal)
   const groups: { normal: THREE.Vector3; verts: THREE.Vector3[] }[] = [];
   for (const t of tris) {
     const g = groups.find(g => g.normal.dot(t.n) > 0.999);
@@ -92,24 +135,43 @@ function getPolyhedronData(sides: DieType): {
     else groups.push({ normal: t.n.clone(), verts: [...t.v] });
   }
 
-  const faceCount = sides === 10 ? 8 : sides;
-  const useGroups = groups.slice(0, faceCount);
-  const faceNormals = useGroups.map(g => g.normal);
-  const faceCenters = useGroups.map(g => {
+  const faceNormals = groups.map(g => g.normal);
+  const faceCenters = groups.map(g => {
     const sum = new THREE.Vector3();
     g.verts.forEach(v => sum.add(v));
     return sum.divideScalar(g.verts.length);
   });
 
+  // Standard d-die numbering: opposite faces sum to (sides+1) for d4/d6/d8/d12/d20.
+  // Real d10 numbers 0-9 (we map 1-10 with 10 = "0" face); opposite faces sum to 9.
   const faceValues: number[] = [];
-  for (let i = 0; i < faceNormals.length; i++) {
-    if (sides === 10) {
-      // Distribute 1..10 across 8 faces by stepping
-      faceValues.push(((i * 3) % 10) + 1);
-    } else {
-      faceValues.push(i + 1);
+  if (sides === 10) {
+    // Walk 10 faces; assign 1..10 such that opposite (anti-normal) faces sum to 11.
+    const used = new Array(10).fill(false);
+    const order: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      if (used[i]) continue;
+      // find opposite
+      let opp = -1;
+      for (let j = 0; j < 10; j++) {
+        if (i !== j && faceNormals[i].dot(faceNormals[j]) < -0.95) { opp = j; break; }
+      }
+      order.push(i);
+      if (opp >= 0) order.push(opp);
+      used[i] = true;
+      if (opp >= 0) used[opp] = true;
     }
+    const tmp = new Array(10).fill(0);
+    for (let k = 0; k < order.length; k += 2) {
+      const v = (k / 2) + 1;
+      tmp[order[k]] = v;
+      if (order[k + 1] !== undefined) tmp[order[k + 1]] = 11 - v;
+    }
+    faceValues.push(...tmp);
+  } else {
+    for (let i = 0; i < faceNormals.length; i++) faceValues.push(i + 1);
   }
+
   return { geometry: geom, faceNormals, faceCenters, faceValues, radius };
 }
 
