@@ -332,6 +332,25 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return () => { if (pingAnimRef.current) cancelAnimationFrame(pingAnimRef.current); };
   }, [pings.length]);
 
+  // ── Realtime ping broadcast (multi-vues) ──
+  useEffect(() => {
+    if (!campaignId) return;
+    const channel = supabase.channel(`vtt-ping-${campaignId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel.on("broadcast", { event: "ping" }, ({ payload }) => {
+      const p = payload as { wx: number; wy: number };
+      if (typeof p?.wx !== "number" || typeof p?.wy !== "number") return;
+      setPings(prev => [...prev, { id: newId(), wx: p.wx, wy: p.wy, t: Date.now() }]);
+    });
+    channel.subscribe();
+    pingChannelRef.current = channel;
+    return () => {
+      pingChannelRef.current = null;
+      supabase.removeChannel(channel);
+    };
+  }, [campaignId]);
+
   // ── Helpers ──
   const snapValue = useCallback(
     (v: number) => snapToGrid ? Math.round(v / GRID_SIZE) * GRID_SIZE : v,
