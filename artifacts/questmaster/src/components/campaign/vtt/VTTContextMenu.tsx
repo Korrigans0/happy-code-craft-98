@@ -172,10 +172,28 @@ export default function VTTContextMenu({
             <Crosshair className="h-4 w-4" />
             Centrer la vue
           </button>
+          {onViewSheet && (
+            <button className={ITEM_CLASS} onClick={() => act(onViewSheet)}>
+              <ScrollText className="h-4 w-4 text-primary" />
+              Voir la fiche
+            </button>
+          )}
           {isGM && (
             <button className={ITEM_CLASS} onClick={() => act(onDuplicate)}>
               <Copy className="h-4 w-4" />
               Dupliquer
+            </button>
+          )}
+          {isGM && onCopyToken && (
+            <button className={ITEM_CLASS} onClick={() => act(onCopyToken)}>
+              <ClipboardCopy className="h-4 w-4" />
+              Copier (Ctrl+C)
+            </button>
+          )}
+          {isGM && (
+            <button className={ITEM_CLASS} onClick={() => act(onEditGmNotes)}>
+              <Lock className="h-4 w-4 text-amber-400" />
+              Notes MJ (privées)
             </button>
           )}
           {isGM && (
