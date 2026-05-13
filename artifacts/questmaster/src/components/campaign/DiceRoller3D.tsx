@@ -383,30 +383,44 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
-  // Pre-compute per-face text transforms (position + quaternion aligning +Z to face normal)
+  // Pre-compute per-face label transforms.
+  // Text is oriented so its plane normal matches the face outward normal,
+  // and slightly inset away from the surface to fake an engraving.
   const faceLabels = useMemo(() => {
     const up = new THREE.Vector3(0, 0, 1);
+    // Determine a reference scale based on the average face-center distance
+    const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
     return data.faceNormals.map((n, i) => {
       const q = new THREE.Quaternion().setFromUnitVectors(up, n.clone().normalize());
-      // Slight offset along normal to avoid z-fighting
-      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.012);
+      // Sit just outside the face (avoids z-fighting, reads as engraved with emissive)
+      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.008);
       const value = data.faceValues[i];
-      const label = value === 6 || value === 9 ? `${value}\u0332` : `${value}`; // combining underline
-      // Font size scales by face size (use distance from center)
-      const size = data.faceCenters[i].length() * 0.55;
-      return { pos: pos.toArray() as [number, number, number],
-               quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
-               label, size };
+      // Per-die font sizing — tuned per shape so digits are big & legible
+      const sizeMap: Record<DieType, number> = {
+        4:  avgRadius * 0.55,
+        6:  0.55,
+        8:  avgRadius * 0.62,
+        10: avgRadius * 0.55,
+        12: avgRadius * 0.55,
+        20: avgRadius * 0.50,
+      };
+      const size = sizeMap[type];
+      // Display 10 as "0" on real d10 face (classic), keep others as digits
+      const label = type === 10 && value === 10 ? "0" : `${value}`;
+      const needsUnderline = value === 6 || value === 9;
+      return {
+        pos: pos.toArray() as [number, number, number],
+        quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+        label, size, needsUnderline,
+      };
     });
-  }, [data]);
-
-  const labelStroke = "#0a0a0a";
+  }, [data, type]);
 
   return (
     <group>
       <Trail
-        width={0.6}
-        length={6}
+        width={0.45}
+        length={5}
         color={material.emissive}
         attenuation={(t) => t * t}
       >
@@ -419,28 +433,40 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
           <meshPhysicalMaterial
             color={material.base}
             emissive={material.emissive}
-            emissiveIntensity={0.35}
+            emissiveIntensity={0.18}
             metalness={material.metal}
             roughness={material.rough}
-            clearcoat={0.6}
-            clearcoatRoughness={0.2}
-            reflectivity={0.6}
+            clearcoat={0.35}
+            clearcoatRoughness={0.55}
+            reflectivity={0.45}
+            envMapIntensity={0.8}
           />
+
           {faceLabels.map((f, i) => (
-            <Text
-              key={i}
-              position={f.pos}
-              quaternion={f.quat}
-              fontSize={f.size}
-              color="#f5e6b3"
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={f.size * 0.08}
-              outlineColor={labelStroke}
-              renderOrder={2}
-            >
-              {f.label}
-            </Text>
+            <group key={i} position={f.pos} quaternion={f.quat}>
+              {/* Engraved digit — emissive so it reads as a glowing rune */}
+              <Text
+                fontSize={f.size}
+                color="#fff1c2"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={f.size * 0.06}
+                outlineColor="#1a0d02"
+                outlineOpacity={0.85}
+                material-toneMapped={false}
+                renderOrder={2}
+                position={[0, f.needsUnderline ? f.size * 0.08 : 0, 0]}
+              >
+                {f.label}
+              </Text>
+              {/* Tiny dot under 6/9 for orientation — much cleaner than combining underline */}
+              {f.needsUnderline && (
+                <mesh position={[0, -f.size * 0.42, 0.001]} renderOrder={3}>
+                  <circleGeometry args={[f.size * 0.07, 16]} />
+                  <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                </mesh>
+              )}
+            </group>
           ))}
         </mesh>
       </Trail>
