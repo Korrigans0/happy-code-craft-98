@@ -226,9 +226,6 @@ const CampaignPlay = () => {
               <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} isGM={isGM} />
               </TabsContent>
-              <TabsContent value="combat" className="m-0 h-full">
-                <CampaignCombat campaignId={id!} isGM={isGM} />
-              </TabsContent>
               <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
