@@ -62,6 +62,8 @@ export function useTabletopSync({
   debounceMs = 600,
 }: UseTabletopSyncOptions) {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingStateRef = useRef<Partial<TabletopState>>({});
+  const writeQueueRef = useRef(Promise.resolve());
   const initializedRef = useRef(false);
   const onStateReceivedRef = useRef(onStateReceived);
 
@@ -70,15 +72,32 @@ export function useTabletopSync({
   }, [onStateReceived]);
 
   const saveState = useCallback(
-    (state: Partial<TabletopState>) => {
+    (state: Partial<TabletopState>, options?: { immediate?: boolean }) => {
       if (!initializedRef.current) return;
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          await campaignsApi.saveTabletop(campaignId, state);
-        } catch (e) {
+      pendingStateRef.current = { ...pendingStateRef.current, ...state };
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+
+      const persist = async () => {
+        const payload = pendingStateRef.current;
+        pendingStateRef.current = {};
+        writeQueueRef.current = writeQueueRef.current
+          .catch(() => undefined)
+          .then(() => campaignsApi.saveTabletop(campaignId, payload).then(() => undefined));
+        await writeQueueRef.current.catch((e) => {
           console.error("[Tabletop] Erreur sauvegarde:", e);
-        }
+        });
+      };
+
+      if (options?.immediate) {
+        void persist();
+        return;
+      }
+
+      saveTimeoutRef.current = setTimeout(() => {
+        void persist();
       }, debounceMs);
     },
     [campaignId, userId, debounceMs]

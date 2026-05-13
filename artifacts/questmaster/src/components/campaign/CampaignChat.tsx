@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X } from "lucide-react";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
@@ -167,6 +167,23 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     },
   });
 
+  const clearMutation = useMutation({
+    mutationFn: () => campaignsApi.clearMessages(campaignId, isWhisper ? "gm" : "chat"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
+      toast({ title: isWhisper ? "Chat MJ vidé" : "Chat vidé" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de vider le chat", variant: "destructive" });
+    },
+  });
+
+  const handleClearChat = () => {
+    const label = isWhisper ? "le chat MJ" : "le chat normal";
+    if (!confirm(`Vider ${label} pour cette campagne ?`)) return;
+    clearMutation.mutate();
+  };
+
   const handleSend = () => {
     if (!message.trim()) return;
     const msgType = isWhisper ? "whisper" : "chat";
@@ -226,8 +243,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     }
 
     const content = modifier !== 0
-      ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier} = **${total}**`
-      : `${prefix} ${input} → [${results.join(", ")}] = **${total}**`;
+      ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier}`
+      : `${prefix} ${input} → [${results.join(", ")}]`;
 
     sendMutation.mutate({
       content,
@@ -253,7 +270,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       if (results[0] === 1) prefix = "🎲💀 ÉCHEC CRITIQUE !";
     }
 
-    const content = `${prefix} ${action.skill} (${action.dice}) → [${results.join(", ")}] = **${total}**`;
+    const content = `${prefix} ${action.skill} (${action.dice}) → [${results.join(", ")}]`;
     sendMutation.mutate({
       content,
       message_type: "dice_roll",
@@ -460,6 +477,18 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
               title={isWhisper ? "Murmure activé (MJ seul)" : "Message public"}
             >
               {isWhisper ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          )}
+          {isGM && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-destructive"
+              onClick={handleClearChat}
+              disabled={clearMutation.isPending || visibleMessages.length === 0}
+              title={isWhisper ? "Vider le chat MJ" : "Vider le chat normal"}
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
           <Button
