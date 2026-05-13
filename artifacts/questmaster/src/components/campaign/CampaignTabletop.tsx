@@ -1014,8 +1014,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           const __p = (performance.now() - __anim.start) / __anim.duration;
           if (__p >= 1) {
             tokenAnimRef.current.delete(__t.id);
+            // __dx/__dy already at target (__t.x/__t.y) — exact landing, no micro-jump
           } else {
-            const __e = 1 - Math.pow(1 - __p, 3); // easeOutCubic
+            const __e = 1 - Math.pow(1 - __p, 5); // easeOutQuint — smoother arrival
             __dx = __anim.fromX + (__anim.toX - __anim.fromX) * __e;
             __dy = __anim.fromY + (__anim.toY - __anim.fromY) * __e;
           }
