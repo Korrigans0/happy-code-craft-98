@@ -127,7 +127,7 @@ const CampaignPlay = () => {
   const tabs = [
     { id: "tabletop", icon: Map, label: "Partie" },
     { id: "chat", icon: MessageSquare, label: "Chat" },
-    { id: "combat", icon: Swords, label: "Combat" },
+    
     { id: "sessions", icon: CalendarDays, label: "Sessions" },
     { id: "notes", icon: BookOpen, label: "Notes" },
     { id: "members", icon: Users, label: "Joueurs" },
