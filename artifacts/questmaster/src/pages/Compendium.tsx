@@ -15,6 +15,21 @@ import AetheriaBestiary from "@/components/compendium/AetheriaBestiary";
 import AetheriaMatchups from "@/components/compendium/AetheriaMatchups";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
+import SEO from "@/components/SEO";
+
+const COMPENDIUM_SEO = (
+  <SEO
+    title="Compendium Aetheria & Worlds Awakening — Bestiaire, races, codex"
+    description="Compendium Aetheria & Worlds Awakening : bestiaire, races, classes, factions, royaumes et règles pour le jeu de rôle en ligne."
+    path="/compendium"
+    jsonLd={{
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "Compendium Aetheria & Worlds Awakening",
+      url: "https://aetheria-vtt.lovable.app/compendium",
+    }}
+  />
+);
 
 // ── Placeholder Codex Aetheria ──────────────────────────────
 const AetheriaCodexPlaceholder = () => (
@@ -183,6 +198,7 @@ const Compendium = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
+      {COMPENDIUM_SEO}
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">

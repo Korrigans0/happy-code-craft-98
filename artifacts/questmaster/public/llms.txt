@@ -1,0 +1,16 @@
+# Aetheria VTT
+
+> Table virtuelle immersive dédiée à l'univers Aetheria et au système Worlds Awakening : campagnes, bestiaire, personnages, combats et lancers de dés en ligne.
+
+Aetheria VTT permet aux maîtres du jeu et aux joueurs de gérer des parties de jeu de rôle dans l'univers d'Aetheria avec un plateau virtuel, un compendium des règles, un éditeur de personnages et des outils de combat en temps réel.
+
+## Pages
+
+- [Accueil](/): Présentation d'Aetheria VTT et de ses fonctionnalités.
+- [Compendium](/compendium): Bestiaire, classes, races, sorts et règles d'Aetheria & Worlds Awakening.
+- [Lanceur de dés](/dice): Outil de lancer de dés 3D pour le jeu de rôle.
+
+## Optional
+
+- [Connexion](/sign-in): Accès au compte joueur ou MJ.
+- [Inscription](/sign-up): Créer un compte d'aventurier.

@@ -3,6 +3,15 @@ import { Dices, RotateCcw, Plus, Minus, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
+
+const DICE_SEO = (
+  <SEO
+    title="Lanceur de dés en ligne — D4, D6, D8, D10, D12, D20, D100"
+    description="Lanceur de dés JDR en ligne : D4, D6, D8, D10, D12, D20, D100 avec modificateurs et historique. Conçu pour Aetheria et Worlds Awakening."
+    path="/dice"
+  />
+);
 
 interface DiceType {
   sides: number;
@@ -71,6 +80,7 @@ const DiceRoller = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
+      {DICE_SEO}
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">
