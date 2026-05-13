@@ -74,7 +74,10 @@ export function useTabletopSync({
     (state: Partial<TabletopState>, options?: { immediate?: boolean }) => {
       if (!initializedRef.current) return;
       pendingStateRef.current = { ...pendingStateRef.current, ...state };
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
 
       const persist = async () => {
         const payload = pendingStateRef.current;
