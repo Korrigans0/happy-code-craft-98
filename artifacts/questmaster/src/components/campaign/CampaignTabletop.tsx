@@ -189,6 +189,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
+  // ── Token clipboard (copy / paste) ──
+  const tokenClipboardRef = useRef<TokenItem | null>(null);
+  const [hasClipboard, setHasClipboard] = useState(false);
+
+  // ── Voir fiche dialog ──
+  const [sheetToken, setSheetToken] = useState<TokenItem | null>(null);
+
+  // ── Notes MJ dialog ──
+  const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
+  const [gmNotesContent, setGmNotesContent] = useState("");
+  const [gmNotesLoading, setGmNotesLoading] = useState(false);
+  const [gmNotesSaving, setGmNotesSaving] = useState(false);
+
   // ── Ping animations ──
   const [pings, setPings] = useState<{ id: string; wx: number; wy: number; t: number }[]>([]);
   const pingsRef = useRef<{ id: string; wx: number; wy: number; t: number }[]>([]);
