@@ -465,6 +465,71 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     setSelectedTokenId(copy.id);
   };
 
+  // ── Copy / Paste token ──
+  const copyToken = (tokenId: string) => {
+    const src = tokens.find(t => t.id === tokenId); if (!src) return;
+    tokenClipboardRef.current = src;
+    setHasClipboard(true);
+    toast({ title: "Jeton copié", description: src.name });
+  };
+
+  const pasteTokenAt = (wx?: number, wy?: number) => {
+    const src = tokenClipboardRef.current;
+    if (!src) { toast({ title: "Presse-papiers vide", variant: "destructive" }); return; }
+    if (!perms.canAddToken) { denied("Seul le MJ peut coller un jeton"); return; }
+    const baseX = wx !== undefined ? wx - src.size / 2 : src.x + GRID_SIZE;
+    const baseY = wy !== undefined ? wy - src.size / 2 : src.y;
+    const free = findFreePosition(snapValue(baseX), snapValue(baseY), src.size);
+    const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
+    setTokens(prev => [...prev, copy]);
+    setSelectedTokenId(copy.id);
+  };
+
+  // ── Voir fiche ──
+  const openTokenSheet = (token: TokenItem) => { setSheetToken(token); };
+
+  // ── Notes MJ (privées, RLS GM-only) ──
+  const openGmNotes = async (token: TokenItem) => {
+    if (!isGM) { denied("Notes MJ réservées au MJ"); return; }
+    setGmNotesToken(token);
+    setGmNotesContent("");
+    setGmNotesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("tabletop_token_notes" as any)
+        .select("content")
+        .eq("campaign_id", campaignId)
+        .eq("token_id", token.id)
+        .maybeSingle();
+      if (error) throw error;
+      setGmNotesContent((data as any)?.content ?? "");
+    } catch (e: any) {
+      toast({ title: "Impossible de charger les notes", description: e.message, variant: "destructive" });
+    } finally {
+      setGmNotesLoading(false);
+    }
+  };
+
+  const saveGmNotes = async () => {
+    if (!gmNotesToken || !user?.id) return;
+    setGmNotesSaving(true);
+    try {
+      const { error } = await supabase
+        .from("tabletop_token_notes" as any)
+        .upsert(
+          { campaign_id: campaignId, token_id: gmNotesToken.id, content: gmNotesContent, created_by: user.id },
+          { onConflict: "campaign_id,token_id" }
+        );
+      if (error) throw error;
+      toast({ title: "Notes MJ enregistrées" });
+      setGmNotesToken(null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setGmNotesSaving(false);
+    }
+  };
+
   const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
