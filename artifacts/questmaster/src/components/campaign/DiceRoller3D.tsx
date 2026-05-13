@@ -384,62 +384,6 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
-  // Pip layouts for D6 (unit square coords, range -0.5..0.5)
-  const PIP_LAYOUTS: Record<number, [number, number][]> = {
-    1: [[0, 0]],
-    2: [[-0.28, -0.28], [0.28, 0.28]],
-    3: [[-0.32, -0.32], [0, 0], [0.32, 0.32]],
-    4: [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]],
-    5: [[-0.3, -0.3], [0.3, -0.3], [0, 0], [-0.3, 0.3], [0.3, 0.3]],
-    6: [[-0.3, -0.32], [0.3, -0.32], [-0.3, 0], [0.3, 0], [-0.3, 0.32], [0.3, 0.32]],
-  };
-
-  // Pre-compute per-face transforms.
-  const faceLabels = useMemo(() => {
-    const worldUp = new THREE.Vector3(0, 1, 0);
-    const worldFwd = new THREE.Vector3(0, 0, 1);
-    const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
-    return data.faceNormals.map((n, i) => {
-      const N = n.clone().normalize();
-      // Choose a per-die "up reference" so labels read consistently.
-      // For D10 (pentagonal trapezohedron), digits should point toward the equator,
-      // i.e. away from the nearest apex on the Z axis.
-      let ref: THREE.Vector3;
-      if (type === 10) {
-        // face normal has both radial XY and ±Z; "down toward equator" means -sign(N.z) on Z.
-        ref = new THREE.Vector3(0, 0, N.z >= 0 ? -1 : 1);
-        // If degenerate (face purely vertical), fall back to world up.
-        if (Math.abs(N.dot(ref)) > 0.95) ref = worldUp;
-      } else {
-        ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
-      }
-      const T = new THREE.Vector3().crossVectors(ref, N).normalize();
-      const B = new THREE.Vector3().crossVectors(N, T).normalize();
-      const m = new THREE.Matrix4().makeBasis(T, B, N);
-      const q = new THREE.Quaternion().setFromRotationMatrix(m);
-
-      const pos = data.faceCenters[i].clone().addScaledVector(N, 0.01);
-      const value = data.faceValues[i];
-
-      const sizeMap: Record<DieType, number> = {
-        4:  avgRadius * 0.55,
-        6:  0.62,
-        8:  avgRadius * 0.62,
-        10: avgRadius * 0.42,
-        12: avgRadius * 0.55,
-        20: avgRadius * 0.50,
-      };
-      const size = sizeMap[type];
-      const label = type === 10 && value === 10 ? "0" : `${value}`;
-      const needsUnderline = type !== 6 && (value === 6 || value === 9);
-      return {
-        pos: pos.toArray() as [number, number, number],
-        quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
-        label, size, needsUnderline, value,
-      };
-    });
-  }, [data, type]);
-
   return (
     <group>
       <Trail
@@ -465,81 +409,194 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
             reflectivity={0.4}
             envMapIntensity={0.85}
           />
-
-          {faceLabels.map((f, i) => (
-            <group key={i} position={f.pos} quaternion={f.quat}>
-              {type === 6 ? (
-                // Engraved pips for D6 — classic, no orientation issues
-                (PIP_LAYOUTS[f.value] || []).map(([px, py], pi) => {
-                  const pipR = 0.11;
-                  const face = 1.4;
-                  const x = px * face;
-                  const y = py * face;
-                  return (
-                    <group key={pi} position={[x, y, 0]}>
-                      {/* Recessed dark groove */}
-                      <mesh position={[0, 0, -0.004]} renderOrder={2}>
-                        <circleGeometry args={[pipR * 1.25, 24]} />
-                        <meshBasicMaterial color="#000000" />
-                      </mesh>
-                      {/* Engraved gold pip */}
-                      <mesh position={[0, 0, 0]} renderOrder={3}>
-                        <circleGeometry args={[pipR, 24]} />
-                        <meshBasicMaterial color="#fff1c2" toneMapped={false} />
-                      </mesh>
-                    </group>
-                  );
-                })
-              ) : (
-                <>
-                  {/* Recessed groove shadow */}
-                  <Text
-                    fontSize={f.size}
-                    color="#0a0805"
-                    anchorX="center"
-                    anchorY="middle"
-                    outlineWidth={f.size * 0.13}
-                    outlineColor="#000000"
-                    outlineOpacity={0.95}
-                    outlineBlur={f.size * 0.06}
-                    renderOrder={2}
-                    position={[0, f.needsUnderline ? f.size * 0.09 : 0, -0.004]}
-                  >
-                    {f.label}
-                  </Text>
-                  {/* Bright engraved digit */}
-                  <Text
-                    fontSize={f.size}
-                    color="#fff1c2"
-                    anchorX="center"
-                    anchorY="middle"
-                    outlineWidth={f.size * 0.04}
-                    outlineColor="#3a2208"
-                    outlineOpacity={0.9}
-                    material-toneMapped={false}
-                    renderOrder={3}
-                    position={[0, f.needsUnderline ? f.size * 0.09 : 0, 0]}
-                  >
-                    {f.label}
-                  </Text>
-                  {f.needsUnderline && (
-                    <>
-                      <mesh position={[0, -f.size * 0.45, -0.003]} renderOrder={2}>
-                        <circleGeometry args={[f.size * 0.11, 20]} />
-                        <meshBasicMaterial color="#000000" />
-                      </mesh>
-                      <mesh position={[0, -f.size * 0.45, 0.001]} renderOrder={3}>
-                        <circleGeometry args={[f.size * 0.075, 20]} />
-                        <meshBasicMaterial color="#fff1c2" toneMapped={false} />
-                      </mesh>
-                    </>
-                  )}
-                </>
-              )}
-            </group>
-          ))}
+          <DieFaces type={type} data={data} />
         </mesh>
       </Trail>
+    </group>
+  );
+}
+
+/* ----------------------------------------------------------
+ *  DieFaces — engraved digits / pips for a given die geometry
+ * --------------------------------------------------------- */
+
+const PIP_LAYOUTS: Record<number, [number, number][]> = {
+  1: [[0, 0]],
+  2: [[-0.28, -0.28], [0.28, 0.28]],
+  3: [[-0.32, -0.32], [0, 0], [0.32, 0.32]],
+  4: [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]],
+  5: [[-0.3, -0.3], [0.3, -0.3], [0, 0], [-0.3, 0.3], [0.3, 0.3]],
+  6: [[-0.3, -0.32], [0.3, -0.32], [-0.3, 0], [0.3, 0], [-0.3, 0.32], [0.3, 0.32]],
+};
+
+function DieFaces({
+  type,
+  data,
+}: {
+  type: DieType;
+  data: ReturnType<typeof getPolyhedronData>;
+}) {
+  const faceLabels = useMemo(() => {
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const worldFwd = new THREE.Vector3(0, 0, 1);
+    const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
+    return data.faceNormals.map((n, i) => {
+      const N = n.clone().normalize();
+      let ref: THREE.Vector3;
+      if (type === 10) {
+        ref = new THREE.Vector3(0, 0, N.z >= 0 ? -1 : 1);
+        if (Math.abs(N.dot(ref)) > 0.95) ref = worldUp;
+      } else {
+        ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
+      }
+      const T = new THREE.Vector3().crossVectors(ref, N).normalize();
+      const B = new THREE.Vector3().crossVectors(N, T).normalize();
+      const m = new THREE.Matrix4().makeBasis(T, B, N);
+      const q = new THREE.Quaternion().setFromRotationMatrix(m);
+      const pos = data.faceCenters[i].clone().addScaledVector(N, 0.01);
+      const value = data.faceValues[i];
+      const sizeMap: Record<DieType, number> = {
+        4:  avgRadius * 0.55,
+        6:  0.62,
+        8:  avgRadius * 0.62,
+        10: avgRadius * 0.42,
+        12: avgRadius * 0.55,
+        20: avgRadius * 0.50,
+      };
+      const size = sizeMap[type];
+      const label = type === 10 && value === 10 ? "0" : `${value}`;
+      const needsUnderline = type !== 6 && (value === 6 || value === 9);
+      return {
+        pos: pos.toArray() as [number, number, number],
+        quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+        label, size, needsUnderline, value,
+      };
+    });
+  }, [data, type]);
+
+  return (
+    <>
+      {faceLabels.map((f, i) => (
+        <group key={i} position={f.pos} quaternion={f.quat}>
+          {type === 6 ? (
+            (PIP_LAYOUTS[f.value] || []).map(([px, py], pi) => {
+              const pipR = 0.11;
+              const face = 1.4;
+              return (
+                <group key={pi} position={[px * face, py * face, 0]}>
+                  <mesh position={[0, 0, -0.004]} renderOrder={2}>
+                    <circleGeometry args={[pipR * 1.25, 24]} />
+                    <meshBasicMaterial color="#000000" />
+                  </mesh>
+                  <mesh position={[0, 0, 0]} renderOrder={3}>
+                    <circleGeometry args={[pipR, 24]} />
+                    <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                  </mesh>
+                </group>
+              );
+            })
+          ) : (
+            <>
+              <Text
+                fontSize={f.size}
+                color="#0a0805"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={f.size * 0.13}
+                outlineColor="#000000"
+                outlineOpacity={0.95}
+                outlineBlur={f.size * 0.06}
+                renderOrder={2}
+                position={[0, f.needsUnderline ? f.size * 0.09 : 0, -0.004]}
+              >
+                {f.label}
+              </Text>
+              <Text
+                fontSize={f.size}
+                color="#fff1c2"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={f.size * 0.04}
+                outlineColor="#3a2208"
+                outlineOpacity={0.9}
+                material-toneMapped={false}
+                renderOrder={3}
+                position={[0, f.needsUnderline ? f.size * 0.09 : 0, 0]}
+              >
+                {f.label}
+              </Text>
+              {f.needsUnderline && (
+                <>
+                  <mesh position={[0, -f.size * 0.45, -0.003]} renderOrder={2}>
+                    <circleGeometry args={[f.size * 0.11, 20]} />
+                    <meshBasicMaterial color="#000000" />
+                  </mesh>
+                  <mesh position={[0, -f.size * 0.45, 0.001]} renderOrder={3}>
+                    <circleGeometry args={[f.size * 0.075, 20]} />
+                    <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                  </mesh>
+                </>
+              )}
+            </>
+          )}
+        </group>
+      ))}
+    </>
+  );
+}
+
+/* ----------------------------------------------------------
+ *  D10 Test Inspector — non-physics rotating D10 with face report
+ * --------------------------------------------------------- */
+
+function TestD10Mesh({
+  material,
+  onUpFaceChange,
+}: {
+  material: DieMaterial;
+  onUpFaceChange: (idx: number) => void;
+}) {
+  const data = useMemo(() => getPolyhedronData(10), []);
+  const groupRef = useRef<THREE.Group>(null);
+  const lastIdxRef = useRef(-1);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.y += delta * 0.6;
+    groupRef.current.rotation.x += delta * 0.25;
+
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const quat = new THREE.Quaternion();
+    groupRef.current.getWorldQuaternion(quat);
+    let bestDot = -Infinity;
+    let bestIdx = 0;
+    data.faceNormals.forEach((n, i) => {
+      const wn = n.clone().applyQuaternion(quat);
+      const d = wn.dot(worldUp);
+      if (d > bestDot) { bestDot = d; bestIdx = i; }
+    });
+    if (bestIdx !== lastIdxRef.current) {
+      lastIdxRef.current = bestIdx;
+      onUpFaceChange(bestIdx);
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, 2, 0]}>
+      <mesh geometry={data.geometry} castShadow receiveShadow>
+        <meshPhysicalMaterial
+          color={material.base}
+          emissive={material.emissive}
+          emissiveIntensity={0.15}
+          metalness={material.metal}
+          roughness={material.rough}
+          clearcoat={0.3}
+          clearcoatRoughness={0.6}
+          reflectivity={0.4}
+          envMapIntensity={0.85}
+        />
+        <DieFaces type={10} data={data} />
+      </mesh>
     </group>
   );
 }
@@ -605,6 +662,9 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
   const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
   const [rolls, setRolls] = useState<Record<string, Roll>>({});
   const [throwing, setThrowing] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [testUpFace, setTestUpFace] = useState(0);
+  const testD10Data = useMemo(() => getPolyhedronData(10), []);
   const [history, setHistory] = useState<{ formula: string; total: number; details: string; crit?: "success" | "fail" }[]>([]);
   const [shake, setShake] = useState<"none" | "crit" | "fail">("none");
   const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -828,9 +888,52 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
           <Button onClick={rollAll} disabled={totalDice === 0 || throwing} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
             <Dices className="mr-2 h-4 w-4" /> Lancer ({totalDice})
           </Button>
-          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0}>
+          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0 || testMode}>
             Effacer la table
           </Button>
+
+          <Button
+            variant={testMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setTestMode(m => !m); if (!testMode) clearTable(); }}
+            className={cn(testMode && "bg-primary/80 text-primary-foreground")}
+          >
+            {testMode ? "Quitter le mode test" : "Mode test D10"}
+          </Button>
+
+          {testMode && (
+            <div className="rounded-md border border-primary/40 bg-card/60 p-2">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                Faces du D10 (1–10, 10 = 0)
+              </p>
+              <p className="mb-2 text-[10px] text-muted-foreground/80">
+                Le D10 tourne en continu. La face vers le haut est mise en évidence.
+              </p>
+              <div className="grid grid-cols-5 gap-1">
+                {testD10Data.faceValues.map((v, i) => {
+                  const label = v === 10 ? "0" : String(v);
+                  const isUp = i === testUpFace;
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex h-8 items-center justify-center rounded border text-sm font-bold tabular-nums transition-all",
+                        isUp
+                          ? "border-primary bg-primary/20 text-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
+                          : "border-border/50 bg-muted/20 text-muted-foreground"
+                      )}
+                      title={`face ${i} → ${v}`}
+                    >
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground/70">
+                Vérifiez que chaque chiffre est lisible à l'endroit pendant la rotation.
+              </p>
+            </div>
+          )}
 
           {history.length > 0 && (
             <div className="mt-2">
@@ -867,8 +970,8 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
             shake === "crit" && "animate-shake-crit",
             shake === "fail" && "animate-shake-fail"
           )}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
+          onPointerDown={testMode ? undefined : onPointerDown}
+          onPointerUp={testMode ? undefined : onPointerUp}
         >
           <Canvas
             shadows
@@ -908,27 +1011,31 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
 
               <Environment preset="warehouse" environmentIntensity={0.35} />
 
-              <DynamicCamera active={throwing} />
+              <DynamicCamera active={throwing && !testMode} />
 
-              <Physics
-                gravity={[0, -28, 0]}
-                defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
-                iterations={12}
-              >
-                <PhysicsRoom />
-                {spawns.map(s => (
-                  <Die
-                    key={s.id}
-                    id={s.id}
-                    type={s.type}
-                    material={s.material}
-                    startPos={s.startPos}
-                    impulse={s.impulse}
-                    spin={s.spin}
-                    onSettle={handleSettle}
-                  />
-                ))}
-              </Physics>
+              {testMode ? (
+                <TestD10Mesh material={material} onUpFaceChange={setTestUpFace} />
+              ) : (
+                <Physics
+                  gravity={[0, -28, 0]}
+                  defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
+                  iterations={12}
+                >
+                  <PhysicsRoom />
+                  {spawns.map(s => (
+                    <Die
+                      key={s.id}
+                      id={s.id}
+                      type={s.type}
+                      material={s.material}
+                      startPos={s.startPos}
+                      impulse={s.impulse}
+                      spin={s.spin}
+                      onSettle={handleSettle}
+                    />
+                  ))}
+                </Physics>
+              )}
               <ContactShadows position={[0, 0.005, 0]} opacity={0.55} scale={20} blur={2.4} far={8} />
             </Suspense>
           </Canvas>
