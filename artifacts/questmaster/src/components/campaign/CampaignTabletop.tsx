@@ -1354,8 +1354,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "R") rotateToken(selectedTokenId, -15);
         else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
         else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
+        else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
         else if (e.key === "f") centerOnToken(selectedTokenId);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "v" && hasClipboard && perms.canAddToken) {
+        e.preventDefault(); pasteTokenAt();
+        return;
       if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) { e.preventDefault(); redo(); }
     };
