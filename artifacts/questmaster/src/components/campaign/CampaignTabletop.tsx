@@ -952,7 +952,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (token.isHidden && !isGM) continue;
 
         const isDragged = token.id === draggedToken;
-        const isSelected = token.id === selectedTokenId;
+        const isSelected = token.id === selectedTokenId || selectedTokenIds.has(token.id);
         const cx = token.x + token.size / 2;
         const cy = token.y + token.size / 2;
         const halfSize = token.size / 2;
