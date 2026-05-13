@@ -1555,6 +1555,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
+    if (marquee) {
+      const coords = getCanvasCoords(e);
+      setMarquee(prev => prev ? { ...prev, x1: coords.x, y1: coords.y } : null);
+      return;
+    }
     if ((tool === "move" || isSpacePressed) && lastPanPoint) {
       setPanOffset(prev => ({ x: prev.x + e.clientX - lastPanPoint.x, y: prev.y + e.clientY - lastPanPoint.y }));
       setLastPanPoint({ x: e.clientX, y: e.clientY });
@@ -1572,6 +1577,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const handleMouseUp = () => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
+    if (marquee) {
+      const minX = Math.min(marquee.x0, marquee.x1);
+      const maxX = Math.max(marquee.x0, marquee.x1);
+      const minY = Math.min(marquee.y0, marquee.y1);
+      const maxY = Math.max(marquee.y0, marquee.y1);
+      const hits = tokens.filter(t => {
+        if (!t.visible || (t.isHidden && !isGM)) return false;
+        if (!perms.canSelectToken(t)) return false;
+        const cx = t.x + t.size / 2, cy = t.y + t.size / 2;
+        return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
+      });
+      if (hits.length > 0) {
+        const ids = new Set(hits.map(h => h.id));
+        setSelectedTokenIds(ids);
+        setSelectedTokenId(hits[hits.length - 1].id);
+      }
+      setMarquee(null);
+      setIsDrawing(false);
+      return;
+    }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
