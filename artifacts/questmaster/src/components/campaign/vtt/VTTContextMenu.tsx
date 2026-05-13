@@ -222,6 +222,12 @@ export default function VTTContextMenu({
             <MapPin className="h-4 w-4 text-yellow-400" />
             Ping ici
           </button>
+          {isGM && hasClipboard && onPasteToken && (
+            <button className={ITEM_CLASS} onClick={() => act(onPasteToken)}>
+              <ClipboardPaste className="h-4 w-4" />
+              Coller le jeton (Ctrl+V)
+            </button>
+          )}
           {isGM && (
             <>
               <div className="my-1 border-t border-border/50" />
