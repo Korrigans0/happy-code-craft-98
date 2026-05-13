@@ -70,6 +70,8 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
     if (character) {
       setFormData({ ...character });
     }
@@ -83,39 +85,112 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     onSave(formData);
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error("Veuillez sélectionner une image");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image doit faire moins de 5MB");
+      toast.error("L'image doit faire moins de 5 Mo");
       return;
     }
+    setPendingAvatarFile(file);
+    setCropOpen(true);
+    if (event.target) event.target.value = '';
+  };
+
+  const cancelCrop = () => {
+    setCropOpen(false);
+    setPendingAvatarFile(null);
+  };
+
+  const confirmCrop = async (blob: Blob) => {
+    const previousUrl: string | null = formData.avatar_url ?? null;
+    const previousPath = (() => {
+      if (!previousUrl) return null;
+      const marker = '/storage/v1/object/public/character-avatars/';
+      const idx = previousUrl.indexOf(marker);
+      return idx === -1 ? null : previousUrl.substring(idx + marker.length).split('?')[0];
+    })();
 
     setIsUploadingAvatar(true);
-
+    let newPath: string | null = null;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const folder = user?.id ?? 'anon';
+      newPath = `${folder}/character-${Date.now()}.png`;
+      const { error: upErr } = await supabase.storage
+        .from('character-avatars')
+        .upload(newPath, blob, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
+      if (upErr) {
+        const lower = upErr.message?.toLowerCase() ?? '';
+        let friendly = "Impossible d'envoyer la nouvelle image. Avatar précédent conservé.";
+        if (lower.includes('exceed') || lower.includes('payload') || lower.includes('too large')) {
+          friendly = 'Image trop volumineuse pour le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('mime') || lower.includes('content-type')) {
+          friendly = 'Format non accepté par le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('permission') || lower.includes('unauthorized') || lower.includes('not authorized')) {
+          friendly = "Vous n'avez pas l'autorisation d'envoyer cet avatar. Avatar précédent conservé.";
+        } else if (lower.includes('network') || lower.includes('failed to fetch')) {
+          friendly = "Problème réseau pendant l'envoi. Avatar précédent conservé.";
+        }
+        throw new Error(friendly);
+      }
 
-      // Avatar upload not supported without storage — use URL directly
-      toast.error("Upload d'avatar non disponible, utilisez une URL directe.");
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      toast.error("Erreur lors de l'upload de l'avatar");
+      const { data: pub } = supabase.storage.from('character-avatars').getPublicUrl(newPath);
+      updateField('avatar_url', pub.publicUrl);
+
+      let beforeSnapshot: string | null = null;
+      if (previousUrl) {
+        try {
+          const r = await fetch(previousUrl);
+          if (r.ok) beforeSnapshot = URL.createObjectURL(await r.blob());
+        } catch {
+          beforeSnapshot = previousUrl;
+        }
+      }
+      const afterSnapshot = URL.createObjectURL(blob);
+      setComparison((prev) => {
+        if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+        if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+        return { before: beforeSnapshot, after: afterSnapshot };
+      });
+
+      if (previousPath && previousPath !== newPath) {
+        await supabase.storage.from('character-avatars').remove([previousPath]).catch(() => null);
+      }
+      cancelCrop();
+    } catch (err) {
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : "Échec du téléchargement. Avatar précédent conservé.";
+      toast.error(msg);
     } finally {
       setIsUploadingAvatar(false);
     }
   };
 
-  const removeAvatar = () => {
+  const dismissComparison = () => {
+    setComparison((prev) => {
+      if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+      if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+      return null;
+    });
+  };
+
+  const removeAvatar = async () => {
+    const url: string | null = formData.avatar_url ?? null;
+    if (url) {
+      const marker = '/storage/v1/object/public/character-avatars/';
+      const idx = url.indexOf(marker);
+      if (idx !== -1) {
+        const path = url.substring(idx + marker.length).split('?')[0];
+        await supabase.storage.from('character-avatars').remove([path]).catch(() => null);
+      }
+    }
     updateField("avatar_url", null);
+    dismissComparison();
   };
 
   return (
