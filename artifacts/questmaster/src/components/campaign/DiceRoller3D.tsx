@@ -626,13 +626,15 @@ interface Roll {
 interface DiceRoller3DProps {
   open: boolean;
   onClose: () => void;
+  campaignId?: string;
+  userName?: string;
 }
 
 const DICE_PRESET_LABELS: Record<DieType, string> = {
   4: "d4", 6: "d6", 8: "d8", 10: "d10", 12: "d12", 20: "d20",
 };
 
-const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
+const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps) => {
   const [counts, setCounts] = useState<Record<DieType, number>>({
     4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 1,
   });
@@ -641,9 +643,6 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
   const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
   const [rolls, setRolls] = useState<Record<string, Roll>>({});
   const [throwing, setThrowing] = useState(false);
-  const [testMode, setTestMode] = useState(false);
-  const [testUpFace, setTestUpFace] = useState(0);
-  const testD10Data = useMemo(() => getPolyhedronData(10), []);
   const [history, setHistory] = useState<{ formula: string; total: number; details: string; crit?: "success" | "fail" }[]>([]);
   const [shake, setShake] = useState<"none" | "crit" | "fail">("none");
   const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
