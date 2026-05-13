@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Heart, Skull, Copy, Eye, EyeOff, Trash2, Crosshair,
   RotateCw, Maximize2, Swords, MapPin, PaintBucket, Plus,
-  ChevronRight,
+  ChevronRight, ScrollText, Lock, ClipboardCopy, ClipboardPaste,
 } from "lucide-react";
 import { TokenItem, CONDITIONS } from "./types";
 
