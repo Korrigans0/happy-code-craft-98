@@ -949,6 +949,28 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.restore();
         }
 
+        // Type ring (PJ / PNJ / Monstre / Boss)
+        {
+          const ringColor = token.isBoss
+            ? "#fbbf24"
+            : token.creatureType === "character"
+              ? "#22c55e"
+              : token.creatureType === "wa_creature" || token.creatureType === "monster"
+                ? "#ef4444"
+                : "#94a3b8";
+          ctx.save();
+          if (token.isBoss) {
+            ctx.shadowColor = ringColor;
+            ctx.shadowBlur = 12 / zoom;
+          }
+          ctx.strokeStyle = ringColor;
+          ctx.lineWidth = (token.isBoss ? 3.5 : 2.5) / zoom;
+          ctx.beginPath();
+          ctx.arc(cx, cy, halfSize + 1.5 / zoom, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         // Selection ring
         if (isSelected) {
           ctx.save();
