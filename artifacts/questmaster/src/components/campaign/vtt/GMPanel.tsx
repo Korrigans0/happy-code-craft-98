@@ -218,11 +218,11 @@ export default function GMPanel({
                   return (
                     <div key={msg.id} className={`flex flex-col gap-0.5 ${isMe ? "items-end" : "items-start"}`}>
                       <span className="text-[10px] text-muted-foreground">{msg.user_name || "Joueur"}</span>
-                      <div className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                      <div className={`max-w-[85%] rounded-lg px-3 py-2 bg-slate-900 text-slate-100 ${
                         isRoll
-                          ? "border border-primary/30 bg-primary/5"
+                          ? "border border-primary/30"
                           : isMe
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-slate-900 text-slate-100"
                           : "bg-muted"
                       }`}>
                         {formatMessage(msg)}
