@@ -301,6 +301,45 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
 
+  // ── Detect token position changes and start a slide tween ──
+  useEffect(() => {
+    const now = performance.now();
+    const DURATION = 220;
+    const seen = new Set<string>();
+    for (const t of tokens) {
+      seen.add(t.id);
+      const prev = tokenLastPosRef.current.get(t.id);
+      const isMine = t.id === draggedToken;
+      if (prev && !isMine && (prev.x !== t.x || prev.y !== t.y)) {
+        // Continue from current displayed position if a tween is already in progress
+        const cur = tokenAnimRef.current.get(t.id);
+        let startX = prev.x, startY = prev.y;
+        if (cur) {
+          const p = Math.min(1, (now - cur.start) / cur.duration);
+          const e = 1 - Math.pow(1 - p, 3);
+          startX = cur.fromX + (cur.toX - cur.fromX) * e;
+          startY = cur.fromY + (cur.toY - cur.fromY) * e;
+        }
+        tokenAnimRef.current.set(t.id, {
+          fromX: startX, fromY: startY,
+          toX: t.x, toY: t.y,
+          start: now, duration: DURATION,
+        });
+      }
+      tokenLastPosRef.current.set(t.id, { x: t.x, y: t.y });
+    }
+    // Clean up removed tokens
+    for (const id of Array.from(tokenLastPosRef.current.keys())) {
+      if (!seen.has(id)) {
+        tokenLastPosRef.current.delete(id);
+        tokenAnimRef.current.delete(id);
+      }
+    }
+    if (tokenAnimRef.current.size > 0 && tokenAnimRafRef.current == null) {
+      tokenAnimRafRef.current = requestAnimationFrame(tickTokenAnim);
+    }
+  }, [tokens, draggedToken, tickTokenAnim]);
+
   // ── Data fetching ──
   const { data: waCreatures = [] } = useQuery({
     queryKey: ["vtt-wa-creatures"],
