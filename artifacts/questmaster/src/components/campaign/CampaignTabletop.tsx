@@ -151,6 +151,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [tokenDragOffset, setTokenDragOffset] = useState({ x: 0, y: 0 });
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
+  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
