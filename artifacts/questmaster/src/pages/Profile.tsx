@@ -71,12 +71,46 @@ const Profile = () => {
   const handleSave = () => updateMutation.mutate({ display_name: displayName });
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Avatar upload not supported in this version (no storage service)
-    toast({ title: 'Non disponible', description: "Le téléchargement d'avatars n'est pas disponible dans cette version." });
-    if (e.target) e.target.value = '';
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Format invalide', description: 'Sélectionnez une image.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Image trop lourde', description: 'Maximum 5 Mo.', variant: 'destructive' });
+      return;
+    }
+    setIsUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+      await updateMutation.mutateAsync({ avatar_url: pub.publicUrl });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Échec du téléchargement';
+      toast({ title: 'Erreur', description: msg, variant: 'destructive' });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
-  const handleRemoveAvatar = () => updateMutation.mutate({ avatar_url: null });
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+    // Best-effort: extract storage path from public URL and remove it.
+    const marker = '/storage/v1/object/public/avatars/';
+    const idx = profile.avatar_url.indexOf(marker);
+    if (idx !== -1) {
+      const path = profile.avatar_url.substring(idx + marker.length).split('?')[0];
+      await supabase.storage.from('avatars').remove([path]).catch(() => null);
+    }
+    updateMutation.mutate({ avatar_url: null });
+  };
 
   if (authLoading || profileLoading) {
     return (
