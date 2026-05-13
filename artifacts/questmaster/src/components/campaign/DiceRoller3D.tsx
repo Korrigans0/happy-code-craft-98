@@ -338,7 +338,6 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     });
   }, [data]);
 
-  const labelColor = type === 6 ? "#1a1610" : "#fff5d8"; // dark on warm dice, gold-white otherwise
   const labelStroke = "#0a0a0a";
 
   return (
