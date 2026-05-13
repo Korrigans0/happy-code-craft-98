@@ -34,6 +34,7 @@ const Profile = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
+  const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
