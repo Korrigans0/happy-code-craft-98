@@ -17,6 +17,12 @@ interface DisplayRoll extends RollPayload {
   id: string;
 }
 
+const formatRollLine = (roll: RollPayload) => {
+  const details = roll.results.map(d => d.value).join(" + ")
+    + (roll.modifier ? ` ${roll.modifier > 0 ? "+" : ""}${roll.modifier}` : "");
+  return `🎲 ${roll.author} lance ${roll.formula} → [${details}]`;
+};
+
 const DiceBroadcastOverlay = ({ campaignId }: { campaignId: string }) => {
   const [rolls, setRolls] = useState<DisplayRoll[]>([]);
 
@@ -53,19 +59,14 @@ const DiceBroadcastOverlay = ({ campaignId }: { campaignId: string }) => {
         >
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
             <Dices className="h-3 w-3 text-primary" />
-            <span className="truncate">{r.author}</span>
+            <span className="truncate">Jet de dés</span>
           </div>
-          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/80">{r.formula}</p>
           <p className={cn(
-            "font-display text-2xl font-bold leading-none mt-0.5",
+            "mt-1 text-sm font-semibold leading-snug",
             r.crit === "success" ? "text-gradient-gold" :
             r.crit === "fail" ? "text-destructive" : "text-gradient-gold"
           )}>
-            {r.total}
-          </p>
-          <p className="mt-1 text-[9px] text-muted-foreground/70 truncate">
-            {r.results.map(d => `d${d.type}:${d.value}`).join(", ")}
-            {r.modifier ? ` ${r.modifier > 0 ? "+" : ""}${r.modifier}` : ""}
+            {formatRollLine(r)}
           </p>
           {r.crit === "success" && <p className="text-[9px] font-bold text-primary">✦ Critique !</p>}
           {r.crit === "fail" && <p className="text-[9px] font-bold text-destructive">✗ Échec critique</p>}
