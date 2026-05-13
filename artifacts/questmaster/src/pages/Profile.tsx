@@ -201,6 +201,13 @@ const Profile = () => {
         </div>
       </main>
       <Footer />
+      <AvatarCropDialog
+        file={pendingFile}
+        open={cropOpen}
+        onCancel={cancelCrop}
+        onConfirm={confirmCrop}
+        isUploading={isUploadingAvatar}
+      />
     </div>
   );
 };
