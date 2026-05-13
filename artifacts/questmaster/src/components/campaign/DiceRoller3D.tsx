@@ -729,7 +729,18 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateCount(t, -1)}>
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-5 text-center text-sm font-medium tabular-nums">{counts[t]}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={15}
+                    value={counts[t]}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      const safe = isNaN(v) ? 0 : Math.max(0, Math.min(15, v));
+                      setCounts(p => ({ ...p, [t]: safe }));
+                    }}
+                    className="w-10 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-center text-sm font-medium tabular-nums focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateCount(t, 1)}>
                     <Plus className="h-3 w-3" />
                   </Button>
