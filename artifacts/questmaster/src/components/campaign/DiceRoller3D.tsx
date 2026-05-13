@@ -662,6 +662,9 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
   const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
   const [rolls, setRolls] = useState<Record<string, Roll>>({});
   const [throwing, setThrowing] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+  const [testUpFace, setTestUpFace] = useState(0);
+  const testD10Data = useMemo(() => getPolyhedronData(10), []);
   const [history, setHistory] = useState<{ formula: string; total: number; details: string; crit?: "success" | "fail" }[]>([]);
   const [shake, setShake] = useState<"none" | "crit" | "fail">("none");
   const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
