@@ -14,7 +14,7 @@ import {
   Volume2, ExternalLink, Wand2
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
-import CampaignCombat from "@/components/campaign/CampaignCombat";
+
 import CampaignNotes from "@/components/campaign/CampaignNotes";
 import CampaignMembers from "@/components/campaign/CampaignMembers";
 import CampaignSettings from "@/components/campaign/CampaignSettings";
