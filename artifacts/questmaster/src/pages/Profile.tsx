@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Mail, Calendar, Save, Upload, Trash2 } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X } from 'lucide-react';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 
 
@@ -34,6 +34,7 @@ const Profile = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
+  const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -55,6 +56,23 @@ const Profile = () => {
       setDisplayName(profile.display_name);
     }
   }, [profile]);
+
+  // Revoke any object URLs held by the comparison snapshot when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (comparison?.before?.startsWith('blob:')) URL.revokeObjectURL(comparison.before);
+      if (comparison?.after?.startsWith('blob:')) URL.revokeObjectURL(comparison.after);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismissComparison = () => {
+    setComparison((prev) => {
+      if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+      if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+      return null;
+    });
+  };
 
   const updateMutation = useMutation({
     mutationFn: async (updates: { display_name?: string; avatar_url?: string | null }) => {
@@ -135,6 +153,24 @@ const Profile = () => {
         throw new Error('Image envoyée mais profil non mis à jour. Avatar précédent conservé.');
       }
 
+      // Snapshot the previous avatar locally (as a blob URL) so the before/after
+      // comparison keeps showing it even after we delete it from storage.
+      let beforeSnapshot: string | null = null;
+      if (previousUrl) {
+        try {
+          const r = await fetch(previousUrl);
+          if (r.ok) beforeSnapshot = URL.createObjectURL(await r.blob());
+        } catch {
+          beforeSnapshot = previousUrl;
+        }
+      }
+      const afterSnapshot = URL.createObjectURL(blob);
+      setComparison((prev) => {
+        if (prev?.before && prev.before.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+        if (prev?.after && prev.after.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+        return { before: beforeSnapshot, after: afterSnapshot };
+      });
+
       // Success — best-effort cleanup of the previous file.
       if (previousPath && previousPath !== newPath) {
         await supabase.storage.from('avatars').remove([previousPath]).catch(() => null);
@@ -208,6 +244,35 @@ const Profile = () => {
                     )}
                   </div>
                 </div>
+                {comparison && (
+                  <div className="mt-6 rounded-lg border border-primary/30 bg-secondary/40 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground">Avant / Après</p>
+                      <Button variant="ghost" size="sm" onClick={dismissComparison} className="h-7 px-2 text-muted-foreground hover:text-foreground">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-center gap-6">
+                      <div className="flex flex-col items-center gap-2">
+                        <Avatar className="h-20 w-20 border-2 border-border opacity-80">
+                          {comparison.before ? (
+                            <AvatarImage src={comparison.before} />
+                          ) : null}
+                          <AvatarFallback className="bg-muted text-muted-foreground">{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">Avant</span>
+                      </div>
+                      <div className="text-2xl text-primary">→</div>
+                      <div className="flex flex-col items-center gap-2">
+                        <Avatar className="h-20 w-20 border-2 border-primary shadow-[0_0_18px_hsl(var(--primary)/0.4)]">
+                          <AvatarImage src={comparison.after} />
+                          <AvatarFallback className="bg-primary/20 text-primary">{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs uppercase tracking-wide text-primary">Après</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
             <Card className="bg-gradient-card border-border">
