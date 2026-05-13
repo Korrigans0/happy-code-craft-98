@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ interface CampaignNotesProps {
 }
 
 const CampaignNotes = ({ campaignId, isGM }: CampaignNotesProps) => {
-  const { user: clerkUser } = useUser();
-  const userId = clerkUser?.id ?? "";
+  const { user: authUser } = useAuth();
+  const userId = authUser?.id ?? "";
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);

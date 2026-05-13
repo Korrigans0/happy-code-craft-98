@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useUser } from "@clerk/react";
+import { useAuth } from "@/hooks/useAuth";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,8 +121,8 @@ function renderMessageContent(content: string, members: any[], onPingClick?: (us
 }
 
 const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
-  const { user: clerkUser } = useUser();
-  const userId = clerkUser?.id ?? "";
+  const { user: authUser } = useAuth();
+  const userId = authUser?.id ?? "";
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [diceInput, setDiceInput] = useState("1d20");
