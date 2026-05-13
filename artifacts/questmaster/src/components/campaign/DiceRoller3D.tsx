@@ -935,8 +935,8 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             shake === "crit" && "animate-shake-crit",
             shake === "fail" && "animate-shake-fail"
           )}
-          onPointerDown={testMode ? undefined : onPointerDown}
-          onPointerUp={testMode ? undefined : onPointerUp}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
         >
           <Canvas
             shadows
