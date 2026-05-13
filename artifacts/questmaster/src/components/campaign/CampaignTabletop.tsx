@@ -1358,8 +1358,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "f") centerOnToken(selectedTokenId);
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "v" && hasClipboard && perms.canAddToken) {
-        e.preventDefault(); pasteTokenAt();
-        return;
+        e.preventDefault(); pasteTokenAt(); return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) { e.preventDefault(); redo(); }
     };
