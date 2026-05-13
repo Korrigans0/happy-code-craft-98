@@ -51,8 +51,19 @@ interface Props {
   isGM?: boolean;
 }
 
-function CreatureCard({ creature, currentUserId }: { creature: AetheriaCreature; currentUserId?: string }) {
+function CreatureCard({
+  creature,
+  currentUserId,
+  isAdmin,
+  onDelete,
+}: {
+  creature: AetheriaCreature;
+  currentUserId?: string;
+  isAdmin?: boolean;
+  onDelete?: (id: string) => void;
+}) {
   const [open, setOpen] = useState(false);
+  const canModerate = isAdmin && creature.created_by !== currentUserId;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -88,6 +99,23 @@ function CreatureCard({ creature, currentUserId }: { creature: AetheriaCreature;
                   <Swords className="h-3 w-3 text-primary" />
                   <span className="text-primary text-xs font-bold">{creature.degats}</span>
                 </div>
+              )}
+              {canModerate && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  title="Supprimer (admin)"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Supprimer la créature "${creature.name}" du bestiaire ?`)) {
+                      onDelete?.(creature.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               )}
               {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
             </div>
