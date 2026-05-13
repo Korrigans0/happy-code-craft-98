@@ -57,6 +57,23 @@ const Profile = () => {
     }
   }, [profile]);
 
+  // Revoke any object URLs held by the comparison snapshot when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (comparison?.before?.startsWith('blob:')) URL.revokeObjectURL(comparison.before);
+      if (comparison?.after?.startsWith('blob:')) URL.revokeObjectURL(comparison.after);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismissComparison = () => {
+    setComparison((prev) => {
+      if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+      if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+      return null;
+    });
+  };
+
   const updateMutation = useMutation({
     mutationFn: async (updates: { display_name?: string; avatar_url?: string | null }) => {
       if (!user) throw new Error('Non authentifié');
