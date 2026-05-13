@@ -321,6 +321,26 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
+  // Pre-compute per-face text transforms (position + quaternion aligning +Z to face normal)
+  const faceLabels = useMemo(() => {
+    const up = new THREE.Vector3(0, 0, 1);
+    return data.faceNormals.map((n, i) => {
+      const q = new THREE.Quaternion().setFromUnitVectors(up, n.clone().normalize());
+      // Slight offset along normal to avoid z-fighting
+      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.012);
+      const value = data.faceValues[i];
+      const label = value === 6 || value === 9 ? `${value}\u0332` : `${value}`; // combining underline
+      // Font size scales by face size (use distance from center)
+      const size = data.faceCenters[i].length() * 0.55;
+      return { pos: pos.toArray() as [number, number, number],
+               quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+               label, size };
+    });
+  }, [data]);
+
+  const labelColor = type === 6 ? "#1a1610" : "#fff5d8"; // dark on warm dice, gold-white otherwise
+  const labelStroke = "#0a0a0a";
+
   return (
     <group>
       <Trail
@@ -345,6 +365,22 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
             clearcoatRoughness={0.2}
             reflectivity={0.6}
           />
+          {faceLabels.map((f, i) => (
+            <Text
+              key={i}
+              position={f.pos}
+              quaternion={f.quat}
+              fontSize={f.size}
+              color="#f5e6b3"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={f.size * 0.08}
+              outlineColor={labelStroke}
+              renderOrder={2}
+            >
+              {f.label}
+            </Text>
+          ))}
         </mesh>
       </Trail>
     </group>
