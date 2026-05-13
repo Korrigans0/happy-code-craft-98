@@ -291,6 +291,42 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
               </div>
             </div>
 
+            {comparison && (
+              <div className="rounded-lg border border-primary/30 bg-secondary/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">Avant / Après</p>
+                  <Button type="button" variant="ghost" size="sm" onClick={dismissComparison} className="h-7 px-2">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center gap-6">
+                  <div className="flex flex-col items-center gap-2">
+                    {comparison.before ? (
+                      <img src={comparison.before} alt="avant" className="h-20 w-20 rounded-full object-cover border-2 border-border opacity-80" />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted border-2 border-border">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Avant</span>
+                  </div>
+                  <div className="text-2xl text-primary">→</div>
+                  <div className="flex flex-col items-center gap-2">
+                    <img src={comparison.after} alt="après" className="h-20 w-20 rounded-full object-cover border-2 border-primary shadow-[0_0_18px_hsl(var(--primary)/0.4)]" />
+                    <span className="text-xs uppercase tracking-wide text-primary">Après</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <AvatarCropDialog
+              file={pendingAvatarFile}
+              open={cropOpen}
+              onCancel={cancelCrop}
+              onConfirm={confirmCrop}
+              isUploading={isUploadingAvatar}
+            />
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom du Personnage</Label>
