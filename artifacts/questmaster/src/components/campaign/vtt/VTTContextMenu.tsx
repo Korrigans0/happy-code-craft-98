@@ -47,6 +47,7 @@ export default function VTTContextMenu({
   onHealToken, onDamageToken, onSetHp, onToggleCondition,
   onAddToInitiative, onDuplicate, onToggleHide, onDelete, onCenter, onResize,
   onToggleAura, onAddToken, onPing, onToggleFog, onClearFogHere,
+  onViewSheet, onEditGmNotes, onCopyToken, onPasteToken, hasClipboard,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
