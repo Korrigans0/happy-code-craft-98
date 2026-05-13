@@ -40,11 +40,24 @@ const CampaignPlay = () => {
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("tabletop");
 
+  // Foundry VTT URL from localStorage (reactive) — must stay above any early return
+  const foundryKey = `foundry_url_${id}`;
+  const [foundryUrl, setFoundryUrl] = useState(() => localStorage.getItem(foundryKey) || "");
+  const [foundryIframeBlocked, setFoundryIframeBlocked] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/sign-in');
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === foundryKey) setFoundryUrl(e.newValue || "");
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [foundryKey]);
 
   const { data: campaign, isLoading: campaignLoading } = useQuery({
     queryKey: ["campaign", id],
@@ -123,19 +136,6 @@ const CampaignPlay = () => {
       </div>
     );
   }
-
-  // Foundry VTT URL from localStorage (reactive)
-  const foundryKey = `foundry_url_${id}`;
-  const [foundryUrl, setFoundryUrl] = useState(() => localStorage.getItem(foundryKey) || "");
-  const [foundryIframeBlocked, setFoundryIframeBlocked] = useState(false);
-
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === foundryKey) setFoundryUrl(e.newValue || "");
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [foundryKey]);
 
   const tabs = [
     { id: "tabletop", icon: Map, label: "Partie" },
