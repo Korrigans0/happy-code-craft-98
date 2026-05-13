@@ -896,52 +896,9 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
           <Button onClick={rollAll} disabled={totalDice === 0 || throwing} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
             <Dices className="mr-2 h-4 w-4" /> Lancer ({totalDice})
           </Button>
-          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0 || testMode}>
+          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0}>
             Effacer la table
           </Button>
-
-          <Button
-            variant={testMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => { setTestMode(m => !m); if (!testMode) clearTable(); }}
-            className={cn(testMode && "bg-primary/80 text-primary-foreground")}
-          >
-            {testMode ? "Quitter le mode test" : "Mode test D10"}
-          </Button>
-
-          {testMode && (
-            <div className="rounded-md border border-primary/40 bg-card/60 p-2">
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
-                Faces du D10 (1–10, 10 = 0)
-              </p>
-              <p className="mb-2 text-[10px] text-muted-foreground/80">
-                Le D10 tourne en continu. La face vers le haut est mise en évidence.
-              </p>
-              <div className="grid grid-cols-5 gap-1">
-                {testD10Data.faceValues.map((v, i) => {
-                  const label = v === 10 ? "0" : String(v);
-                  const isUp = i === testUpFace;
-                  return (
-                    <div
-                      key={i}
-                      className={cn(
-                        "flex h-8 items-center justify-center rounded border text-sm font-bold tabular-nums transition-all",
-                        isUp
-                          ? "border-primary bg-primary/20 text-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
-                          : "border-border/50 bg-muted/20 text-muted-foreground"
-                      )}
-                      title={`face ${i} → ${v}`}
-                    >
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[10px] text-muted-foreground/70">
-                Vérifiez que chaque chiffre est lisible à l'endroit pendant la rotation.
-              </p>
-            </div>
-          )}
 
           {history.length > 0 && (
             <div className="mt-2">
