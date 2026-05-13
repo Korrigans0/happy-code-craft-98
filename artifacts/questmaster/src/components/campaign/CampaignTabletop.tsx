@@ -1470,8 +1470,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // Ping tool
     if (tool === "ping") {
-      const ping = { id: newId(), wx: coords.x, wy: coords.y, t: Date.now() };
-      setPings(prev => [...prev, ping]);
+      broadcastPing(coords.x, coords.y);
       return;
     }
 
@@ -1480,19 +1479,39 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
-          setSelectedTokenId(perms.canSelectToken(tokenHit) ? tokenHit.id : null);
+          const canSel = perms.canSelectToken(tokenHit);
+          setSelectedTokenId(canSel ? tokenHit.id : null);
+          setSelectedTokenIds(canSel ? new Set([tokenHit.id]) : new Set());
           setLastPanPoint({ x: e.clientX, y: e.clientY });
           setIsDrawing(true);
           return;
         }
+        // Shift+click → toggle in multi-selection (no drag)
+        if (e.shiftKey) {
+          setSelectedTokenIds(prev => {
+            const next = new Set(prev);
+            if (next.has(tokenHit.id)) next.delete(tokenHit.id);
+            else next.add(tokenHit.id);
+            return next;
+          });
+          setSelectedTokenId(tokenHit.id);
+          return;
+        }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
+        setSelectedTokenIds(new Set([tokenHit.id]));
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
         return;
+      } else if (e.shiftKey && tool === "move") {
+        // Shift+drag on empty → marquee selection
+        setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
+        setIsDrawing(true);
+        return;
       } else {
         setSelectedTokenId(null);
+        setSelectedTokenIds(new Set());
       }
     }
 
