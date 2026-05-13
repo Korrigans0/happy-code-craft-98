@@ -292,7 +292,7 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
             </div>
 
             {comparison && (
-              <div className="rounded-lg border border-primary/30 bg-secondary/40 p-4">
+              <div className="rounded-lg border border-primary/30 bg-secondary/40 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-sm font-medium text-foreground">Avant / Après</p>
                   <Button type="button" variant="ghost" size="sm" onClick={dismissComparison} className="h-7 px-2">
