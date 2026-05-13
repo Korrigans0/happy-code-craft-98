@@ -392,4 +392,26 @@ export const compendiumApi = {
   },
   getAetheriaCreatures: () => listTable("aetheria_creatures"),
   createAetheriaCreature: (d: Record<string, unknown>) => createInTable("aetheria_creatures", d),
+  deleteAetheriaCreature: async (id: string) => {
+    const r = await supabase.from("aetheria_creatures").delete().eq("id", id);
+    if (r.error) throw new Error(r.error.message);
+    return { ok: true };
+  },
 };
+
+// ============== ROLES ==============
+export const rolesApi = {
+  isAdmin: async (): Promise<boolean> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return false;
+    const r = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", u.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (r.error) return false;
+    return !!r.data;
+  },
+};
+

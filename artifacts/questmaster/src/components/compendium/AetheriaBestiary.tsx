@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { compendiumApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Collapsible,
@@ -13,7 +16,7 @@ import {
 import AetheriaCreatureDialog from "./AetheriaCreatureDialog";
 import {
   Search, Heart, Zap, Shield, ChevronDown, ChevronRight,
-  Skull, Swords, Globe, Lock,
+  Skull, Swords, Globe, Lock, Trash2, ShieldCheck,
 } from "lucide-react";
 
 interface AetheriaCreature {
@@ -48,8 +51,19 @@ interface Props {
   isGM?: boolean;
 }
 
-function CreatureCard({ creature, currentUserId }: { creature: AetheriaCreature; currentUserId?: string }) {
+function CreatureCard({
+  creature,
+  currentUserId,
+  isAdmin,
+  onDelete,
+}: {
+  creature: AetheriaCreature;
+  currentUserId?: string;
+  isAdmin?: boolean;
+  onDelete?: (id: string) => void;
+}) {
   const [open, setOpen] = useState(false);
+  const canModerate = isAdmin && creature.created_by !== currentUserId;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -85,6 +99,23 @@ function CreatureCard({ creature, currentUserId }: { creature: AetheriaCreature;
                   <Swords className="h-3 w-3 text-primary" />
                   <span className="text-primary text-xs font-bold">{creature.degats}</span>
                 </div>
+              )}
+              {canModerate && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  title="Supprimer (admin)"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Supprimer la créature "${creature.name}" du bestiaire ?`)) {
+                      onDelete?.(creature.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               )}
               {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
             </div>
@@ -220,6 +251,9 @@ function CreatureCard({ creature, currentUserId }: { creature: AetheriaCreature;
 
 export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
   const { user } = useAuth();
+  const isAdmin = useIsAdmin();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
 
   const { data: creatures = [], isLoading } = useQuery({
@@ -230,13 +264,24 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => compendiumApi.deleteAetheriaCreature(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["aetheria-creatures"] });
+      toast({ title: "Créature supprimée" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Suppression refusée", description: e.message, variant: "destructive" }),
+  });
+
   const filtered = creatures.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   const myCreatures = filtered.filter(c => c.created_by === user?.id);
-  const publicCreatures = filtered.filter(c => c.is_public && c.created_by !== user?.id);
+  const otherCreatures = filtered.filter(c => c.created_by !== user?.id);
+  const publicCreatures = isAdmin ? otherCreatures : otherCreatures.filter(c => c.is_public);
 
   return (
     <div className="space-y-4">
@@ -245,9 +290,15 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
           <h3 className="text-primary font-semibold flex items-center gap-2">
             <Skull className="h-4 w-4" />
             Bestiaire Aetheria
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] border-primary/40 text-primary gap-1">
+                <ShieldCheck className="h-3 w-3" /> Admin
+              </Badge>
+            )}
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5">
             {creatures.length} créature{creatures.length !== 1 ? "s" : ""}
+            {isAdmin && otherCreatures.length > 0 && ` · ${otherCreatures.length} à modérer`}
           </p>
         </div>
         {isGM && <AetheriaCreatureDialog campaignId={campaignId} />}
@@ -281,7 +332,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
             <div>
               <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">Mes créatures</p>
               <div className="space-y-2">
-                {myCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} />)}
+                {myCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} isAdmin={isAdmin} onDelete={(id) => deleteMut.mutate(id)} />)}
               </div>
             </div>
           )}
@@ -290,9 +341,11 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
 
           {publicCreatures.length > 0 && (
             <div>
-              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">Bestiaire communautaire</p>
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">
+                {isAdmin ? "Toutes les créatures (modération)" : "Bestiaire communautaire"}
+              </p>
               <div className="space-y-2">
-                {publicCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} />)}
+                {publicCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} isAdmin={isAdmin} onDelete={(id) => deleteMut.mutate(id)} />)}
               </div>
             </div>
           )}
