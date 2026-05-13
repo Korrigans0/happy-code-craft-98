@@ -468,47 +468,72 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
 
           {faceLabels.map((f, i) => (
             <group key={i} position={f.pos} quaternion={f.quat}>
-              {/* Recessed groove shadow — darker, slightly inset, larger outline */}
-              <Text
-                fontSize={f.size}
-                color="#0a0805"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={f.size * 0.13}
-                outlineColor="#000000"
-                outlineOpacity={0.95}
-                outlineBlur={f.size * 0.06}
-                renderOrder={2}
-                position={[0, f.needsUnderline ? f.size * 0.09 : 0, -0.004]}
-              >
-                {f.label}
-              </Text>
-              {/* Bright engraved digit — sits inside the groove, glows softly */}
-              <Text
-                fontSize={f.size}
-                color="#fff1c2"
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={f.size * 0.04}
-                outlineColor="#3a2208"
-                outlineOpacity={0.9}
-                material-toneMapped={false}
-                renderOrder={3}
-                position={[0, f.needsUnderline ? f.size * 0.09 : 0, 0]}
-              >
-                {f.label}
-              </Text>
-              {/* Orientation dot for 6/9 */}
-              {f.needsUnderline && (
+              {type === 6 ? (
+                // Engraved pips for D6 — classic, no orientation issues
+                (PIP_LAYOUTS[f.value] || []).map(([px, py], pi) => {
+                  const pipR = 0.11;
+                  const face = 1.4;
+                  const x = px * face;
+                  const y = py * face;
+                  return (
+                    <group key={pi} position={[x, y, 0]}>
+                      {/* Recessed dark groove */}
+                      <mesh position={[0, 0, -0.004]} renderOrder={2}>
+                        <circleGeometry args={[pipR * 1.25, 24]} />
+                        <meshBasicMaterial color="#000000" />
+                      </mesh>
+                      {/* Engraved gold pip */}
+                      <mesh position={[0, 0, 0]} renderOrder={3}>
+                        <circleGeometry args={[pipR, 24]} />
+                        <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                      </mesh>
+                    </group>
+                  );
+                })
+              ) : (
                 <>
-                  <mesh position={[0, -f.size * 0.45, -0.003]} renderOrder={2}>
-                    <circleGeometry args={[f.size * 0.11, 20]} />
-                    <meshBasicMaterial color="#000000" />
-                  </mesh>
-                  <mesh position={[0, -f.size * 0.45, 0.001]} renderOrder={3}>
-                    <circleGeometry args={[f.size * 0.075, 20]} />
-                    <meshBasicMaterial color="#fff1c2" toneMapped={false} />
-                  </mesh>
+                  {/* Recessed groove shadow */}
+                  <Text
+                    fontSize={f.size}
+                    color="#0a0805"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={f.size * 0.13}
+                    outlineColor="#000000"
+                    outlineOpacity={0.95}
+                    outlineBlur={f.size * 0.06}
+                    renderOrder={2}
+                    position={[0, f.needsUnderline ? f.size * 0.09 : 0, -0.004]}
+                  >
+                    {f.label}
+                  </Text>
+                  {/* Bright engraved digit */}
+                  <Text
+                    fontSize={f.size}
+                    color="#fff1c2"
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={f.size * 0.04}
+                    outlineColor="#3a2208"
+                    outlineOpacity={0.9}
+                    material-toneMapped={false}
+                    renderOrder={3}
+                    position={[0, f.needsUnderline ? f.size * 0.09 : 0, 0]}
+                  >
+                    {f.label}
+                  </Text>
+                  {f.needsUnderline && (
+                    <>
+                      <mesh position={[0, -f.size * 0.45, -0.003]} renderOrder={2}>
+                        <circleGeometry args={[f.size * 0.11, 20]} />
+                        <meshBasicMaterial color="#000000" />
+                      </mesh>
+                      <mesh position={[0, -f.size * 0.45, 0.001]} renderOrder={3}>
+                        <circleGeometry args={[f.size * 0.075, 20]} />
+                        <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                      </mesh>
+                    </>
+                  )}
                 </>
               )}
             </group>
