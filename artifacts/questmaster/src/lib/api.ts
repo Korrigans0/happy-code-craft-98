@@ -148,6 +148,14 @@ export const campaignsApi = {
       .single();
     return unwrap(r);
   },
+  clearMessages: async (id: string, scope: "chat" | "gm" | "all" = "all") => {
+    let q = supabase.from("campaign_messages").delete().eq("campaign_id", id);
+    if (scope === "chat") q = q.neq("message_type", "whisper");
+    if (scope === "gm") q = q.eq("message_type", "whisper");
+    const r = await q;
+    if (r.error) throw new Error(r.error.message);
+    return { ok: true };
+  },
   getNotes: async (id: string) => {
     const r = await supabase
       .from("campaign_notes")
