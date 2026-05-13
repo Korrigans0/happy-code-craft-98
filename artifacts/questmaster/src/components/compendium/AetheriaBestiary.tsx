@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { compendiumApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Collapsible,
@@ -13,7 +16,7 @@ import {
 import AetheriaCreatureDialog from "./AetheriaCreatureDialog";
 import {
   Search, Heart, Zap, Shield, ChevronDown, ChevronRight,
-  Skull, Swords, Globe, Lock,
+  Skull, Swords, Globe, Lock, Trash2, ShieldCheck,
 } from "lucide-react";
 
 interface AetheriaCreature {
