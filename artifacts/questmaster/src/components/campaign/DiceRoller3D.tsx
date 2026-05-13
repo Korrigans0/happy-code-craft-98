@@ -721,10 +721,39 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
         else if (crit === "fail") { audio.fail(); setShake("fail"); setTimeout(() => setShake("none"), 700); }
 
         setHistory(h => [{ formula, total, details: detailParts.join(", "), crit }, ...h].slice(0, 10));
+
+        // Broadcast roll to campaign chat + everyone's screen
+        if (campaignId) {
+          const detailsStr = all.map(r => r.value).join(" + ")
+            + (modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : "");
+          const author = userName || "Joueur";
+          const critTxt = crit === "success" ? " ✦ Critique !" : crit === "fail" ? " ✗ Échec critique" : "";
+          const content = `🎲 ${author} lance ${formula} → [${detailsStr}] = **${total}**${critTxt}`;
+          // Chat persistence (best-effort)
+          import("@/lib/api").then(({ campaignsApi }) => {
+            campaignsApi.postMessage(campaignId, {
+              content,
+              message_type: "dice_roll",
+              metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
+            }).catch(() => { /* ignore */ });
+          });
+          // Realtime broadcast for floating overlay
+          const ch: any = (supabase as any).channel(`vtt-dice-${campaignId}`);
+          ch.subscribe?.((status: string) => {
+            if (status === "SUBSCRIBED") {
+              ch.send?.({
+                type: "broadcast",
+                event: "roll",
+                payload: { author, formula, total, results: all.map(r => ({ type: r.type, value: r.value })), modifier, crit, t: Date.now() },
+              });
+              setTimeout(() => { (supabase as any).removeChannel?.(ch); }, 800);
+            }
+          });
+        }
       }
       return next;
     });
-  }, [modifier]);
+  }, [modifier, campaignId, userName]);
 
   const rollAll = () => {
     if (totalDice === 0) return;
