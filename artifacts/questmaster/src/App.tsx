@@ -152,38 +152,43 @@ function SignUpPage() {
   );
 }
 
+const AppRoutes = () => (
+  <BrowserRouter basename={basePath}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/sign-in/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+        <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
+        <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
+        <Route path="/compendium" element={<Compendium />} />
+        <Route path="/dice" element={<DiceRoller />} />
+        <Route path="/join/:code" element={<JoinCampaign />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <MobileBottomNav />
+      <CookieBanner />
+    </TooltipProvider>
+  </BrowserRouter>
+);
+
 const App = () => (
   <ErrorBoundary>
-    <ClerkProvider
-      publishableKey={clerkPubKey!}
-      proxyUrl={clerkProxyUrl}
-    >
-      <QueryClientProvider client={queryClient}>
-        <ClerkTokenSyncer />
-        <ClerkQueryClientCacheInvalidator />
-        <BrowserRouter basename={basePath}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/sign-in/*" element={<SignInPage />} />
-              <Route path="/sign-up/*" element={<SignUpPage />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
-              <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
-              <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
-              <Route path="/compendium" element={<Compendium />} />
-              <Route path="/dice" element={<DiceRoller />} />
-              <Route path="/join/:code" element={<JoinCampaign />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MobileBottomNav />
-            <CookieBanner />
-          </TooltipProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      {clerkPubKey ? (
+        <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl}>
+          <ClerkTokenSyncer />
+          <ClerkQueryClientCacheInvalidator />
+          <AppRoutes />
+        </ClerkProvider>
+      ) : (
+        <AppRoutes />
+      )}
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 
