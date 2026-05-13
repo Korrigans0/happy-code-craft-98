@@ -243,8 +243,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     }
 
     const content = modifier !== 0
-      ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier} = **${total}**`
-      : `${prefix} ${input} → [${results.join(", ")}] = **${total}**`;
+      ? `${prefix} ${input} → [${results.join(", ")}] ${modifier >= 0 ? '+' : ''}${modifier}`
+      : `${prefix} ${input} → [${results.join(", ")}]`;
 
     sendMutation.mutate({
       content,
@@ -270,7 +270,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       if (results[0] === 1) prefix = "🎲💀 ÉCHEC CRITIQUE !";
     }
 
-    const content = `${prefix} ${action.skill} (${action.dice}) → [${results.join(", ")}] = **${total}**`;
+    const content = `${prefix} ${action.skill} (${action.dice}) → [${results.join(", ")}]`;
     sendMutation.mutate({
       content,
       message_type: "dice_roll",
@@ -479,16 +479,18 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
               {isWhisper ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-destructive"
-            onClick={handleClearChat}
-            disabled={clearMutation.isPending || visibleMessages.length === 0}
-            title={isWhisper ? "Vider le chat MJ" : "Vider le chat normal"}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {isGM && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-destructive"
+              onClick={handleClearChat}
+              disabled={clearMutation.isPending || visibleMessages.length === 0}
+              title={isWhisper ? "Vider le chat MJ" : "Vider le chat normal"}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             variant={showImageInput ? "secondary" : "ghost"}
             size="icon"
