@@ -219,6 +219,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
 
+  // ── Token slide animations (smooth movement) ──
+  const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const tokenAnimRef = useRef<Map<string, { fromX: number; fromY: number; toX: number; toY: number; start: number; duration: number }>>(new Map());
+  const tokenAnimRafRef = useRef<number | null>(null);
+  const tickTokenAnim = useCallback(() => {
+    if (tokenAnimRef.current.size === 0) {
+      tokenAnimRafRef.current = null;
+      return;
+    }
+    redrawCanvasRef.current();
+    tokenAnimRafRef.current = requestAnimationFrame(tickTokenAnim);
+  }, []);
+
   // ── Initiative ──
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [initiativeRound, setInitiativeRound] = useState(1);
@@ -287,6 +300,45 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
+
+  // ── Detect token position changes and start a slide tween ──
+  useEffect(() => {
+    const now = performance.now();
+    const DURATION = 220;
+    const seen = new Set<string>();
+    for (const t of tokens) {
+      seen.add(t.id);
+      const prev = tokenLastPosRef.current.get(t.id);
+      const isMine = t.id === draggedToken;
+      if (prev && !isMine && (prev.x !== t.x || prev.y !== t.y)) {
+        // Continue from current displayed position if a tween is already in progress
+        const cur = tokenAnimRef.current.get(t.id);
+        let startX = prev.x, startY = prev.y;
+        if (cur) {
+          const p = Math.min(1, (now - cur.start) / cur.duration);
+          const e = 1 - Math.pow(1 - p, 3);
+          startX = cur.fromX + (cur.toX - cur.fromX) * e;
+          startY = cur.fromY + (cur.toY - cur.fromY) * e;
+        }
+        tokenAnimRef.current.set(t.id, {
+          fromX: startX, fromY: startY,
+          toX: t.x, toY: t.y,
+          start: now, duration: DURATION,
+        });
+      }
+      tokenLastPosRef.current.set(t.id, { x: t.x, y: t.y });
+    }
+    // Clean up removed tokens
+    for (const id of Array.from(tokenLastPosRef.current.keys())) {
+      if (!seen.has(id)) {
+        tokenLastPosRef.current.delete(id);
+        tokenAnimRef.current.delete(id);
+      }
+    }
+    if (tokenAnimRef.current.size > 0 && tokenAnimRafRef.current == null) {
+      tokenAnimRafRef.current = requestAnimationFrame(tickTokenAnim);
+    }
+  }, [tokens, draggedToken, tickTokenAnim]);
 
   // ── Data fetching ──
   const { data: waCreatures = [] } = useQuery({
@@ -947,7 +999,21 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.save();
       ctx.globalAlpha = tokensLayer.opacity / 100;
 
-      for (const token of tokens) {
+      for (const __t of tokens) {
+        // Apply slide animation to displayed position (does not mutate state)
+        let __dx = __t.x, __dy = __t.y;
+        const __anim = tokenAnimRef.current.get(__t.id);
+        if (__anim) {
+          const __p = (performance.now() - __anim.start) / __anim.duration;
+          if (__p >= 1) {
+            tokenAnimRef.current.delete(__t.id);
+          } else {
+            const __e = 1 - Math.pow(1 - __p, 3); // easeOutCubic
+            __dx = __anim.fromX + (__anim.toX - __anim.fromX) * __e;
+            __dy = __anim.fromY + (__anim.toY - __anim.fromY) * __e;
+          }
+        }
+        const token = (__dx === __t.x && __dy === __t.y) ? __t : { ...__t, x: __dx, y: __dy };
         if (!token.visible) continue;
         if (token.isHidden && !isGM) continue;
 
