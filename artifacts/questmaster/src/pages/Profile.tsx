@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, Mail, Calendar, Save, Upload, Trash2 } from 'lucide-react';
+import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 
 
 interface ProfileData {
