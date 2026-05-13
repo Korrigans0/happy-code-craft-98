@@ -384,31 +384,67 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
-  // Pip layouts for D6 (unit square coords, range -0.5..0.5)
-  const PIP_LAYOUTS: Record<number, [number, number][]> = {
-    1: [[0, 0]],
-    2: [[-0.28, -0.28], [0.28, 0.28]],
-    3: [[-0.32, -0.32], [0, 0], [0.32, 0.32]],
-    4: [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]],
-    5: [[-0.3, -0.3], [0.3, -0.3], [0, 0], [-0.3, 0.3], [0.3, 0.3]],
-    6: [[-0.3, -0.32], [0.3, -0.32], [-0.3, 0], [0.3, 0], [-0.3, 0.32], [0.3, 0.32]],
-  };
+  return (
+    <group>
+      <Trail
+        width={0.45}
+        length={5}
+        color={material.emissive}
+        attenuation={(t) => t * t}
+      >
+        <mesh
+          ref={ref as any}
+          geometry={data.geometry}
+          castShadow
+          receiveShadow
+        >
+          <meshPhysicalMaterial
+            color={material.base}
+            emissive={material.emissive}
+            emissiveIntensity={0.15}
+            metalness={material.metal}
+            roughness={material.rough}
+            clearcoat={0.3}
+            clearcoatRoughness={0.6}
+            reflectivity={0.4}
+            envMapIntensity={0.85}
+          />
+          <DieFaces type={type} data={data} />
+        </mesh>
+      </Trail>
+    </group>
+  );
+}
 
-  // Pre-compute per-face transforms.
+/* ----------------------------------------------------------
+ *  DieFaces — engraved digits / pips for a given die geometry
+ * --------------------------------------------------------- */
+
+const PIP_LAYOUTS: Record<number, [number, number][]> = {
+  1: [[0, 0]],
+  2: [[-0.28, -0.28], [0.28, 0.28]],
+  3: [[-0.32, -0.32], [0, 0], [0.32, 0.32]],
+  4: [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]],
+  5: [[-0.3, -0.3], [0.3, -0.3], [0, 0], [-0.3, 0.3], [0.3, 0.3]],
+  6: [[-0.3, -0.32], [0.3, -0.32], [-0.3, 0], [0.3, 0], [-0.3, 0.32], [0.3, 0.32]],
+};
+
+function DieFaces({
+  type,
+  data,
+}: {
+  type: DieType;
+  data: ReturnType<typeof getPolyhedronData>;
+}) {
   const faceLabels = useMemo(() => {
     const worldUp = new THREE.Vector3(0, 1, 0);
     const worldFwd = new THREE.Vector3(0, 0, 1);
     const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
     return data.faceNormals.map((n, i) => {
       const N = n.clone().normalize();
-      // Choose a per-die "up reference" so labels read consistently.
-      // For D10 (pentagonal trapezohedron), digits should point toward the equator,
-      // i.e. away from the nearest apex on the Z axis.
       let ref: THREE.Vector3;
       if (type === 10) {
-        // face normal has both radial XY and ±Z; "down toward equator" means -sign(N.z) on Z.
         ref = new THREE.Vector3(0, 0, N.z >= 0 ? -1 : 1);
-        // If degenerate (face purely vertical), fall back to world up.
         if (Math.abs(N.dot(ref)) > 0.95) ref = worldUp;
       } else {
         ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
@@ -417,10 +453,8 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
       const B = new THREE.Vector3().crossVectors(N, T).normalize();
       const m = new THREE.Matrix4().makeBasis(T, B, N);
       const q = new THREE.Quaternion().setFromRotationMatrix(m);
-
       const pos = data.faceCenters[i].clone().addScaledVector(N, 0.01);
       const value = data.faceValues[i];
-
       const sizeMap: Record<DieType, number> = {
         4:  avgRadius * 0.55,
         6:  0.62,
