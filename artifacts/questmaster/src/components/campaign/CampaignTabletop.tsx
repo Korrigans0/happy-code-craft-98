@@ -1625,16 +1625,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const coords = getCanvasCoords(e);
       const draggedT = tokens.find(t => t.id === draggedToken);
       if (!draggedT) return;
-      const rawX = coords.x - tokenDragOffset.x, rawY = coords.y - tokenDragOffset.y;
-      const sx = snapValue(rawX), sy = snapValue(rawY);
-      let nextX = sx, nextY = sy;
-      if (collisionEnabled) {
-        const overlaps = tokens.some(o =>
-          o.id !== draggedToken && o.visible &&
-          tokensOverlap({ x: sx, y: sy, size: draggedT.size }, { x: o.x, y: o.y, size: o.size })
-        );
-        if (overlaps) { nextX = draggedT.x; nextY = draggedT.y; }
-      }
+      // Free follow during drag (no snap) — snapping happens on release with a slide animation
+      const nextX = coords.x - tokenDragOffset.x;
+      const nextY = coords.y - tokenDragOffset.y;
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
@@ -1659,7 +1652,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = () => {
-    if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
+    if (draggedToken) {
+      const id = draggedToken;
+      // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
+      setDraggedToken(null);
+      setDragStart(null);
+      setIsDrawing(false);
+      setTokens(prev => {
+        const t = prev.find(x => x.id === id);
+        if (!t) return prev;
+        const sx = snapValue(t.x), sy = snapValue(t.y);
+        let nx = sx, ny = sy;
+        if (collisionEnabled) {
+          const overlaps = prev.some(o =>
+            o.id !== id && o.visible &&
+            tokensOverlap({ x: sx, y: sy, size: t.size }, { x: o.x, y: o.y, size: o.size })
+          );
+          if (overlaps) {
+            const last = tokenLastPosRef.current.get(id);
+            nx = last?.x ?? t.x; ny = last?.y ?? t.y;
+          }
+        }
+        return prev.map(x => x.id === id ? { ...x, x: nx, y: ny } : x);
+      });
+      return;
+    }
     if (marquee) {
       const minX = Math.min(marquee.x0, marquee.x1);
       const maxX = Math.max(marquee.x0, marquee.x1);
