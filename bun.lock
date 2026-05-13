@@ -1,0 +1,23 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "workspace",
+      "dependencies": {
+        "@replit/connectors-sdk": "^0.4.0",
+      },
+      "devDependencies": {
+        "prettier": "^3.8.1",
+        "typescript": "~5.9.2",
+      },
+    },
+  },
+  "packages": {
+    "@replit/connectors-sdk": ["@replit/connectors-sdk@0.4.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@replit/connectors-sdk/-/connectors-sdk-0.4.0.tgz", {}, "sha512-wRuktfdoBsM19NJUi24xzCkQ+idglmU4Cq2ZWvTAnNUVGdcMmn3rLN1F1/MNZCc2HdG+awcGa81XMLpZXZujUg=="],
+
+    "prettier": ["prettier@3.8.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/prettier/-/prettier-3.8.1.tgz", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg=="],
+
+    "typescript": ["typescript@5.9.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+  }
+}
