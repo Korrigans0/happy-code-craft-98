@@ -581,62 +581,6 @@ function DieFaces({
 }
 
 /* ----------------------------------------------------------
- *  D10 Test Inspector — non-physics rotating D10 with face report
- * --------------------------------------------------------- */
-
-function TestD10Mesh({
-  material,
-  onUpFaceChange,
-}: {
-  material: DieMaterial;
-  onUpFaceChange: (idx: number) => void;
-}) {
-  const data = useMemo(() => getPolyhedronData(10), []);
-  const groupRef = useRef<THREE.Group>(null);
-  const lastIdxRef = useRef(-1);
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.6;
-    groupRef.current.rotation.x += delta * 0.25;
-
-    const worldUp = new THREE.Vector3(0, 1, 0);
-    const quat = new THREE.Quaternion();
-    groupRef.current.getWorldQuaternion(quat);
-    let bestDot = -Infinity;
-    let bestIdx = 0;
-    data.faceNormals.forEach((n, i) => {
-      const wn = n.clone().applyQuaternion(quat);
-      const d = wn.dot(worldUp);
-      if (d > bestDot) { bestDot = d; bestIdx = i; }
-    });
-    if (bestIdx !== lastIdxRef.current) {
-      lastIdxRef.current = bestIdx;
-      onUpFaceChange(bestIdx);
-    }
-  });
-
-  return (
-    <group ref={groupRef} position={[0, 2, 0]}>
-      <mesh geometry={data.geometry} castShadow receiveShadow>
-        <meshPhysicalMaterial
-          color={material.base}
-          emissive={material.emissive}
-          emissiveIntensity={0.15}
-          metalness={material.metal}
-          roughness={material.rough}
-          clearcoat={0.3}
-          clearcoatRoughness={0.6}
-          reflectivity={0.4}
-          envMapIntensity={0.85}
-        />
-        <DieFaces type={10} data={data} />
-      </mesh>
-    </group>
-  );
-}
-
-/* ----------------------------------------------------------
  *  Dynamic camera — slight orbit during throw
  * --------------------------------------------------------- */
 
