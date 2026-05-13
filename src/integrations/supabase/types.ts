@@ -115,6 +115,36 @@ export type Database = {
           },
         ]
       }
+      campaign_audit_log: {
+        Row: {
+          action: string
+          campaign_id: string
+          created_at: string
+          details: Json
+          id: string
+          scope: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          campaign_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          scope?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          campaign_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          scope?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_members: {
         Row: {
           campaign_id: string
