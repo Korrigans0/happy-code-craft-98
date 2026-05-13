@@ -14,6 +14,10 @@ import {
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import DiceRoller3D from "./DiceRoller3D";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
@@ -21,6 +25,7 @@ import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene,
 } from "./vtt/types";
+import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -183,6 +188,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+
+  // ── Token clipboard (copy / paste) ──
+  const tokenClipboardRef = useRef<TokenItem | null>(null);
+  const [hasClipboard, setHasClipboard] = useState(false);
+
+  // ── Voir fiche dialog ──
+  const [sheetToken, setSheetToken] = useState<TokenItem | null>(null);
+
+  // ── Notes MJ dialog ──
+  const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
+  const [gmNotesContent, setGmNotesContent] = useState("");
+  const [gmNotesLoading, setGmNotesLoading] = useState(false);
+  const [gmNotesSaving, setGmNotesSaving] = useState(false);
 
   // ── Ping animations ──
   const [pings, setPings] = useState<{ id: string; wx: number; wy: number; t: number }[]>([]);
@@ -445,6 +463,71 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
     setTokens(prev => [...prev, copy]);
     setSelectedTokenId(copy.id);
+  };
+
+  // ── Copy / Paste token ──
+  const copyToken = (tokenId: string) => {
+    const src = tokens.find(t => t.id === tokenId); if (!src) return;
+    tokenClipboardRef.current = src;
+    setHasClipboard(true);
+    toast({ title: "Jeton copié", description: src.name });
+  };
+
+  const pasteTokenAt = (wx?: number, wy?: number) => {
+    const src = tokenClipboardRef.current;
+    if (!src) { toast({ title: "Presse-papiers vide", variant: "destructive" }); return; }
+    if (!perms.canAddToken) { denied("Seul le MJ peut coller un jeton"); return; }
+    const baseX = wx !== undefined ? wx - src.size / 2 : src.x + GRID_SIZE;
+    const baseY = wy !== undefined ? wy - src.size / 2 : src.y;
+    const free = findFreePosition(snapValue(baseX), snapValue(baseY), src.size);
+    const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
+    setTokens(prev => [...prev, copy]);
+    setSelectedTokenId(copy.id);
+  };
+
+  // ── Voir fiche ──
+  const openTokenSheet = (token: TokenItem) => { setSheetToken(token); };
+
+  // ── Notes MJ (privées, RLS GM-only) ──
+  const openGmNotes = async (token: TokenItem) => {
+    if (!isGM) { denied("Notes MJ réservées au MJ"); return; }
+    setGmNotesToken(token);
+    setGmNotesContent("");
+    setGmNotesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("tabletop_token_notes" as any)
+        .select("content")
+        .eq("campaign_id", campaignId)
+        .eq("token_id", token.id)
+        .maybeSingle();
+      if (error) throw error;
+      setGmNotesContent((data as any)?.content ?? "");
+    } catch (e: any) {
+      toast({ title: "Impossible de charger les notes", description: e.message, variant: "destructive" });
+    } finally {
+      setGmNotesLoading(false);
+    }
+  };
+
+  const saveGmNotes = async () => {
+    if (!gmNotesToken || !user?.id) return;
+    setGmNotesSaving(true);
+    try {
+      const { error } = await supabase
+        .from("tabletop_token_notes" as any)
+        .upsert(
+          { campaign_id: campaignId, token_id: gmNotesToken.id, content: gmNotesContent, created_by: user.id },
+          { onConflict: "campaign_id,token_id" }
+        );
+      if (error) throw error;
+      toast({ title: "Notes MJ enregistrées" });
+      setGmNotesToken(null);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setGmNotesSaving(false);
+    }
   };
 
   const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
@@ -1271,7 +1354,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "R") rotateToken(selectedTokenId, -15);
         else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
         else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
+        else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
         else if (e.key === "f") centerOnToken(selectedTokenId);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "v" && hasClipboard && perms.canAddToken) {
+        e.preventDefault(); pasteTokenAt(); return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "z") { e.preventDefault(); undo(); }
       if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) { e.preventDefault(); redo(); }
@@ -1280,7 +1367,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, tokens, collisionEnabled, fullscreen]);
+  }, [selectedTokenId, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
@@ -1999,6 +2086,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 };
                 setActions(prev => [...prev, revealAction]);
               }}
+              onViewSheet={ctxToken ? () => openTokenSheet(ctxToken) : undefined}
+              onEditGmNotes={ctxToken ? () => openGmNotes(ctxToken) : undefined}
+              onCopyToken={ctxToken ? () => copyToken(ctxToken.id) : undefined}
+              onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
+              hasClipboard={hasClipboard}
             />
           )}
 
@@ -2118,6 +2210,99 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           />
         )}
       </div>
+
+      {/* Voir la fiche du jeton */}
+      <Dialog open={!!sheetToken} onOpenChange={(o) => !o && setSheetToken(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: sheetToken?.color }} />
+              {sheetToken?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {sheetToken?.creatureType === "character" ? "Personnage joueur" :
+               sheetToken?.creatureType === "wa_creature" ? "Créature (Worlds Awakening)" :
+               sheetToken?.creatureType === "monster" ? "Monstre" : "Jeton"}
+            </DialogDescription>
+          </DialogHeader>
+          {sheetToken && (
+            <div className="space-y-3 text-sm">
+              {sheetToken.imageUrl && (
+                <img src={sheetToken.imageUrl} alt={sheetToken.name} className="w-full h-40 object-cover rounded-md border border-border" />
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {sheetToken.hp !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">PV</div>
+                    <div className="font-semibold">{sheetToken.hp} / {sheetToken.maxHp}</div>
+                  </div>
+                )}
+                {sheetToken.pe !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">PE</div>
+                    <div className="font-semibold">{sheetToken.pe} / {sheetToken.maxPe}</div>
+                  </div>
+                )}
+                {sheetToken.ac !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">CA</div>
+                    <div className="font-semibold">{sheetToken.ac}</div>
+                  </div>
+                )}
+                <div className="rounded border border-border p-2">
+                  <div className="text-xs text-muted-foreground">Taille</div>
+                  <div className="font-semibold">{sheetToken.sizeUnits}× case{sheetToken.sizeUnits > 1 ? "s" : ""}</div>
+                </div>
+              </div>
+              {sheetToken.conditions && sheetToken.conditions.length > 0 && (
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Conditions actives</div>
+                  <div className="flex flex-wrap gap-1">
+                    {sheetToken.conditions.map(c => {
+                      const def = CONDITIONS.find(x => x.id === c);
+                      return (
+                        <span key={c} className="inline-flex items-center gap-1 rounded bg-primary/15 text-primary px-2 py-0.5 text-xs">
+                          <span>{def?.emoji}</span>{def?.label ?? c}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {sheetToken.creatureId && (
+                <p className="text-xs text-muted-foreground">
+                  Pour la fiche complète, ouvrir le compendium ou le bestiaire.
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes MJ privées */}
+      <Dialog open={!!gmNotesToken} onOpenChange={(o) => !o && setGmNotesToken(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Notes MJ — {gmNotesToken?.name}</DialogTitle>
+            <DialogDescription>
+              Visible uniquement par le MJ. Stockées de manière privée côté serveur.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={gmNotesContent}
+            onChange={(e) => setGmNotesContent(e.target.value)}
+            placeholder={gmNotesLoading ? "Chargement…" : "Ex. : Trahit le groupe au tour 4, possède la clé du donjon…"}
+            disabled={gmNotesLoading || gmNotesSaving}
+            rows={8}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setGmNotesToken(null)} disabled={gmNotesSaving}>Annuler</Button>
+            <Button onClick={saveGmNotes} disabled={gmNotesSaving || gmNotesLoading}>
+              {gmNotesSaving ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

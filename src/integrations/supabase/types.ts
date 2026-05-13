@@ -825,6 +825,36 @@ export type Database = {
           },
         ]
       }
+      tabletop_token_notes: {
+        Row: {
+          campaign_id: string
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          token_id: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          content?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          token_id: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          token_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wa_creatures: {
         Row: {
           author: string | null

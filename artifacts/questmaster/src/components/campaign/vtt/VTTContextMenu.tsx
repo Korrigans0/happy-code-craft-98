@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   Heart, Skull, Copy, Eye, EyeOff, Trash2, Crosshair,
   RotateCw, Maximize2, Swords, MapPin, PaintBucket, Plus,
-  ChevronRight,
+  ChevronRight, ScrollText, Lock, ClipboardCopy, ClipboardPaste,
 } from "lucide-react";
 import { TokenItem, CONDITIONS } from "./types";
 
@@ -29,6 +29,11 @@ interface ContextMenuProps {
   onPing?: () => void;
   onToggleFog?: () => void;
   onClearFogHere?: () => void;
+  onViewSheet?: () => void;
+  onEditGmNotes?: () => void;
+  onCopyToken?: () => void;
+  onPasteToken?: () => void;
+  hasClipboard?: boolean;
 }
 
 const ITEM_CLASS =
@@ -42,6 +47,7 @@ export default function VTTContextMenu({
   onHealToken, onDamageToken, onSetHp, onToggleCondition,
   onAddToInitiative, onDuplicate, onToggleHide, onDelete, onCenter, onResize,
   onToggleAura, onAddToken, onPing, onToggleFog, onClearFogHere,
+  onViewSheet, onEditGmNotes, onCopyToken, onPasteToken, hasClipboard,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -166,10 +172,28 @@ export default function VTTContextMenu({
             <Crosshair className="h-4 w-4" />
             Centrer la vue
           </button>
+          {onViewSheet && (
+            <button className={ITEM_CLASS} onClick={() => act(onViewSheet)}>
+              <ScrollText className="h-4 w-4 text-primary" />
+              Voir la fiche
+            </button>
+          )}
           {isGM && (
             <button className={ITEM_CLASS} onClick={() => act(onDuplicate)}>
               <Copy className="h-4 w-4" />
               Dupliquer
+            </button>
+          )}
+          {isGM && onCopyToken && (
+            <button className={ITEM_CLASS} onClick={() => act(onCopyToken)}>
+              <ClipboardCopy className="h-4 w-4" />
+              Copier (Ctrl+C)
+            </button>
+          )}
+          {isGM && (
+            <button className={ITEM_CLASS} onClick={() => act(onEditGmNotes)}>
+              <Lock className="h-4 w-4 text-amber-400" />
+              Notes MJ (privées)
             </button>
           )}
           {isGM && (
@@ -198,6 +222,12 @@ export default function VTTContextMenu({
             <MapPin className="h-4 w-4 text-yellow-400" />
             Ping ici
           </button>
+          {isGM && hasClipboard && onPasteToken && (
+            <button className={ITEM_CLASS} onClick={() => act(onPasteToken)}>
+              <ClipboardPaste className="h-4 w-4" />
+              Coller le jeton (Ctrl+V)
+            </button>
+          )}
           {isGM && (
             <>
               <div className="my-1 border-t border-border/50" />
