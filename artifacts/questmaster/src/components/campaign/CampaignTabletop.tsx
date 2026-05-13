@@ -219,6 +219,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
 
+  // ── Token slide animations (smooth movement) ──
+  const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const tokenAnimRef = useRef<Map<string, { fromX: number; fromY: number; toX: number; toY: number; start: number; duration: number }>>(new Map());
+  const tokenAnimRafRef = useRef<number | null>(null);
+  const tickTokenAnim = useCallback(() => {
+    if (tokenAnimRef.current.size === 0) {
+      tokenAnimRafRef.current = null;
+      return;
+    }
+    redrawCanvasRef.current();
+    tokenAnimRafRef.current = requestAnimationFrame(tickTokenAnim);
+  }, []);
+
   // ── Initiative ──
   const [initiative, setInitiative] = useState<InitiativeEntry[]>([]);
   const [initiativeRound, setInitiativeRound] = useState(1);
