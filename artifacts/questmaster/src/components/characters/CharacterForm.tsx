@@ -58,9 +58,18 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   });
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    return () => {
+      if (comparison?.before?.startsWith('blob:')) URL.revokeObjectURL(comparison.before);
+      if (comparison?.after?.startsWith('blob:')) URL.revokeObjectURL(comparison.after);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
     if (character) {
       setFormData({ ...character });
     }
