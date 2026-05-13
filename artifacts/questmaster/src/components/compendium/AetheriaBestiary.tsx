@@ -251,6 +251,9 @@ function CreatureCard({
 
 export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
   const { user } = useAuth();
+  const isAdmin = useIsAdmin();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
 
   const { data: creatures = [], isLoading } = useQuery({
@@ -261,13 +264,24 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => compendiumApi.deleteAetheriaCreature(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["aetheria-creatures"] });
+      toast({ title: "Créature supprimée" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Suppression refusée", description: e.message, variant: "destructive" }),
+  });
+
   const filtered = creatures.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   const myCreatures = filtered.filter(c => c.created_by === user?.id);
-  const publicCreatures = filtered.filter(c => c.is_public && c.created_by !== user?.id);
+  const otherCreatures = filtered.filter(c => c.created_by !== user?.id);
+  const publicCreatures = isAdmin ? otherCreatures : otherCreatures.filter(c => c.is_public);
 
   return (
     <div className="space-y-4">
@@ -276,9 +290,15 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
           <h3 className="text-primary font-semibold flex items-center gap-2">
             <Skull className="h-4 w-4" />
             Bestiaire Aetheria
+            {isAdmin && (
+              <Badge variant="outline" className="text-[10px] border-primary/40 text-primary gap-1">
+                <ShieldCheck className="h-3 w-3" /> Admin
+              </Badge>
+            )}
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5">
             {creatures.length} créature{creatures.length !== 1 ? "s" : ""}
+            {isAdmin && otherCreatures.length > 0 && ` · ${otherCreatures.length} à modérer`}
           </p>
         </div>
         {isGM && <AetheriaCreatureDialog campaignId={campaignId} />}
