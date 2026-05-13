@@ -2291,6 +2291,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   </div>
                 </div>
               )}
+              {isGM && (
+                <div className="flex items-center justify-between rounded border border-border p-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Statut Boss</div>
+                    <div className="text-xs">Anneau doré + halo lumineux</div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 rounded text-xs font-semibold border ${sheetToken.isBoss ? "bg-amber-500/20 border-amber-500 text-amber-300" : "border-border text-muted-foreground hover:bg-muted/40"}`}
+                    onClick={() => {
+                      setTokens(prev => prev.map(t => t.id === sheetToken.id ? { ...t, isBoss: !t.isBoss } : t));
+                      setSheetToken(s => s ? { ...s, isBoss: !s.isBoss } : s);
+                    }}
+                  >
+                    {sheetToken.isBoss ? "★ Boss" : "Marquer Boss"}
+                  </button>
+                </div>
+              )}
               {sheetToken.creatureId && (
                 <p className="text-xs text-muted-foreground">
                   Pour la fiche complète, ouvrir le compendium ou le bestiaire.
