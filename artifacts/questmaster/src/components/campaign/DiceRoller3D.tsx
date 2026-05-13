@@ -29,14 +29,15 @@ const DIE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20];
 
 // Player color presets (HSL kept for brand-alignment with dark fantasy palette)
 const COLOR_PRESETS = [
-  { name: "Or runique",  base: "#c9a04a", emissive: "#3d2a06", metal: 0.85, rough: 0.25 },
-  { name: "Obsidienne",  base: "#1a1a22", emissive: "#3a0066", metal: 0.6,  rough: 0.15 },
-  { name: "Sang dragon", base: "#5a0d12", emissive: "#1a0203", metal: 0.4,  rough: 0.4  },
-  { name: "Éther bleu",  base: "#1d3a6b", emissive: "#082046", metal: 0.7,  rough: 0.25 },
-  { name: "Émeraude",    base: "#0f5132", emissive: "#021a0c", metal: 0.55, rough: 0.3  },
-  { name: "Pierre",      base: "#5d5b57", emissive: "#0a0a0a", metal: 0.1,  rough: 0.85 },
-  { name: "Améthyste",   base: "#3d1f5c", emissive: "#1a0833", metal: 0.5,  rough: 0.3  },
+  { name: "Pierre noire",  base: "#22202a", emissive: "#3a2a08", metal: 0.25, rough: 0.78 },
+  { name: "Or runique",    base: "#7a5a1c", emissive: "#3a2008", metal: 0.92, rough: 0.32 },
+  { name: "Obsidienne",    base: "#0e0d14", emissive: "#2a164d", metal: 0.55, rough: 0.22 },
+  { name: "Sang dragon",   base: "#3a0a10", emissive: "#1a0203", metal: 0.55, rough: 0.42 },
+  { name: "Éther bleu",    base: "#152846", emissive: "#0a1a36", metal: 0.7,  rough: 0.32 },
+  { name: "Émeraude",      base: "#0d3a26", emissive: "#021a0c", metal: 0.6,  rough: 0.36 },
+  { name: "Améthyste",     base: "#2a1846", emissive: "#1a0833", metal: 0.55, rough: 0.32 },
 ];
+
 
 interface DieMaterial {
   base: string;
@@ -49,6 +50,50 @@ interface DieMaterial {
  *  Geometry factories — return geometry + per-face normals
  *  (face normals are used to determine the "up" face)
  * --------------------------------------------------------- */
+
+/**
+ * Build a true pentagonal trapezohedron (real d10 shape: 10 congruent kite faces).
+ */
+function buildPentagonalTrapezohedron(scale = 1): THREE.BufferGeometry {
+  const apex = 1.0 * scale;
+  const r = 1.0 * scale;
+  const z = 0.18 * scale; // equatorial zigzag offset
+  const top = new THREE.Vector3(0, 0, apex);
+  const bot = new THREE.Vector3(0, 0, -apex);
+  const upper: THREE.Vector3[] = [];
+  const lower: THREE.Vector3[] = [];
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    upper.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, z));
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = ((i + 0.5) / 5) * Math.PI * 2;
+    lower.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, -z));
+  }
+  // 10 kite faces (each split into 2 triangles for buffer)
+  const verts: number[] = [];
+  const pushTri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) => {
+    verts.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  };
+  for (let i = 0; i < 5; i++) {
+    const u0 = upper[i], u1 = upper[(i + 1) % 5];
+    const l0 = lower[i];
+    // Upper kite: top, u0, l0, u1
+    pushTri(top, u0, l0);
+    pushTri(top, l0, u1);
+  }
+  for (let i = 0; i < 5; i++) {
+    const l0 = lower[i], l1 = lower[(i + 1) % 5];
+    const u1 = upper[(i + 1) % 5];
+    // Lower kite: bot, l1, u1, l0  (winding for outward normal)
+    pushTri(bot, l1, u1);
+    pushTri(bot, u1, l0);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  g.computeVertexNormals();
+  return g;
+}
 
 function getPolyhedronData(sides: DieType): {
   geometry: THREE.BufferGeometry;
@@ -63,7 +108,7 @@ function getPolyhedronData(sides: DieType): {
     case 4:  geom = new TetrahedronGeometry(0.95); radius = 0.95; break;
     case 6:  geom = new THREE.BoxGeometry(1.4, 1.4, 1.4); radius = 0.7; break;
     case 8:  geom = new OctahedronGeometry(1); radius = 1; break;
-    case 10: geom = new OctahedronGeometry(1); radius = 1; break;
+    case 10: geom = buildPentagonalTrapezohedron(0.95); radius = 0.95; break;
     case 12: geom = new DodecahedronGeometry(0.95); radius = 0.95; break;
     case 20: geom = new IcosahedronGeometry(0.95); radius = 0.95; break;
   }
@@ -72,7 +117,6 @@ function getPolyhedronData(sides: DieType): {
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const triCount = pos.count / 3;
 
-  // Per-triangle: normal + centroid + 3 vertices
   type Tri = { n: THREE.Vector3; c: THREE.Vector3; v: THREE.Vector3[] };
   const tris: Tri[] = [];
   for (let i = 0; i < triCount; i++) {
@@ -84,7 +128,7 @@ function getPolyhedronData(sides: DieType): {
     tris.push({ n, c: cen, v: [a, b, c] });
   }
 
-  // Group coplanar triangles together (same normal)
+  // Group coplanar triangles together (same outward normal)
   const groups: { normal: THREE.Vector3; verts: THREE.Vector3[] }[] = [];
   for (const t of tris) {
     const g = groups.find(g => g.normal.dot(t.n) > 0.999);
@@ -92,24 +136,43 @@ function getPolyhedronData(sides: DieType): {
     else groups.push({ normal: t.n.clone(), verts: [...t.v] });
   }
 
-  const faceCount = sides === 10 ? 8 : sides;
-  const useGroups = groups.slice(0, faceCount);
-  const faceNormals = useGroups.map(g => g.normal);
-  const faceCenters = useGroups.map(g => {
+  const faceNormals = groups.map(g => g.normal);
+  const faceCenters = groups.map(g => {
     const sum = new THREE.Vector3();
     g.verts.forEach(v => sum.add(v));
     return sum.divideScalar(g.verts.length);
   });
 
+  // Standard d-die numbering: opposite faces sum to (sides+1) for d4/d6/d8/d12/d20.
+  // Real d10 numbers 0-9 (we map 1-10 with 10 = "0" face); opposite faces sum to 9.
   const faceValues: number[] = [];
-  for (let i = 0; i < faceNormals.length; i++) {
-    if (sides === 10) {
-      // Distribute 1..10 across 8 faces by stepping
-      faceValues.push(((i * 3) % 10) + 1);
-    } else {
-      faceValues.push(i + 1);
+  if (sides === 10) {
+    // Walk 10 faces; assign 1..10 such that opposite (anti-normal) faces sum to 11.
+    const used = new Array(10).fill(false);
+    const order: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      if (used[i]) continue;
+      // find opposite
+      let opp = -1;
+      for (let j = 0; j < 10; j++) {
+        if (i !== j && faceNormals[i].dot(faceNormals[j]) < -0.95) { opp = j; break; }
+      }
+      order.push(i);
+      if (opp >= 0) order.push(opp);
+      used[i] = true;
+      if (opp >= 0) used[opp] = true;
     }
+    const tmp = new Array(10).fill(0);
+    for (let k = 0; k < order.length; k += 2) {
+      const v = (k / 2) + 1;
+      tmp[order[k]] = v;
+      if (order[k + 1] !== undefined) tmp[order[k + 1]] = 11 - v;
+    }
+    faceValues.push(...tmp);
+  } else {
+    for (let i = 0; i < faceNormals.length; i++) faceValues.push(i + 1);
   }
+
   return { geometry: geom, faceNormals, faceCenters, faceValues, radius };
 }
 
@@ -321,30 +384,44 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
-  // Pre-compute per-face text transforms (position + quaternion aligning +Z to face normal)
+  // Pre-compute per-face label transforms.
+  // Text is oriented so its plane normal matches the face outward normal,
+  // and slightly inset away from the surface to fake an engraving.
   const faceLabels = useMemo(() => {
     const up = new THREE.Vector3(0, 0, 1);
+    // Determine a reference scale based on the average face-center distance
+    const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
     return data.faceNormals.map((n, i) => {
       const q = new THREE.Quaternion().setFromUnitVectors(up, n.clone().normalize());
-      // Slight offset along normal to avoid z-fighting
-      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.012);
+      // Sit just outside the face (avoids z-fighting, reads as engraved with emissive)
+      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.008);
       const value = data.faceValues[i];
-      const label = value === 6 || value === 9 ? `${value}\u0332` : `${value}`; // combining underline
-      // Font size scales by face size (use distance from center)
-      const size = data.faceCenters[i].length() * 0.55;
-      return { pos: pos.toArray() as [number, number, number],
-               quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
-               label, size };
+      // Per-die font sizing — tuned per shape so digits are big & legible
+      const sizeMap: Record<DieType, number> = {
+        4:  avgRadius * 0.55,
+        6:  0.55,
+        8:  avgRadius * 0.62,
+        10: avgRadius * 0.55,
+        12: avgRadius * 0.55,
+        20: avgRadius * 0.50,
+      };
+      const size = sizeMap[type];
+      // Display 10 as "0" on real d10 face (classic), keep others as digits
+      const label = type === 10 && value === 10 ? "0" : `${value}`;
+      const needsUnderline = value === 6 || value === 9;
+      return {
+        pos: pos.toArray() as [number, number, number],
+        quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+        label, size, needsUnderline,
+      };
     });
-  }, [data]);
-
-  const labelStroke = "#0a0a0a";
+  }, [data, type]);
 
   return (
     <group>
       <Trail
-        width={0.6}
-        length={6}
+        width={0.45}
+        length={5}
         color={material.emissive}
         attenuation={(t) => t * t}
       >
@@ -357,28 +434,40 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
           <meshPhysicalMaterial
             color={material.base}
             emissive={material.emissive}
-            emissiveIntensity={0.35}
+            emissiveIntensity={0.18}
             metalness={material.metal}
             roughness={material.rough}
-            clearcoat={0.6}
-            clearcoatRoughness={0.2}
-            reflectivity={0.6}
+            clearcoat={0.35}
+            clearcoatRoughness={0.55}
+            reflectivity={0.45}
+            envMapIntensity={0.8}
           />
+
           {faceLabels.map((f, i) => (
-            <Text
-              key={i}
-              position={f.pos}
-              quaternion={f.quat}
-              fontSize={f.size}
-              color="#f5e6b3"
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={f.size * 0.08}
-              outlineColor={labelStroke}
-              renderOrder={2}
-            >
-              {f.label}
-            </Text>
+            <group key={i} position={f.pos} quaternion={f.quat}>
+              {/* Engraved digit — emissive so it reads as a glowing rune */}
+              <Text
+                fontSize={f.size}
+                color="#fff1c2"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={f.size * 0.06}
+                outlineColor="#1a0d02"
+                outlineOpacity={0.85}
+                material-toneMapped={false}
+                renderOrder={2}
+                position={[0, f.needsUnderline ? f.size * 0.08 : 0, 0]}
+              >
+                {f.label}
+              </Text>
+              {/* Tiny dot under 6/9 for orientation — much cleaner than combining underline */}
+              {f.needsUnderline && (
+                <mesh position={[0, -f.size * 0.42, 0.001]} renderOrder={3}>
+                  <circleGeometry args={[f.size * 0.07, 16]} />
+                  <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                </mesh>
+              )}
+            </group>
           ))}
         </mesh>
       </Trail>
@@ -703,28 +792,33 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
         >
           <Canvas
             shadows
-            camera={{ position: [0, 8, 9], fov: 45 }}
-            gl={{ antialias: true, alpha: false }}
-            style={{ background: "radial-gradient(ellipse at center, #1a1822 0%, #07060c 70%)" }}
+            camera={{ position: [0, 8, 9], fov: 42 }}
+            gl={{
+              antialias: true,
+              alpha: false,
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.05,
+            }}
+            style={{ background: "radial-gradient(ellipse at center, #15131c 0%, #050407 70%)" }}
           >
             <Suspense fallback={null}>
-              <ambientLight intensity={0.25} />
+              <ambientLight intensity={0.18} color="#9ca6c2" />
               <directionalLight
-                position={[5, 12, 5]}
-                intensity={1.4}
+                position={[6, 12, 4]}
+                intensity={2.1}
                 castShadow
-                shadow-mapSize-width={1024}
-                shadow-mapSize-height={1024}
+                shadow-mapSize-width={2048}
+                shadow-mapSize-height={2048}
                 shadow-camera-left={-8}
                 shadow-camera-right={8}
                 shadow-camera-top={8}
                 shadow-camera-bottom={-8}
-                color="#fff5d8"
+                shadow-bias={-0.0003}
+                color="#fff1cc"
               />
-              <pointLight position={[-4, 3, -4]} intensity={0.6} color="#6b3df0" />
-              <pointLight position={[4, 3, -4]} intensity={0.5} color="#c9a04a" />
+              <directionalLight position={[-4, 6, -8]} intensity={1.2} color="#7a86c8" />
+              <pointLight position={[4, 2, 4]} intensity={0.4} color="#c9a04a" distance={12} />
 
-              {/* Critical effect lights */}
               {lastCrit === "success" && !throwing && (
                 <pointLight position={[0, 3, 0]} intensity={3} color="#ffd97a" distance={8} />
               )}
@@ -732,7 +826,8 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
                 <pointLight position={[0, 2, 0]} intensity={2} color="#a01818" distance={6} />
               )}
 
-              <Environment preset="night" />
+              <Environment preset="warehouse" environmentIntensity={0.35} />
+
               <DynamicCamera active={throwing} />
 
               <Physics
