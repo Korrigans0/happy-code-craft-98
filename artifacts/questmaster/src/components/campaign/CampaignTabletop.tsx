@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import DiceRoller3D from "./DiceRoller3D";
+import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
 import {
@@ -2288,7 +2289,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           )}
 
-          <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
+          <DiceRoller3D
+            open={diceOpen}
+            onClose={() => setDiceOpen(false)}
+            campaignId={campaignId}
+            userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+          />
+          <DiceBroadcastOverlay campaignId={campaignId} />
         </div>
 
         {/* ── GM PANEL ── */}

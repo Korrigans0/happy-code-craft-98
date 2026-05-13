@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dices, X, Plus, Minus, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ============================================================
  *  Aetheria 3D Dice — physical dice, dark fantasy feel
@@ -581,62 +582,6 @@ function DieFaces({
 }
 
 /* ----------------------------------------------------------
- *  D10 Test Inspector — non-physics rotating D10 with face report
- * --------------------------------------------------------- */
-
-function TestD10Mesh({
-  material,
-  onUpFaceChange,
-}: {
-  material: DieMaterial;
-  onUpFaceChange: (idx: number) => void;
-}) {
-  const data = useMemo(() => getPolyhedronData(10), []);
-  const groupRef = useRef<THREE.Group>(null);
-  const lastIdxRef = useRef(-1);
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.6;
-    groupRef.current.rotation.x += delta * 0.25;
-
-    const worldUp = new THREE.Vector3(0, 1, 0);
-    const quat = new THREE.Quaternion();
-    groupRef.current.getWorldQuaternion(quat);
-    let bestDot = -Infinity;
-    let bestIdx = 0;
-    data.faceNormals.forEach((n, i) => {
-      const wn = n.clone().applyQuaternion(quat);
-      const d = wn.dot(worldUp);
-      if (d > bestDot) { bestDot = d; bestIdx = i; }
-    });
-    if (bestIdx !== lastIdxRef.current) {
-      lastIdxRef.current = bestIdx;
-      onUpFaceChange(bestIdx);
-    }
-  });
-
-  return (
-    <group ref={groupRef} position={[0, 2, 0]}>
-      <mesh geometry={data.geometry} castShadow receiveShadow>
-        <meshPhysicalMaterial
-          color={material.base}
-          emissive={material.emissive}
-          emissiveIntensity={0.15}
-          metalness={material.metal}
-          roughness={material.rough}
-          clearcoat={0.3}
-          clearcoatRoughness={0.6}
-          reflectivity={0.4}
-          envMapIntensity={0.85}
-        />
-        <DieFaces type={10} data={data} />
-      </mesh>
-    </group>
-  );
-}
-
-/* ----------------------------------------------------------
  *  Dynamic camera — slight orbit during throw
  * --------------------------------------------------------- */
 
@@ -682,13 +627,15 @@ interface Roll {
 interface DiceRoller3DProps {
   open: boolean;
   onClose: () => void;
+  campaignId?: string;
+  userName?: string;
 }
 
 const DICE_PRESET_LABELS: Record<DieType, string> = {
   4: "d4", 6: "d6", 8: "d8", 10: "d10", 12: "d12", 20: "d20",
 };
 
-const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
+const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps) => {
   const [counts, setCounts] = useState<Record<DieType, number>>({
     4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 1,
   });
@@ -697,9 +644,6 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
   const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
   const [rolls, setRolls] = useState<Record<string, Roll>>({});
   const [throwing, setThrowing] = useState(false);
-  const [testMode, setTestMode] = useState(false);
-  const [testUpFace, setTestUpFace] = useState(0);
-  const testD10Data = useMemo(() => getPolyhedronData(10), []);
   const [history, setHistory] = useState<{ formula: string; total: number; details: string; crit?: "success" | "fail" }[]>([]);
   const [shake, setShake] = useState<"none" | "crit" | "fail">("none");
   const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
@@ -778,10 +722,39 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
         else if (crit === "fail") { audio.fail(); setShake("fail"); setTimeout(() => setShake("none"), 700); }
 
         setHistory(h => [{ formula, total, details: detailParts.join(", "), crit }, ...h].slice(0, 10));
+
+        // Broadcast roll to campaign chat + everyone's screen
+        if (campaignId) {
+          const detailsStr = all.map(r => r.value).join(" + ")
+            + (modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : "");
+          const author = userName || "Joueur";
+          const critTxt = crit === "success" ? " ✦ Critique !" : crit === "fail" ? " ✗ Échec critique" : "";
+          const content = `🎲 ${author} lance ${formula} → [${detailsStr}] = **${total}**${critTxt}`;
+          // Chat persistence (best-effort)
+          import("@/lib/api").then(({ campaignsApi }) => {
+            campaignsApi.postMessage(campaignId, {
+              content,
+              message_type: "dice_roll",
+              metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
+            }).catch(() => { /* ignore */ });
+          });
+          // Realtime broadcast for floating overlay
+          const ch: any = (supabase as any).channel(`vtt-dice-${campaignId}`);
+          ch.subscribe?.((status: string) => {
+            if (status === "SUBSCRIBED") {
+              ch.send?.({
+                type: "broadcast",
+                event: "roll",
+                payload: { author, formula, total, results: all.map(r => ({ type: r.type, value: r.value })), modifier, crit, t: Date.now() },
+              });
+              setTimeout(() => { (supabase as any).removeChannel?.(ch); }, 800);
+            }
+          });
+        }
       }
       return next;
     });
-  }, [modifier]);
+  }, [modifier, campaignId, userName]);
 
   const rollAll = () => {
     if (totalDice === 0) return;
@@ -923,52 +896,9 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
           <Button onClick={rollAll} disabled={totalDice === 0 || throwing} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
             <Dices className="mr-2 h-4 w-4" /> Lancer ({totalDice})
           </Button>
-          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0 || testMode}>
+          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0}>
             Effacer la table
           </Button>
-
-          <Button
-            variant={testMode ? "default" : "outline"}
-            size="sm"
-            onClick={() => { setTestMode(m => !m); if (!testMode) clearTable(); }}
-            className={cn(testMode && "bg-primary/80 text-primary-foreground")}
-          >
-            {testMode ? "Quitter le mode test" : "Mode test D10"}
-          </Button>
-
-          {testMode && (
-            <div className="rounded-md border border-primary/40 bg-card/60 p-2">
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
-                Faces du D10 (1–10, 10 = 0)
-              </p>
-              <p className="mb-2 text-[10px] text-muted-foreground/80">
-                Le D10 tourne en continu. La face vers le haut est mise en évidence.
-              </p>
-              <div className="grid grid-cols-5 gap-1">
-                {testD10Data.faceValues.map((v, i) => {
-                  const label = v === 10 ? "0" : String(v);
-                  const isUp = i === testUpFace;
-                  return (
-                    <div
-                      key={i}
-                      className={cn(
-                        "flex h-8 items-center justify-center rounded border text-sm font-bold tabular-nums transition-all",
-                        isUp
-                          ? "border-primary bg-primary/20 text-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
-                          : "border-border/50 bg-muted/20 text-muted-foreground"
-                      )}
-                      title={`face ${i} → ${v}`}
-                    >
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[10px] text-muted-foreground/70">
-                Vérifiez que chaque chiffre est lisible à l'endroit pendant la rotation.
-              </p>
-            </div>
-          )}
 
           {history.length > 0 && (
             <div className="mt-2">
@@ -1005,8 +935,8 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
             shake === "crit" && "animate-shake-crit",
             shake === "fail" && "animate-shake-fail"
           )}
-          onPointerDown={testMode ? undefined : onPointerDown}
-          onPointerUp={testMode ? undefined : onPointerUp}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
         >
           <Canvas
             shadows
@@ -1046,31 +976,27 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
 
               <Environment preset="warehouse" environmentIntensity={0.35} />
 
-              <DynamicCamera active={throwing && !testMode} />
+              <DynamicCamera active={throwing} />
 
-              {testMode ? (
-                <TestD10Mesh material={material} onUpFaceChange={setTestUpFace} />
-              ) : (
-                <Physics
-                  gravity={[0, -28, 0]}
-                  defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
-                  iterations={12}
-                >
-                  <PhysicsRoom />
-                  {spawns.map(s => (
-                    <Die
-                      key={s.id}
-                      id={s.id}
-                      type={s.type}
-                      material={s.material}
-                      startPos={s.startPos}
-                      impulse={s.impulse}
-                      spin={s.spin}
-                      onSettle={handleSettle}
-                    />
-                  ))}
-                </Physics>
-              )}
+              <Physics
+                gravity={[0, -28, 0]}
+                defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
+                iterations={12}
+              >
+                <PhysicsRoom />
+                {spawns.map(s => (
+                  <Die
+                    key={s.id}
+                    id={s.id}
+                    type={s.type}
+                    material={s.material}
+                    startPos={s.startPos}
+                    impulse={s.impulse}
+                    spin={s.spin}
+                    onSettle={handleSettle}
+                  />
+                ))}
+              </Physics>
               <ContactShadows position={[0, 0.005, 0]} opacity={0.55} scale={20} blur={2.4} far={8} />
             </Suspense>
           </Canvas>
