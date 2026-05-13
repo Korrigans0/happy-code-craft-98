@@ -385,28 +385,34 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
   });
 
   // Pre-compute per-face label transforms.
-  // Text is oriented so its plane normal matches the face outward normal,
-  // and slightly inset away from the surface to fake an engraving.
+  // We build a stable TBN basis per face so digits are upright and never mirrored.
   const faceLabels = useMemo(() => {
-    const up = new THREE.Vector3(0, 0, 1);
-    // Determine a reference scale based on the average face-center distance
+    const worldUp = new THREE.Vector3(0, 1, 0);
+    const worldFwd = new THREE.Vector3(0, 0, 1);
     const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
     return data.faceNormals.map((n, i) => {
-      const q = new THREE.Quaternion().setFromUnitVectors(up, n.clone().normalize());
-      // Sit just outside the face (avoids z-fighting, reads as engraved with emissive)
-      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.008);
+      const N = n.clone().normalize();
+      // Pick a stable "up" reference: world Y, unless face is too aligned with it.
+      const ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
+      const T = new THREE.Vector3().crossVectors(ref, N).normalize(); // tangent (local X)
+      const B = new THREE.Vector3().crossVectors(N, T).normalize();   // bitangent (local Y)
+      const m = new THREE.Matrix4().makeBasis(T, B, N);
+      const q = new THREE.Quaternion().setFromRotationMatrix(m);
+
+      // Sit just outside the face surface
+      const pos = data.faceCenters[i].clone().addScaledVector(N, 0.01);
+
       const value = data.faceValues[i];
       // Per-die font sizing — tuned per shape so digits are big & legible
       const sizeMap: Record<DieType, number> = {
         4:  avgRadius * 0.55,
-        6:  0.55,
+        6:  0.62,
         8:  avgRadius * 0.62,
-        10: avgRadius * 0.55,
+        10: avgRadius * 0.50,
         12: avgRadius * 0.55,
         20: avgRadius * 0.50,
       };
       const size = sizeMap[type];
-      // Display 10 as "0" on real d10 face (classic), keep others as digits
       const label = type === 10 && value === 10 ? "0" : `${value}`;
       const needsUnderline = value === 6 || value === 9;
       return {
@@ -434,38 +440,59 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
           <meshPhysicalMaterial
             color={material.base}
             emissive={material.emissive}
-            emissiveIntensity={0.18}
+            emissiveIntensity={0.15}
             metalness={material.metal}
             roughness={material.rough}
-            clearcoat={0.35}
-            clearcoatRoughness={0.55}
-            reflectivity={0.45}
-            envMapIntensity={0.8}
+            clearcoat={0.3}
+            clearcoatRoughness={0.6}
+            reflectivity={0.4}
+            envMapIntensity={0.85}
           />
 
           {faceLabels.map((f, i) => (
             <group key={i} position={f.pos} quaternion={f.quat}>
-              {/* Engraved digit — emissive so it reads as a glowing rune */}
+              {/* Recessed groove shadow — darker, slightly inset, larger outline */}
+              <Text
+                fontSize={f.size}
+                color="#0a0805"
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={f.size * 0.13}
+                outlineColor="#000000"
+                outlineOpacity={0.95}
+                outlineBlur={f.size * 0.06}
+                renderOrder={2}
+                position={[0, f.needsUnderline ? f.size * 0.09 : 0, -0.004]}
+              >
+                {f.label}
+              </Text>
+              {/* Bright engraved digit — sits inside the groove, glows softly */}
               <Text
                 fontSize={f.size}
                 color="#fff1c2"
                 anchorX="center"
                 anchorY="middle"
-                outlineWidth={f.size * 0.06}
-                outlineColor="#1a0d02"
-                outlineOpacity={0.85}
+                outlineWidth={f.size * 0.04}
+                outlineColor="#3a2208"
+                outlineOpacity={0.9}
                 material-toneMapped={false}
-                renderOrder={2}
-                position={[0, f.needsUnderline ? f.size * 0.08 : 0, 0]}
+                renderOrder={3}
+                position={[0, f.needsUnderline ? f.size * 0.09 : 0, 0]}
               >
                 {f.label}
               </Text>
-              {/* Tiny dot under 6/9 for orientation — much cleaner than combining underline */}
+              {/* Orientation dot for 6/9 */}
               {f.needsUnderline && (
-                <mesh position={[0, -f.size * 0.42, 0.001]} renderOrder={3}>
-                  <circleGeometry args={[f.size * 0.07, 16]} />
-                  <meshBasicMaterial color="#fff1c2" toneMapped={false} />
-                </mesh>
+                <>
+                  <mesh position={[0, -f.size * 0.45, -0.003]} renderOrder={2}>
+                    <circleGeometry args={[f.size * 0.11, 20]} />
+                    <meshBasicMaterial color="#000000" />
+                  </mesh>
+                  <mesh position={[0, -f.size * 0.45, 0.001]} renderOrder={3}>
+                    <circleGeometry args={[f.size * 0.075, 20]} />
+                    <meshBasicMaterial color="#fff1c2" toneMapped={false} />
+                  </mesh>
+                </>
               )}
             </group>
           ))}
@@ -702,7 +729,18 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateCount(t, -1)}>
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="w-5 text-center text-sm font-medium tabular-nums">{counts[t]}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={15}
+                    value={counts[t]}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      const safe = isNaN(v) ? 0 : Math.max(0, Math.min(15, v));
+                      setCounts(p => ({ ...p, [t]: safe }));
+                    }}
+                    className="w-10 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-center text-sm font-medium tabular-nums focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateCount(t, 1)}>
                     <Plus className="h-3 w-3" />
                   </Button>
