@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { 
-  Loader2, MessageSquare, Swords, BookOpen, Users, 
+  Loader2, MessageSquare, BookOpen, Users, 
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
   Volume2, ExternalLink, Wand2
 } from "lucide-react";
