@@ -495,8 +495,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     setGmNotesContent("");
     setGmNotesLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("tabletop_token_notes" as any)
+      const { data, error } = await (supabase as any)
+        .from("tabletop_token_notes")
         .select("content")
         .eq("campaign_id", campaignId)
         .eq("token_id", token.id)
