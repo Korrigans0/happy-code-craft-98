@@ -725,9 +725,11 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
 
         // Broadcast roll to campaign chat + everyone's screen
         if (campaignId) {
+          const detailsStr = all.map(r => r.value).join(" + ")
+            + (modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : "");
           const author = userName || "Joueur";
           const critTxt = crit === "success" ? " ✦ Critique !" : crit === "fail" ? " ✗ Échec critique" : "";
-          const content = `🎲 ${author} lance ${formula} = **${total}**${critTxt}`;
+          const content = `🎲 ${author} lance ${formula} → [${detailsStr}]${critTxt}`;
           // Chat persistence (best-effort)
           import("@/lib/api").then(({ campaignsApi }) => {
             campaignsApi.postMessage(campaignId, {
