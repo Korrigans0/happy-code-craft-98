@@ -73,7 +73,7 @@ const Profile = () => {
 
   const handleSave = () => updateMutation.mutate({ display_name: displayName });
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) {
@@ -84,22 +84,33 @@ const Profile = () => {
       toast({ title: 'Image trop lourde', description: 'Maximum 5 Mo.', variant: 'destructive' });
       return;
     }
+    setPendingFile(file);
+    setCropOpen(true);
+    if (e.target) e.target.value = '';
+  };
+
+  const cancelCrop = () => {
+    setCropOpen(false);
+    setPendingFile(null);
+  };
+
+  const confirmCrop = async (blob: Blob) => {
+    if (!user) return;
     setIsUploadingAvatar(true);
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const path = `${user.id}/avatar-${Date.now()}.png`;
       const { error: upErr } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+        .upload(path, blob, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
       await updateMutation.mutateAsync({ avatar_url: pub.publicUrl });
+      cancelCrop();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Échec du téléchargement';
       toast({ title: 'Erreur', description: msg, variant: 'destructive' });
     } finally {
       setIsUploadingAvatar(false);
-      if (e.target) e.target.value = '';
     }
   };
 
