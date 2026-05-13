@@ -151,6 +151,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [tokenDragOffset, setTokenDragOffset] = useState({ x: 0, y: 0 });
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
+  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
@@ -206,6 +208,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [pings, setPings] = useState<{ id: string; wx: number; wy: number; t: number }[]>([]);
   const pingsRef = useRef<{ id: string; wx: number; wy: number; t: number }[]>([]);
   pingsRef.current = pings;
+  const pingChannelRef = useRef<any>(null);
+  const broadcastPing = useCallback((wx: number, wy: number) => {
+    const ping = { id: newId(), wx, wy, t: Date.now() };
+    setPings(prev => [...prev, ping]);
+    pingChannelRef.current?.send?.({ type: "broadcast", event: "ping", payload: { wx, wy } });
+  }, []);
 
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
@@ -323,6 +331,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     pingAnimRef.current = requestAnimationFrame(animate);
     return () => { if (pingAnimRef.current) cancelAnimationFrame(pingAnimRef.current); };
   }, [pings.length]);
+
+  // ── Realtime ping broadcast (multi-vues) ──
+  useEffect(() => {
+    if (!campaignId) return;
+    const channel: any = (supabase as any).channel(`vtt-ping-${campaignId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel.on?.("broadcast", { event: "ping" }, ({ payload }: { payload: { wx: number; wy: number } }) => {
+      if (typeof payload?.wx !== "number" || typeof payload?.wy !== "number") return;
+      setPings(prev => [...prev, { id: newId(), wx: payload.wx, wy: payload.wy, t: Date.now() }]);
+    });
+    channel.subscribe?.();
+    pingChannelRef.current = channel;
+    return () => {
+      pingChannelRef.current = null;
+      (supabase as any).removeChannel?.(channel);
+    };
+  }, [campaignId]);
 
   // ── Helpers ──
   const snapValue = useCallback(
@@ -925,7 +951,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (token.isHidden && !isGM) continue;
 
         const isDragged = token.id === draggedToken;
-        const isSelected = token.id === selectedTokenId;
+        const isSelected = token.id === selectedTokenId || selectedTokenIds.has(token.id);
         const cx = token.x + token.size / 2;
         const cy = token.y + token.size / 2;
         const halfSize = token.size / 2;
@@ -1136,6 +1162,23 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.restore();
     }
 
+    // ── Marquee selection rectangle ───────────────────────────
+    if (marquee) {
+      const x = Math.min(marquee.x0, marquee.x1);
+      const y = Math.min(marquee.y0, marquee.y1);
+      const w = Math.abs(marquee.x1 - marquee.x0);
+      const h = Math.abs(marquee.y1 - marquee.y0);
+      ctx.save();
+      ctx.fillStyle = "hsla(42, 65%, 58%, 0.10)";
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "hsla(42, 65%, 58%, 0.85)";
+      ctx.lineWidth = 1.5 / zoom;
+      ctx.setLineDash([6 / zoom, 4 / zoom]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     ctx.restore(); // ← end world transform
 
     // ── Fog (screen space composite) ─────────────────────────
@@ -1176,7 +1219,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.drawImage(tmp, 0, 0);
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
@@ -1443,8 +1486,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // Ping tool
     if (tool === "ping") {
-      const ping = { id: newId(), wx: coords.x, wy: coords.y, t: Date.now() };
-      setPings(prev => [...prev, ping]);
+      broadcastPing(coords.x, coords.y);
       return;
     }
 
@@ -1453,19 +1495,39 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
-          setSelectedTokenId(perms.canSelectToken(tokenHit) ? tokenHit.id : null);
+          const canSel = perms.canSelectToken(tokenHit);
+          setSelectedTokenId(canSel ? tokenHit.id : null);
+          setSelectedTokenIds(canSel ? new Set([tokenHit.id]) : new Set());
           setLastPanPoint({ x: e.clientX, y: e.clientY });
           setIsDrawing(true);
           return;
         }
+        // Shift+click → toggle in multi-selection (no drag)
+        if (e.shiftKey) {
+          setSelectedTokenIds(prev => {
+            const next = new Set(prev);
+            if (next.has(tokenHit.id)) next.delete(tokenHit.id);
+            else next.add(tokenHit.id);
+            return next;
+          });
+          setSelectedTokenId(tokenHit.id);
+          return;
+        }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
+        setSelectedTokenIds(new Set([tokenHit.id]));
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
         return;
+      } else if (e.shiftKey && tool === "move") {
+        // Shift+drag on empty → marquee selection
+        setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
+        setIsDrawing(true);
+        return;
       } else {
         setSelectedTokenId(null);
+        setSelectedTokenIds(new Set());
       }
     }
 
@@ -1509,6 +1571,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
+    if (marquee) {
+      const coords = getCanvasCoords(e);
+      setMarquee(prev => prev ? { ...prev, x1: coords.x, y1: coords.y } : null);
+      return;
+    }
     if ((tool === "move" || isSpacePressed) && lastPanPoint) {
       setPanOffset(prev => ({ x: prev.x + e.clientX - lastPanPoint.x, y: prev.y + e.clientY - lastPanPoint.y }));
       setLastPanPoint({ x: e.clientX, y: e.clientY });
@@ -1526,6 +1593,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const handleMouseUp = () => {
     if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
+    if (marquee) {
+      const minX = Math.min(marquee.x0, marquee.x1);
+      const maxX = Math.max(marquee.x0, marquee.x1);
+      const minY = Math.min(marquee.y0, marquee.y1);
+      const maxY = Math.max(marquee.y0, marquee.y1);
+      const hits = tokens.filter(t => {
+        if (!t.visible || (t.isHidden && !isGM)) return false;
+        if (!perms.canSelectToken(t)) return false;
+        const cx = t.x + t.size / 2, cy = t.y + t.size / 2;
+        return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
+      });
+      if (hits.length > 0) {
+        const ids = new Set(hits.map(h => h.id));
+        setSelectedTokenIds(ids);
+        setSelectedTokenId(hits[hits.length - 1].id);
+      }
+      setMarquee(null);
+      setIsDrawing(false);
+      return;
+    }
     if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
@@ -2098,7 +2185,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onCenter={ctxToken ? () => centerOnToken(ctxToken.id) : undefined}
               onResize={ctxToken ? (n) => resizeToken(ctxToken.id, n) : undefined}
               onAddToken={() => addTokenAt(contextMenu.worldX, contextMenu.worldY)}
-              onPing={() => setPings(prev => [...prev, { id: newId(), wx: contextMenu.worldX, wy: contextMenu.worldY, t: Date.now() }])}
+              onPing={() => broadcastPing(contextMenu.worldX, contextMenu.worldY)}
               onToggleFog={() => toggleLayerVisibility("fog")}
               onClearFogHere={() => {
                 const revealAction: DrawAction = {
