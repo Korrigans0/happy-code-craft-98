@@ -335,19 +335,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Realtime ping broadcast (multi-vues) ──
   useEffect(() => {
     if (!campaignId) return;
-    const channel = supabase.channel(`vtt-ping-${campaignId}`, {
+    const channel: any = (supabase as any).channel(`vtt-ping-${campaignId}`, {
       config: { broadcast: { self: false } },
     });
-    channel.on("broadcast", { event: "ping" }, ({ payload }) => {
-      const p = payload as { wx: number; wy: number };
-      if (typeof p?.wx !== "number" || typeof p?.wy !== "number") return;
-      setPings(prev => [...prev, { id: newId(), wx: p.wx, wy: p.wy, t: Date.now() }]);
+    channel.on?.("broadcast", { event: "ping" }, ({ payload }: { payload: { wx: number; wy: number } }) => {
+      if (typeof payload?.wx !== "number" || typeof payload?.wy !== "number") return;
+      setPings(prev => [...prev, { id: newId(), wx: payload.wx, wy: payload.wy, t: Date.now() }]);
     });
-    channel.subscribe();
+    channel.subscribe?.();
     pingChannelRef.current = channel;
     return () => {
       pingChannelRef.current = null;
-      supabase.removeChannel(channel);
+      (supabase as any).removeChannel?.(channel);
     };
   }, [campaignId]);
 
