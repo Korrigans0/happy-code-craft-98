@@ -2288,7 +2288,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           )}
 
-          <DiceRoller3D open={diceOpen} onClose={() => setDiceOpen(false)} />
+          <DiceRoller3D
+            open={diceOpen}
+            onClose={() => setDiceOpen(false)}
+            campaignId={campaignId}
+            userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+          />
+          <DiceBroadcastOverlay campaignId={campaignId} />
         </div>
 
         {/* ── GM PANEL ── */}
