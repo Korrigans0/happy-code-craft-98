@@ -1,10 +1,7 @@
-// Auth is now handled by Clerk.
-// This hook is a compatibility shim so all existing components can keep
-// calling `useAuth()` without changes — it maps Clerk's useUser/useClerk
-// to the shape the rest of the app expects.
-
-import { useUser, useClerk } from "@clerk/react";
-import { createContext, useContext } from "react";
+// Native Supabase auth (replaces previous Clerk shim).
+import { createContext, useContext, useEffect, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthUser {
   id: string;
@@ -14,36 +11,58 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: { user: AuthUser } | null;
+  session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
 
-// Kept for any component that still imports AuthProvider — it's now a no-op wrapper
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  loading: true,
+  signOut: async () => {},
+});
+
+function toAuthUser(u: User | null | undefined): AuthUser | null {
+  if (!u) return null;
+  const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+  const display =
+    (meta.display_name as string) ||
+    (meta.full_name as string) ||
+    (meta.name as string) ||
+    (u.email ? u.email.split("@")[0] : undefined);
+  return { id: u.id, email: u.email ?? "", display_name: display };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Listener first (per Supabase recommendation)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+    // Then restore from storage
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const value: AuthContextType = {
+    user: toAuthUser(session?.user),
+    session,
+    loading,
+    signOut: async () => {
+      await supabase.auth.signOut();
+    },
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
-  const { user, isLoaded } = useUser();
-  const { signOut: clerkSignOut } = useClerk();
-
-  const authUser: AuthUser | null = user
-    ? {
-        id: user.id,
-        email: user.primaryEmailAddress?.emailAddress ?? "",
-        display_name:
-          user.fullName ||
-          user.firstName ||
-          user.primaryEmailAddress?.emailAddress?.split("@")[0] ||
-          undefined,
-      }
-    : null;
-
-  return {
-    user: authUser,
-    session: authUser ? { user: authUser } : null,
-    loading: !isLoaded,
-    signOut: () => clerkSignOut(),
-  };
+  return useContext(AuthContext);
 }
