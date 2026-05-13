@@ -476,7 +476,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
         </CardContent>
       </Card>
 
-      {/* ══ INTÉGRATION FOUNDRY VTT — supprimée ══ */}
+      
 
       {/* ══ ZONE DE DANGER ═══════════════════════════════════════════════════ */}
       <Card className="bg-gradient-card border-destructive/40">

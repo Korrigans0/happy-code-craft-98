@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, Swords, BookOpen, Users, 
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, Gamepad2
+  Volume2, ExternalLink, Wand2
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 import CampaignCombat from "@/components/campaign/CampaignCombat";
