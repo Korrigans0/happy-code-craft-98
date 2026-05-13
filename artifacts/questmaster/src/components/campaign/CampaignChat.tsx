@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X } from "lucide-react";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
@@ -166,6 +166,23 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       toast({ title: "Erreur", description: "Impossible d'envoyer le message", variant: "destructive" });
     },
   });
+
+  const clearMutation = useMutation({
+    mutationFn: () => campaignsApi.clearMessages(campaignId, isWhisper ? "gm" : "chat"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
+      toast({ title: isWhisper ? "Chat MJ vidé" : "Chat vidé" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de vider le chat", variant: "destructive" });
+    },
+  });
+
+  const handleClearChat = () => {
+    const label = isWhisper ? "le chat MJ" : "le chat normal";
+    if (!confirm(`Vider ${label} pour cette campagne ?`)) return;
+    clearMutation.mutate();
+  };
 
   const handleSend = () => {
     if (!message.trim()) return;
@@ -462,6 +479,16 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
               {isWhisper ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-destructive"
+            onClick={handleClearChat}
+            disabled={clearMutation.isPending || visibleMessages.length === 0}
+            title={isWhisper ? "Vider le chat MJ" : "Vider le chat normal"}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
           <Button
             variant={showImageInput ? "secondary" : "ghost"}
             size="icon"
