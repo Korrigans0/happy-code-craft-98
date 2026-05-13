@@ -80,6 +80,7 @@ const DiceRoller = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
+      {DICE_SEO}
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">
