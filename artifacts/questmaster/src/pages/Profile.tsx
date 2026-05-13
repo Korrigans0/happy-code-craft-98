@@ -136,6 +136,24 @@ const Profile = () => {
         throw new Error('Image envoyée mais profil non mis à jour. Avatar précédent conservé.');
       }
 
+      // Snapshot the previous avatar locally (as a blob URL) so the before/after
+      // comparison keeps showing it even after we delete it from storage.
+      let beforeSnapshot: string | null = null;
+      if (previousUrl) {
+        try {
+          const r = await fetch(previousUrl);
+          if (r.ok) beforeSnapshot = URL.createObjectURL(await r.blob());
+        } catch {
+          beforeSnapshot = previousUrl;
+        }
+      }
+      const afterSnapshot = URL.createObjectURL(blob);
+      setComparison((prev) => {
+        if (prev?.before && prev.before.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+        if (prev?.after && prev.after.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+        return { before: beforeSnapshot, after: afterSnapshot };
+      });
+
       // Success — best-effort cleanup of the previous file.
       if (previousPath && previousPath !== newPath) {
         await supabase.storage.from('avatars').remove([previousPath]).catch(() => null);
