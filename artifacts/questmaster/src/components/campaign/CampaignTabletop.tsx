@@ -999,7 +999,21 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.save();
       ctx.globalAlpha = tokensLayer.opacity / 100;
 
-      for (const token of tokens) {
+      for (const __t of tokens) {
+        // Apply slide animation to displayed position (does not mutate state)
+        let __dx = __t.x, __dy = __t.y;
+        const __anim = tokenAnimRef.current.get(__t.id);
+        if (__anim) {
+          const __p = (performance.now() - __anim.start) / __anim.duration;
+          if (__p >= 1) {
+            tokenAnimRef.current.delete(__t.id);
+          } else {
+            const __e = 1 - Math.pow(1 - __p, 3); // easeOutCubic
+            __dx = __anim.fromX + (__anim.toX - __anim.fromX) * __e;
+            __dy = __anim.fromY + (__anim.toY - __anim.fromY) * __e;
+          }
+        }
+        const token = (__dx === __t.x && __dy === __t.y) ? __t : { ...__t, x: __dx, y: __dy };
         if (!token.visible) continue;
         if (token.isHidden && !isGM) continue;
 
