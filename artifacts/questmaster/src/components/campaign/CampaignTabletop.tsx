@@ -1163,6 +1163,23 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.restore();
     }
 
+    // ── Marquee selection rectangle ───────────────────────────
+    if (marquee) {
+      const x = Math.min(marquee.x0, marquee.x1);
+      const y = Math.min(marquee.y0, marquee.y1);
+      const w = Math.abs(marquee.x1 - marquee.x0);
+      const h = Math.abs(marquee.y1 - marquee.y0);
+      ctx.save();
+      ctx.fillStyle = "hsla(42, 65%, 58%, 0.10)";
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = "hsla(42, 65%, 58%, 0.85)";
+      ctx.lineWidth = 1.5 / zoom;
+      ctx.setLineDash([6 / zoom, 4 / zoom]);
+      ctx.strokeRect(x, y, w, h);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     ctx.restore(); // ← end world transform
 
     // ── Fog (screen space composite) ─────────────────────────
