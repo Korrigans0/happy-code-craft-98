@@ -514,8 +514,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!gmNotesToken || !user?.id) return;
     setGmNotesSaving(true);
     try {
-      const { error } = await supabase
-        .from("tabletop_token_notes" as any)
+      const { error } = await (supabase as any)
+        .from("tabletop_token_notes")
         .upsert(
           { campaign_id: campaignId, token_id: gmNotesToken.id, content: gmNotesContent, created_by: user.id },
           { onConflict: "campaign_id,token_id" }
