@@ -2210,6 +2210,99 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           />
         )}
       </div>
+
+      {/* Voir la fiche du jeton */}
+      <Dialog open={!!sheetToken} onOpenChange={(o) => !o && setSheetToken(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: sheetToken?.color }} />
+              {sheetToken?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {sheetToken?.creatureType === "character" ? "Personnage joueur" :
+               sheetToken?.creatureType === "wa_creature" ? "Créature (Worlds Awakening)" :
+               sheetToken?.creatureType === "monster" ? "Monstre" : "Jeton"}
+            </DialogDescription>
+          </DialogHeader>
+          {sheetToken && (
+            <div className="space-y-3 text-sm">
+              {sheetToken.imageUrl && (
+                <img src={sheetToken.imageUrl} alt={sheetToken.name} className="w-full h-40 object-cover rounded-md border border-border" />
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                {sheetToken.hp !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">PV</div>
+                    <div className="font-semibold">{sheetToken.hp} / {sheetToken.maxHp}</div>
+                  </div>
+                )}
+                {sheetToken.pe !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">PE</div>
+                    <div className="font-semibold">{sheetToken.pe} / {sheetToken.maxPe}</div>
+                  </div>
+                )}
+                {sheetToken.ac !== undefined && (
+                  <div className="rounded border border-border p-2">
+                    <div className="text-xs text-muted-foreground">CA</div>
+                    <div className="font-semibold">{sheetToken.ac}</div>
+                  </div>
+                )}
+                <div className="rounded border border-border p-2">
+                  <div className="text-xs text-muted-foreground">Taille</div>
+                  <div className="font-semibold">{sheetToken.sizeUnits}× case{sheetToken.sizeUnits > 1 ? "s" : ""}</div>
+                </div>
+              </div>
+              {sheetToken.conditions && sheetToken.conditions.length > 0 && (
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Conditions actives</div>
+                  <div className="flex flex-wrap gap-1">
+                    {sheetToken.conditions.map(c => {
+                      const def = CONDITIONS.find(x => x.id === c);
+                      return (
+                        <span key={c} className="inline-flex items-center gap-1 rounded bg-primary/15 text-primary px-2 py-0.5 text-xs">
+                          <span>{def?.emoji}</span>{def?.label ?? c}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {sheetToken.creatureId && (
+                <p className="text-xs text-muted-foreground">
+                  Pour la fiche complète, ouvrir le compendium ou le bestiaire.
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes MJ privées */}
+      <Dialog open={!!gmNotesToken} onOpenChange={(o) => !o && setGmNotesToken(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Notes MJ — {gmNotesToken?.name}</DialogTitle>
+            <DialogDescription>
+              Visible uniquement par le MJ. Stockées de manière privée côté serveur.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={gmNotesContent}
+            onChange={(e) => setGmNotesContent(e.target.value)}
+            placeholder={gmNotesLoading ? "Chargement…" : "Ex. : Trahit le groupe au tour 4, possède la clé du donjon…"}
+            disabled={gmNotesLoading || gmNotesSaving}
+            rows={8}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setGmNotesToken(null)} disabled={gmNotesSaving}>Annuler</Button>
+            <Button onClick={saveGmNotes} disabled={gmNotesSaving || gmNotesLoading}>
+              {gmNotesSaving ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
