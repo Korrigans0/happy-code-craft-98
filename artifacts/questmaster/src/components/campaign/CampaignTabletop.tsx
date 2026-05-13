@@ -1367,7 +1367,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, tokens, collisionEnabled, fullscreen]);
+  }, [selectedTokenId, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
