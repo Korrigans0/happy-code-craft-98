@@ -29,14 +29,15 @@ const DIE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20];
 
 // Player color presets (HSL kept for brand-alignment with dark fantasy palette)
 const COLOR_PRESETS = [
-  { name: "Or runique",  base: "#c9a04a", emissive: "#3d2a06", metal: 0.85, rough: 0.25 },
-  { name: "Obsidienne",  base: "#1a1a22", emissive: "#3a0066", metal: 0.6,  rough: 0.15 },
-  { name: "Sang dragon", base: "#5a0d12", emissive: "#1a0203", metal: 0.4,  rough: 0.4  },
-  { name: "Éther bleu",  base: "#1d3a6b", emissive: "#082046", metal: 0.7,  rough: 0.25 },
-  { name: "Émeraude",    base: "#0f5132", emissive: "#021a0c", metal: 0.55, rough: 0.3  },
-  { name: "Pierre",      base: "#5d5b57", emissive: "#0a0a0a", metal: 0.1,  rough: 0.85 },
-  { name: "Améthyste",   base: "#3d1f5c", emissive: "#1a0833", metal: 0.5,  rough: 0.3  },
+  { name: "Pierre noire",  base: "#22202a", emissive: "#3a2a08", metal: 0.25, rough: 0.78 },
+  { name: "Or runique",    base: "#7a5a1c", emissive: "#3a2008", metal: 0.92, rough: 0.32 },
+  { name: "Obsidienne",    base: "#0e0d14", emissive: "#2a164d", metal: 0.55, rough: 0.22 },
+  { name: "Sang dragon",   base: "#3a0a10", emissive: "#1a0203", metal: 0.55, rough: 0.42 },
+  { name: "Éther bleu",    base: "#152846", emissive: "#0a1a36", metal: 0.7,  rough: 0.32 },
+  { name: "Émeraude",      base: "#0d3a26", emissive: "#021a0c", metal: 0.6,  rough: 0.36 },
+  { name: "Améthyste",     base: "#2a1846", emissive: "#1a0833", metal: 0.55, rough: 0.32 },
 ];
+
 
 interface DieMaterial {
   base: string;
