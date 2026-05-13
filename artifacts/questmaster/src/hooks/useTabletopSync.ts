@@ -63,6 +63,7 @@ export function useTabletopSync({
 }: UseTabletopSyncOptions) {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStateRef = useRef<Partial<TabletopState>>({});
+  const writeQueueRef = useRef(Promise.resolve());
   const initializedRef = useRef(false);
   const onStateReceivedRef = useRef(onStateReceived);
 
@@ -82,11 +83,12 @@ export function useTabletopSync({
       const persist = async () => {
         const payload = pendingStateRef.current;
         pendingStateRef.current = {};
-        try {
-          await campaignsApi.saveTabletop(campaignId, payload);
-        } catch (e) {
+        writeQueueRef.current = writeQueueRef.current
+          .catch(() => undefined)
+          .then(() => campaignsApi.saveTabletop(campaignId, payload).then(() => undefined));
+        await writeQueueRef.current.catch((e) => {
           console.error("[Tabletop] Erreur sauvegarde:", e);
-        }
+        });
       };
 
       if (options?.immediate) {
