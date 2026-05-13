@@ -2086,6 +2086,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 };
                 setActions(prev => [...prev, revealAction]);
               }}
+              onViewSheet={ctxToken ? () => openTokenSheet(ctxToken) : undefined}
+              onEditGmNotes={ctxToken ? () => openGmNotes(ctxToken) : undefined}
+              onCopyToken={ctxToken ? () => copyToken(ctxToken.id) : undefined}
+              onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
+              hasClipboard={hasClipboard}
             />
           )}
 
