@@ -9,12 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { 
-  Loader2, MessageSquare, Swords, BookOpen, Users, 
+  Loader2, MessageSquare, BookOpen, Users, 
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
   Volume2, ExternalLink, Wand2
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
-import CampaignCombat from "@/components/campaign/CampaignCombat";
+
 import CampaignNotes from "@/components/campaign/CampaignNotes";
 import CampaignMembers from "@/components/campaign/CampaignMembers";
 import CampaignSettings from "@/components/campaign/CampaignSettings";
@@ -127,7 +127,7 @@ const CampaignPlay = () => {
   const tabs = [
     { id: "tabletop", icon: Map, label: "Partie" },
     { id: "chat", icon: MessageSquare, label: "Chat" },
-    { id: "combat", icon: Swords, label: "Combat" },
+    
     { id: "sessions", icon: CalendarDays, label: "Sessions" },
     { id: "notes", icon: BookOpen, label: "Notes" },
     { id: "members", icon: Users, label: "Joueurs" },
@@ -225,9 +225,6 @@ const CampaignPlay = () => {
               </TabsContent>
               <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} isGM={isGM} />
-              </TabsContent>
-              <TabsContent value="combat" className="m-0 h-full">
-                <CampaignCombat campaignId={id!} isGM={isGM} />
               </TabsContent>
               <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />

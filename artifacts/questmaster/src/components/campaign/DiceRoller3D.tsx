@@ -7,7 +7,7 @@ import {
   usePlane,
   useConvexPolyhedron,
 } from "@react-three/cannon";
-import { Environment, ContactShadows, Trail } from "@react-three/drei";
+import { Environment, ContactShadows, Trail, Text } from "@react-three/drei";
 import * as THREE from "three";
 import {
   TetrahedronGeometry,
@@ -53,49 +53,64 @@ interface DieMaterial {
 function getPolyhedronData(sides: DieType): {
   geometry: THREE.BufferGeometry;
   faceNormals: THREE.Vector3[];
-  faceValues: number[]; // value displayed on each face
+  faceCenters: THREE.Vector3[];
+  faceValues: number[];
+  radius: number;
 } {
   let geom: THREE.BufferGeometry;
+  let radius: number;
   switch (sides) {
-    case 4:  geom = new TetrahedronGeometry(0.95); break;
-    case 6:  geom = new THREE.BoxGeometry(1.4, 1.4, 1.4); break;
-    case 8:  geom = new OctahedronGeometry(1); break;
-    case 10: geom = new OctahedronGeometry(1); break; // approximated
-    case 12: geom = new DodecahedronGeometry(0.95); break;
-    case 20: geom = new IcosahedronGeometry(0.95); break;
+    case 4:  geom = new TetrahedronGeometry(0.95); radius = 0.95; break;
+    case 6:  geom = new THREE.BoxGeometry(1.4, 1.4, 1.4); radius = 0.7; break;
+    case 8:  geom = new OctahedronGeometry(1); radius = 1; break;
+    case 10: geom = new OctahedronGeometry(1); radius = 1; break;
+    case 12: geom = new DodecahedronGeometry(0.95); radius = 0.95; break;
+    case 20: geom = new IcosahedronGeometry(0.95); radius = 0.95; break;
   }
   geom.computeVertexNormals();
 
-  // Compute one normal per "face" by walking triangles & merging coplanar ones for box/dodeca
   const pos = geom.attributes.position as THREE.BufferAttribute;
   const triCount = pos.count / 3;
-  const rawNormals: THREE.Vector3[] = [];
+
+  // Per-triangle: normal + centroid + 3 vertices
+  type Tri = { n: THREE.Vector3; c: THREE.Vector3; v: THREE.Vector3[] };
+  const tris: Tri[] = [];
   for (let i = 0; i < triCount; i++) {
     const a = new THREE.Vector3().fromBufferAttribute(pos, i * 3);
     const b = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 1);
     const c = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 2);
     const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
-    rawNormals.push(n);
+    const cen = new THREE.Vector3().add(a).add(b).add(c).divideScalar(3);
+    tris.push({ n, c: cen, v: [a, b, c] });
   }
 
-  // Merge near-duplicate normals (for box & dodeca which split faces into triangles)
-  const merged: THREE.Vector3[] = [];
-  for (const n of rawNormals) {
-    if (!merged.some(m => m.dot(n) > 0.999)) merged.push(n);
+  // Group coplanar triangles together (same normal)
+  const groups: { normal: THREE.Vector3; verts: THREE.Vector3[] }[] = [];
+  for (const t of tris) {
+    const g = groups.find(g => g.normal.dot(t.n) > 0.999);
+    if (g) g.verts.push(...t.v);
+    else groups.push({ normal: t.n.clone(), verts: [...t.v] });
   }
 
-  // Cap to expected face count (D10 octahedron has 8 faces but we map into 1..10 cyclically)
   const faceCount = sides === 10 ? 8 : sides;
-  const faceNormals = merged.slice(0, faceCount);
+  const useGroups = groups.slice(0, faceCount);
+  const faceNormals = useGroups.map(g => g.normal);
+  const faceCenters = useGroups.map(g => {
+    const sum = new THREE.Vector3();
+    g.verts.forEach(v => sum.add(v));
+    return sum.divideScalar(g.verts.length);
+  });
+
   const faceValues: number[] = [];
   for (let i = 0; i < faceNormals.length; i++) {
     if (sides === 10) {
-      faceValues.push(((i * 3) % 10) + 1); // distribute
+      // Distribute 1..10 across 8 faces by stepping
+      faceValues.push(((i * 3) % 10) + 1);
     } else {
       faceValues.push(i + 1);
     }
   }
-  return { geometry: geom, faceNormals, faceValues };
+  return { geometry: geom, faceNormals, faceCenters, faceValues, radius };
 }
 
 // Convex hull vertices for cannon physics (per geometry)
@@ -306,6 +321,25 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
+  // Pre-compute per-face text transforms (position + quaternion aligning +Z to face normal)
+  const faceLabels = useMemo(() => {
+    const up = new THREE.Vector3(0, 0, 1);
+    return data.faceNormals.map((n, i) => {
+      const q = new THREE.Quaternion().setFromUnitVectors(up, n.clone().normalize());
+      // Slight offset along normal to avoid z-fighting
+      const pos = data.faceCenters[i].clone().addScaledVector(n, 0.012);
+      const value = data.faceValues[i];
+      const label = value === 6 || value === 9 ? `${value}\u0332` : `${value}`; // combining underline
+      // Font size scales by face size (use distance from center)
+      const size = data.faceCenters[i].length() * 0.55;
+      return { pos: pos.toArray() as [number, number, number],
+               quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+               label, size };
+    });
+  }, [data]);
+
+  const labelStroke = "#0a0a0a";
+
   return (
     <group>
       <Trail
@@ -330,6 +364,22 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
             clearcoatRoughness={0.2}
             reflectivity={0.6}
           />
+          {faceLabels.map((f, i) => (
+            <Text
+              key={i}
+              position={f.pos}
+              quaternion={f.quat}
+              fontSize={f.size}
+              color="#f5e6b3"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={f.size * 0.08}
+              outlineColor={labelStroke}
+              renderOrder={2}
+            >
+              {f.label}
+            </Text>
+          ))}
         </mesh>
       </Trail>
     </group>
