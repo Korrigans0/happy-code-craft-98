@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,11 +56,15 @@ const Auth = () => {
   };
 
   const google = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    if (error) toast.error(error.message);
+    if (result.error) {
+      toast.error(result.error instanceof Error ? result.error.message : String(result.error));
+      return;
+    }
+    if (result.redirected) return;
+    navigate("/campaigns", { replace: true });
   };
 
   return (
@@ -110,7 +115,7 @@ const Auth = () => {
               type="button"
               className="text-muted-foreground hover:text-amber-300"
               onClick={async () => {
-                if (!email) return toast.error("Entrez votre email d'abord");
+                if (!email) { toast.error("Entrez votre email d'abord"); return; }
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${window.location.origin}/reset-password`,
                 });
