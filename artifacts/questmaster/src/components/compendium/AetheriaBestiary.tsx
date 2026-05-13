@@ -332,7 +332,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
             <div>
               <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">Mes créatures</p>
               <div className="space-y-2">
-                {myCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} />)}
+                {myCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} isAdmin={isAdmin} onDelete={(id) => deleteMut.mutate(id)} />)}
               </div>
             </div>
           )}
@@ -341,9 +341,11 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
 
           {publicCreatures.length > 0 && (
             <div>
-              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">Bestiaire communautaire</p>
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">
+                {isAdmin ? "Toutes les créatures (modération)" : "Bestiaire communautaire"}
+              </p>
               <div className="space-y-2">
-                {publicCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} />)}
+                {publicCreatures.map(c => <CreatureCard key={c.id} creature={c} currentUserId={user?.id} isAdmin={isAdmin} onDelete={(id) => deleteMut.mutate(id)} />)}
               </div>
             </div>
           )}
