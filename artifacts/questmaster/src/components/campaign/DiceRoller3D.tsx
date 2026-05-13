@@ -1,101 +1,521 @@
-import { useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  Physics,
+  useBox,
+  usePlane,
+  useConvexPolyhedron,
+} from "@react-three/cannon";
+import { Environment, ContactShadows, Trail } from "@react-three/drei";
+import * as THREE from "three";
+import {
+  TetrahedronGeometry,
+  OctahedronGeometry,
+  DodecahedronGeometry,
+  IcosahedronGeometry,
+} from "three";
 import { Button } from "@/components/ui/button";
-import { Dices, X, Plus, Minus } from "lucide-react";
+import { Dices, X, Plus, Minus, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type DieType = 4 | 6 | 8 | 10 | 12 | 20 | 100;
+/* ============================================================
+ *  Aetheria 3D Dice — physical dice, dark fantasy feel
+ *  Tech: react-three-fiber + @react-three/cannon (cannon-es)
+ * ============================================================ */
 
-interface RolledDie {
-  id: string;
-  type: DieType;
-  value: number;
-  rolling: boolean;
-  // Random end position on the table (% from center)
-  tx: number;
-  ty: number;
-  tr: number;
+type DieType = 4 | 6 | 8 | 10 | 12 | 20;
+const DIE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20];
+
+// Player color presets (HSL kept for brand-alignment with dark fantasy palette)
+const COLOR_PRESETS = [
+  { name: "Or runique",  base: "#c9a04a", emissive: "#3d2a06", metal: 0.85, rough: 0.25 },
+  { name: "Obsidienne",  base: "#1a1a22", emissive: "#3a0066", metal: 0.6,  rough: 0.15 },
+  { name: "Sang dragon", base: "#5a0d12", emissive: "#1a0203", metal: 0.4,  rough: 0.4  },
+  { name: "Éther bleu",  base: "#1d3a6b", emissive: "#082046", metal: 0.7,  rough: 0.25 },
+  { name: "Émeraude",    base: "#0f5132", emissive: "#021a0c", metal: 0.55, rough: 0.3  },
+  { name: "Pierre",      base: "#5d5b57", emissive: "#0a0a0a", metal: 0.1,  rough: 0.85 },
+  { name: "Améthyste",   base: "#3d1f5c", emissive: "#1a0833", metal: 0.5,  rough: 0.3  },
+];
+
+interface DieMaterial {
+  base: string;
+  emissive: string;
+  metal: number;
+  rough: number;
 }
 
-const DIE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20, 100];
+/* ----------------------------------------------------------
+ *  Geometry factories — return geometry + per-face normals
+ *  (face normals are used to determine the "up" face)
+ * --------------------------------------------------------- */
 
-const DIE_COLORS: Record<DieType, string> = {
-  4: "from-red-700 to-red-900",
-  6: "from-amber-600 to-amber-800",
-  8: "from-emerald-700 to-emerald-900",
-  10: "from-sky-700 to-sky-900",
-  12: "from-violet-700 to-violet-900",
-  20: "from-yellow-500 to-amber-700",
-  100: "from-pink-700 to-pink-900",
-};
+function getPolyhedronData(sides: DieType): {
+  geometry: THREE.BufferGeometry;
+  faceNormals: THREE.Vector3[];
+  faceValues: number[]; // value displayed on each face
+} {
+  let geom: THREE.BufferGeometry;
+  switch (sides) {
+    case 4:  geom = new TetrahedronGeometry(0.95); break;
+    case 6:  geom = new THREE.BoxGeometry(1.4, 1.4, 1.4); break;
+    case 8:  geom = new OctahedronGeometry(1); break;
+    case 10: geom = new OctahedronGeometry(1); break; // approximated
+    case 12: geom = new DodecahedronGeometry(0.95); break;
+    case 20: geom = new IcosahedronGeometry(0.95); break;
+  }
+  geom.computeVertexNormals();
+
+  // Compute one normal per "face" by walking triangles & merging coplanar ones for box/dodeca
+  const pos = geom.attributes.position as THREE.BufferAttribute;
+  const triCount = pos.count / 3;
+  const rawNormals: THREE.Vector3[] = [];
+  for (let i = 0; i < triCount; i++) {
+    const a = new THREE.Vector3().fromBufferAttribute(pos, i * 3);
+    const b = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 1);
+    const c = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 2);
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
+    rawNormals.push(n);
+  }
+
+  // Merge near-duplicate normals (for box & dodeca which split faces into triangles)
+  const merged: THREE.Vector3[] = [];
+  for (const n of rawNormals) {
+    if (!merged.some(m => m.dot(n) > 0.999)) merged.push(n);
+  }
+
+  // Cap to expected face count (D10 octahedron has 8 faces but we map into 1..10 cyclically)
+  const faceCount = sides === 10 ? 8 : sides;
+  const faceNormals = merged.slice(0, faceCount);
+  const faceValues: number[] = [];
+  for (let i = 0; i < faceNormals.length; i++) {
+    if (sides === 10) {
+      faceValues.push(((i * 3) % 10) + 1); // distribute
+    } else {
+      faceValues.push(i + 1);
+    }
+  }
+  return { geometry: geom, faceNormals, faceValues };
+}
+
+// Convex hull vertices for cannon physics (per geometry)
+function getConvexArgs(geometry: THREE.BufferGeometry): [number[][], number[][]] {
+  const pos = geometry.attributes.position as THREE.BufferAttribute;
+  const verts: number[][] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < pos.count; i++) {
+    const v = [
+      +pos.getX(i).toFixed(4),
+      +pos.getY(i).toFixed(4),
+      +pos.getZ(i).toFixed(4),
+    ];
+    const key = v.join(",");
+    if (!seen.has(key)) {
+      seen.add(key);
+      verts.push(v);
+    }
+  }
+  // Convex faces — cannon will rebuild; we pass triangle indices
+  const faces: number[][] = [];
+  const findIdx = (vec: THREE.Vector3) => {
+    const key = [+vec.x.toFixed(4), +vec.y.toFixed(4), +vec.z.toFixed(4)].join(",");
+    return verts.findIndex(v => v.join(",") === key);
+  };
+  const triCount = pos.count / 3;
+  for (let i = 0; i < triCount; i++) {
+    const a = new THREE.Vector3().fromBufferAttribute(pos, i * 3);
+    const b = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 1);
+    const c = new THREE.Vector3().fromBufferAttribute(pos, i * 3 + 2);
+    const ia = findIdx(a), ib = findIdx(b), ic = findIdx(c);
+    if (ia >= 0 && ib >= 0 && ic >= 0) faces.push([ia, ib, ic]);
+  }
+  return [verts, faces];
+}
+
+/* ----------------------------------------------------------
+ *  Sound system — synthesised dice clacks (no assets required)
+ * --------------------------------------------------------- */
+
+class DiceAudio {
+  private ctx: AudioContext | null = null;
+  private ensure() {
+    if (!this.ctx) {
+      try {
+        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch { /* noop */ }
+    }
+    return this.ctx;
+  }
+  private impact(freq: number, duration: number, type: OscillatorType, gain = 0.18) {
+    const ctx = this.ensure();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = freq * 1.2;
+    filter.Q.value = 6;
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.4, ctx.currentTime + duration);
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(gain, ctx.currentTime + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(filter).connect(g).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  }
+  felt() { this.impact(180 + Math.random() * 60, 0.18, "triangle", 0.12); }
+  wood() { this.impact(280 + Math.random() * 80, 0.12, "square", 0.1); }
+  crit() {
+    const ctx = this.ensure(); if (!ctx) return;
+    [440, 660, 880, 1320].forEach((f, i) => setTimeout(() => this.impact(f, 0.4, "sine", 0.18), i * 40));
+  }
+  fail() {
+    this.impact(80, 0.6, "sawtooth", 0.22);
+    setTimeout(() => this.impact(60, 0.8, "sawtooth", 0.18), 80);
+  }
+}
+
+const audio = new DiceAudio();
+
+/* ----------------------------------------------------------
+ *  Floor & walls — invisible physics box keeps dice on table
+ * --------------------------------------------------------- */
+
+function PhysicsRoom() {
+  // Floor
+  const [floorRef] = usePlane(() => ({
+    rotation: [-Math.PI / 2, 0, 0],
+    position: [0, 0, 0],
+    material: { friction: 0.6, restitution: 0.25 },
+  }));
+
+  // Invisible walls
+  const wallProps = (pos: [number, number, number], rot: [number, number, number]) => ({
+    position: pos,
+    rotation: rot,
+    material: { friction: 0.4, restitution: 0.4 },
+  });
+
+  const [w1] = usePlane(() => wallProps([0, 0, -8], [0, 0, 0]));
+  const [w2] = usePlane(() => wallProps([0, 0, 8], [0, Math.PI, 0]));
+  const [w3] = usePlane(() => wallProps([-10, 0, 0], [0, Math.PI / 2, 0]));
+  const [w4] = usePlane(() => wallProps([10, 0, 0], [0, -Math.PI / 2, 0]));
+
+  return (
+    <>
+      <mesh ref={floorRef as any} receiveShadow>
+        <planeGeometry args={[40, 40]} />
+        <meshStandardMaterial
+          color="#0d1018"
+          roughness={0.85}
+          metalness={0.15}
+        />
+      </mesh>
+      {/* Decorative felt circle */}
+      <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[6, 64]} />
+        <meshStandardMaterial color="#1a1610" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[0, 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[5.6, 5.95, 64]} />
+        <meshStandardMaterial color="#c9a04a" emissive="#5a3a0a" emissiveIntensity={0.5} roughness={0.5} metalness={0.7} />
+      </mesh>
+      {/* invisible refs to keep physics live */}
+      <group ref={w1 as any} /><group ref={w2 as any} /><group ref={w3 as any} /><group ref={w4 as any} />
+    </>
+  );
+}
+
+/* ----------------------------------------------------------
+ *  Single physics die
+ * --------------------------------------------------------- */
+
+interface DieProps {
+  id: string;
+  type: DieType;
+  material: DieMaterial;
+  startPos: [number, number, number];
+  impulse: [number, number, number];
+  spin: [number, number, number];
+  onSettle: (id: string, value: number) => void;
+}
+
+function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps) {
+  const data = useMemo(() => getPolyhedronData(type), [type]);
+  const convexArgs = useMemo(() => getConvexArgs(data.geometry), [data.geometry]);
+
+  const [ref, api] = useConvexPolyhedron(() => ({
+    args: convexArgs as any,
+    mass: 1.2,
+    position: startPos,
+    rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
+    angularDamping: 0.15,
+    linearDamping: 0.12,
+    material: { friction: 0.35, restitution: 0.45 },
+  }));
+
+  const settledRef = useRef(false);
+  const stillFramesRef = useRef(0);
+  const lastVelRef = useRef(new THREE.Vector3());
+  const lastAngRef = useRef(new THREE.Vector3());
+  const lastImpactRef = useRef(0);
+
+  // Apply initial throw
+  useEffect(() => {
+    api.velocity.set(impulse[0], impulse[1], impulse[2]);
+    api.angularVelocity.set(spin[0], spin[1], spin[2]);
+    const unsub1 = api.velocity.subscribe(v => lastVelRef.current.set(v[0], v[1], v[2]));
+    const unsub2 = api.angularVelocity.subscribe(v => lastAngRef.current.set(v[0], v[1], v[2]));
+    return () => { unsub1(); unsub2(); };
+  }, []); // eslint-disable-line
+
+  useFrame(() => {
+    if (settledRef.current || !ref.current) return;
+    const v = lastVelRef.current.length();
+    const a = lastAngRef.current.length();
+
+    // Impact sound when bouncing hard
+    if (v > 2.5 && performance.now() - lastImpactRef.current > 90) {
+      lastImpactRef.current = performance.now();
+      Math.random() > 0.5 ? audio.felt() : audio.wood();
+    }
+
+    if (v < 0.05 && a < 0.05) {
+      stillFramesRef.current++;
+      if (stillFramesRef.current > 12) {
+        settledRef.current = true;
+        // Determine up face
+        const obj = ref.current as THREE.Object3D;
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        let bestDot = -Infinity;
+        let bestIdx = 0;
+        const quat = new THREE.Quaternion();
+        obj.getWorldQuaternion(quat);
+        data.faceNormals.forEach((n, i) => {
+          const wn = n.clone().applyQuaternion(quat);
+          const d = wn.dot(worldUp);
+          if (d > bestDot) { bestDot = d; bestIdx = i; }
+        });
+        const value = data.faceValues[bestIdx] ?? 1;
+        onSettle(id, value);
+      }
+    } else {
+      stillFramesRef.current = 0;
+    }
+  });
+
+  return (
+    <group>
+      <Trail
+        width={0.6}
+        length={6}
+        color={material.emissive}
+        attenuation={(t) => t * t}
+      >
+        <mesh
+          ref={ref as any}
+          geometry={data.geometry}
+          castShadow
+          receiveShadow
+        >
+          <meshPhysicalMaterial
+            color={material.base}
+            emissive={material.emissive}
+            emissiveIntensity={0.35}
+            metalness={material.metal}
+            roughness={material.rough}
+            clearcoat={0.6}
+            clearcoatRoughness={0.2}
+            reflectivity={0.6}
+          />
+        </mesh>
+      </Trail>
+    </group>
+  );
+}
+
+/* ----------------------------------------------------------
+ *  Dynamic camera — slight orbit during throw
+ * --------------------------------------------------------- */
+
+function DynamicCamera({ active }: { active: boolean }) {
+  const { camera } = useThree();
+  const t = useRef(0);
+  useFrame((_, delta) => {
+    const target = new THREE.Vector3(0, 0, 0);
+    if (active) {
+      t.current += delta;
+      const r = 9 + Math.sin(t.current * 0.8) * 0.6;
+      camera.position.x = Math.sin(t.current * 0.4) * 1.2;
+      camera.position.y = 7 + Math.sin(t.current * 1.2) * 0.4;
+      camera.position.z = r;
+    } else {
+      // Ease back to default
+      camera.position.lerp(new THREE.Vector3(0, 8, 9), 0.05);
+    }
+    camera.lookAt(target);
+  });
+  return null;
+}
+
+/* ----------------------------------------------------------
+ *  Main component
+ * --------------------------------------------------------- */
+
+interface SpawnSpec {
+  id: string;
+  type: DieType;
+  startPos: [number, number, number];
+  impulse: [number, number, number];
+  spin: [number, number, number];
+  material: DieMaterial;
+}
+
+interface Roll {
+  id: string;
+  type: DieType;
+  value: number | null;
+}
 
 interface DiceRoller3DProps {
   open: boolean;
   onClose: () => void;
 }
 
+const DICE_PRESET_LABELS: Record<DieType, string> = {
+  4: "d4", 6: "d6", 8: "d8", 10: "d10", 12: "d12", 20: "d20",
+};
+
 const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
   const [counts, setCounts] = useState<Record<DieType, number>>({
-    4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 1, 100: 0,
+    4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 1,
   });
   const [modifier, setModifier] = useState(0);
-  const [rolledDice, setRolledDice] = useState<RolledDie[]>([]);
-  const [history, setHistory] = useState<{ formula: string; total: number; details: string }[]>([]);
+  const [colorIdx, setColorIdx] = useState(0);
+  const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
+  const [rolls, setRolls] = useState<Record<string, Roll>>({});
+  const [throwing, setThrowing] = useState(false);
+  const [history, setHistory] = useState<{ formula: string; total: number; details: string; crit?: "success" | "fail" }[]>([]);
+  const [shake, setShake] = useState<"none" | "crit" | "fail">("none");
+  const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
 
-  const updateCount = (type: DieType, delta: number) => {
-    setCounts(prev => ({ ...prev, [type]: Math.max(0, Math.min(20, prev[type] + delta)) }));
-  };
-
+  const material = COLOR_PRESETS[colorIdx];
   const totalDice = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  const updateCount = (t: DieType, d: number) =>
+    setCounts(p => ({ ...p, [t]: Math.max(0, Math.min(15, p[t] + d)) }));
+
+  const buildSpawns = useCallback(
+    (countsMap: Partial<Record<DieType, number>>, strengthMul = 1): SpawnSpec[] => {
+      const out: SpawnSpec[] = [];
+      for (const t of DIE_TYPES) {
+        const n = countsMap[t] ?? 0;
+        for (let i = 0; i < n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const startX = Math.cos(angle) * 5;
+          const startZ = Math.sin(angle) * 5;
+          const dirX = -Math.cos(angle) * (4 + Math.random() * 3) * strengthMul;
+          const dirZ = -Math.sin(angle) * (4 + Math.random() * 3) * strengthMul;
+          out.push({
+            id: crypto.randomUUID(),
+            type: t,
+            material,
+            startPos: [startX, 4 + Math.random() * 1.5, startZ],
+            impulse: [dirX, 1 + Math.random() * 2, dirZ],
+            spin: [
+              (Math.random() - 0.5) * 18,
+              (Math.random() - 0.5) * 18,
+              (Math.random() - 0.5) * 18,
+            ],
+          });
+        }
+      }
+      return out;
+    },
+    [material]
+  );
+
+  const launch = useCallback(
+    (countsMap: Partial<Record<DieType, number>>, strengthMul = 1) => {
+      const newSpawns = buildSpawns(countsMap, strengthMul);
+      if (newSpawns.length === 0) return;
+      const newRolls: Record<string, Roll> = {};
+      newSpawns.forEach(s => { newRolls[s.id] = { id: s.id, type: s.type, value: null }; });
+      setSpawns(newSpawns);
+      setRolls(newRolls);
+      setThrowing(true);
+    },
+    [buildSpawns]
+  );
+
+  const handleSettle = useCallback((id: string, value: number) => {
+    setRolls(prev => {
+      if (!prev[id] || prev[id].value !== null) return prev;
+      const next = { ...prev, [id]: { ...prev[id], value } };
+      // All settled?
+      const all = Object.values(next);
+      if (all.length > 0 && all.every(r => r.value !== null)) {
+        setThrowing(false);
+        const total = all.reduce((s, r) => s + (r.value ?? 0), 0) + modifier;
+        const detailParts = all.map(r => `d${r.type}:${r.value}`);
+        const formMap: Record<number, number> = {};
+        all.forEach(r => { formMap[r.type] = (formMap[r.type] ?? 0) + 1; });
+        const formula = Object.entries(formMap).map(([t, n]) => `${n}d${t}`).join(" + ")
+          + (modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : "");
+
+        // Crit detection on d20s
+        const d20s = all.filter(r => r.type === 20);
+        let crit: "success" | "fail" | undefined;
+        if (d20s.some(r => r.value === 20)) crit = "success";
+        else if (d20s.length > 0 && d20s.every(r => r.value === 1)) crit = "fail";
+
+        if (crit === "success") { audio.crit(); setShake("crit"); setTimeout(() => setShake("none"), 700); }
+        else if (crit === "fail") { audio.fail(); setShake("fail"); setTimeout(() => setShake("none"), 700); }
+
+        setHistory(h => [{ formula, total, details: detailParts.join(", "), crit }, ...h].slice(0, 10));
+      }
+      return next;
+    });
+  }, [modifier]);
 
   const rollAll = () => {
     if (totalDice === 0) return;
-    const newDice: RolledDie[] = [];
-    for (const t of DIE_TYPES) {
-      for (let i = 0; i < counts[t]; i++) {
-        newDice.push({
-          id: crypto.randomUUID(),
-          type: t,
-          value: Math.floor(Math.random() * t) + 1,
-          rolling: true,
-          tx: (Math.random() - 0.5) * 280,
-          ty: (Math.random() - 0.5) * 180,
-          tr: Math.random() * 720 - 360,
-        });
-      }
+    launch(counts, 1);
+  };
+
+  const quickRoll = (t: DieType) => launch({ [t]: 1 }, 1);
+
+  const clearTable = () => { setSpawns([]); setRolls({}); setThrowing(false); };
+
+  // Click & drag on the canvas wrapper for variable strength
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragStart.current = { x: e.clientX, y: e.clientY, t: performance.now() };
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    dragStart.current = null;
+    if (dist < 6) {
+      // simple click — quick d20 if no pool, else rollAll
+      if (totalDice > 0) rollAll();
+      else quickRoll(20);
+    } else {
+      const strength = Math.min(2.2, 0.6 + dist / 180);
+      if (totalDice > 0) launch(counts, strength);
+      else launch({ 20: 1 }, strength);
     }
-    setRolledDice(newDice);
-
-    // Stop rolling animation
-    setTimeout(() => {
-      setRolledDice(prev => prev.map(d => ({ ...d, rolling: false })));
-      const total = newDice.reduce((s, d) => s + d.value, 0) + modifier;
-      const formulaParts: string[] = [];
-      for (const t of DIE_TYPES) if (counts[t] > 0) formulaParts.push(`${counts[t]}d${t}`);
-      const formula = formulaParts.join(" + ") + (modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : "");
-      const details = newDice.map(d => `d${d.type}:${d.value}`).join(", ");
-      setHistory(prev => [{ formula, total, details }, ...prev].slice(0, 10));
-    }, 1400);
   };
 
-  const quickRoll = (type: DieType) => {
-    const value = Math.floor(Math.random() * type) + 1;
-    const die: RolledDie = {
-      id: crypto.randomUUID(),
-      type, value, rolling: true,
-      tx: (Math.random() - 0.5) * 280,
-      ty: (Math.random() - 0.5) * 180,
-      tr: Math.random() * 720 - 360,
-    };
-    setRolledDice([die]);
-    setTimeout(() => {
-      setRolledDice(prev => prev.map(d => ({ ...d, rolling: false })));
-      setHistory(prev => [{ formula: `1d${type}`, total: value, details: `d${type}:${value}` }, ...prev].slice(0, 10));
-    }, 1400);
-  };
-
-  const clearTable = () => setRolledDice([]);
-
-  const total = rolledDice.reduce((s, d) => s + d.value, 0) + (rolledDice.length ? modifier : 0);
+  const allValues = Object.values(rolls);
+  const settledCount = allValues.filter(r => r.value !== null).length;
+  const isComplete = allValues.length > 0 && settledCount === allValues.length;
+  const total = isComplete
+    ? allValues.reduce((s, r) => s + (r.value ?? 0), 0) + modifier
+    : 0;
+  const lastCrit = history[0]?.crit;
 
   if (!open) return null;
 
@@ -105,7 +525,7 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
       <div className="flex items-center justify-between border-b border-border bg-card/80 px-4 py-3">
         <div className="flex items-center gap-2">
           <Dices className="h-5 w-5 text-primary" />
-          <h3 className="font-display text-lg text-gradient-gold">Lanceur de dés</h3>
+          <h3 className="font-display text-lg text-gradient-gold">Lanceur de dés 3D</h3>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
           <X className="h-4 w-4" />
@@ -117,17 +537,15 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
         <div className="flex w-72 shrink-0 flex-col gap-3 overflow-y-auto border-r border-border bg-card/50 p-3">
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lancer rapide</p>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
               {DIE_TYPES.map(t => (
                 <button
                   key={t}
                   onClick={() => quickRoll(t)}
-                  className={cn(
-                    "rounded-md border border-border bg-gradient-to-br py-2 text-xs font-bold text-white shadow-sm transition-transform hover:scale-105 hover:shadow-md active:scale-95",
-                    DIE_COLORS[t]
-                  )}
+                  disabled={throwing}
+                  className="rounded-md border border-primary/30 bg-gradient-to-br from-card to-background py-2 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 hover:shadow-md hover:border-primary active:scale-95 disabled:opacity-50"
                 >
-                  d{t}
+                  {DICE_PRESET_LABELS[t]}
                 </button>
               ))}
             </div>
@@ -138,9 +556,9 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
             <div className="space-y-1.5">
               {DIE_TYPES.map(t => (
                 <div key={t} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                  <div className={cn("flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br text-[10px] font-bold text-white", DIE_COLORS[t])}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-primary/30 to-primary/10 text-[10px] font-bold text-primary">
                     d{t}
-                  </div>
+                  </span>
                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateCount(t, -1)}>
                     <Minus className="h-3 w-3" />
                   </Button>
@@ -166,10 +584,31 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
             </Button>
           </div>
 
-          <Button onClick={rollAll} disabled={totalDice === 0} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
+          {/* Color picker */}
+          <div>
+            <p className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <Palette className="h-3 w-3" /> Couleur des dés
+            </p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {COLOR_PRESETS.map((c, i) => (
+                <button
+                  key={c.name}
+                  onClick={() => setColorIdx(i)}
+                  title={c.name}
+                  className={cn(
+                    "h-8 rounded border-2 transition-transform hover:scale-110",
+                    colorIdx === i ? "border-primary shadow-[0_0_10px_hsl(var(--primary)/0.5)]" : "border-border"
+                  )}
+                  style={{ background: `linear-gradient(135deg, ${c.base}, ${c.emissive})` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Button onClick={rollAll} disabled={totalDice === 0 || throwing} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
             <Dices className="mr-2 h-4 w-4" /> Lancer ({totalDice})
           </Button>
-          <Button variant="outline" size="sm" onClick={clearTable} disabled={rolledDice.length === 0}>
+          <Button variant="outline" size="sm" onClick={clearTable} disabled={spawns.length === 0}>
             Effacer la table
           </Button>
 
@@ -178,12 +617,22 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique</p>
               <div className="space-y-1">
                 {history.map((h, i) => (
-                  <div key={i} className="rounded border border-border/50 bg-muted/20 px-2 py-1 text-xs">
+                  <div key={i} className={cn(
+                    "rounded border px-2 py-1 text-xs",
+                    h.crit === "success" && "border-primary/60 bg-primary/10",
+                    h.crit === "fail" && "border-destructive/60 bg-destructive/10",
+                    !h.crit && "border-border/50 bg-muted/20"
+                  )}>
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-muted-foreground">{h.formula}</span>
-                      <span className="font-bold text-primary">{h.total}</span>
+                      <span className={cn(
+                        "font-bold",
+                        h.crit === "success" ? "text-primary" : h.crit === "fail" ? "text-destructive" : "text-foreground"
+                      )}>{h.total}</span>
                     </div>
-                    <div className="truncate text-[10px] text-muted-foreground/70">{h.details}</div>
+                    <div className="truncate text-[10px] text-muted-foreground/70">
+                      {h.crit === "success" && "✦ Critique ! "}{h.crit === "fail" && "✗ Échec critique. "}{h.details}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -191,63 +640,125 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
           )}
         </div>
 
-        {/* Dice table */}
-        <div className="dice-table relative flex-1 overflow-hidden">
-          {/* Table felt background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(216,30%,8%)] via-[hsl(216,35%,5%)] to-[hsl(216,40%,3%)]">
-            <div className="absolute inset-0 opacity-30" style={{
-              backgroundImage: "radial-gradient(circle at center, hsl(42,65%,58%,0.15) 0%, transparent 50%)"
-            }} />
-            <div className="absolute inset-4 rounded-3xl border-2 border-primary/20 shadow-[inset_0_0_60px_hsl(0,0%,0%,0.6)]" />
-          </div>
-
-          {/* Total display */}
-          {rolledDice.length > 0 && !rolledDice[0].rolling && (
-            <div className="absolute right-4 top-4 rounded-lg border border-primary/40 bg-card/90 px-4 py-2 backdrop-blur-sm animate-fade-in">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</p>
-              <p className="font-display text-3xl font-bold text-gradient-gold leading-none">{total}</p>
-            </div>
+        {/* 3D Dice table */}
+        <div
+          className={cn(
+            "relative flex-1 overflow-hidden select-none",
+            shake === "crit" && "animate-shake-crit",
+            shake === "fail" && "animate-shake-fail"
           )}
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+        >
+          <Canvas
+            shadows
+            camera={{ position: [0, 8, 9], fov: 45 }}
+            gl={{ antialias: true, alpha: false }}
+            style={{ background: "radial-gradient(ellipse at center, #1a1822 0%, #07060c 70%)" }}
+          >
+            <Suspense fallback={null}>
+              <ambientLight intensity={0.25} />
+              <directionalLight
+                position={[5, 12, 5]}
+                intensity={1.4}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+                shadow-camera-left={-8}
+                shadow-camera-right={8}
+                shadow-camera-top={8}
+                shadow-camera-bottom={-8}
+                color="#fff5d8"
+              />
+              <pointLight position={[-4, 3, -4]} intensity={0.6} color="#6b3df0" />
+              <pointLight position={[4, 3, -4]} intensity={0.5} color="#c9a04a" />
 
-          {/* Empty state */}
-          {rolledDice.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <Dices className="h-16 w-16 text-primary/30 animate-float" />
-              <p className="mt-4 font-display text-lg text-muted-foreground">Lancez les dés !</p>
-              <p className="mt-1 text-sm text-muted-foreground/60">Cliquez un dé pour un lancer rapide<br />ou composez votre pool</p>
-            </div>
-          )}
+              {/* Critical effect lights */}
+              {lastCrit === "success" && !throwing && (
+                <pointLight position={[0, 3, 0]} intensity={3} color="#ffd97a" distance={8} />
+              )}
+              {lastCrit === "fail" && !throwing && (
+                <pointLight position={[0, 2, 0]} intensity={2} color="#a01818" distance={6} />
+              )}
 
-          {/* Dice */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {rolledDice.map((die) => (
-              <div
-                key={die.id}
-                className="dice-piece absolute"
-                style={{
-                  ['--tx' as any]: `${die.tx}px`,
-                  ['--ty' as any]: `${die.ty}px`,
-                  ['--tr' as any]: `${die.tr}deg`,
-                  animation: die.rolling ? 'dice-roll 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards' : undefined,
-                  transform: die.rolling ? undefined : `translate(${die.tx}px, ${die.ty}px) rotate(${die.tr}deg)`,
-                }}
+              <Environment preset="night" />
+              <DynamicCamera active={throwing} />
+
+              <Physics
+                gravity={[0, -28, 0]}
+                defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
+                iterations={12}
               >
-                <div
-                  className={cn(
-                    "flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br text-2xl font-bold text-white shadow-2xl border-2 border-white/20",
-                    DIE_COLORS[die.type],
-                    die.rolling && "dice-tumble"
-                  )}
-                  style={{
-                    boxShadow: '0 10px 25px hsl(0,0%,0%,0.5), inset 0 2px 4px hsl(0,0%,100%,0.2), inset 0 -4px 8px hsl(0,0%,0%,0.3)',
-                  }}
-                >
-                  {die.rolling ? '?' : die.value}
+                <PhysicsRoom />
+                {spawns.map(s => (
+                  <Die
+                    key={s.id}
+                    id={s.id}
+                    type={s.type}
+                    material={s.material}
+                    startPos={s.startPos}
+                    impulse={s.impulse}
+                    spin={s.spin}
+                    onSettle={handleSettle}
+                  />
+                ))}
+              </Physics>
+              <ContactShadows position={[0, 0.005, 0]} opacity={0.55} scale={20} blur={2.4} far={8} />
+            </Suspense>
+          </Canvas>
+
+          {/* Total overlay */}
+          {isComplete && (
+            <div className={cn(
+              "pointer-events-none absolute right-4 top-4 rounded-lg border bg-card/90 px-4 py-2 backdrop-blur-sm animate-fade-in",
+              lastCrit === "success" ? "border-primary shadow-[0_0_25px_hsl(var(--primary)/0.6)]" :
+              lastCrit === "fail" ? "border-destructive shadow-[0_0_25px_hsl(var(--destructive)/0.5)]" :
+              "border-primary/40"
+            )}>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {lastCrit === "success" ? "Critique !" : lastCrit === "fail" ? "Échec critique" : "Total"}
+              </p>
+              <p className={cn(
+                "font-display text-3xl font-bold leading-none",
+                lastCrit === "success" ? "text-gradient-gold" :
+                lastCrit === "fail" ? "text-destructive" : "text-gradient-gold"
+              )}>{total}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground/70">
+                {allValues.map(r => r.value).join(" + ")}
+                {modifier ? ` ${modifier > 0 ? "+" : ""}${modifier}` : ""}
+              </p>
+            </div>
+          )}
+
+          {/* Per-die value badges */}
+          {isComplete && allValues.length <= 8 && (
+            <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 animate-fade-in">
+              {allValues.map(r => (
+                <div key={r.id} className="rounded-md border border-primary/40 bg-card/80 px-2.5 py-1 backdrop-blur-sm text-center">
+                  <p className="text-[9px] uppercase text-muted-foreground">d{r.type}</p>
+                  <p className="font-display text-lg font-bold text-primary leading-none">{r.value}</p>
                 </div>
-                <div className="mt-1 text-center text-[10px] font-medium text-muted-foreground">d{die.type}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty state hint */}
+          {spawns.length === 0 && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end pb-12 text-center">
+              <p className="font-display text-base text-muted-foreground/80">Cliquez ou glissez pour lancer</p>
+              <p className="mt-1 text-xs text-muted-foreground/60">Glissez plus loin = lancer plus puissant</p>
+            </div>
+          )}
+
+          {/* Crit / fail flash overlays */}
+          {shake === "crit" && (
+            <div className="pointer-events-none absolute inset-0 animate-fade-out"
+              style={{ background: "radial-gradient(circle at center, hsl(45,90%,60%,0.35) 0%, transparent 60%)" }} />
+          )}
+          {shake === "fail" && (
+            <div className="pointer-events-none absolute inset-0 animate-fade-out"
+              style={{ background: "radial-gradient(circle at center, hsl(0,80%,30%,0.5) 0%, transparent 70%)" }} />
+          )}
         </div>
       </div>
     </div>
