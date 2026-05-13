@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dices, X, Plus, Minus, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ============================================================
  *  Aetheria 3D Dice — physical dice, dark fantasy feel
