@@ -1011,27 +1011,31 @@ const DiceRoller3D = ({ open, onClose }: DiceRoller3DProps) => {
 
               <Environment preset="warehouse" environmentIntensity={0.35} />
 
-              <DynamicCamera active={throwing} />
+              <DynamicCamera active={throwing && !testMode} />
 
-              <Physics
-                gravity={[0, -28, 0]}
-                defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
-                iterations={12}
-              >
-                <PhysicsRoom />
-                {spawns.map(s => (
-                  <Die
-                    key={s.id}
-                    id={s.id}
-                    type={s.type}
-                    material={s.material}
-                    startPos={s.startPos}
-                    impulse={s.impulse}
-                    spin={s.spin}
-                    onSettle={handleSettle}
-                  />
-                ))}
-              </Physics>
+              {testMode ? (
+                <TestD10Mesh material={material} onUpFaceChange={setTestUpFace} />
+              ) : (
+                <Physics
+                  gravity={[0, -28, 0]}
+                  defaultContactMaterial={{ friction: 0.4, restitution: 0.4 }}
+                  iterations={12}
+                >
+                  <PhysicsRoom />
+                  {spawns.map(s => (
+                    <Die
+                      key={s.id}
+                      id={s.id}
+                      type={s.type}
+                      material={s.material}
+                      startPos={s.startPos}
+                      impulse={s.impulse}
+                      spin={s.spin}
+                      onSettle={handleSettle}
+                    />
+                  ))}
+                </Physics>
+              )}
               <ContactShadows position={[0, 0.005, 0]} opacity={0.55} scale={20} blur={2.4} far={8} />
             </Suspense>
           </Canvas>
