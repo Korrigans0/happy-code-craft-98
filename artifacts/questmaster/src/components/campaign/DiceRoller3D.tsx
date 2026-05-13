@@ -7,7 +7,7 @@ import {
   usePlane,
   useConvexPolyhedron,
 } from "@react-three/cannon";
-import { Environment, ContactShadows, Trail } from "@react-three/drei";
+import { Environment, ContactShadows, Trail, Text } from "@react-three/drei";
 import * as THREE from "three";
 import {
   TetrahedronGeometry,
