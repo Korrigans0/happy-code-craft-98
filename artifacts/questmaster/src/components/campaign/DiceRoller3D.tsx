@@ -384,41 +384,58 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
     }
   });
 
-  // Pre-compute per-face label transforms.
-  // We build a stable TBN basis per face so digits are upright and never mirrored.
+  // Pip layouts for D6 (unit square coords, range -0.5..0.5)
+  const PIP_LAYOUTS: Record<number, [number, number][]> = {
+    1: [[0, 0]],
+    2: [[-0.28, -0.28], [0.28, 0.28]],
+    3: [[-0.32, -0.32], [0, 0], [0.32, 0.32]],
+    4: [[-0.28, -0.28], [0.28, -0.28], [-0.28, 0.28], [0.28, 0.28]],
+    5: [[-0.3, -0.3], [0.3, -0.3], [0, 0], [-0.3, 0.3], [0.3, 0.3]],
+    6: [[-0.3, -0.32], [0.3, -0.32], [-0.3, 0], [0.3, 0], [-0.3, 0.32], [0.3, 0.32]],
+  };
+
+  // Pre-compute per-face transforms.
   const faceLabels = useMemo(() => {
     const worldUp = new THREE.Vector3(0, 1, 0);
     const worldFwd = new THREE.Vector3(0, 0, 1);
     const avgRadius = data.faceCenters.reduce((s, c) => s + c.length(), 0) / data.faceCenters.length;
     return data.faceNormals.map((n, i) => {
       const N = n.clone().normalize();
-      // Pick a stable "up" reference: world Y, unless face is too aligned with it.
-      const ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
-      const T = new THREE.Vector3().crossVectors(ref, N).normalize(); // tangent (local X)
-      const B = new THREE.Vector3().crossVectors(N, T).normalize();   // bitangent (local Y)
+      // Choose a per-die "up reference" so labels read consistently.
+      // For D10 (pentagonal trapezohedron), digits should point toward the equator,
+      // i.e. away from the nearest apex on the Z axis.
+      let ref: THREE.Vector3;
+      if (type === 10) {
+        // face normal has both radial XY and ±Z; "down toward equator" means -sign(N.z) on Z.
+        ref = new THREE.Vector3(0, 0, N.z >= 0 ? -1 : 1);
+        // If degenerate (face purely vertical), fall back to world up.
+        if (Math.abs(N.dot(ref)) > 0.95) ref = worldUp;
+      } else {
+        ref = Math.abs(N.dot(worldUp)) > 0.95 ? worldFwd : worldUp;
+      }
+      const T = new THREE.Vector3().crossVectors(ref, N).normalize();
+      const B = new THREE.Vector3().crossVectors(N, T).normalize();
       const m = new THREE.Matrix4().makeBasis(T, B, N);
       const q = new THREE.Quaternion().setFromRotationMatrix(m);
 
-      // Sit just outside the face surface
       const pos = data.faceCenters[i].clone().addScaledVector(N, 0.01);
-
       const value = data.faceValues[i];
-      // Per-die font sizing — tuned per shape so digits are big & legible
+
       const sizeMap: Record<DieType, number> = {
         4:  avgRadius * 0.55,
         6:  0.62,
         8:  avgRadius * 0.62,
-        10: avgRadius * 0.50,
+        10: avgRadius * 0.42,
         12: avgRadius * 0.55,
         20: avgRadius * 0.50,
       };
       const size = sizeMap[type];
       const label = type === 10 && value === 10 ? "0" : `${value}`;
-      const needsUnderline = value === 6 || value === 9;
+      const needsUnderline = type !== 6 && (value === 6 || value === 9);
       return {
         pos: pos.toArray() as [number, number, number],
         quat: [q.x, q.y, q.z, q.w] as [number, number, number, number],
-        label, size, needsUnderline,
+        label, size, needsUnderline, value,
       };
     });
   }, [data, type]);
