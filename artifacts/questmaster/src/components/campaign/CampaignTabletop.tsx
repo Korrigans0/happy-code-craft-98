@@ -2186,7 +2186,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onCenter={ctxToken ? () => centerOnToken(ctxToken.id) : undefined}
               onResize={ctxToken ? (n) => resizeToken(ctxToken.id, n) : undefined}
               onAddToken={() => addTokenAt(contextMenu.worldX, contextMenu.worldY)}
-              onPing={() => setPings(prev => [...prev, { id: newId(), wx: contextMenu.worldX, wy: contextMenu.worldY, t: Date.now() }])}
+              onPing={() => broadcastPing(contextMenu.worldX, contextMenu.worldY)}
               onToggleFog={() => toggleLayerVisibility("fog")}
               onClearFogHere={() => {
                 const revealAction: DrawAction = {
