@@ -1625,16 +1625,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       const coords = getCanvasCoords(e);
       const draggedT = tokens.find(t => t.id === draggedToken);
       if (!draggedT) return;
-      const rawX = coords.x - tokenDragOffset.x, rawY = coords.y - tokenDragOffset.y;
-      const sx = snapValue(rawX), sy = snapValue(rawY);
-      let nextX = sx, nextY = sy;
-      if (collisionEnabled) {
-        const overlaps = tokens.some(o =>
-          o.id !== draggedToken && o.visible &&
-          tokensOverlap({ x: sx, y: sy, size: draggedT.size }, { x: o.x, y: o.y, size: o.size })
-        );
-        if (overlaps) { nextX = draggedT.x; nextY = draggedT.y; }
-      }
+      // Free follow during drag (no snap) — snapping happens on release with a slide animation
+      const nextX = coords.x - tokenDragOffset.x;
+      const nextY = coords.y - tokenDragOffset.y;
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
