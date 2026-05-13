@@ -118,8 +118,6 @@ function ClerkQueryClientCacheInvalidator() {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // If Clerk isn't configured, don't block — let the page render.
-  if (!clerkPubKey) return <>{children}</>;
   const { isSignedIn, isLoaded } = useUser();
   if (!isLoaded) return null;
   if (!isSignedIn) return <Navigate to="/sign-in" replace />;
