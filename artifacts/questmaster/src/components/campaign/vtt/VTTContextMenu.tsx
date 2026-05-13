@@ -29,6 +29,11 @@ interface ContextMenuProps {
   onPing?: () => void;
   onToggleFog?: () => void;
   onClearFogHere?: () => void;
+  onViewSheet?: () => void;
+  onEditGmNotes?: () => void;
+  onCopyToken?: () => void;
+  onPasteToken?: () => void;
+  hasClipboard?: boolean;
 }
 
 const ITEM_CLASS =
