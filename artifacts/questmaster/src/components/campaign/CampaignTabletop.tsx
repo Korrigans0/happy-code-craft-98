@@ -1652,7 +1652,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = () => {
-    if (draggedToken) { setDraggedToken(null); setDragStart(null); setIsDrawing(false); return; }
+    if (draggedToken) {
+      const id = draggedToken;
+      // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
+      setDraggedToken(null);
+      setDragStart(null);
+      setIsDrawing(false);
+      setTokens(prev => {
+        const t = prev.find(x => x.id === id);
+        if (!t) return prev;
+        const sx = snapValue(t.x), sy = snapValue(t.y);
+        let nx = sx, ny = sy;
+        if (collisionEnabled) {
+          const overlaps = prev.some(o =>
+            o.id !== id && o.visible &&
+            tokensOverlap({ x: sx, y: sy, size: t.size }, { x: o.x, y: o.y, size: o.size })
+          );
+          if (overlaps) {
+            const last = tokenLastPosRef.current.get(id);
+            nx = last?.x ?? t.x; ny = last?.y ?? t.y;
+          }
+        }
+        return prev.map(x => x.id === id ? { ...x, x: nx, y: ny } : x);
+      });
+      return;
+    }
     if (marquee) {
       const minX = Math.min(marquee.x0, marquee.x1);
       const maxX = Math.max(marquee.x0, marquee.x1);
