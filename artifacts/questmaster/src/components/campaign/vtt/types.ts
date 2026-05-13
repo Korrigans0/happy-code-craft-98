@@ -37,6 +37,7 @@ export interface TokenItem {
   auraSize?: number;
   auraColor?: string;
   isHidden?: boolean;
+  isBoss?: boolean;
 }
 
 export interface MapLayer {
