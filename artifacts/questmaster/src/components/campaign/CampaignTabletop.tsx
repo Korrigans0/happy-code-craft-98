@@ -949,6 +949,28 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.restore();
         }
 
+        // Type ring (PJ / PNJ / Monstre / Boss)
+        {
+          const ringColor = token.isBoss
+            ? "#fbbf24"
+            : token.creatureType === "character"
+              ? "#22c55e"
+              : token.creatureType === "wa_creature" || token.creatureType === "monster"
+                ? "#ef4444"
+                : "#94a3b8";
+          ctx.save();
+          if (token.isBoss) {
+            ctx.shadowColor = ringColor;
+            ctx.shadowBlur = 12 / zoom;
+          }
+          ctx.strokeStyle = ringColor;
+          ctx.lineWidth = (token.isBoss ? 3.5 : 2.5) / zoom;
+          ctx.beginPath();
+          ctx.arc(cx, cy, halfSize + 1.5 / zoom, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
         // Selection ring
         if (isSelected) {
           ctx.save();
@@ -2267,6 +2289,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                       );
                     })}
                   </div>
+                </div>
+              )}
+              {isGM && (
+                <div className="flex items-center justify-between rounded border border-border p-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Statut Boss</div>
+                    <div className="text-xs">Anneau doré + halo lumineux</div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`px-3 py-1 rounded text-xs font-semibold border ${sheetToken.isBoss ? "bg-amber-500/20 border-amber-500 text-amber-300" : "border-border text-muted-foreground hover:bg-muted/40"}`}
+                    onClick={() => {
+                      setTokens(prev => prev.map(t => t.id === sheetToken.id ? { ...t, isBoss: !t.isBoss } : t));
+                      setSheetToken(s => s ? { ...s, isBoss: !s.isBoss } : s);
+                    }}
+                  >
+                    {sheetToken.isBoss ? "★ Boss" : "Marquer Boss"}
+                  </button>
                 </div>
               )}
               {sheetToken.creatureId && (
