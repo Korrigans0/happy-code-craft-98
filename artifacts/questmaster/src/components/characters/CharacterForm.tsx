@@ -26,6 +26,7 @@ interface CharacterFormProps {
 
 const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const systemConfig = getSystemConfig();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
     race: systemConfig.races[0],
