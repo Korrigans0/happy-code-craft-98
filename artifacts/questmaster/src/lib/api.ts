@@ -149,12 +149,21 @@ export const campaignsApi = {
     return unwrap(r);
   },
   clearMessages: async (id: string, scope: "chat" | "gm" | "all" = "all") => {
-    let q = supabase.from("campaign_messages").delete().eq("campaign_id", id);
-    if (scope === "chat") q = q.neq("message_type", "whisper");
-    if (scope === "gm") q = q.eq("message_type", "whisper");
-    const r = await q;
-    if (r.error) throw new Error(r.error.message);
-    return { ok: true };
+    // Server-side enforced: edge function checks GM role and writes an audit log entry.
+    const { data, error } = await supabase.functions.invoke("clear-campaign-messages", {
+      body: { campaign_id: id, scope },
+    });
+    if (error) throw new Error(error.message);
+    return data ?? { ok: true };
+  },
+  getAuditLog: async (id: string) => {
+    const r = await supabase
+      .from("campaign_audit_log")
+      .select("*")
+      .eq("campaign_id", id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    return unwrap(r) ?? [];
   },
   getNotes: async (id: string) => {
     const r = await supabase
