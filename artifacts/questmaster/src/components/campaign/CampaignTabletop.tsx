@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import DiceRoller3D from "./DiceRoller3D";
+import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
 import {
