@@ -10,6 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSystemConfig, WA_TENUES, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 
 type Character = any;
 
@@ -23,6 +26,7 @@ interface CharacterFormProps {
 
 const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   const systemConfig = getSystemConfig();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
     race: systemConfig.races[0],
@@ -54,7 +58,18 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
   });
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (comparison?.before?.startsWith('blob:')) URL.revokeObjectURL(comparison.before);
+      if (comparison?.after?.startsWith('blob:')) URL.revokeObjectURL(comparison.after);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (character) {
@@ -70,39 +85,112 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     onSave(formData);
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error("Veuillez sélectionner une image");
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image doit faire moins de 5MB");
+      toast.error("L'image doit faire moins de 5 Mo");
       return;
     }
+    setPendingAvatarFile(file);
+    setCropOpen(true);
+    if (event.target) event.target.value = '';
+  };
+
+  const cancelCrop = () => {
+    setCropOpen(false);
+    setPendingAvatarFile(null);
+  };
+
+  const confirmCrop = async (blob: Blob) => {
+    const previousUrl: string | null = formData.avatar_url ?? null;
+    const previousPath = (() => {
+      if (!previousUrl) return null;
+      const marker = '/storage/v1/object/public/character-avatars/';
+      const idx = previousUrl.indexOf(marker);
+      return idx === -1 ? null : previousUrl.substring(idx + marker.length).split('?')[0];
+    })();
 
     setIsUploadingAvatar(true);
-
+    let newPath: string | null = null;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const folder = user?.id ?? 'anon';
+      newPath = `${folder}/character-${Date.now()}.png`;
+      const { error: upErr } = await supabase.storage
+        .from('character-avatars')
+        .upload(newPath, blob, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
+      if (upErr) {
+        const lower = upErr.message?.toLowerCase() ?? '';
+        let friendly = "Impossible d'envoyer la nouvelle image. Avatar précédent conservé.";
+        if (lower.includes('exceed') || lower.includes('payload') || lower.includes('too large')) {
+          friendly = 'Image trop volumineuse pour le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('mime') || lower.includes('content-type')) {
+          friendly = 'Format non accepté par le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('permission') || lower.includes('unauthorized') || lower.includes('not authorized')) {
+          friendly = "Vous n'avez pas l'autorisation d'envoyer cet avatar. Avatar précédent conservé.";
+        } else if (lower.includes('network') || lower.includes('failed to fetch')) {
+          friendly = "Problème réseau pendant l'envoi. Avatar précédent conservé.";
+        }
+        throw new Error(friendly);
+      }
 
-      // Avatar upload not supported without storage — use URL directly
-      toast.error("Upload d'avatar non disponible, utilisez une URL directe.");
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      toast.error("Erreur lors de l'upload de l'avatar");
+      const { data: pub } = supabase.storage.from('character-avatars').getPublicUrl(newPath);
+      updateField('avatar_url', pub.publicUrl);
+
+      let beforeSnapshot: string | null = null;
+      if (previousUrl) {
+        try {
+          const r = await fetch(previousUrl);
+          if (r.ok) beforeSnapshot = URL.createObjectURL(await r.blob());
+        } catch {
+          beforeSnapshot = previousUrl;
+        }
+      }
+      const afterSnapshot = URL.createObjectURL(blob);
+      setComparison((prev) => {
+        if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+        if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+        return { before: beforeSnapshot, after: afterSnapshot };
+      });
+
+      if (previousPath && previousPath !== newPath) {
+        await supabase.storage.from('character-avatars').remove([previousPath]).catch(() => null);
+      }
+      cancelCrop();
+    } catch (err) {
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : "Échec du téléchargement. Avatar précédent conservé.";
+      toast.error(msg);
     } finally {
       setIsUploadingAvatar(false);
     }
   };
 
-  const removeAvatar = () => {
+  const dismissComparison = () => {
+    setComparison((prev) => {
+      if (prev?.before?.startsWith('blob:')) URL.revokeObjectURL(prev.before);
+      if (prev?.after?.startsWith('blob:')) URL.revokeObjectURL(prev.after);
+      return null;
+    });
+  };
+
+  const removeAvatar = async () => {
+    const url: string | null = formData.avatar_url ?? null;
+    if (url) {
+      const marker = '/storage/v1/object/public/character-avatars/';
+      const idx = url.indexOf(marker);
+      if (idx !== -1) {
+        const path = url.substring(idx + marker.length).split('?')[0];
+        await supabase.storage.from('character-avatars').remove([path]).catch(() => null);
+      }
+    }
     updateField("avatar_url", null);
+    dismissComparison();
   };
 
   return (
@@ -202,6 +290,42 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
                 <p className="text-xs text-muted-foreground">JPG, PNG ou GIF. Max 5MB.</p>
               </div>
             </div>
+
+            {comparison && (
+              <div className="rounded-lg border border-primary/30 bg-secondary/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">Avant / Après</p>
+                  <Button type="button" variant="ghost" size="sm" onClick={dismissComparison} className="h-7 px-2">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center gap-6">
+                  <div className="flex flex-col items-center gap-2">
+                    {comparison.before ? (
+                      <img src={comparison.before} alt="avant" className="h-20 w-20 rounded-full object-cover border-2 border-border opacity-80" />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted border-2 border-border">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Avant</span>
+                  </div>
+                  <div className="text-2xl text-primary">→</div>
+                  <div className="flex flex-col items-center gap-2">
+                    <img src={comparison.after} alt="après" className="h-20 w-20 rounded-full object-cover border-2 border-primary shadow-[0_0_18px_hsl(var(--primary)/0.4)]" />
+                    <span className="text-xs uppercase tracking-wide text-primary">Après</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <AvatarCropDialog
+              file={pendingAvatarFile}
+              open={cropOpen}
+              onCancel={cancelCrop}
+              onConfirm={confirmCrop}
+              isUploading={isUploadingAvatar}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
