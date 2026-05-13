@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, RotateCcw } from 'lucide-react';
+import { Loader2, RotateCcw, RotateCw, RotateCcwSquare } from 'lucide-react';
 
 interface AvatarCropDialogProps {
   file: File | null;
@@ -12,8 +12,10 @@ interface AvatarCropDialogProps {
   isUploading?: boolean;
 }
 
-const FRAME = 280; // visible circular frame size in px
-const OUTPUT = 512; // exported avatar size
+const FRAME = 280;
+const OUTPUT = 512;
+
+type Rotation = 0 | 90 | 180 | 270;
 
 const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: AvatarCropDialogProps) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
@@ -21,11 +23,15 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
   const [zoom, setZoom] = useState(1);
   const [minZoom, setMinZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [rotation, setRotation] = useState<Rotation>(0);
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Load file into image
+  // Effective (post-rotation) dimensions
+  const effW = imgSize ? (rotation % 180 === 0 ? imgSize.w : imgSize.h) : 0;
+  const effH = imgSize ? (rotation % 180 === 0 ? imgSize.h : imgSize.w) : 0;
+
   useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -37,22 +43,32 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
       setMinZoom(minZ);
       setZoom(minZ);
       setOffset({ x: 0, y: 0 });
+      setRotation(0);
     };
     img.src = url;
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  // Recompute minZoom when rotation flips orientation
+  useEffect(() => {
+    if (!imgSize) return;
+    const minZ = Math.max(FRAME / effW, FRAME / effH);
+    setMinZoom(minZ);
+    setZoom((z) => Math.max(z, minZ));
+    setOffset({ x: 0, y: 0 });
+  }, [rotation, imgSize, effW, effH]);
+
   const clampOffset = useCallback((x: number, y: number, z: number) => {
     if (!imgSize) return { x: 0, y: 0 };
-    const dispW = imgSize.w * z;
-    const dispH = imgSize.h * z;
+    const dispW = effW * z;
+    const dispH = effH * z;
     const maxX = Math.max(0, (dispW - FRAME) / 2);
     const maxY = Math.max(0, (dispH - FRAME) / 2);
     return {
       x: Math.min(maxX, Math.max(-maxX, x)),
       y: Math.min(maxY, Math.max(-maxY, y)),
     };
-  }, [imgSize]);
+  }, [imgSize, effW, effH]);
 
   const onZoomChange = (val: number[]) => {
     const z = val[0];
@@ -74,30 +90,49 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
   const onPointerUp = () => setDragging(false);
 
   const reset = () => {
-    setZoom(minZoom);
+    setRotation(0);
     setOffset({ x: 0, y: 0 });
+    if (imgSize) {
+      const minZ = Math.max(FRAME / imgSize.w, FRAME / imgSize.h);
+      setMinZoom(minZ);
+      setZoom(minZ);
+    }
+  };
+
+  const rotateBy = (delta: 90 | -90) => {
+    setRotation((r) => (((r + delta) % 360 + 360) % 360) as Rotation);
   };
 
   const handleConfirm = async () => {
     if (!imgRef.current || !imgSize) return;
+
+    // Step 1: bake rotation into an offscreen canvas with effective dims
+    const rot = document.createElement('canvas');
+    rot.width = effW;
+    rot.height = effH;
+    const rctx = rot.getContext('2d');
+    if (!rctx) return;
+    rctx.translate(effW / 2, effH / 2);
+    rctx.rotate((rotation * Math.PI) / 180);
+    rctx.drawImage(imgRef.current, -imgSize.w / 2, -imgSize.h / 2);
+
+    // Step 2: crop circular region from the rotated source
     const canvas = document.createElement('canvas');
     canvas.width = OUTPUT;
     canvas.height = OUTPUT;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // Source rect in image coordinates corresponding to the visible FRAME
-    const srcSize = FRAME / zoom; // square
-    const cx = imgSize.w / 2 - offset.x / zoom;
-    const cy = imgSize.h / 2 - offset.y / zoom;
+    const srcSize = FRAME / zoom;
+    const cx = effW / 2 - offset.x / zoom;
+    const cy = effH / 2 - offset.y / zoom;
     const sx = cx - srcSize / 2;
     const sy = cy - srcSize / 2;
-    // Circular mask
     ctx.save();
     ctx.beginPath();
     ctx.arc(OUTPUT / 2, OUTPUT / 2, OUTPUT / 2, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-    ctx.drawImage(imgRef.current, sx, sy, srcSize, srcSize, 0, 0, OUTPUT, OUTPUT);
+    ctx.drawImage(rot, sx, sy, srcSize, srcSize, 0, 0, OUTPUT, OUTPUT);
     ctx.restore();
     const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, 'image/png', 0.95));
     if (blob) await onConfirm(blob);
@@ -108,7 +143,7 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Aperçu de l'avatar</DialogTitle>
-          <DialogDescription>Glissez pour repositionner, ajustez le zoom puis confirmez.</DialogDescription>
+          <DialogDescription>Glissez pour repositionner, ajustez le zoom et la rotation puis confirmez.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4">
           <div
@@ -131,13 +166,25 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
                   top: '50%',
                   width: imgSize.w * zoom,
                   height: imgSize.h * zoom,
-                  transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+                  transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,
+                  transformOrigin: 'center center',
                   maxWidth: 'none',
                   pointerEvents: 'none',
                 }}
               />
             )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => rotateBy(-90)} disabled={isUploading}>
+              <RotateCcwSquare className="mr-1 h-4 w-4" /> -90°
+            </Button>
+            <span className="min-w-12 text-center text-xs text-muted-foreground">{rotation}°</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => rotateBy(90)} disabled={isUploading}>
+              <RotateCw className="mr-1 h-4 w-4" /> +90°
+            </Button>
+          </div>
+
           <div className="w-full space-y-2">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Zoom</span>
