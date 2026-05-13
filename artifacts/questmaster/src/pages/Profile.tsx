@@ -96,19 +96,55 @@ const Profile = () => {
 
   const confirmCrop = async (blob: Blob) => {
     if (!user) return;
+    const previousUrl = profile?.avatar_url ?? null;
+    const previousPath = (() => {
+      if (!previousUrl) return null;
+      const marker = '/storage/v1/object/public/avatars/';
+      const idx = previousUrl.indexOf(marker);
+      return idx === -1 ? null : previousUrl.substring(idx + marker.length).split('?')[0];
+    })();
+
     setIsUploadingAvatar(true);
+    let newPath: string | null = null;
     try {
-      const path = `${user.id}/avatar-${Date.now()}.png`;
+      newPath = `${user.id}/avatar-${Date.now()}.png`;
       const { error: upErr } = await supabase.storage
         .from('avatars')
-        .upload(path, blob, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
-      await updateMutation.mutateAsync({ avatar_url: pub.publicUrl });
+        .upload(newPath, blob, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
+      if (upErr) {
+        const lower = upErr.message?.toLowerCase() ?? '';
+        let friendly = "Impossible d'envoyer la nouvelle image. Votre avatar actuel a été conservé.";
+        if (lower.includes('exceed') || lower.includes('payload') || lower.includes('too large')) {
+          friendly = 'Image trop volumineuse pour le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('mime') || lower.includes('content-type')) {
+          friendly = 'Format non accepté par le serveur. Avatar précédent conservé.';
+        } else if (lower.includes('permission') || lower.includes('unauthorized') || lower.includes('not authorized')) {
+          friendly = "Vous n'avez pas l'autorisation d'envoyer cet avatar. Avatar précédent conservé.";
+        } else if (lower.includes('network') || lower.includes('failed to fetch')) {
+          friendly = 'Problème réseau pendant l\'envoi. Avatar précédent conservé.';
+        }
+        throw new Error(friendly);
+      }
+
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(newPath);
+      try {
+        await updateMutation.mutateAsync({ avatar_url: pub.publicUrl });
+      } catch {
+        // DB update failed — clean up newly uploaded file so previous avatar stays intact.
+        await supabase.storage.from('avatars').remove([newPath]).catch(() => null);
+        throw new Error('Image envoyée mais profil non mis à jour. Avatar précédent conservé.');
+      }
+
+      // Success — best-effort cleanup of the previous file.
+      if (previousPath && previousPath !== newPath) {
+        await supabase.storage.from('avatars').remove([previousPath]).catch(() => null);
+      }
       cancelCrop();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Échec du téléchargement';
-      toast({ title: 'Erreur', description: msg, variant: 'destructive' });
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : "Échec du téléchargement. Avatar précédent conservé.";
+      toast({ title: 'Échec de la mise à jour de l\'avatar', description: msg, variant: 'destructive' });
     } finally {
       setIsUploadingAvatar(false);
     }
