@@ -208,6 +208,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [pings, setPings] = useState<{ id: string; wx: number; wy: number; t: number }[]>([]);
   const pingsRef = useRef<{ id: string; wx: number; wy: number; t: number }[]>([]);
   pingsRef.current = pings;
+  const pingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const broadcastPing = useCallback((wx: number, wy: number) => {
+    const ping = { id: newId(), wx, wy, t: Date.now() };
+    setPings(prev => [...prev, ping]);
+    pingChannelRef.current?.send({ type: "broadcast", event: "ping", payload: { wx, wy } });
+  }, []);
 
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
