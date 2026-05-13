@@ -345,7 +345,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
                         isMsgWhisper
                           ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
                           : msg.message_type === "dice_roll"
-                          ? "bg-primary/20 text-primary border border-primary/30"
+                          ? "bg-card text-foreground border border-primary/40"
                           : isOwn
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
