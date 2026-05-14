@@ -9,6 +9,7 @@
     "typecheck:libs": "echo 'skipping lib typecheck'"
   },
   "private": true,
+  "workspaces": ["artifacts/*", "lib/*", "lib/integrations/*", "scripts"],
   "devDependencies": {
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
