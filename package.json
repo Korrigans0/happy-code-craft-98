@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} pnpm --filter @workspace/questmaster dev",
-    "build": "pnpm -r --filter \"./artifacts/**\" --if-present run build",
-    "typecheck:libs": "echo 'skipping lib typecheck'",
-    "typecheck": "pnpm -r --filter \"./artifacts/**\" --if-present run typecheck"
+    "dev": "PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun --filter @workspace/questmaster run dev",
+    "build": "bun --filter @workspace/questmaster run build",
+    "typecheck": "bun --filter @workspace/questmaster run typecheck",
+    "typecheck:libs": "echo 'skipping lib typecheck'"
   },
   "private": true,
   "devDependencies": {
