@@ -163,32 +163,7 @@ function getPolyhedronData(sides: DieType): PolyhedronData {
   // Standard d-die numbering: opposite faces sum to (sides+1) for d4/d6/d8/d12/d20.
   // Real d10 numbers 0-9 (we map 1-10 with 10 = "0" face); opposite faces sum to 9.
   const faceValues: number[] = [];
-  if (sides === 10) {
-    // Walk 10 faces; assign 1..10 such that opposite (anti-normal) faces sum to 11.
-    const used = new Array(10).fill(false);
-    const order: number[] = [];
-    for (let i = 0; i < 10; i++) {
-      if (used[i]) continue;
-      // find opposite
-      let opp = -1;
-      for (let j = 0; j < 10; j++) {
-        if (i !== j && faceNormals[i].dot(faceNormals[j]) < -0.95) { opp = j; break; }
-      }
-      order.push(i);
-      if (opp >= 0) order.push(opp);
-      used[i] = true;
-      if (opp >= 0) used[opp] = true;
-    }
-    const tmp = new Array(10).fill(0);
-    for (let k = 0; k < order.length; k += 2) {
-      const v = (k / 2) + 1;
-      tmp[order[k]] = v;
-      if (order[k + 1] !== undefined) tmp[order[k + 1]] = 11 - v;
-    }
-    faceValues.push(...tmp);
-  } else {
-    for (let i = 0; i < faceNormals.length; i++) faceValues.push(i + 1);
-  }
+  for (let i = 0; i < faceNormals.length; i++) faceValues.push(i + 1);
 
   return { geometry: geom, faceNormals, faceCenters, faceValues, radius };
 }
