@@ -3,14 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+const DEFAULT_PORT = 5173;
 const rawPort = process.env.PORT;
-const port = rawPort ? Number(rawPort) : 5173;
+const parsedPort = rawPort ? Number(rawPort) : DEFAULT_PORT;
+const port = Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : DEFAULT_PORT;
 
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH ?? "/";
+const basePath = process.env.BASE_PATH || "/";
 
 export default defineConfig({
   base: basePath,
