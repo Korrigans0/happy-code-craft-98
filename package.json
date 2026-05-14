@@ -3,11 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"${npm_config_user_agent}${npm_execpath}\" in *pnpm*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "dev": "PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} pnpm --filter @workspace/questmaster dev",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "typecheck:libs": "tsc --build",
-    "typecheck": "bun run typecheck:libs && bun run --filter './artifacts/*' --filter './scripts' typecheck"
+    "dev": "PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun --filter @workspace/questmaster dev",
+    "build": "bun --filter @workspace/questmaster build",
+    "typecheck": "tsc --noEmit"
   },
   "private": true,
   "devDependencies": {
