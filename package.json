@@ -2,13 +2,14 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "private": true,
+  "workspaces": ["artifacts/questmaster"],
   "scripts": {
     "dev": "cd artifacts/questmaster && PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun run dev",
     "build": "cd artifacts/questmaster && bun run build",
     "typecheck": "cd artifacts/questmaster && bun run typecheck",
     "typecheck:libs": "echo 'skipping lib typecheck'"
   },
-  "private": true,
   "devDependencies": {
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
