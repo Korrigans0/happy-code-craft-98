@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun --filter @workspace/questmaster dev",
-    "build": "bun --filter @workspace/questmaster build",
+    "dev": "cd artifacts/questmaster && PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun run dev",
+    "build": "cd artifacts/questmaster && bun run build",
     "typecheck": "tsc --noEmit"
   },
   "private": true,
