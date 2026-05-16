@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
 import JoinCampaign from "./pages/JoinCampaign";
+import Partners from "./pages/Partners";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ const AppRoutes = () => (
         <Route path="/compendium" element={<Compendium />} />
         <Route path="/dice" element={<DiceRoller />} />
         <Route path="/join/:code" element={<JoinCampaign />} />
+        <Route path="/partners" element={<Partners />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <MobileBottomNav />

@@ -1,4 +1,5 @@
-import { ExternalLink, Star, Handshake, Swords } from "lucide-react";
+import { ExternalLink, Star, Handshake, Swords, MessageCircle } from "lucide-react";
+import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
 
 const GameSystemsSection = () => {
   return (
@@ -13,7 +14,7 @@ const GameSystemsSection = () => {
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
           {/* Aetheria — système principal */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
             <div className="absolute top-3 right-3">
@@ -78,6 +79,79 @@ const GameSystemsSection = () => {
               Site officiel
               <ExternalLink className="h-3 w-3" />
             </a>
+          </div>
+
+          {/* Le Repos de Vaeloria — partenaire */}
+          <div
+            className="group relative overflow-hidden rounded-xl p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5"
+            style={{
+              background: "linear-gradient(180deg, #fdfdf8 0%, #f5f5f0 100%)",
+              border: "1px solid #c48a5255",
+              boxShadow: "0 8px 28px -10px #2e2e2e80",
+            }}
+          >
+            <div className="absolute top-3 right-3">
+              <Handshake className="h-4 w-4" style={{ color: "#a86e35" }} />
+            </div>
+            <div className="mb-4 flex items-center gap-2">
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ background: "#4f613015", color: "#4f6130", border: "1px solid #4f613040" }}
+              >
+                Partenaire
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://vaeloria.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Le Repos de Vaeloria"
+                className="shrink-0 transition-transform hover:scale-105"
+              >
+                <img
+                  src={vaeloriaLogo}
+                  alt="Logo Le Repos de Vaeloria"
+                  className="h-12 w-12 rounded-lg"
+                  style={{ background: "#ffffff", padding: 4, border: "1px solid #c48a5240" }}
+                />
+              </a>
+              <h3 className="font-display text-lg font-semibold" style={{ color: "#2e2e2e" }}>
+                Le Repos de Vaeloria
+              </h3>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: "#2e2e2ecc" }}>
+              Communauté JDR francophone autour du jeu de rôle, de la création et des univers fantasy.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href="https://discord.gg/MVYGCd79ec"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-opacity hover:opacity-90"
+                style={{
+                  background: "linear-gradient(135deg, #c48a52, #a86e35)",
+                  color: "#ffffff",
+                }}
+              >
+                <MessageCircle className="h-3 w-3" />
+                Discord
+              </a>
+              <a
+                href="https://vaeloria.fr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors hover:bg-white"
+                style={{
+                  background: "#ffffff",
+                  color: "#4f6130",
+                  border: "1px solid #4f6130",
+                }}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Site officiel
+              </a>
+            </div>
           </div>
         </div>
       </div>
