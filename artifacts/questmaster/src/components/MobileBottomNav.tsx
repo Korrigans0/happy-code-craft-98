@@ -24,7 +24,7 @@ const MobileBottomNav = () => {
       aria-label="Navigation principale"
       className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {items.map((it) => {
           const active = isActive(location.pathname, it.to);
           const Icon = it.icon;
