@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Sword, User, BookOpen, Dices } from "lucide-react";
+import { Home, Sword, User, BookOpen, Dices, Handshake } from "lucide-react";
 
 const items = [
   { to: "/", label: "Accueil", icon: Home },
@@ -7,6 +7,7 @@ const items = [
   { to: "/characters", label: "Persos", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
   { to: "/dice", label: "Dés", icon: Dices },
+  { to: "/partners", label: "Partenaires", icon: Handshake },
 ];
 
 const isActive = (current: string, to: string) =>

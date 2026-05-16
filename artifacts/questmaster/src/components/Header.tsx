@@ -1,6 +1,6 @@
 import {
   Menu, X, User, BookOpen, Dices,
-  Home, LogIn, LogOut, UserCircle, Map
+  Home, LogIn, LogOut, UserCircle, Map, Handshake
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ const navLinks = [
   { to: "/characters", label: "Personnages", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
   { to: "/dice", label: "Dés", icon: Dices },
+  { to: "/partners", label: "Partenaires", icon: Handshake },
 ];
 
 const Header = () => {
