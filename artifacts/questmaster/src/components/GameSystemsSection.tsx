@@ -1,4 +1,5 @@
-import { ExternalLink, Star, Handshake, Swords } from "lucide-react";
+import { ExternalLink, Star, Handshake, Swords, MessageCircle } from "lucide-react";
+import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
 
 const GameSystemsSection = () => {
   return (
@@ -13,7 +14,7 @@ const GameSystemsSection = () => {
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
           {/* Aetheria — système principal */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
             <div className="absolute top-3 right-3">
