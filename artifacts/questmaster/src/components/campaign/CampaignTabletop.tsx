@@ -1357,7 +1357,39 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const center = (a: Touch, b: Touch) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
     const toWorld = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      return { x: (clientX - rect.left - panOffset.x) / zoom, y: (clientY - rect.top - panOffset.y) / zoom };
+      const po = panOffsetRef.current;
+      const z = zoomRef.current;
+      return { x: (clientX - rect.left - po.x) / z, y: (clientY - rect.top - po.y) / z };
+    };
+
+    const startLongPress = (clientX: number, clientY: number) => {
+      longPressActiveRef.current = false;
+      longPressStartPosRef.current = { x: clientX, y: clientY };
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressActiveRef.current = true;
+        const coords = toWorld(clientX, clientY);
+        const hit = findTokenAt(coords.x, coords.y);
+        setContextMenu({
+          screenX: clientX,
+          screenY: clientY,
+          worldX: coords.x,
+          worldY: coords.y,
+          type: hit ? "token" : "canvas",
+          tokenId: hit?.id,
+        });
+      }, 500);
+    };
+    const cancelLongPress = () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    };
+    const hasMoved = (clientX: number, clientY: number) => {
+      const dx = clientX - longPressStartPosRef.current.x;
+      const dy = clientY - longPressStartPosRef.current.y;
+      return Math.hypot(dx, dy) > 8;
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -1365,6 +1397,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (e.touches.length === 1) {
         const t = e.touches[0];
         lastTouch = { x: t.clientX, y: t.clientY };
+        startLongPress(t.clientX, t.clientY);
         const tokensLayer = layers.find(l => l.id === "tokens");
         if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
           const w = toWorld(t.clientX, t.clientY);
@@ -1386,6 +1419,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         }
         mode = "pan";
       } else if (e.touches.length === 2) {
+        cancelLongPress();
         if (mode === "draw") { setCurrentAction(null); setIsDrawing(false); }
         mode = "pinch";
         lastDist = dist(e.touches[0], e.touches[1]);
@@ -1395,6 +1429,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        if (hasMoved(t.clientX, t.clientY)) cancelLongPress();
+      } else {
+        cancelLongPress();
+      }
       if (mode === "token" && e.touches.length === 1 && activeTokenId) {
         const t = e.touches[0];
         const w = toWorld(t.clientX, t.clientY);
@@ -1432,7 +1472,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         setZoom(prev => {
           const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * factor));
           if (next === prev) { setPanOffset(p => ({ x: p.x + newCenter.x - lastCenter.x, y: p.y + newCenter.y - lastCenter.y })); return prev; }
-          const wx = (cx - panOffset.x) / prev, wy = (cy - panOffset.y) / prev;
+          const po = panOffsetRef.current;
+          const wx = (cx - po.x) / prev, wy = (cy - po.y) / prev;
           setPanOffset({ x: cx - wx * next + newCenter.x - lastCenter.x, y: cy - wy * next + newCenter.y - lastCenter.y });
           return next;
         });
@@ -1441,6 +1482,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     };
 
     const onTouchEnd = (e: TouchEvent) => {
+      cancelLongPress();
+      if (longPressActiveRef.current) {
+        longPressActiveRef.current = false;
+        if (e.touches.length === 0) { mode = "none"; activeTokenId = null; setDraggedToken(null); }
+        return;
+      }
       if (e.touches.length === 0) {
         if (mode === "draw") {
           setCurrentAction(prev => {
@@ -1462,12 +1509,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     canvas.addEventListener("touchend", onTouchEnd);
     canvas.addEventListener("touchcancel", onTouchEnd);
     return () => {
+      cancelLongPress();
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [panOffset, zoom, tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid]);
+  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
