@@ -240,6 +240,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Auth & permissions ──
   const { user } = useAuth();
   const deletedTokenIdsRef = useRef<Set<string>>(new Set());
+  const panOffsetRef = useRef(panOffset);
+  const zoomRef = useRef(zoom);
+  useEffect(() => { panOffsetRef.current = panOffset; }, [panOffset]);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressActiveRef = useRef(false);
+  const longPressStartPosRef = useRef({ x: 0, y: 0 });
 
   const { data: ownCharacterId } = useQuery({
     queryKey: ["campaign-member-character", campaignId, user?.id],
