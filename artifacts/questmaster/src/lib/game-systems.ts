@@ -7,7 +7,9 @@
 export * from "./aetheria-data";
 
 export const GAME_SYSTEMS = [
+  { value: "Personnalisé",    label: "✨ Personnalisé (libre — WA + Aetheria + créations)" },
   { value: "Aetheria",        label: "⚔️ Aetheria" },
+  { value: "Worlds Awakening",label: "🌍 Worlds Awakening" },
   { value: "D&D 5e",          label: "🐉 Donjons & Dragons 5e" },
   { value: "Pathfinder 2e",   label: "🗺️ Pathfinder 2e" },
   { value: "Call of Cthulhu", label: "🦑 L'Appel de Cthulhu" },
