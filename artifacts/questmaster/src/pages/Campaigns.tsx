@@ -232,6 +232,16 @@ const Campaigns = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {newSystem === "Personnalisé" ? (
+                        <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1.5">
+                          <p className="font-medium text-primary">✨ Mode Personnalisé — règles libres</p>
+                          <p>Mélangez librement <strong>Worlds Awakening</strong>, <strong>Aetheria</strong> et vos propres créations dans la même campagne : fiches, bestiaire, combat et VTT cohabitent sans restriction.</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Astuce : choisissez <strong>✨ Personnalisé</strong> pour mélanger WA, Aetheria et vos créations.
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
                       <div>
