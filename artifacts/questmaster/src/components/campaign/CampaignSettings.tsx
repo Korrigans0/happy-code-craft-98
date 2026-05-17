@@ -185,6 +185,22 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
                 ))}
               </SelectContent>
             </Select>
+            {system === "Personnalisé" ? (
+              <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1.5">
+                <p className="font-medium text-primary">✨ Mode Personnalisé — règles libres</p>
+                <p>Aucune restriction de système : vous pouvez mélanger librement <strong>Worlds Awakening</strong>, <strong>Aetheria</strong> et vos propres créations dans la même campagne.</p>
+                <ul className="list-disc list-inside space-y-0.5 pl-1">
+                  <li>Fiches de personnages : choisissez le système souhaité à la création de chaque PJ.</li>
+                  <li>Bestiaire : importez ou créez des créatures depuis WA, Aetheria ou homebrew.</li>
+                  <li>Combat &amp; VTT : tous les jetons et créatures cohabitent sur la même carte.</li>
+                  <li>Idéal pour les univers crossover ou les MJ qui inventent leurs propres règles.</li>
+                </ul>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Astuce : choisissez <strong>✨ Personnalisé</strong> pour mélanger WA, Aetheria et vos créations sans restriction.
+              </p>
+            )}
           </div>
 
           {/* Statut actif */}
