@@ -88,7 +88,7 @@ const GameSystemsSection = () => {
             </div>
             <div className="mb-4 flex items-center gap-2">
               <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                Partenaire
+                Partenaire officiel
               </span>
             </div>
             <div className="flex items-center gap-3">
