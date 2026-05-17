@@ -98,13 +98,34 @@ const Partners = () => {
                   >
                     Le Repos de Vaeloria
                   </h2>
-                  <p
-                    className="mt-3 text-sm leading-relaxed md:text-base"
+                  <div
+                    className="mt-3 space-y-3 text-sm leading-relaxed md:text-base"
                     style={{ color: VAELORIA.dark + "cc" }}
                   >
-                    Communauté JDR francophone autour du jeu de rôle, de la création,
-                    des univers fantasy et du partage entre passionnés.
-                  </p>
+                    <p>
+                      Le Repos de Vaeloria est une communauté JDR francophone chaleureuse,
+                      réunissant joueurs, MJ, créateurs et passionnés autour du jeu de rôle,
+                      de l'écriture, des univers fantasy et de l'imaginaire partagé.
+                    </p>
+                    <p>
+                      On y trouve des tables ouvertes, des projets de création collective,
+                      des discussions sur les univers, des conseils de MJ, et surtout une
+                      ambiance bienveillante où chacun trouve sa place — du débutant curieux
+                      au vétéran des donjons.
+                    </p>
+                    <p
+                      className="rounded-lg border-l-4 px-4 py-3 italic"
+                      style={{
+                        background: `${VAELORIA.forest}10`,
+                        borderColor: VAELORIA.copperDark,
+                        color: VAELORIA.dark,
+                      }}
+                    >
+                      Un immense merci à toute l'équipe et à la communauté du Repos de
+                      Vaeloria pour leur soutien, leur accueil et leur passion. Aetheria VTT
+                      est fier de marcher à vos côtés sur les chemins de l'imaginaire.
+                    </p>
+                  </div>
 
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
                     <Button
