@@ -123,12 +123,6 @@ const Partners = () => {
                   </div>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
                     <Button asChild variant="gold" className="font-semibold">
-                      <a href="https://discord.gg/K8pvRa7CCs" target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        Rejoindre le Discord
-                      </a>
-                    </Button>
-                    <Button asChild variant="outline" className="font-semibold border-primary/40 text-primary hover:bg-primary/10">
                       <a href="https://www.guildry.fr/" target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Site officiel
