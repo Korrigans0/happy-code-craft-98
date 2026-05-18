@@ -38,6 +38,102 @@ const Partners = () => {
           </div>
 
           <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-1">
+            {/* Worlds Awakening */}
+            <article className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-b from-primary/10 to-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
+              <div className="h-1 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+              <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:gap-8 md:p-8">
+                <a
+                  href="https://www.worlds-awakening.com/fr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
+                  aria-label="Visiter Worlds Awakening"
+                >
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-primary/30 bg-background/80 p-4 shadow-inner md:h-40 md:w-40">
+                    <span className="font-display text-2xl font-bold text-gradient-gold md:text-3xl">WA</span>
+                  </div>
+                </a>
+                <div className="flex-1 text-center md:text-left">
+                  <div className="inline-block rounded-full border border-primary/40 bg-primary/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                    Partenaire officiel
+                  </div>
+                  <h2 className="mt-3 font-display text-2xl font-bold text-foreground md:text-3xl">
+                    Worlds Awakening
+                  </h2>
+                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+                    <p>
+                      Worlds Awakening est l'univers et le système de jeu de rôle qui inspire
+                      profondément Aetheria VTT. Codex officiel, bestiaire, ascendances, classes
+                      et tenues — toutes les ressources WA sont nativement intégrées à la plateforme.
+                    </p>
+                    <p>
+                      Un univers dark fantasy riche, soutenu par une équipe de créateurs passionnés
+                      et une communauté francophone vivante.
+                    </p>
+                  </div>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
+                    <Button asChild variant="gold" className="font-semibold">
+                      <a href="https://www.worlds-awakening.com/fr" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Site officiel
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            {/* Guildry */}
+            <article className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/5 to-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
+              <div className="h-1 w-full bg-gradient-to-r from-primary/40 via-primary/80 to-primary/40" />
+              <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:gap-8 md:p-8">
+                <a
+                  href="https://www.guildry.fr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
+                  aria-label="Visiter Guildry"
+                >
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-primary/30 bg-background/80 p-4 shadow-inner md:h-40 md:w-40">
+                    <span className="font-display text-2xl font-bold text-gradient-gold md:text-3xl">Guildry</span>
+                  </div>
+                </a>
+                <div className="flex-1 text-center md:text-left">
+                  <div className="inline-block rounded-full border border-primary/40 bg-primary/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                    Communauté Partenaire
+                  </div>
+                  <h2 className="mt-3 font-display text-2xl font-bold text-foreground md:text-3xl">
+                    Guildry
+                  </h2>
+                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+                    <p>
+                      Guildry est une plateforme et communauté francophone dédiée au JDR : recherche
+                      de tables, organisation de parties, mise en relation entre joueurs et MJ.
+                    </p>
+                    <p>
+                      Un partenaire de choix pour trouver ta prochaine campagne ou faire grandir
+                      la tienne aux côtés d'Aetheria VTT.
+                    </p>
+                  </div>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
+                    <Button asChild variant="gold" className="font-semibold">
+                      <a href="https://discord.gg/K8pvRa7CCs" target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Rejoindre le Discord
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" className="font-semibold border-primary/40 text-primary hover:bg-primary/10">
+                      <a href="https://www.guildry.fr/" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Site officiel
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+
             {/* Le Repos de Vaeloria */}
             <article
               className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
