@@ -39,8 +39,8 @@ const Partners = () => {
 
           <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-1">
             {/* Worlds Awakening */}
-            <article className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-b from-primary/10 to-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
-              <div className="h-1 w-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
+            <article className="group relative overflow-hidden rounded-2xl border border-[#d4b86a]/60 bg-gradient-to-b from-white to-[#f3f4f6] shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
+              <div className="h-1 w-full bg-gradient-to-r from-[#c9a14a] via-[#e8c878] to-[#c9a14a]" />
               <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:gap-8 md:p-8">
                 <a
                   href="https://www.worlds-awakening.com/fr"
@@ -49,18 +49,18 @@ const Partners = () => {
                   className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
                   aria-label="Visiter Worlds Awakening"
                 >
-                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-primary/30 bg-background/80 p-4 shadow-inner md:h-40 md:w-40">
-                    <span className="font-display text-2xl font-bold text-gradient-gold md:text-3xl">WA</span>
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-4 shadow-inner md:h-40 md:w-40">
+                    <span className="font-display text-2xl font-bold text-[#a8842b] md:text-3xl">WA</span>
                   </div>
                 </a>
                 <div className="flex-1 text-center md:text-left">
-                  <div className="inline-block rounded-full border border-primary/40 bg-primary/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <div className="inline-block rounded-full border border-[#d4b86a]/60 bg-[#f3eccd] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a6a1f]">
                     Partenaire officiel
                   </div>
-                  <h2 className="mt-3 font-display text-2xl font-bold text-foreground md:text-3xl">
+                  <h2 className="mt-3 font-display text-2xl font-bold text-[#2e2e2e] md:text-3xl">
                     Worlds Awakening
                   </h2>
-                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#4a4a4a] md:text-base">
                     <p>
                       Worlds Awakening est l'univers et le système de jeu de rôle qui inspire
                       profondément Aetheria VTT. Codex officiel, bestiaire, ascendances, classes
@@ -72,13 +72,17 @@ const Partners = () => {
                     </p>
                   </div>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
-                    <Button asChild variant="gold" className="font-semibold">
+                    <Button
+                      asChild
+                      className="font-semibold text-white shadow-md hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #d4b86a, #a8842b)" }}
+                    >
                       <a href="https://discord.gg/K8pvRa7CCs" target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Rejoindre le Discord
                       </a>
                     </Button>
-                    <Button asChild variant="outline" className="font-semibold border-primary/40 text-primary hover:bg-primary/10">
+                    <Button asChild variant="outline" className="font-semibold border-[#d4b86a] bg-white text-[#8a6a1f] hover:bg-[#faf5e6]">
                       <a href="https://www.worlds-awakening.com/fr" target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Site officiel
@@ -90,8 +94,8 @@ const Partners = () => {
             </article>
 
             {/* Guildry */}
-            <article className="group relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-b from-primary/5 to-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
-              <div className="h-1 w-full bg-gradient-to-r from-primary/40 via-primary/80 to-primary/40" />
+            <article className="group relative overflow-hidden rounded-2xl border border-[#d4b86a]/50 bg-gradient-to-b from-white to-[#f3f4f6] shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold">
+              <div className="h-1 w-full bg-gradient-to-r from-[#c9a14a] via-[#e8c878] to-[#c9a14a]" />
               <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:gap-8 md:p-8">
                 <a
                   href="https://www.guildry.fr/"
@@ -100,18 +104,18 @@ const Partners = () => {
                   className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
                   aria-label="Visiter Guildry"
                 >
-                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-primary/30 bg-background/80 p-4 shadow-inner md:h-40 md:w-40">
-                    <span className="font-display text-2xl font-bold text-gradient-gold md:text-3xl">Guildry</span>
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-4 shadow-inner md:h-40 md:w-40">
+                    <span className="font-display text-2xl font-bold text-[#a8842b] md:text-3xl">Guildry</span>
                   </div>
                 </a>
                 <div className="flex-1 text-center md:text-left">
-                  <div className="inline-block rounded-full border border-primary/40 bg-primary/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <div className="inline-block rounded-full border border-[#d4b86a]/60 bg-[#f3eccd] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8a6a1f]">
                     Communauté Partenaire
                   </div>
-                  <h2 className="mt-3 font-display text-2xl font-bold text-foreground md:text-3xl">
+                  <h2 className="mt-3 font-display text-2xl font-bold text-[#2e2e2e] md:text-3xl">
                     Guildry
                   </h2>
-                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground md:text-base">
+                  <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#4a4a4a] md:text-base">
                     <p>
                       Guildry est une plateforme et communauté francophone dédiée au JDR : recherche
                       de tables, organisation de parties, mise en relation entre joueurs et MJ.
@@ -122,7 +126,11 @@ const Partners = () => {
                     </p>
                   </div>
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
-                    <Button asChild variant="gold" className="font-semibold">
+                    <Button
+                      asChild
+                      className="font-semibold text-white shadow-md hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #d4b86a, #a8842b)" }}
+                    >
                       <a href="https://www.guildry.fr/" target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="mr-2 h-4 w-4" />
                         Site officiel
