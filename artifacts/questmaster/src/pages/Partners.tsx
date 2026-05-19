@@ -4,6 +4,8 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, MessageCircle } from "lucide-react";
 import vaeloriaLogo from "@/assets/vaeloria-logo-big.svg";
+import guildryLogo from "@/assets/guildry-logo.webp";
+import waLogo from "@/assets/wa-logo.png";
 
 const VAELORIA = {
   copper: "#b87d48",
@@ -49,8 +51,8 @@ const Partners = () => {
                   className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
                   aria-label="Visiter Worlds Awakening"
                 >
-                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-4 shadow-inner md:h-40 md:w-40">
-                    <span className="font-display text-2xl font-bold text-[#a8842b] md:text-3xl">WA</span>
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-3 shadow-inner md:h-40 md:w-40">
+                    <img src={waLogo} alt="Logo Worlds Awakening" className="h-full w-full object-contain" loading="lazy" />
                   </div>
                 </a>
                 <div className="flex-1 text-center md:text-left">
@@ -104,8 +106,8 @@ const Partners = () => {
                   className="mx-auto shrink-0 transition-transform duration-300 hover:scale-105"
                   aria-label="Visiter Guildry"
                 >
-                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-4 shadow-inner md:h-40 md:w-40">
-                    <span className="font-display text-2xl font-bold text-[#a8842b] md:text-3xl">Guildry</span>
+                  <div className="flex h-32 w-32 items-center justify-center rounded-2xl border border-[#d4b86a]/50 bg-white p-3 shadow-inner md:h-40 md:w-40">
+                    <img src={guildryLogo} alt="Logo Guildry" className="h-full w-full object-contain" loading="lazy" />
                   </div>
                 </a>
                 <div className="flex-1 text-center md:text-left">
