@@ -193,40 +193,152 @@ function MatchupLoops() {
       <h3 className="font-display text-base font-semibold text-foreground">
         Roues des Forces & Faiblesses
       </h3>
-      {MATCHUP_LOOPS.map(loop => (
-        <div
-          key={loop.id}
-          className="rounded-xl border p-4"
-          style={{ borderColor: `${loop.color}44`, background: `${loop.color}08` }}
-        >
-          <h4
-            className="font-display text-sm font-semibold mb-1"
-            style={{ color: loop.color }}
+      {MATCHUP_LOOPS.map(loop => {
+        // Cycle: dernier == premier → on retire le doublon
+        const nodes = loop.loop[loop.loop.length - 1] === loop.loop[0]
+          ? loop.loop.slice(0, -1)
+          : loop.loop;
+        const n = nodes.length;
+        const size = 280;
+        const cx = size / 2;
+        const cy = size / 2;
+        const radius = size * 0.36;
+        // Coordonnées des sommets (triangle = 3 sommets, pentagone, etc.)
+        const points = nodes.map((_, i) => {
+          const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+          return { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+        });
+        const polygonPoints = points.map(p => `${p.x},${p.y}`).join(" ");
+
+        return (
+          <div
+            key={loop.id}
+            className="rounded-xl border p-4"
+            style={{ borderColor: `${loop.color}44`, background: `${loop.color}08` }}
           >
-            {loop.label}
-          </h4>
-          <p className="text-xs text-muted-foreground mb-3">{loop.description}</p>
-          <div className="flex flex-wrap items-center gap-1">
-            {loop.loop.map((classId, i) => {
-              const cls = CLASSES.find(c => c.id === classId);
-              const isLast = i === loop.loop.length - 1;
-              const isFirst = i === 0;
-              return (
-                <div key={`${classId}-${i}`} className="flex items-center gap-1">
-                  <span className="flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium text-foreground"
-                    style={{ borderColor: `${loop.color}44`, background: `${loop.color}15` }}>
-                    {cls?.emoji} {cls?.name || classId}
-                    {isLast && isFirst && " (cycle)"}
-                  </span>
-                  {!isLast && (
-                    <span className="text-muted-foreground text-xs">›</span>
-                  )}
-                </div>
-              );
-            })}
+            <h4
+              className="font-display text-sm font-semibold mb-1"
+              style={{ color: loop.color }}
+            >
+              {loop.label}
+            </h4>
+            <p className="text-xs text-muted-foreground mb-3">{loop.description}</p>
+
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
+              {/* Triangle géométrique */}
+              <svg
+                viewBox={`0 0 ${size} ${size}`}
+                className="w-full max-w-[280px] flex-shrink-0"
+                aria-label={`Roue ${loop.label}`}
+              >
+                <defs>
+                  <marker
+                    id={`arrow-${loop.id}`}
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="6"
+                    markerHeight="6"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M0,0 L10,5 L0,10 z" fill={loop.color} />
+                  </marker>
+                </defs>
+
+                {/* Polygone (triangle) de fond */}
+                <polygon
+                  points={polygonPoints}
+                  fill={`${loop.color}10`}
+                  stroke={`${loop.color}55`}
+                  strokeWidth={1.5}
+                />
+
+                {/* Arêtes orientées (A bat B) */}
+                {points.map((p, i) => {
+                  const next = points[(i + 1) % n];
+                  // Raccourci pour ne pas chevaucher les nœuds
+                  const dx = next.x - p.x;
+                  const dy = next.y - p.y;
+                  const len = Math.hypot(dx, dy);
+                  const pad = 28;
+                  const x1 = p.x + (dx / len) * pad;
+                  const y1 = p.y + (dy / len) * pad;
+                  const x2 = next.x - (dx / len) * pad;
+                  const y2 = next.y - (dy / len) * pad;
+                  return (
+                    <line
+                      key={i}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke={loop.color}
+                      strokeWidth={2}
+                      markerEnd={`url(#arrow-${loop.id})`}
+                    />
+                  );
+                })}
+
+                {/* Nœuds (sommets) */}
+                {points.map((p, i) => {
+                  const cls = CLASSES.find(c => c.id === nodes[i]);
+                  return (
+                    <g key={`node-${i}`}>
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r={24}
+                        fill="hsl(var(--card))"
+                        stroke={loop.color}
+                        strokeWidth={2}
+                      />
+                      <text
+                        x={p.x}
+                        y={p.y + 6}
+                        textAnchor="middle"
+                        fontSize="18"
+                      >
+                        {cls?.emoji}
+                      </text>
+                      <text
+                        x={p.x}
+                        y={p.y + 42}
+                        textAnchor="middle"
+                        fontSize="11"
+                        fill="hsl(var(--foreground))"
+                        className="font-display font-semibold"
+                      >
+                        {cls?.name || nodes[i]}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {/* Liste cycle (lisible) */}
+              <div className="flex flex-wrap items-center gap-1">
+                {loop.loop.map((classId, i) => {
+                  const cls = CLASSES.find(c => c.id === classId);
+                  const isLast = i === loop.loop.length - 1;
+                  const isFirst = i === 0;
+                  return (
+                    <div key={`${classId}-${i}`} className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium text-foreground"
+                        style={{ borderColor: `${loop.color}44`, background: `${loop.color}15` }}>
+                        {cls?.emoji} {cls?.name || classId}
+                        {isLast && isFirst && " (cycle)"}
+                      </span>
+                      {!isLast && (
+                        <span className="text-muted-foreground text-xs">›</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Légende */}
       <div className="rounded-lg border border-border bg-card/50 p-4">
