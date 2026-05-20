@@ -834,18 +834,13 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mod</span>
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setModifier(m => m - 1)}>
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="flex-1 text-center text-sm font-medium tabular-nums">
-              {modifier >= 0 ? `+${modifier}` : modifier}
-            </span>
-            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setModifier(m => m + 1)}>
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
+          <DiceModifierInput
+            value={modifier}
+            onChange={setModifier}
+            formulaPreview={selectedDie ? `${dieCount}d${selectedDie.sides}` : undefined}
+            compact
+          />
+
 
           {/* Color picker */}
           <div>

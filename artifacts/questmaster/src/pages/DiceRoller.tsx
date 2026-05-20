@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
 
 const DICE_SEO = (
   <SEO
@@ -149,25 +150,12 @@ const DiceRoller = () => {
                       <span className="text-sm text-muted-foreground">
                         Modificateur
                       </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setModifier(modifier - 1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-10 text-center font-display text-xl font-bold text-foreground">
-                          {modifier >= 0 ? `+${modifier}` : modifier}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setModifier(modifier + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DiceModifierInput
+                        value={modifier}
+                        onChange={setModifier}
+                        formulaPreview={`${diceCount}d${selectedDice.sides}`}
+                        className="min-w-[220px]"
+                      />
                     </div>
                   </div>
 
