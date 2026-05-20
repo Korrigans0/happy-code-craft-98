@@ -355,6 +355,9 @@ export default function GMPanel({
                 {sortedInit.map((entry, idx) => {
                   const isActive = idx === initiativeActiveIdx;
                   const hpRatio = entry.hp / (entry.maxHp || 1);
+                  const linkedToken = entry.tokenId ? tokens.find(t => t.id === entry.tokenId) : undefined;
+                  const avatarUrl = linkedToken?.imageUrl;
+                  const avatarColor = linkedToken?.color || entry.color || "#94a3b8";
                   return (
                     <div
                       key={entry.id}
@@ -365,12 +368,59 @@ export default function GMPanel({
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        {/* Initiative badge */}
-                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                          isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                        }`}>
-                          {entry.initiative}
+                        {/* Reorder arrows */}
+                        {onReorderInitiative && isGM && (
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              onClick={() => onReorderInitiative(entry.id, "up")}
+                              disabled={idx === 0}
+                              title="Monter dans l'ordre"
+                            >
+                              <ArrowUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              onClick={() => onReorderInitiative(entry.id, "down")}
+                              disabled={idx === sortedInit.length - 1}
+                              title="Descendre dans l'ordre"
+                            >
+                              <ArrowDown className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Avatar/color */}
+                        <div
+                          className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border/60 cursor-pointer"
+                          style={{ backgroundColor: avatarColor }}
+                          onClick={() => entry.tokenId && onSelectToken(entry.tokenId)}
+                          title={entry.tokenId ? "Centrer sur le jeton" : ""}
+                        >
+                          {avatarUrl && (
+                            <img src={avatarUrl} alt={entry.name} className="h-full w-full object-cover" />
+                          )}
                         </div>
+                        {/* Initiative value (editable) */}
+                        {onUpdateInitiativeValue && isGM ? (
+                          <input
+                            type="number"
+                            value={entry.initiative}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (!isNaN(v)) onUpdateInitiativeValue(entry.id, v);
+                            }}
+                            className={`h-7 w-10 shrink-0 rounded-full border border-border bg-background text-center text-xs font-bold tabular-nums ${
+                              isActive ? "ring-2 ring-primary" : ""
+                            }`}
+                            title="Modifier l'initiative"
+                          />
+                        ) : (
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                          }`}>
+                            {entry.initiative}
+                          </div>
+                        )}
                         {/* Name + type */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1">
@@ -402,7 +452,8 @@ export default function GMPanel({
                           </div>
                         </div>
                         <button onClick={() => onRemoveFromInitiative(entry.id)}
-                          className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors">
+                          className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Retirer de l'initiative">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
