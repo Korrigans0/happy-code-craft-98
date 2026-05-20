@@ -2544,6 +2544,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             currentUserId={user?.id || ""}
             userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
             tokens={tokens}
+            selectedTokenId={selectedTokenId}
             waCreatures={waCreatures}
             userCharacters={userCharacters}
             initiative={initiative}
@@ -2554,6 +2555,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onSpawnCreature={spawnWACreature}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
+            onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
+            onAddAllTokensToInitiative={addAllTokensToInitiative}
+            onAutoRollAllInitiative={autoRollAllInitiative}
+            onUpdateInitiativeValue={updateInitiativeValue}
+            onReorderInitiative={reorderInitiative}
             onRemoveFromInitiative={removeFromInitiative}
             onUpdateInitiativeHp={updateInitiativeHp}
             onAddConditionToInitiative={addConditionToInitiative}
