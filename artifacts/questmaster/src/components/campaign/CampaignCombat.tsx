@@ -15,6 +15,7 @@ import {
   SkipForward, Trash2, ChevronUp, ChevronDown,
   Skull, User, Timer, Target, Flame, Snowflake, Dices
 } from "lucide-react";
+import TurnOrderBar from "@/components/campaign/vtt/TurnOrderBar";
 
 interface Monster { id: string; name: string; hit_points: string; armor_class: number; }
 interface Character { id: string; name: string; hp: number; max_hp: number; armor_class: number; dexterity: number; }
@@ -289,6 +290,26 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const monstersAlive = participants.filter(p => !p.is_player && p.current_hp > 0).length;
 
   return (
+    <>
+      {encounter && encounter.is_active && (
+        <TurnOrderBar
+          participants={participants}
+          currentTurn={encounter.current_turn}
+          round={encounter.round}
+          isActive={encounter.is_active}
+          isGM={isGM}
+          onNextTurn={() => nextTurnMutation.mutate()}
+          onPrevTurn={isGM ? () => {
+            const prev = (encounter.current_turn - 1 + participants.length) % participants.length;
+            const newRound = prev === participants.length - 1 && encounter.current_turn === 0
+              ? Math.max(1, encounter.round - 1)
+              : encounter.round;
+            campaignsApi.updateCombat(campaignId, { current_turn: prev, round: newRound })
+              .then(() => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] }));
+          } : undefined}
+          onEndCombat={isGM ? () => endEncounterMutation.mutate() : undefined}
+        />
+      )}
     <div className="space-y-4">
       {/* Combat Header */}
       <Card className="bg-gradient-card border-border">
@@ -688,6 +709,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
