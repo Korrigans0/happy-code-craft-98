@@ -10,7 +10,8 @@ import {
   MessageSquare, Swords, Users, Skull, BookOpen,
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
-  RotateCcw, PanelRight,
+  RotateCcw, PanelRight, MousePointerClick, ListPlus,
+  ArrowUp, ArrowDown,
 } from "lucide-react";
 import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
@@ -24,6 +25,7 @@ interface GMPanelProps {
   currentUserId: string;
   userName: string;
   tokens: TokenItem[];
+  selectedTokenId?: string | null;
   waCreatures: WACreature[];
   userCharacters: PlayerChar[];
   initiative: InitiativeEntry[];
@@ -34,6 +36,11 @@ interface GMPanelProps {
   onSpawnCreature: (creature: WACreature) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
+  onAddSelectedTokenToInitiative?: () => void;
+  onAddAllTokensToInitiative?: () => void;
+  onAutoRollAllInitiative?: () => void;
+  onUpdateInitiativeValue?: (id: string, value: number) => void;
+  onReorderInitiative?: (id: string, dir: "up" | "down") => void;
   onRemoveFromInitiative: (id: string) => void;
   onUpdateInitiativeHp: (id: string, delta: number) => void;
   onAddConditionToInitiative: (id: string, cond: string) => void;
@@ -61,11 +68,13 @@ function parseRollCommand(input: string): { formula: string; label?: string } | 
 
 export default function GMPanel({
   campaignId, isGM, currentUserId, userName,
-  tokens, waCreatures, userCharacters,
+  tokens, selectedTokenId, waCreatures, userCharacters,
   initiative, initiativeRound, initiativeActiveIdx,
   onUpdateTokenHp, onSelectToken,
   onSpawnCreature, onSpawnCharacter,
-  onAddToInitiative, onRemoveFromInitiative,
+  onAddToInitiative, onAddSelectedTokenToInitiative, onAddAllTokensToInitiative,
+  onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
+  onRemoveFromInitiative,
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
   onNextTurn, onResetInitiative, onClose,
 }: GMPanelProps) {
@@ -290,6 +299,51 @@ export default function GMPanel({
               </Button>
             </div>
 
+            {/* Quick add from tokens */}
+            {isGM && (onAddSelectedTokenToInitiative || onAddAllTokensToInitiative || onAutoRollAllInitiative) && (
+              <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/10 p-2">
+                {onAddSelectedTokenToInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAddSelectedTokenToInitiative}
+                    disabled={!selectedTokenId}
+                    title={selectedTokenId ? "Ajouter le jeton sélectionné à l'initiative" : "Aucun jeton sélectionné"}
+                  >
+                    <MousePointerClick className="h-3 w-3" />
+                    Sélection
+                  </Button>
+                )}
+                {onAddAllTokensToInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAddAllTokensToInitiative}
+                    disabled={tokens.length === 0}
+                    title="Ajouter tous les jetons du plateau"
+                  >
+                    <ListPlus className="h-3 w-3" />
+                    Tous les jetons
+                  </Button>
+                )}
+                {onAutoRollAllInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAutoRollAllInitiative}
+                    disabled={initiative.length === 0}
+                    title="Relancer l'initiative pour tous les combattants"
+                  >
+                    <Dices className="h-3 w-3" />
+                    Init auto
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Combatant list */}
             <ScrollArea className="flex-1">
               <div className="space-y-1 p-2">
@@ -301,6 +355,9 @@ export default function GMPanel({
                 {sortedInit.map((entry, idx) => {
                   const isActive = idx === initiativeActiveIdx;
                   const hpRatio = entry.hp / (entry.maxHp || 1);
+                  const linkedToken = entry.tokenId ? tokens.find(t => t.id === entry.tokenId) : undefined;
+                  const avatarUrl = linkedToken?.imageUrl;
+                  const avatarColor = linkedToken?.color || entry.color || "#94a3b8";
                   return (
                     <div
                       key={entry.id}
@@ -311,12 +368,59 @@ export default function GMPanel({
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        {/* Initiative badge */}
-                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                          isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                        }`}>
-                          {entry.initiative}
+                        {/* Reorder arrows */}
+                        {onReorderInitiative && isGM && (
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              onClick={() => onReorderInitiative(entry.id, "up")}
+                              disabled={idx === 0}
+                              title="Monter dans l'ordre"
+                            >
+                              <ArrowUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              onClick={() => onReorderInitiative(entry.id, "down")}
+                              disabled={idx === sortedInit.length - 1}
+                              title="Descendre dans l'ordre"
+                            >
+                              <ArrowDown className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+                        {/* Avatar/color */}
+                        <div
+                          className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border/60 cursor-pointer"
+                          style={{ backgroundColor: avatarColor }}
+                          onClick={() => entry.tokenId && onSelectToken(entry.tokenId)}
+                          title={entry.tokenId ? "Centrer sur le jeton" : ""}
+                        >
+                          {avatarUrl && (
+                            <img src={avatarUrl} alt={entry.name} className="h-full w-full object-cover" />
+                          )}
                         </div>
+                        {/* Initiative value (editable) */}
+                        {onUpdateInitiativeValue && isGM ? (
+                          <input
+                            type="number"
+                            value={entry.initiative}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (!isNaN(v)) onUpdateInitiativeValue(entry.id, v);
+                            }}
+                            className={`h-7 w-10 shrink-0 rounded-full border border-border bg-background text-center text-xs font-bold tabular-nums ${
+                              isActive ? "ring-2 ring-primary" : ""
+                            }`}
+                            title="Modifier l'initiative"
+                          />
+                        ) : (
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                          }`}>
+                            {entry.initiative}
+                          </div>
+                        )}
                         {/* Name + type */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1">
@@ -348,7 +452,8 @@ export default function GMPanel({
                           </div>
                         </div>
                         <button onClick={() => onRemoveFromInitiative(entry.id)}
-                          className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors">
+                          className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Retirer de l'initiative">
                           <X className="h-3 w-3" />
                         </button>
                       </div>

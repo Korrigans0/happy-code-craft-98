@@ -753,6 +753,96 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     });
   };
 
+  // Ajoute le jeton actuellement sélectionné à l'initiative
+  const addSelectedTokenToInitiative = () => {
+    if (!selectedTokenId) return;
+    const token = tokens.find(t => t.id === selectedTokenId);
+    if (!token) return;
+    // Anti-doublon : si un token est déjà dans l'initiative, on ignore
+    if (initiative.some(e => e.tokenId === token.id)) return;
+    addTokenToInitiative(token);
+  };
+
+  // Ajoute tous les jetons visibles du plateau qui ne sont pas déjà présents
+  const addAllTokensToInitiative = () => {
+    const existing = new Set(initiative.map(e => e.tokenId).filter(Boolean));
+    const toAdd = tokens.filter(t => t.visible !== false && !existing.has(t.id));
+    if (toAdd.length === 0) return;
+    setInitiative(prev => [
+      ...prev,
+      ...toAdd.map(token => ({
+        id: newId(),
+        name: token.name,
+        initiative: Math.floor(Math.random() * 20) + 1,
+        modifier: 0,
+        hp: token.hp ?? 10,
+        maxHp: token.maxHp ?? 10,
+        ac: token.ac,
+        conditions: token.conditions || [],
+        tokenId: token.id,
+        type: (token.creatureType === "character" ? "player" : "monster") as InitiativeEntry["type"],
+        color: token.color,
+      })),
+    ]);
+  };
+
+  // Relance l'initiative pour tous les combattants (1d20 + modifier)
+  const autoRollAllInitiative = () => {
+    setInitiative(prev =>
+      prev.map(e => ({
+        ...e,
+        initiative: Math.floor(Math.random() * 20) + 1 + (e.modifier || 0),
+      }))
+    );
+    setInitiativeActiveIdx(-1);
+  };
+
+  // Modifie manuellement la valeur d'initiative d'une entrée
+  const updateInitiativeValue = (id: string, value: number) => {
+    setInitiative(prev => prev.map(e => (e.id === id ? { ...e, initiative: value } : e)));
+  };
+
+  // Réordonne en ajustant la valeur d'initiative (la liste est triée desc)
+  const reorderInitiative = (id: string, dir: "up" | "down") => {
+    setInitiative(prev => {
+      const sorted = [...prev].sort((a, b) => b.initiative - a.initiative);
+      const idx = sorted.findIndex(e => e.id === id);
+      if (idx < 0) return prev;
+      const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= sorted.length) return prev;
+      const a = sorted[idx];
+      const b = sorted[swapIdx];
+      // échange des valeurs d'initiative (sans collision)
+      const aInit = a.initiative;
+      const bInit = b.initiative;
+      const newAInit = aInit === bInit ? (dir === "up" ? bInit + 1 : bInit - 1) : bInit;
+      const newBInit = aInit === bInit ? aInit : aInit;
+      return prev.map(e => {
+        if (e.id === a.id) return { ...e, initiative: newAInit };
+        if (e.id === b.id) return { ...e, initiative: newBInit };
+        return e;
+      });
+    });
+  };
+
+  // ── Sync : si un token est renommé sur le plateau, met à jour le nom dans l'initiative
+  useEffect(() => {
+    setInitiative(prev => {
+      let changed = false;
+      const next = prev.map(e => {
+        if (!e.tokenId) return e;
+        const tk = tokens.find(t => t.id === e.tokenId);
+        if (tk && tk.name && tk.name !== e.name) {
+          changed = true;
+          return { ...e, name: tk.name, color: tk.color || e.color };
+        }
+        return e;
+      });
+      return changed ? next : prev;
+    });
+  }, [tokens]);
+
+
   // ── Canvas rendering ──────────────────────────────────────
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -2454,6 +2544,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             currentUserId={user?.id || ""}
             userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
             tokens={tokens}
+            selectedTokenId={selectedTokenId}
             waCreatures={waCreatures}
             userCharacters={userCharacters}
             initiative={initiative}
@@ -2464,6 +2555,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onSpawnCreature={spawnWACreature}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
+            onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
+            onAddAllTokensToInitiative={addAllTokensToInitiative}
+            onAutoRollAllInitiative={autoRollAllInitiative}
+            onUpdateInitiativeValue={updateInitiativeValue}
+            onReorderInitiative={reorderInitiative}
             onRemoveFromInitiative={removeFromInitiative}
             onUpdateInitiativeHp={updateInitiativeHp}
             onAddConditionToInitiative={addConditionToInitiative}
