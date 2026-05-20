@@ -299,6 +299,51 @@ export default function GMPanel({
               </Button>
             </div>
 
+            {/* Quick add from tokens */}
+            {isGM && (onAddSelectedTokenToInitiative || onAddAllTokensToInitiative || onAutoRollAllInitiative) && (
+              <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/10 p-2">
+                {onAddSelectedTokenToInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAddSelectedTokenToInitiative}
+                    disabled={!selectedTokenId}
+                    title={selectedTokenId ? "Ajouter le jeton sélectionné à l'initiative" : "Aucun jeton sélectionné"}
+                  >
+                    <MousePointerClick className="h-3 w-3" />
+                    Sélection
+                  </Button>
+                )}
+                {onAddAllTokensToInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAddAllTokensToInitiative}
+                    disabled={tokens.length === 0}
+                    title="Ajouter tous les jetons du plateau"
+                  >
+                    <ListPlus className="h-3 w-3" />
+                    Tous les jetons
+                  </Button>
+                )}
+                {onAutoRollAllInitiative && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 text-xs"
+                    onClick={onAutoRollAllInitiative}
+                    disabled={initiative.length === 0}
+                    title="Relancer l'initiative pour tous les combattants"
+                  >
+                    <Dices className="h-3 w-3" />
+                    Init auto
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Combatant list */}
             <ScrollArea className="flex-1">
               <div className="space-y-1 p-2">
