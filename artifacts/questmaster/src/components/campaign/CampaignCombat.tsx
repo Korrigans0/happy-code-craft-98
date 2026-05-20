@@ -709,6 +709,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
