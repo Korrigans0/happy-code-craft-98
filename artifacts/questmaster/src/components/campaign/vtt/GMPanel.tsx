@@ -10,7 +10,8 @@ import {
   MessageSquare, Swords, Users, Skull, BookOpen,
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
-  RotateCcw, PanelRight,
+  RotateCcw, PanelRight, MousePointerClick, ListPlus,
+  ArrowUp, ArrowDown,
 } from "lucide-react";
 import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
@@ -24,6 +25,7 @@ interface GMPanelProps {
   currentUserId: string;
   userName: string;
   tokens: TokenItem[];
+  selectedTokenId?: string | null;
   waCreatures: WACreature[];
   userCharacters: PlayerChar[];
   initiative: InitiativeEntry[];
@@ -34,6 +36,11 @@ interface GMPanelProps {
   onSpawnCreature: (creature: WACreature) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
+  onAddSelectedTokenToInitiative?: () => void;
+  onAddAllTokensToInitiative?: () => void;
+  onAutoRollAllInitiative?: () => void;
+  onUpdateInitiativeValue?: (id: string, value: number) => void;
+  onReorderInitiative?: (id: string, dir: "up" | "down") => void;
   onRemoveFromInitiative: (id: string) => void;
   onUpdateInitiativeHp: (id: string, delta: number) => void;
   onAddConditionToInitiative: (id: string, cond: string) => void;
