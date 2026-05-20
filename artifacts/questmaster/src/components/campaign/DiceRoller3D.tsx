@@ -837,9 +837,10 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
           <DiceModifierInput
             value={modifier}
             onChange={setModifier}
-            formulaPreview={selectedDie ? `${dieCount}d${selectedDie.sides}` : undefined}
+            formulaPreview={Object.entries(counts).filter(([, n]) => n > 0).map(([t, n]) => `${n}d${t}`).join(" + ") || undefined}
             compact
           />
+
 
 
           {/* Color picker */}
