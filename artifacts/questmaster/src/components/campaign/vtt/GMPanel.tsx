@@ -46,6 +46,7 @@ interface GMPanelProps {
   onUpdateTokenHp: (tokenId: string, delta: number) => void;
   onSelectToken: (tokenId: string) => void;
   onSpawnCreature: (creature: WACreature) => void;
+  onSpawnAetheriaCreature: (creature: AetheriaCreature) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
   onAddSelectedTokenToInitiative?: () => void;
