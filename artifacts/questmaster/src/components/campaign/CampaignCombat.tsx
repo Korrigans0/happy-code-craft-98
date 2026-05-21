@@ -244,6 +244,18 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     });
   };
 
+  const addLog = (actorName: string, action: string, result?: string) => {
+    setCombatLogs(prev => [{
+      id: crypto.randomUUID(),
+      round: encounter?.round ?? 1,
+      turn: encounter?.current_turn ?? 0,
+      actorName,
+      action,
+      result,
+      timestamp: new Date(),
+    }, ...prev.slice(0, 49)]);
+  };
+
   const applyHpChange = (participantId: string) => {
     const amount = parseInt(hpAmount);
     if (isNaN(amount) || amount <= 0) return;
@@ -255,6 +267,8 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     updateParticipantMutation.mutate({ id: participantId, current_hp: newHp });
     setHpDialogOpen(null);
     setHpAmount("");
+    addLog(p.name, hpMode === "heal" ? "Soin" : "Dégâts",
+      `${Math.abs(amount)} PV → ${newHp}/${p.max_hp}`);
     if (hpMode === "damage") {
       toast({ title: `💥 ${p.name} reçoit ${amount} dégâts (${newHp} PV)` });
     } else {
