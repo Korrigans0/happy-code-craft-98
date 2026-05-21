@@ -1266,20 +1266,53 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           ctx.textAlign = "start";
         }
 
-        // Conditions badges
+        // ── Conditions badges ──
         if (token.conditions && token.conditions.length > 0) {
-          const baseY = token.y + token.size + (token.hp !== undefined ? 22 : 8);
           const badgeCount = Math.min(token.conditions.length, 6);
-          const totalW = badgeCount * 16 / zoom;
+          const badgeSize = 14 / zoom;
+          const gap = 2 / zoom;
+          const totalW = badgeCount * (badgeSize + gap) - gap;
           let bx = cx - totalW / 2;
-          ctx.font = `${12 / zoom}px serif`;
-          ctx.textAlign = "left";
+          const baseY = token.y + token.size + (token.hp !== undefined ? 20 / zoom : 6 / zoom);
+
           for (let i = 0; i < badgeCount; i++) {
-            const cond = CONDITIONS.find(c => c.id === token.conditions![i]);
-            if (cond) {
-              ctx.fillText(cond.emoji, bx, baseY / zoom);
-              bx += 16 / zoom;
-            }
+            const condId = token.conditions![i];
+            const cond = CONDITIONS.find(c => c.id === condId);
+            if (!cond) { bx += badgeSize + gap; continue; }
+
+            const COND_COLORS: Record<string, string> = {
+              desequilibre: "#f97316",
+              saignement: "#dc2626",
+              brulure: "#ef4444",
+              immobilise: "#6366f1",
+              peur: "#a855f7",
+              corruption: "#7c3aed",
+            };
+            const badgeColor = COND_COLORS[condId] || "#64748b";
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(bx + badgeSize / 2, baseY + badgeSize / 2, badgeSize / 2 + 1 / zoom, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(bx + badgeSize / 2, baseY + badgeSize / 2, badgeSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = badgeColor + "cc";
+            ctx.fill();
+            ctx.strokeStyle = badgeColor;
+            ctx.lineWidth = 1 / zoom;
+            ctx.stroke();
+
+            ctx.font = `${badgeSize * 0.7}px serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(cond.emoji, bx + badgeSize / 2, baseY + badgeSize / 2);
+            ctx.textBaseline = "alphabetic";
+            ctx.textAlign = "start";
+            ctx.restore();
+
+            bx += badgeSize + gap;
           }
         }
 
