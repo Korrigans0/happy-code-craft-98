@@ -68,6 +68,15 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [lastRoll, setLastRoll] = useState<{ dice: string; result: number } | null>(null);
+  const [combatLogs, setCombatLogs] = useState<{
+    id: string;
+    round: number;
+    turn: number;
+    actorName: string;
+    action: string;
+    result?: string;
+    timestamp: Date;
+  }[]>([]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
