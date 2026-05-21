@@ -17,6 +17,17 @@ import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
+interface AetheriaCreature {
+  id: string;
+  name: string;
+  size?: string;
+  pv_max: number;
+  def_physique: number;
+  def_magique: number;
+  attaque?: string;
+  degats?: string;
+  campaign_id?: string;
+}
 interface PlayerChar { id: string; name: string; level?: number; race?: string; class?: string; hp?: number; max_hp?: number; armor_class?: number; avatar_url?: string; }
 
 interface GMPanelProps {
@@ -27,6 +38,7 @@ interface GMPanelProps {
   tokens: TokenItem[];
   selectedTokenId?: string | null;
   waCreatures: WACreature[];
+  aetheriaCreatures: AetheriaCreature[];
   userCharacters: PlayerChar[];
   initiative: InitiativeEntry[];
   initiativeRound: number;
@@ -34,6 +46,7 @@ interface GMPanelProps {
   onUpdateTokenHp: (tokenId: string, delta: number) => void;
   onSelectToken: (tokenId: string) => void;
   onSpawnCreature: (creature: WACreature) => void;
+  onSpawnAetheriaCreature: (creature: AetheriaCreature) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
   onAddSelectedTokenToInitiative?: () => void;
@@ -68,10 +81,10 @@ function parseRollCommand(input: string): { formula: string; label?: string } | 
 
 export default function GMPanel({
   campaignId, isGM, currentUserId, userName,
-  tokens, selectedTokenId, waCreatures, userCharacters,
+  tokens, selectedTokenId, waCreatures, aetheriaCreatures, userCharacters,
   initiative, initiativeRound, initiativeActiveIdx,
   onUpdateTokenHp, onSelectToken,
-  onSpawnCreature, onSpawnCharacter,
+  onSpawnCreature, onSpawnAetheriaCreature, onSpawnCharacter,
   onAddToInitiative, onAddSelectedTokenToInitiative, onAddAllTokensToInitiative,
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
@@ -686,6 +699,40 @@ export default function GMPanel({
                         )}
                       </div>
                     ))}
+                  </>
+                )}
+                {aetheriaCreatures.filter(c =>
+                  c.name.toLowerCase().includes(bestiarySearch.toLowerCase())
+                ).length > 0 && (
+                  <>
+                    <Separator className="my-1" />
+                    <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/70">
+                      Créatures Aetheria
+                    </p>
+                    {aetheriaCreatures
+                      .filter(c => c.name.toLowerCase().includes(bestiarySearch.toLowerCase()))
+                      .map(creature => (
+                        <div key={creature.id}
+                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                            <Skull className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate text-amber-100">{creature.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              PV {creature.pv_max} • DEF {creature.def_physique}/{creature.def_magique}
+                              {creature.degats && ` • ${creature.degats}`}
+                            </p>
+                          </div>
+                          {isGM && (
+                            <Button size="icon" variant="ghost"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-amber-400"
+                              onClick={() => onSpawnAetheriaCreature(creature)}>
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                   </>
                 )}
                 {filteredCreatures.length === 0 && userCharacters.length === 0 && (
