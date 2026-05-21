@@ -503,6 +503,32 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }]);
   };
 
+  const spawnAetheriaCreature = (creature: any) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
+    const wx = snapValue((-panOffset.x / zoom) + 200 - GRID_SIZE / 2);
+    const wy = snapValue((-panOffset.y / zoom) + 200 - GRID_SIZE / 2);
+    const free = findFreePosition(wx, wy, GRID_SIZE);
+    setTokens(prev => [...prev, {
+      id: newId(),
+      name: creature.name,
+      x: free.x,
+      y: free.y,
+      size: GRID_SIZE,
+      sizeUnits: 1,
+      rotation: 0,
+      color: "#ef4444",
+      label: creature.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureType: "aetheria_creature",
+      creatureId: creature.id,
+      hp: creature.pv_max,
+      maxHp: creature.pv_max,
+      ac: creature.def_physique,
+      conditions: [],
+    } as TokenItem]);
+  };
+
   const addToken = () => {
     if (!newTokenName.trim()) return;
     if (!perms.canAddToken) { denied(); return; }
