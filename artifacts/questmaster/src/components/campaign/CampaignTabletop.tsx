@@ -2617,6 +2617,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             tokens={tokens}
             selectedTokenId={selectedTokenId}
             waCreatures={waCreatures}
+            aetheriaCreatures={aetheriaCreatures as any}
+            userCharacters={userCharacters}
             userCharacters={userCharacters}
             initiative={initiative}
             initiativeRound={initiativeRound}
