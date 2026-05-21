@@ -17,6 +17,17 @@ import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
+interface AetheriaCreature {
+  id: string;
+  name: string;
+  size?: string;
+  pv_max: number;
+  def_physique: number;
+  def_magique: number;
+  attaque?: string;
+  degats?: string;
+  campaign_id?: string;
+}
 interface PlayerChar { id: string; name: string; level?: number; race?: string; class?: string; hp?: number; max_hp?: number; armor_class?: number; avatar_url?: string; }
 
 interface GMPanelProps {
