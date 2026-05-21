@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { 
   Loader2, MessageSquare, BookOpen, Users, 
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2
+  Volume2, ExternalLink, Wand2, X
 } from "lucide-react";
 import CampaignChat from "@/components/campaign/CampaignChat";
 
@@ -39,6 +39,7 @@ const CampaignPlay = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("tabletop");
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -221,7 +222,50 @@ const CampaignPlay = () => {
 
             <div className="mt-4 flex-1">
               <TabsContent value="tabletop" className="m-0 h-full">
-                <CampaignTabletop campaignId={id!} isGM={isGM} />
+                <div className="flex gap-2 h-full">
+                  {/* Plateau — prend toute la place disponible */}
+                  <div className="flex-1 min-w-0">
+                    <CampaignTabletop campaignId={id!} isGM={isGM} />
+                  </div>
+
+                  {/* Bouton toggle chat — visible sur desktop */}
+                  <button
+                    onClick={() => setChatOpen(o => !o)}
+                    className="hidden md:flex flex-col items-center justify-center w-8 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    title={chatOpen ? "Fermer le chat" : "Ouvrir le chat"}
+                  >
+                    <MessageSquare className="h-4 w-4 mb-1" />
+                    <span className="text-[9px] uppercase tracking-wider" style={{writingMode:"vertical-rl"}}>
+                      {chatOpen ? "Fermer" : "Chat"}
+                    </span>
+                  </button>
+
+                  {/* Panneau chat latéral */}
+                  {chatOpen && (
+                    <div
+                      className="hidden md:flex flex-col rounded-xl border border-border bg-card overflow-hidden animate-slide-in"
+                      style={{ width: "320px", minWidth: "280px", maxWidth: "380px" }}
+                    >
+                      {/* Header chat */}
+                      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 text-amber-400" />
+                          <span className="font-display text-sm font-semibold text-foreground">Chat</span>
+                        </div>
+                        <button
+                          onClick={() => setChatOpen(false)}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {/* Chat component */}
+                      <div className="flex-1 overflow-hidden">
+                        <CampaignChat campaignId={id!} isGM={isGM} />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
               <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} isGM={isGM} />
