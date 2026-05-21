@@ -672,6 +672,53 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
         })}
       </div>
 
+      <div className="mt-4 rounded-xl border border-border bg-card/50">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+          <ScrollText className="h-4 w-4 text-amber-400" />
+          <span className="font-display text-xs font-semibold text-foreground">
+            Historique du combat
+          </span>
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            {combatLogs.length} actions
+          </span>
+          {combatLogs.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]"
+              onClick={() => setCombatLogs([])}>
+              Effacer
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="h-40">
+          <div className="space-y-1 p-2">
+            {combatLogs.length === 0 ? (
+              <p className="py-4 text-center text-xs text-muted-foreground">
+                Aucune action enregistrée
+              </p>
+            ) : (
+              combatLogs.map(log => (
+                <div key={log.id}
+                  className="flex items-start gap-2 rounded-lg bg-muted/30 px-2 py-1.5 text-xs">
+                  <span className="shrink-0 rounded bg-amber-500/15 px-1 py-0.5 text-[10px] font-bold text-amber-400">
+                    R{log.round}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="font-semibold text-foreground">{log.actorName}</span>
+                    <span className="text-muted-foreground"> — {log.action}</span>
+                    {log.result && (
+                      <span className="ml-1 text-amber-400/70">{log.result}</span>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-[9px] text-muted-foreground">
+                    {log.timestamp.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+
       {/* Damage/Heal Dialog */}
       <Dialog open={!!hpDialogOpen} onOpenChange={(o) => !o && setHpDialogOpen(null)}>
         <DialogContent className="max-w-sm">
