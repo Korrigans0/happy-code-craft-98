@@ -81,10 +81,10 @@ function parseRollCommand(input: string): { formula: string; label?: string } | 
 
 export default function GMPanel({
   campaignId, isGM, currentUserId, userName,
-  tokens, selectedTokenId, waCreatures, userCharacters,
+  tokens, selectedTokenId, waCreatures, aetheriaCreatures, userCharacters,
   initiative, initiativeRound, initiativeActiveIdx,
   onUpdateTokenHp, onSelectToken,
-  onSpawnCreature, onSpawnCharacter,
+  onSpawnCreature, onSpawnAetheriaCreature, onSpawnCharacter,
   onAddToInitiative, onAddSelectedTokenToInitiative, onAddAllTokensToInitiative,
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
