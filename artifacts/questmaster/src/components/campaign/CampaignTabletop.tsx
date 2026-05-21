@@ -363,6 +363,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     },
   });
 
+  const { data: aetheriaCreatures = [] } = useQuery({
+    queryKey: ["aetheria-creatures-tabletop", campaignId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("aetheria_creatures")
+        .select("*")
+        .or(`campaign_id.eq.${campaignId},is_public.eq.true`)
+        .order("name");
+      return data || [];
+    },
+  });
+
   const { data: userCharacters = [] } = useQuery({
     queryKey: ["vtt-user-characters", user?.id],
     enabled: !!user?.id,
