@@ -2619,13 +2619,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             waCreatures={waCreatures}
             aetheriaCreatures={aetheriaCreatures as any}
             userCharacters={userCharacters}
-            userCharacters={userCharacters}
             initiative={initiative}
             initiativeRound={initiativeRound}
             initiativeActiveIdx={initiativeActiveIdx}
             onUpdateTokenHp={updateTokenHp}
             onSelectToken={(id) => { setSelectedTokenId(id); centerOnToken(id); }}
             onSpawnCreature={spawnWACreature}
+            onSpawnAetheriaCreature={spawnAetheriaCreature}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
             onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
