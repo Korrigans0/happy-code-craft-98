@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Plus, Swords, Shield, Heart, Zap, Play, Pause,
   SkipForward, Trash2, ChevronUp, ChevronDown,
-  Skull, User, Timer, Target, Flame, Snowflake, Dices
+  Skull, User, Timer, Target, Flame, Snowflake, Dices, ScrollText
 } from "lucide-react";
 import TurnOrderBar from "@/components/campaign/vtt/TurnOrderBar";
 
