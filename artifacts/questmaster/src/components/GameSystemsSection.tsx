@@ -52,13 +52,28 @@ const GameSystemsSection = () => {
             </div>
             <div className="mb-4 flex items-center gap-2">
               <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                Partenaire
+                Partenaire officiel
               </span>
             </div>
-            <h3 className="font-display text-xl font-bold text-foreground">
-              Worlds Awakening
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <a
+                href="https://www.worlds-awakening.com/fr"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Worlds Awakening — site officiel"
+                className="shrink-0 transition-transform hover:scale-105"
+              >
+                <img
+                  src={waLogo}
+                  alt="Logo Worlds Awakening"
+                  className="h-12 w-12 rounded-lg border border-primary/30 bg-background/80 p-1 object-contain"
+                />
+              </a>
+              <h3 className="font-display text-xl font-bold text-foreground">
+                Worlds Awakening
+              </h3>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Partenaire officiel d'Aetheria VTT. Données du bestiaire, codex et ressources issues de l'univers Worlds Awakening.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
