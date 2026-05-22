@@ -1,5 +1,6 @@
 import { ExternalLink, Star, Handshake, Swords, MessageCircle } from "lucide-react";
 import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
+import waLogo from "@/assets/wa-logo.png";
 
 const GameSystemsSection = () => {
   return (
