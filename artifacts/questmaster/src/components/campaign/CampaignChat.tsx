@@ -315,7 +315,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   });
 
   return (
-    <div className="flex h-[calc(100vh-280px)] flex-col rounded-lg border border-border bg-gradient-card">
+    <div className="flex h-full min-h-[420px] flex-col rounded-lg border border-border bg-gradient-card">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
