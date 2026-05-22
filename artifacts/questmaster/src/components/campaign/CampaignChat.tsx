@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2, Plus, Minus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
