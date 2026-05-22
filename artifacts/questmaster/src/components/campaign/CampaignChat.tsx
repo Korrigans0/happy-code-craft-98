@@ -135,7 +135,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const { data: messages = [] } = useQuery({
     queryKey: ["campaignMessages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    refetchInterval: 3000,
+    refetchInterval: 1200,
+    refetchOnWindowFocus: true,
   });
 
   const { data: members = [] } = useQuery({
