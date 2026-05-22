@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2, Plus, Minus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CampaignChatProps {
@@ -135,7 +135,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const { data: messages = [] } = useQuery({
     queryKey: ["campaignMessages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    refetchInterval: 3000,
+    refetchInterval: 1200,
+    refetchOnWindowFocus: true,
   });
 
   const { data: members = [] } = useQuery({
@@ -159,11 +160,28 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
         metadata: data.metadata,
       });
     },
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["campaignMessages", campaignId] });
+      const previous = queryClient.getQueryData<any[]>(["campaignMessages", campaignId]) || [];
+      const optimistic = {
+        id: `optimistic-${Date.now()}`,
+        user_id: userId,
+        content: data.content,
+        message_type: data.message_type,
+        metadata: data.metadata,
+        created_at: new Date().toISOString(),
+        _optimistic: true,
+      };
+      queryClient.setQueryData(["campaignMessages", campaignId], [...previous, optimistic]);
       setMessage("");
+      return { previous };
     },
-    onError: () => {
+    onError: (_e, _v, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["campaignMessages", campaignId], ctx.previous);
       toast({ title: "Erreur", description: "Impossible d'envoyer le message", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
     },
   });
 
@@ -297,7 +315,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   });
 
   return (
-    <div className="flex h-[calc(100vh-280px)] flex-col rounded-lg border border-border bg-gradient-card">
+    <div className="flex h-full min-h-[420px] flex-col rounded-lg border border-border bg-gradient-card">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
@@ -430,39 +448,97 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
           </div>
         )}
 
-        {/* Dice Roller */}
-        <div className="mb-3 flex items-center gap-2">
-          <Dices className="h-4 w-4 text-muted-foreground" />
-          <Input
-            value={diceInput}
-            onChange={(e) => setDiceInput(e.target.value)}
-            placeholder="1d20, 2d6+3..."
-            className="w-32 h-8 text-sm"
-            onKeyDown={(e) => e.key === "Enter" && rollDice()}
-          />
-          <Button variant="outline" size="sm" onClick={() => rollDice()}>
-            Lancer
-          </Button>
-          <div className="flex gap-1 ml-1">
-            {["1d20", "1d6", "2d6", "1d8", "1d10", "1d12", "1d4", "1d100"].map((dice) => (
-              <Button
-                key={dice}
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setDiceInput(dice)}
-              >
-                {dice}
+        {/* Dice Roller — popover compact */}
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5" title="Lancer un dé">
+                <Dices className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium">Dés</span>
               </Button>
-            ))}
-          </div>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="start"
+              sideOffset={8}
+              collisionPadding={12}
+              className="w-[260px] p-3"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground">Lancer rapide</span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      const m = diceInput.match(/^(\d+)(d\d+(?:[+-]\d+)?)$/i);
+                      if (m) {
+                        const n = Math.max(1, parseInt(m[1]) - 1);
+                        setDiceInput(`${n}${m[2]}`);
+                      }
+                    }}
+                    title="Moins de dés"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      const m = diceInput.match(/^(\d+)(d\d+(?:[+-]\d+)?)$/i);
+                      if (m) {
+                        const n = Math.min(20, parseInt(m[1]) + 1);
+                        setDiceInput(`${n}${m[2]}`);
+                      }
+                    }}
+                    title="Plus de dés"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {["1d4", "1d6", "1d8", "1d10", "1d12", "1d20"].map((dice) => (
+                  <Button
+                    key={dice}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 text-xs font-semibold hover:bg-primary/20 hover:border-primary/60 hover:text-primary"
+                    onClick={() => rollDice(dice)}
+                  >
+                    {dice}
+                  </Button>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center gap-1.5">
+                <Input
+                  value={diceInput}
+                  onChange={(e) => setDiceInput(e.target.value)}
+                  placeholder="2d6+3"
+                  className="h-8 text-xs"
+                  onKeyDown={(e) => e.key === "Enter" && rollDice()}
+                />
+                <Button size="sm" className="h-8" onClick={() => rollDice()}>
+                  Lancer
+                </Button>
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Astuce : format <code className="text-primary">XdY+Z</code> (ex. 2d6+3)
+              </p>
+            </PopoverContent>
+          </Popover>
+
           <Button
             variant={showQuickActions ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 px-2 text-xs ml-auto"
+            className="h-8 px-2 text-xs ml-auto gap-1"
             onClick={() => setShowQuickActions(!showQuickActions)}
+            title="Actions rapides"
           >
-            <Sparkles className="h-3 w-3" />
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Actions</span>
           </Button>
         </div>
 
