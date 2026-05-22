@@ -160,11 +160,28 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
         metadata: data.metadata,
       });
     },
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["campaignMessages", campaignId] });
+      const previous = queryClient.getQueryData<any[]>(["campaignMessages", campaignId]) || [];
+      const optimistic = {
+        id: `optimistic-${Date.now()}`,
+        user_id: userId,
+        content: data.content,
+        message_type: data.message_type,
+        metadata: data.metadata,
+        created_at: new Date().toISOString(),
+        _optimistic: true,
+      };
+      queryClient.setQueryData(["campaignMessages", campaignId], [...previous, optimistic]);
       setMessage("");
+      return { previous };
     },
-    onError: () => {
+    onError: (_e, _v, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["campaignMessages", campaignId], ctx.previous);
       toast({ title: "Erreur", description: "Impossible d'envoyer le message", variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
     },
   });
 
