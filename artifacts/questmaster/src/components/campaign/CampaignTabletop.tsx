@@ -2514,6 +2514,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onEditGmNotes={ctxToken ? () => openGmNotes(ctxToken) : undefined}
               onCopyToken={ctxToken ? () => copyToken(ctxToken.id) : undefined}
               onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
+              onUpdateToken={ctxToken ? updateToken : undefined}
               hasClipboard={hasClipboard}
             />
           )}
