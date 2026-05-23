@@ -1230,7 +1230,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         ctx.translate(-cx, -cy);
 
         if (token.imageUrl) {
-          const img = new Image();
+          const img = new window.Image();
           img.src = token.imageUrl;
           ctx.save();
           ctx.beginPath();
