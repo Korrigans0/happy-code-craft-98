@@ -26,7 +26,7 @@ export interface TokenItem {
   layer: string;
   visible: boolean;
   creatureId?: string;
-  creatureType?: "wa_creature" | "monster" | "character";
+  creatureType?: "wa_creature" | "monster" | "character" | "aetheria_creature";
   hp?: number;
   maxHp?: number;
   pe?: number;
