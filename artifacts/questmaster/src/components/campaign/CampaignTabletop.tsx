@@ -562,6 +562,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (selectedTokenId === tokenId) setSelectedTokenId(null);
   };
 
+  const updateToken = (tokenId: string, updates: Partial<TokenItem>) => {
+    setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, ...updates } : t));
+  };
+
   const updateTokenHp = (tokenId: string, delta: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
@@ -1225,13 +1229,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         ctx.rotate((token.rotation * Math.PI) / 180);
         ctx.translate(-cx, -cy);
 
-        const tokenImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : null;
-        if (tokenImg) {
+        if (token.imageUrl) {
+          const img = new Image();
+          img.src = token.imageUrl;
           ctx.save();
           ctx.beginPath();
           ctx.arc(cx, cy, halfSize, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(tokenImg, token.x, token.y, token.size, token.size);
+          ctx.drawImage(img, cx - halfSize, cy - halfSize, token.size, token.size);
           ctx.restore();
         } else {
           const gradient = ctx.createRadialGradient(cx - halfSize * 0.3, cy - halfSize * 0.3, halfSize * 0.1, cx, cy, halfSize);
