@@ -4,6 +4,7 @@ import {
   Heart, Skull, Copy, Eye, EyeOff, Trash2, Crosshair,
   RotateCw, Maximize2, Swords, MapPin, PaintBucket, Plus,
   ChevronRight, ScrollText, Lock, ClipboardCopy, ClipboardPaste,
+  ImageIcon,
 } from "lucide-react";
 import { TokenItem, CONDITIONS } from "./types";
 
@@ -34,6 +35,7 @@ interface ContextMenuProps {
   onCopyToken?: () => void;
   onPasteToken?: () => void;
   hasClipboard?: boolean;
+  onUpdateToken?: (tokenId: string, updates: Partial<TokenItem>) => void;
 }
 
 const ITEM_CLASS =
@@ -48,6 +50,7 @@ export default function VTTContextMenu({
   onAddToInitiative, onDuplicate, onToggleHide, onDelete, onCenter, onResize,
   onToggleAura, onAddToken, onPing, onToggleFog, onClearFogHere,
   onViewSheet, onEditGmNotes, onCopyToken, onPasteToken, hasClipboard,
+  onUpdateToken,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -201,6 +204,27 @@ export default function VTTContextMenu({
               {token.isHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
               {token.isHidden ? "Montrer aux joueurs" : "Masquer aux joueurs"}
             </button>
+          )}
+          {isGM && onUpdateToken && (
+            <label className="flex items-center gap-2 cursor-pointer w-full px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <span>Image du token</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !token) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const url = ev.target?.result as string;
+                    onUpdateToken(token.id, { imageUrl: url });
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
           )}
           {isGM && (
             <button className={DANGER_CLASS} onClick={() => act(onDelete)}>
