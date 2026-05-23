@@ -23,7 +23,7 @@ export interface TokenLike {
   id: string;
   /** Si présent et que creatureType === 'character', on compare à ownCharacterId */
   creatureId?: string;
-  creatureType?: "wa_creature" | "monster" | "character";
+  creatureType?: "wa_creature" | "monster" | "character" | "aetheria_creature";
   /** Optionnel : owner explicite si stocké côté token */
   ownerId?: string | null;
 }
