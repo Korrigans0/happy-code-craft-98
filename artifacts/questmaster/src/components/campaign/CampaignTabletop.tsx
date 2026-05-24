@@ -1437,28 +1437,45 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       tmp.height = canvas.height;
       const tCtx = tmp.getContext("2d")!;
 
+      // Fond du brouillard
       tCtx.fillStyle = `rgba(0, 0, 0, ${fogLayer.opacity / 100})`;
       tCtx.fillRect(0, 0, tmp.width, tmp.height);
 
-      // Cut reveal holes
+      // Découper les zones révélées (destination-out = effet gomme)
       tCtx.save();
       tCtx.globalCompositeOperation = "destination-out";
-      tCtx.translate(panOffset.x, panOffset.y);
-      tCtx.scale(zoom, zoom);
       tCtx.fillStyle = "black";
 
+      // ✅ Screen-space pour cohérence taille/position avec brushSize visible
       const revealActions = actions.filter(a => (a.type as string) === "fogReveal");
       for (const ra of revealActions) {
+        // Cas spécial : révélation totale
+        if (
+          ra.points.length === 2 &&
+          ra.points[0].x === -9999 &&
+          ra.points[1].x === 9999
+        ) {
+          tCtx.fillRect(0, 0, tmp.width, tmp.height);
+          break;
+        }
         for (const pt of ra.points) {
+          const sx = pt.x * zoom + panOffset.x;
+          const sy = pt.y * zoom + panOffset.y;
+          const radius = (ra.size * zoom) * 2;
           tCtx.beginPath();
-          tCtx.arc(pt.x, pt.y, ra.size * 2.5, 0, Math.PI * 2);
+          tCtx.arc(sx, sy, Math.max(radius, 4), 0, Math.PI * 2);
           tCtx.fill();
         }
       }
+
+      // Dessin en cours
       if (currentAction && (currentAction.type as string) === "fogReveal") {
         for (const pt of currentAction.points) {
+          const sx = pt.x * zoom + panOffset.x;
+          const sy = pt.y * zoom + panOffset.y;
+          const radius = (currentAction.size * zoom) * 2;
           tCtx.beginPath();
-          tCtx.arc(pt.x, pt.y, currentAction.size * 2.5, 0, Math.PI * 2);
+          tCtx.arc(sx, sy, Math.max(radius, 4), 0, Math.PI * 2);
           tCtx.fill();
         }
       }
@@ -1466,6 +1483,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
       ctx.drawImage(tmp, 0, 0);
     }
+
 
   }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode]);
 
@@ -2261,13 +2279,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Calques</h3>
               {layers.map(layer => (
-                <div key={layer.id} className="flex items-center gap-2">
-                  <button onClick={() => toggleLayerVisibility(layer.id)}>
-                    {layer.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-                  </button>
-                  <span className="flex-1 text-sm">{layer.name}</span>
-                  <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-20" />
-                  <span className="w-8 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
+                <div key={layer.id} className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleLayerVisibility(layer.id)}>
+                      {layer.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                    </button>
+                    <span className="flex-1 text-sm">{layer.name}</span>
+                    <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-20" />
+                    <span className="w-8 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
+                  </div>
+                  {layer.id === "fog" && layer.visible && (
+                    <div className="flex items-center gap-2 px-2 pb-1">
+                      <span className="text-[10px] text-muted-foreground">Opacité fog</span>
+                      <Slider
+                        value={[layer.opacity]}
+                        onValueChange={([v]) => updateLayerOpacity("fog", v)}
+                        min={20}
+                        max={100}
+                        step={5}
+                        className="flex-1"
+                      />
+                      <span className="text-[10px] text-muted-foreground w-7">{layer.opacity}%</span>
+                    </div>
+                  )}
                 </div>
               ))}
               {isGM && (
@@ -2373,6 +2407,64 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               {t.icon}
             </button>
           ))}
+
+          {/* Boutons fog supplémentaires — visibles uniquement si fogReveal actif */}
+          {isGM && tool === "fogReveal" && (
+            <>
+              <div className="my-1 w-7 border-t border-border/50" />
+              <div className="flex flex-col items-center gap-1 px-1">
+                <span className="text-[9px] text-muted-foreground">Pinceau</span>
+                <Slider
+                  value={[brushSize]}
+                  onValueChange={([v]) => setBrushSize(v)}
+                  min={1}
+                  max={15}
+                  step={1}
+                  className="w-8 h-16"
+                  orientation="vertical"
+                />
+                <span className="text-[9px] text-muted-foreground">{brushSize}</span>
+              </div>
+              <button
+                title="Révéler toute la carte"
+                onClick={() => {
+                  const fullReveal: DrawAction = {
+                    id: newId(),
+                    type: "fogReveal" as Tool,
+                    points: [
+                      { x: -9999, y: -9999 },
+                      { x: 9999, y: 9999 },
+                    ],
+                    color: "black",
+                    size: 99999,
+                    layer: "fog",
+                  };
+                  setActions(prev => {
+                    const updated = [...prev, fullReveal];
+                    saveState({ drawings: updated });
+                    return updated;
+                  });
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              <button
+                title="Remettre tout le brouillard"
+                onClick={() => {
+                  setActions(prev => {
+                    const updated = prev.filter(a => (a.type as string) !== "fogReveal");
+                    saveState({ drawings: updated });
+                    return updated;
+                  });
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+              >
+                <EyeOff className="h-4 w-4" />
+              </button>
+            </>
+          )}
+
 
           <div className="my-1 w-7 border-t border-border/50" />
 
