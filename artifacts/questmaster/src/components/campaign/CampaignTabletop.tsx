@@ -2707,7 +2707,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         </div>
 
         {/* ── GM PANEL ── */}
-        {gmPanelOpen && (
+        {gmPanelOpen && isGM && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
@@ -2738,6 +2738,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onRemoveConditionFromInitiative={removeConditionFromInitiative}
             onNextTurn={nextTurn}
             onResetInitiative={resetInitiative}
+            onClose={() => setGmPanelOpen(false)}
+          />
+        )}
+        {gmPanelOpen && !isGM && (
+          <PlayerPanel
+            tokens={tokens}
+            initiative={initiative}
+            initiativeRound={initiativeRound}
+            initiativeActiveIdx={initiativeActiveIdx}
             onClose={() => setGmPanelOpen(false)}
           />
         )}
