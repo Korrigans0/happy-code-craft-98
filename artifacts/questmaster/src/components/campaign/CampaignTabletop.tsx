@@ -22,6 +22,7 @@ import DiceRoller3D from "./DiceRoller3D";
 import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
+import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene,
@@ -172,7 +173,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [gmPanelOpen, setGmPanelOpen] = useState(isGM);
+  const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   const [showLayersPanel, setShowLayersPanel] = useState(false);
@@ -2706,7 +2707,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         </div>
 
         {/* ── GM PANEL ── */}
-        {gmPanelOpen && (
+        {gmPanelOpen && isGM && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
@@ -2737,6 +2738,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onRemoveConditionFromInitiative={removeConditionFromInitiative}
             onNextTurn={nextTurn}
             onResetInitiative={resetInitiative}
+            onClose={() => setGmPanelOpen(false)}
+          />
+        )}
+        {gmPanelOpen && !isGM && (
+          <PlayerPanel
+            tokens={tokens}
+            initiative={initiative}
+            initiativeRound={initiativeRound}
+            initiativeActiveIdx={initiativeActiveIdx}
             onClose={() => setGmPanelOpen(false)}
           />
         )}
