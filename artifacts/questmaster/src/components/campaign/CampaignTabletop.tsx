@@ -22,6 +22,7 @@ import DiceRoller3D from "./DiceRoller3D";
 import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
+import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene,
