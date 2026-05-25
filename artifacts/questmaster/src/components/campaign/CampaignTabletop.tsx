@@ -172,7 +172,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [gmPanelOpen, setGmPanelOpen] = useState(isGM);
+  const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   const [showLayersPanel, setShowLayersPanel] = useState(false);
