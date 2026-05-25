@@ -94,8 +94,8 @@ router.post("/wa-creatures/sync", requireAuth, async (req, res) => {
       logs,
     });
   } catch (err: any) {
-    logs.push(`Erreur : ${err?.message || err}`);
-    res.status(500).json({ error: "Échec de la synchronisation.", detail: err?.message, logs });
+    console.error("compendium sync internal error:", err, logs);
+    res.status(500).json({ error: "Échec de la synchronisation." });
   }
 });
 
