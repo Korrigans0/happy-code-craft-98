@@ -88,23 +88,12 @@ export const campaignsApi = {
     return { ok: true };
   },
   join: async (invite_code: string) => {
-    const userId = await uid();
-    const found = await supabase
-      .from("campaigns")
-      .select("id")
-      .eq("invite_code", invite_code)
-      .maybeSingle();
-    if (found.error) throw new Error(found.error.message);
-    if (!found.data) throw new Error("Code d'invitation invalide");
-    const campaign_id = found.data.id as string;
-    // Insert membership (ignore conflict)
-    const ins = await supabase
-      .from("campaign_members")
-      .insert({ campaign_id, user_id: userId, role: "player" })
-      .select()
-      .maybeSingle();
-    if (ins.error && !/duplicate|unique/i.test(ins.error.message)) throw new Error(ins.error.message);
-    return { campaign_id };
+    const { data, error } = await supabase.rpc("join_campaign_by_invite_code", {
+      _code: invite_code.trim(),
+    });
+    if (error) throw new Error("Code d'invitation invalide");
+    if (!data) throw new Error("Code d'invitation invalide");
+    return { campaign_id: data as string };
   },
   getMembers: async (id: string) => {
     const r = await supabase.from("campaign_members").select("*").eq("campaign_id", id);
