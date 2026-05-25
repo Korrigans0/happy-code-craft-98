@@ -59,8 +59,8 @@ router.patch("/me", requireAuth, async (req, res) => {
   res.json(serializeProfile(profile));
 });
 
-// GET /api/profiles/:userId — public profile lookup
-router.get("/:userId", async (req, res) => {
+// GET /api/profiles/:userId — authenticated profile lookup
+router.get("/:userId", requireAuth, async (req, res) => {
   const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, req.params.userId));
   if (!profile) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeProfile(profile));

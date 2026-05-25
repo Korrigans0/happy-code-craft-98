@@ -89,8 +89,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erreur inconnue";
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error("clear-campaign-messages internal error:", e);
+    return new Response(JSON.stringify({ error: "Erreur interne du serveur" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
