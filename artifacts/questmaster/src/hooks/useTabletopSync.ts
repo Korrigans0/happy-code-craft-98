@@ -141,6 +141,7 @@ export function useTabletopSync({
             drawings: rawDrawings.map(ensureId),
             map_image_url: data.map_image_url || null,
             fog_visible: data.fog_visible || false,
+            walls: ((data as { walls?: unknown[] }).walls) || [],
           });
         }
       } catch {}
