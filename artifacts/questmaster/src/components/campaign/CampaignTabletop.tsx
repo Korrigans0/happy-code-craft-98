@@ -2521,6 +2521,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onClearAll={wallsHook.clearAllWalls}
               wallCount={wallsHook.walls.length}
               activeTool={tool}
+              onUndo={wallsHook.undo}
+              onRedo={wallsHook.redo}
+              canUndo={wallsHook.canUndo}
+              canRedo={wallsHook.canRedo}
             />
           )}
 
