@@ -269,6 +269,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
 
   // ── Sync ──
+  const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
@@ -305,9 +306,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       setLayers(prev => prev.map(l =>
         l.id === "fog" ? { ...l, visible: state.fog_visible } : l
       ));
+      const incomingWalls = (state as any).walls;
+      if (incomingWalls) wallsHookRef.current?.receiveWalls(incomingWalls);
     },
     debounceMs: 250,
   });
+
+  const wallsHook = useWalls({
+    campaignId,
+    isGM,
+    saveStateDebounced: saveState,
+  });
+  wallsHookRef.current = wallsHook;
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
