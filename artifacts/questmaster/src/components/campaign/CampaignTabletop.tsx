@@ -1892,6 +1892,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
+      const w = getCanvasCoords(e);
+      wallsHook.updateWallPreview(w.x, w.y);
+      redrawCanvasRef.current();
+      return;
+    }
     if (!isDrawing) return;
     if (draggedToken) {
       const coords = getCanvasCoords(e);
