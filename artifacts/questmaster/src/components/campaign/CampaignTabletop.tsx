@@ -2508,6 +2508,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </>
           )}
 
+          {isGM && (
+            <WallsToolbar
+              selectedWallType={wallsHook.selectedWallType}
+              onSelectType={wallsHook.setSelectedWallType}
+              onClearAll={wallsHook.clearAllWalls}
+              wallCount={wallsHook.walls.length}
+              activeTool={tool}
+            />
+          )}
+
 
           <div className="my-1 w-7 border-t border-border/50" />
 
