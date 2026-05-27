@@ -137,13 +137,14 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
 
     if (closestId) {
       setWalls(prev => {
+        pushHistory(prev);
         const updated = prev.filter(w => w.id !== closestId);
         saveWalls(updated);
         return updated;
       });
       if (selectedWallId === closestId) setSelectedWallId(null);
     }
-  }, [isGM, walls, selectedWallId, saveWalls]);
+  }, [isGM, walls, selectedWallId, saveWalls, pushHistory]);
 
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
