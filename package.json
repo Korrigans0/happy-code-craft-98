@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "cd artifacts/questmaster && PORT=${PORT:-8080} BASE_PATH=${BASE_PATH:-/} bun run dev",
     "build": "cd artifacts/questmaster && bun run build && rm -rf ../../dist && mkdir -p ../../dist && cp -R dist/public/. ../../dist",
+    "build:dev": "cd artifacts/questmaster && bun run build",
     "typecheck": "cd artifacts/questmaster && bun run typecheck",
     "typecheck:libs": "echo 'skipping lib typecheck'"
   },
