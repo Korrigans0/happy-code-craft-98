@@ -1726,6 +1726,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (editable(e.target)) return;
       if (e.code === "Space") { e.preventDefault(); setIsSpacePressed(true); return; }
       if (e.key === "F" && !e.ctrlKey) { setFullscreen(f => !f); return; }
+      // Wall undo/redo (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) — only when a wall tool is active
+      if ((e.ctrlKey || e.metaKey) && isGM && (tool === "wall" || tool === "wallDoor" || tool === "wallDelete")) {
+        const k = e.key.toLowerCase();
+        if (k === "z" && !e.shiftKey) { e.preventDefault(); wallsHook.undo(); return; }
+        if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); wallsHook.redo(); return; }
+      }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
@@ -2515,6 +2521,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onClearAll={wallsHook.clearAllWalls}
               wallCount={wallsHook.walls.length}
               activeTool={tool}
+              onUndo={wallsHook.undo}
+              onRedo={wallsHook.redo}
+              canUndo={wallsHook.canUndo}
+              canRedo={wallsHook.canRedo}
             />
           )}
 

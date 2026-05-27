@@ -1,0 +1,1 @@
+ALTER TABLE public.tabletop_state ADD COLUMN IF NOT EXISTS walls jsonb NOT NULL DEFAULT '[]'::jsonb;

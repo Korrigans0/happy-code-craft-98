@@ -38,22 +38,36 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
   const drawingStartRef = useRef<{ x: number; y: number } | null>(null);
   const previewEndRef = useRef<{ x: number; y: number } | null>(null);
 
+  // ── Historique undo/redo ───────────────────────────────
+  const undoStackRef = useRef<Wall[][]>([]);
+  const redoStackRef = useRef<Wall[][]>([]);
+  const MAX_HISTORY = 50;
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const bumpHistory = () => setHistoryVersion(v => v + 1);
+
   // ── Chargement initial ──────────────────────────────────
   const loadWalls = useCallback(async () => {
     const { data } = await supabase
       .from("tabletop_state")
-      .select("walls")
+      .select("walls" as never)
       .eq("campaign_id", campaignId)
       .maybeSingle();
-    if (data?.walls) {
-      setWalls((data.walls as unknown as Wall[]) || []);
-    }
+    const w = (data as { walls?: Wall[] } | null)?.walls;
+    if (w) setWalls(w || []);
   }, [campaignId]);
 
   // ── Sauvegarder ────────────────────────────────────────
   const saveWalls = useCallback((updated: Wall[]) => {
     saveStateDebounced({ walls: updated });
   }, [saveStateDebounced]);
+
+  // ── Pousser snapshot dans l'historique avant mutation ──
+  const pushHistory = useCallback((current: Wall[]) => {
+    undoStackRef.current.push(current);
+    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+    redoStackRef.current = [];
+    bumpHistory();
+  }, []);
 
   // ── Commencer à dessiner un mur ────────────────────────
   const startWall = useCallback((x: number, y: number) => {
@@ -91,6 +105,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     };
 
     setWalls(prev => {
+      pushHistory(prev);
       const updated = [...prev, newWall];
       saveWalls(updated);
       return updated;
@@ -98,7 +113,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
 
     drawingStartRef.current = null;
     previewEndRef.current = null;
-  }, [isGM, selectedWallType, saveWalls]);
+  }, [isGM, selectedWallType, saveWalls, pushHistory]);
 
   // ── Annuler le dessin en cours (Echap) ─────────────────
   const cancelWall = useCallback(() => {
@@ -122,13 +137,14 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
 
     if (closestId) {
       setWalls(prev => {
+        pushHistory(prev);
         const updated = prev.filter(w => w.id !== closestId);
         saveWalls(updated);
         return updated;
       });
       if (selectedWallId === closestId) setSelectedWallId(null);
     }
-  }, [isGM, walls, selectedWallId, saveWalls]);
+  }, [isGM, walls, selectedWallId, saveWalls, pushHistory]);
 
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
@@ -149,6 +165,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
   // ── Ouvrir/Fermer une porte ─────────────────────────────
   const toggleDoor = useCallback((wallId: string) => {
     setWalls(prev => {
+      pushHistory(prev);
       const updated = prev.map(w =>
         w.id === wallId && w.type === "door"
           ? { ...w, isOpen: !w.isOpen }
@@ -157,14 +174,44 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       saveWalls(updated);
       return updated;
     });
-  }, [saveWalls]);
+  }, [saveWalls, pushHistory]);
 
   // ── Tout effacer ────────────────────────────────────────
   const clearAllWalls = useCallback(() => {
     if (!isGM) return;
-    setWalls([]);
+    setWalls(prev => {
+      if (prev.length) pushHistory(prev);
+      return [];
+    });
     saveWalls([]);
     setSelectedWallId(null);
+  }, [isGM, saveWalls, pushHistory]);
+
+  // ── Undo / Redo ─────────────────────────────────────────
+  const undo = useCallback(() => {
+    if (!isGM) return;
+    const prev = undoStackRef.current.pop();
+    if (!prev) return;
+    setWalls(current => {
+      redoStackRef.current.push(current);
+      if (redoStackRef.current.length > MAX_HISTORY) redoStackRef.current.shift();
+      saveWalls(prev);
+      return prev;
+    });
+    bumpHistory();
+  }, [isGM, saveWalls]);
+
+  const redo = useCallback(() => {
+    if (!isGM) return;
+    const next = redoStackRef.current.pop();
+    if (!next) return;
+    setWalls(current => {
+      undoStackRef.current.push(current);
+      if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+      saveWalls(next);
+      return next;
+    });
+    bumpHistory();
   }, [isGM, saveWalls]);
 
   // ── Rendu des murs sur le canvas ────────────────────────
@@ -312,5 +359,10 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     clearAllWalls,
     drawWalls,
     receiveWalls,
+    undo,
+    redo,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
+    historyVersion,
   };
 }

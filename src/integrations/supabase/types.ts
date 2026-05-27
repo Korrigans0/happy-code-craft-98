@@ -819,6 +819,7 @@ export type Database = {
           tokens: Json
           updated_at: string
           updated_by: string | null
+          walls: Json
           zoom: number
         }
         Insert: {
@@ -831,6 +832,7 @@ export type Database = {
           tokens?: Json
           updated_at?: string
           updated_by?: string | null
+          walls?: Json
           zoom?: number
         }
         Update: {
@@ -843,6 +845,7 @@ export type Database = {
           tokens?: Json
           updated_at?: string
           updated_by?: string | null
+          walls?: Json
           zoom?: number
         }
         Relationships: [
