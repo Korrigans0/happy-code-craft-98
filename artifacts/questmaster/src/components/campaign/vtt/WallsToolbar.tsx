@@ -3,7 +3,7 @@
 // Fichier : artifacts/questmaster/src/components/campaign/vtt/WallsToolbar.tsx
 // ============================================================
 
-import { Trash2, DoorOpen, DoorClosed, Eye, Layers, Square } from "lucide-react";
+import { Trash2, DoorOpen, DoorClosed, Eye, Layers, Square, Undo2, Redo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { type WallType, WALL_COLORS, WALL_LABELS } from "./types";
 
@@ -13,6 +13,10 @@ interface WallsToolbarProps {
   onClearAll: () => void;
   wallCount: number;
   activeTool: string;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const WALL_TYPES: { type: WallType; icon: React.ReactNode; shortLabel: string }[] = [
