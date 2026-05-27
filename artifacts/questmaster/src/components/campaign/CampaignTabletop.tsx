@@ -1445,6 +1445,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // ── Fog (screen space composite) ─────────────────────────
     const fogLayer = layers.find(l => l.id === "fog");
+    wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
     if (fogLayer?.visible) {
       const tmp = document.createElement("canvas");
       tmp.width = canvas.width;
