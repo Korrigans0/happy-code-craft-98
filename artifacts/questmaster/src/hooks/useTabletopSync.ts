@@ -41,6 +41,7 @@ interface TabletopState {
   drawings: DrawAction[];
   map_image_url: string | null;
   fog_visible: boolean;
+  walls?: unknown[];
 }
 
 interface UseTabletopSyncOptions {
