@@ -1736,7 +1736,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "c" || e.key === "C") setTool("cone");
         else if (e.key === "z" || e.key === "Z") setTool("zone");
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
-        else if (e.key === "Escape") { setContextMenu(null); if (fullscreen) setFullscreen(false); }
+        else if (e.key === "Escape") {
+          setContextMenu(null);
+          if (fullscreen) setFullscreen(false);
+          if (tool === "wall" || tool === "wallDoor") wallsHook.cancelWall();
+        }
       }
       if (selectedTokenId) {
         const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
