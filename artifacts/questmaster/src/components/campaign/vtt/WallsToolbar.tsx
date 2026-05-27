@@ -48,11 +48,33 @@ export default function WallsToolbar({
   onClearAll,
   wallCount,
   activeTool,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: WallsToolbarProps) {
   if (!["wall", "wallDoor", "wallDelete"].includes(activeTool)) return null;
 
   return (
     <div className="flex flex-col gap-1.5">
+      {/* Undo / Redo */}
+      <button
+        title="Annuler (Ctrl+Z)"
+        onClick={onUndo}
+        disabled={!canUndo}
+        className="flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background/40 text-foreground/80 transition-all hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        <Undo2 className="h-4 w-4" />
+      </button>
+      <button
+        title="Rétablir (Ctrl+Shift+Z)"
+        onClick={onRedo}
+        disabled={!canRedo}
+        className="flex h-9 w-9 items-center justify-center rounded-md border border-border/50 bg-background/40 text-foreground/80 transition-all hover:bg-background/80 disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        <Redo2 className="h-4 w-4" />
+      </button>
+
       {/* Séparateur */}
       <div className="my-0.5 w-7 border-t border-border/50" />
 
