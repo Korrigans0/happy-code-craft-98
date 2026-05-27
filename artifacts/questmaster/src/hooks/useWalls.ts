@@ -113,7 +113,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
 
     drawingStartRef.current = null;
     previewEndRef.current = null;
-  }, [isGM, selectedWallType, saveWalls]);
+  }, [isGM, selectedWallType, saveWalls, pushHistory]);
 
   // ── Annuler le dessin en cours (Echap) ─────────────────
   const cancelWall = useCallback(() => {
