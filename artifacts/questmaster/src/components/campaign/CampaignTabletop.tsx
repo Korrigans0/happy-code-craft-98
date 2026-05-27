@@ -9,8 +9,11 @@ import {
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
-  MapPin, Wand2, Keyboard, Film, ChevronRight,
+  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed,
 } from "lucide-react";
+import { useWalls } from "@/hooks/useWalls";
+import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
+import { WALL_COLORS } from "@/components/campaign/vtt/types";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -266,6 +269,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
 
   // ── Sync ──
+  const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
   const { saveState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
@@ -302,9 +306,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       setLayers(prev => prev.map(l =>
         l.id === "fog" ? { ...l, visible: state.fog_visible } : l
       ));
+      const incomingWalls = (state as any).walls;
+      if (incomingWalls) wallsHookRef.current?.receiveWalls(incomingWalls);
     },
     debounceMs: 250,
   });
+
+  const wallsHook = useWalls({
+    campaignId,
+    isGM,
+    saveStateDebounced: saveState,
+  });
+  wallsHookRef.current = wallsHook;
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
@@ -1432,6 +1445,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // ── Fog (screen space composite) ─────────────────────────
     const fogLayer = layers.find(l => l.id === "fog");
+    wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
     if (fogLayer?.visible) {
       const tmp = document.createElement("canvas");
       tmp.width = canvas.width;
@@ -1722,7 +1736,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "c" || e.key === "C") setTool("cone");
         else if (e.key === "z" || e.key === "Z") setTool("zone");
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
-        else if (e.key === "Escape") { setContextMenu(null); if (fullscreen) setFullscreen(false); }
+        else if (e.key === "Escape") {
+          setContextMenu(null);
+          if (fullscreen) setFullscreen(false);
+          if (tool === "wall" || tool === "wallDoor") wallsHook.cancelWall();
+        }
       }
       if (selectedTokenId) {
         const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
@@ -1792,6 +1810,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 2) return; // handled by onContextMenu
     const coords = getCanvasCoords(e);
+
+    if (tool === "wall" || tool === "wallDoor") {
+      wallsHook.startWall(coords.x, coords.y);
+      return;
+    }
+    if (tool === "wallDelete") {
+      wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
+      return;
+    }
+
 
     if (e.button === 1 || isSpacePressed) {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
@@ -1868,6 +1896,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
+      const w = getCanvasCoords(e);
+      wallsHook.updateWallPreview(w.x, w.y);
+      redrawCanvasRef.current();
+      return;
+    }
     if (!isDrawing) return;
     if (draggedToken) {
       const coords = getCanvasCoords(e);
@@ -1899,7 +1933,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e?: React.MouseEvent<HTMLCanvasElement>) => {
+    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current && e) {
+      const w = getCanvasCoords(e);
+      wallsHook.finishWall(w.x, w.y);
+      return;
+    }
     if (draggedToken) {
       const id = draggedToken;
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
@@ -2089,6 +2128,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T" },
     { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping" },
     { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true },
+    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true },
+    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true },
+    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true },
   ];
 
   const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
@@ -2464,6 +2506,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <EyeOff className="h-4 w-4" />
               </button>
             </>
+          )}
+
+          {isGM && (
+            <WallsToolbar
+              selectedWallType={wallsHook.selectedWallType}
+              onSelectType={wallsHook.setSelectedWallType}
+              onClearAll={wallsHook.clearAllWalls}
+              wallCount={wallsHook.walls.length}
+              activeTool={tool}
+            />
           )}
 
 

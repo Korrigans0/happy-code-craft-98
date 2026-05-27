@@ -1,6 +1,12 @@
+// ============================================================
+// TYPES VTT — Aetheria VTT
+// Fichier : artifacts/questmaster/src/components/campaign/vtt/types.ts
+// ============================================================
+
 export type Tool =
   | "pencil" | "eraser" | "line" | "rect" | "circle" | "text"
-  | "move" | "token" | "cone" | "zone" | "fogReveal" | "ping" | "measure";
+  | "move" | "token" | "cone" | "zone" | "fogReveal" | "ping"
+  | "measure" | "wall" | "wallDoor" | "wallDelete";
 
 export interface DrawAction {
   id: string;
@@ -79,26 +85,66 @@ export interface VTTScene {
   mapImageUrl?: string;
   tokens: TokenItem[];
   drawings: DrawAction[];
+  walls?: Wall[];
   createdAt: number;
 }
 
+// ── MURS DYNAMIQUES ─────────────────────────────────────────
+
+export type WallType =
+  | "solid"    // Mur plein — bloque vision + mouvement
+  | "door"     // Porte — peut s'ouvrir/fermer
+  | "window"   // Fenêtre — bloque mouvement, pas vision
+  | "terrain"; // Terrain difficile — ralentit mais ne bloque pas
+
+export interface Wall {
+  id: string;
+  type: WallType;
+  // Deux points définissent un segment de mur
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  // Porte
+  isOpen?: boolean;
+  // Visuel
+  color?: string;
+}
+
+// Couleurs des murs par type
+export const WALL_COLORS: Record<WallType, string> = {
+  solid:   "#ef4444", // Rouge — mur solide
+  door:    "#f59e0b", // Ambre — porte
+  window:  "#3b82f6", // Bleu — fenêtre
+  terrain: "#22c55e", // Vert — terrain difficile
+};
+
+export const WALL_LABELS: Record<WallType, string> = {
+  solid:   "Mur",
+  door:    "Porte",
+  window:  "Fenêtre",
+  terrain: "Terrain difficile",
+};
+
+// ── CONDITIONS ───────────────────────────────────────────────
+
 export const CONDITIONS = [
-  { id: "blind",         label: "Aveuglé",     emoji: "🙈" },
-  { id: "charmed",       label: "Charmé",       emoji: "💕" },
-  { id: "frightened",   label: "Effrayé",      emoji: "😱" },
-  { id: "grappled",     label: "Empoigné",     emoji: "🤜" },
-  { id: "incapacitated",label: "Incapacité",   emoji: "💫" },
-  { id: "invisible",    label: "Invisible",    emoji: "👻" },
-  { id: "paralyzed",    label: "Paralysé",     emoji: "⚡" },
-  { id: "poisoned",     label: "Empoisonné",   emoji: "☠️" },
-  { id: "prone",        label: "À terre",      emoji: "⬇️" },
-  { id: "restrained",   label: "Entravé",      emoji: "⛓️" },
-  { id: "stunned",      label: "Étourdi",      emoji: "⭐" },
-  { id: "unconscious",  label: "Inconscient",  emoji: "💤" },
-  { id: "concentration",label: "Concentration",emoji: "🧘" },
-  { id: "blessed",      label: "Béni",         emoji: "✨" },
-  { id: "cursed",       label: "Maudit",       emoji: "🌑" },
-  { id: "hasted",       label: "Accéléré",     emoji: "💨" },
+  { id: "blind",          label: "Aveuglé",      emoji: "🙈" },
+  { id: "charmed",        label: "Charmé",        emoji: "💕" },
+  { id: "frightened",     label: "Effrayé",       emoji: "😱" },
+  { id: "grappled",       label: "Empoigné",      emoji: "🤜" },
+  { id: "incapacitated",  label: "Incapacité",    emoji: "💫" },
+  { id: "invisible",      label: "Invisible",     emoji: "👻" },
+  { id: "paralyzed",      label: "Paralysé",      emoji: "⚡" },
+  { id: "poisoned",       label: "Empoisonné",    emoji: "☠️" },
+  { id: "prone",          label: "À terre",       emoji: "⬇️" },
+  { id: "restrained",     label: "Entravé",       emoji: "⛓️" },
+  { id: "stunned",        label: "Étourdi",       emoji: "⭐" },
+  { id: "unconscious",    label: "Inconscient",   emoji: "💤" },
+  { id: "concentration",  label: "Concentration", emoji: "🧘" },
+  { id: "blessed",        label: "Béni",          emoji: "✨" },
+  { id: "cursed",         label: "Maudit",        emoji: "🌑" },
+  { id: "hasted",         label: "Accéléré",      emoji: "💨" },
 ] as const;
 
 export type ConditionId = (typeof CONDITIONS)[number]["id"];
@@ -121,7 +167,9 @@ export function rollDice(formula: string): {
   const count = parseInt(match[1] || "1");
   const sides = parseInt(match[2]);
   const modifier = parseInt(match[3] || "0");
-  const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  const rolls = Array.from({ length: count }, () =>
+    Math.floor(Math.random() * sides) + 1
+  );
   const total = rolls.reduce((a, b) => a + b, 0) + modifier;
   return { formula: clean, rolls, modifier, total };
 }
