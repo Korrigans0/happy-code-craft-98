@@ -1929,7 +1929,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e?: React.MouseEvent<HTMLCanvasElement>) => {
+    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current && e) {
+      const w = getCanvasCoords(e);
+      wallsHook.finishWall(w.x, w.y);
+      return;
+    }
     if (draggedToken) {
       const id = draggedToken;
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
