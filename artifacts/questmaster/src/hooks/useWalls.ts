@@ -38,22 +38,36 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
   const drawingStartRef = useRef<{ x: number; y: number } | null>(null);
   const previewEndRef = useRef<{ x: number; y: number } | null>(null);
 
+  // ── Historique undo/redo ───────────────────────────────
+  const undoStackRef = useRef<Wall[][]>([]);
+  const redoStackRef = useRef<Wall[][]>([]);
+  const MAX_HISTORY = 50;
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const bumpHistory = () => setHistoryVersion(v => v + 1);
+
   // ── Chargement initial ──────────────────────────────────
   const loadWalls = useCallback(async () => {
     const { data } = await supabase
       .from("tabletop_state")
-      .select("walls")
+      .select("walls" as never)
       .eq("campaign_id", campaignId)
       .maybeSingle();
-    if (data?.walls) {
-      setWalls((data.walls as unknown as Wall[]) || []);
-    }
+    const w = (data as { walls?: Wall[] } | null)?.walls;
+    if (w) setWalls(w || []);
   }, [campaignId]);
 
   // ── Sauvegarder ────────────────────────────────────────
   const saveWalls = useCallback((updated: Wall[]) => {
     saveStateDebounced({ walls: updated });
   }, [saveStateDebounced]);
+
+  // ── Pousser snapshot dans l'historique avant mutation ──
+  const pushHistory = useCallback((current: Wall[]) => {
+    undoStackRef.current.push(current);
+    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+    redoStackRef.current = [];
+    bumpHistory();
+  }, []);
 
   // ── Commencer à dessiner un mur ────────────────────────
   const startWall = useCallback((x: number, y: number) => {
