@@ -105,6 +105,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     };
 
     setWalls(prev => {
+      pushHistory(prev);
       const updated = [...prev, newWall];
       saveWalls(updated);
       return updated;
