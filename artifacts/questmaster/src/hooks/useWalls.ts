@@ -359,5 +359,10 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     clearAllWalls,
     drawWalls,
     receiveWalls,
+    undo,
+    redo,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
+    historyVersion,
   };
 }
