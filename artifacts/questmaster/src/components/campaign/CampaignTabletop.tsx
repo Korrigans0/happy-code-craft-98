@@ -9,8 +9,11 @@ import {
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
-  MapPin, Wand2, Keyboard, Film, ChevronRight,
+  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed,
 } from "lucide-react";
+import { useWalls } from "@/hooks/useWalls";
+import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
+import { WALL_COLORS } from "@/components/campaign/vtt/types";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
