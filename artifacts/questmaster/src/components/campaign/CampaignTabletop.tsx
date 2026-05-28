@@ -1919,11 +1919,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
-      // Coalesce les nombreux events mousemove en un seul redraw par frame
+      // Throttle rAF ajustable : skip frames selon le réglage utilisateur
       if (wallPreviewRafRef.current == null) {
         wallPreviewRafRef.current = requestAnimationFrame(() => {
           wallPreviewRafRef.current = null;
-          redrawCanvasRef.current();
+          wallPreviewFrameRef.current++;
+          const skip = wallRafThrottleRef.current;
+          if (skip <= 0 || wallPreviewFrameRef.current % (skip + 1) === 0) {
+            redrawCanvasRef.current();
+          }
         });
       }
       return;
