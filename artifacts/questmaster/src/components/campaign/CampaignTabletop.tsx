@@ -9,7 +9,7 @@ import {
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
-  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed,
+  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
 } from "lucide-react";
 import { useWalls } from "@/hooks/useWalls";
 import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
