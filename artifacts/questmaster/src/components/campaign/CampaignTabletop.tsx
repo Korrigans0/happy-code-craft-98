@@ -184,6 +184,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [gridColor, setGridColor] = useState("rgba(255,255,255,0.12)");
   const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
   const [plateauMode, setPlateauMode] = useState<"dark" | "sky">("dark");
+  const [wallRafThrottle, setWallRafThrottle] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("vtt_wall_raf_throttle") : null;
+    return saved ? Math.max(0, Math.min(5, parseInt(saved, 10))) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("vtt_wall_raf_throttle", String(wallRafThrottle));
+  }, [wallRafThrottle]);
 
   const plateauColors = plateauMode === "dark"
     ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
