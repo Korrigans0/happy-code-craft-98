@@ -302,10 +302,10 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       const x2s = end.x * zoom + panOffset.x;
       const y2s = end.y * zoom + panOffset.y;
 
-      let previewColor = "#ef4444";
-      if (selectedWallType === "door") previewColor = "#f59e0b";
-      if (selectedWallType === "window") previewColor = "#3b82f6";
-      if (selectedWallType === "terrain") previewColor = "#22c55e";
+      let previewColor = WALL_COLORS.solid;
+      if (selectedWallType === "door") previewColor = WALL_COLORS.door;
+      if (selectedWallType === "window") previewColor = WALL_COLORS.window;
+      if (selectedWallType === "terrain") previewColor = WALL_COLORS.terrain;
 
       ctx.strokeStyle = previewColor + "88";
       ctx.lineWidth = 3;
