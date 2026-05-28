@@ -2460,20 +2460,74 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         {/* ── LEFT VERTICAL TOOLBAR ── */}
         <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto py-1.5">
 
-          {visibleTools.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTool(t.id)}
-              title={t.key ? `${t.label} (${t.key})` : t.label}
-              className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
-                tool === t.id
-                  ? "bg-primary text-primary-foreground shadow-inner"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              {t.icon}
-            </button>
-          ))}
+          {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
+            const groupTools = visibleTools.filter(t => t.group === group.id);
+            if (groupTools.length === 0) return null;
+            const activeTool = groupTools.find(t => t.id === tool);
+
+            // Catégorie à un seul outil → sélection directe (pas de popover)
+            if (groupTools.length === 1) {
+              const t = groupTools[0];
+              return (
+                <button
+                  key={group.id}
+                  onClick={() => setTool(t.id)}
+                  title={t.key ? `${t.label} (${t.key})` : t.label}
+                  className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                    tool === t.id
+                      ? "bg-primary text-primary-foreground shadow-inner"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {t.icon}
+                </button>
+              );
+            }
+
+            return (
+              <Popover
+                key={group.id}
+                open={openGroup === group.id}
+                onOpenChange={(o) => setOpenGroup(o ? group.id : null)}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    title={group.label}
+                    className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                      activeTool
+                        ? "bg-primary text-primary-foreground shadow-inner"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {activeTool ? activeTool.icon : group.icon}
+                    {/* petit indicateur "dossier" */}
+                    <span className="absolute bottom-0.5 right-0.5 h-1 w-1 rounded-full bg-current opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="right" align="start" className="w-auto p-1.5">
+                  <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {group.label}
+                  </div>
+                  <div className="flex gap-1">
+                    {groupTools.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => { setTool(t.id); setOpenGroup(null); }}
+                        title={t.key ? `${t.label} (${t.key})` : t.label}
+                        className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                          tool === t.id
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {t.icon}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            );
+          })}
 
           {/* Boutons fog supplémentaires — visibles uniquement si fogReveal actif */}
           {isGM && tool === "fogReveal" && (
