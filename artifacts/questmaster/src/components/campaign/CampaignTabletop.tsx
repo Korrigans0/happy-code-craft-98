@@ -234,6 +234,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
   const wallPreviewRafRef = useRef<number | null>(null);
+  const wallPreviewFrameRef = useRef(0);
+  const wallRafThrottleRef = useRef(wallRafThrottle);
+  wallRafThrottleRef.current = wallRafThrottle;
 
   // ── Token slide animations (smooth movement) ──
   const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
