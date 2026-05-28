@@ -1908,7 +1908,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
-      redrawCanvasRef.current();
+      // Coalesce les nombreux events mousemove en un seul redraw par frame
+      if (wallPreviewRafRef.current == null) {
+        wallPreviewRafRef.current = requestAnimationFrame(() => {
+          wallPreviewRafRef.current = null;
+          redrawCanvasRef.current();
+        });
+      }
       return;
     }
     if (!isDrawing) return;
