@@ -142,6 +142,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(3);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [actions, setActions] = useState<DrawAction[]>([]);
   const [undoneActions, setUndoneActions] = useState<DrawAction[]>([]);
