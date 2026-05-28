@@ -235,11 +235,11 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       const x2s = wall.x2 * zoom + panOffset.x;
       const y2s = wall.y2 * zoom + panOffset.y;
 
-      // Couleur selon type
-      let color = "#ef4444"; // solid
-      if (wall.type === "door") color = wall.isOpen ? "#22c55e" : "#f59e0b";
-      if (wall.type === "window") color = "#3b82f6";
-      if (wall.type === "terrain") color = "#22c55e";
+      // Couleur selon type (cohérente avec WALL_COLORS)
+      let color = WALL_COLORS.solid;
+      if (wall.type === "door") color = wall.isOpen ? DOOR_OPEN_COLOR : WALL_COLORS.door;
+      if (wall.type === "window") color = WALL_COLORS.window;
+      if (wall.type === "terrain") color = WALL_COLORS.terrain;
 
       // Épaisseur
       const thickness = wall.type === "terrain" ? 2 : 3;
