@@ -223,6 +223,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
 
+  // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
+  const wallPreviewRafRef = useRef<number | null>(null);
+
   // ── Token slide animations (smooth movement) ──
   const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const tokenAnimRef = useRef<Map<string, { fromX: number; fromY: number; toX: number; toY: number; start: number; duration: number }>>(new Map());
