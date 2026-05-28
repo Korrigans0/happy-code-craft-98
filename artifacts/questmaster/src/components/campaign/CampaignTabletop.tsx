@@ -1740,7 +1740,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
-        else if (e.key === "l" || e.key === "L") setTool("line");
         else if (e.key === "m" || e.key === "M") setTool("measure");
         else if (e.key === "t" || e.key === "T") setTool("text");
         else if (e.key === "c" || e.key === "C") setTool("cone");
