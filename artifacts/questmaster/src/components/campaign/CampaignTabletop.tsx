@@ -2129,23 +2129,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const selectedToken = tokens.find(t => t.id === selectedTokenId);
 
-  // ── Tool definitions ──
-  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean }[] = [
-    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V" },
-    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P" },
-    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E" },
-    { id: "line",      icon: <Ruler className="h-4 w-4" />,         label: "Ligne",        key: "L" },
-    { id: "measure",   icon: <span className="text-xs font-bold leading-none">m</span>, label: "Mesure distance", key: "M" },
-    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle" },
-    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle" },
-    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C" },
-    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z" },
-    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T" },
-    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping" },
-    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true },
-    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true },
-    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true },
-    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true },
+  // ── Tool definitions (rangés par catégorie) ──
+  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[] = [
+    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V", group: "nav" },
+    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
+    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P", group: "draw" },
+    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E", group: "draw" },
+    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle",              group: "draw" },
+    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle",                 group: "draw" },
+    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T", group: "draw" },
+    { id: "measure",   icon: <Ruler className="h-4 w-4" />,         label: "Mesure distance", key: "M", group: "measure" },
+    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C", group: "aoe" },
+    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z", group: "aoe" },
+    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true, group: "gm" },
+    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true, group: "gm" },
+    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true, group: "gm" },
+    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true, group: "gm" },
+  ];
+
+  // Catégories d'outils (dossiers dépliables)
+  const TOOL_GROUPS: { id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[] = [
+    { id: "nav",     label: "Navigation",    icon: <Move className="h-4 w-4" /> },
+    { id: "draw",    label: "Dessin",        icon: <Pencil className="h-4 w-4" /> },
+    { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
+    { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
+    { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
   ];
 
   const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
