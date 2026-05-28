@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Wall, WallType } from "@/components/campaign/vtt/types";
+import { WALL_COLORS, DOOR_OPEN_COLOR } from "@/components/campaign/vtt/types";
 
 const newId = () => crypto.randomUUID();
 
