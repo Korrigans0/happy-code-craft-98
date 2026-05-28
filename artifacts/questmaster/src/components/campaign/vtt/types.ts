@@ -111,13 +111,16 @@ export interface Wall {
   color?: string;
 }
 
-// Couleurs des murs par type
+// Couleurs des murs par type — bien distinctes les unes des autres
 export const WALL_COLORS: Record<WallType, string> = {
-  solid:   "#ef4444", // Rouge — mur solide
-  door:    "#f59e0b", // Ambre — porte
-  window:  "#3b82f6", // Bleu — fenêtre
+  solid:   "#ef4444", // Rouge vif — mur solide
+  door:    "#a855f7", // Violet — porte (fermée)
+  window:  "#38bdf8", // Cyan — fenêtre
   terrain: "#22c55e", // Vert — terrain difficile
 };
+
+// Couleur d'une porte ouverte
+export const DOOR_OPEN_COLOR = "#c084fc"; // Violet clair
 
 export const WALL_LABELS: Record<WallType, string> = {
   solid:   "Mur",

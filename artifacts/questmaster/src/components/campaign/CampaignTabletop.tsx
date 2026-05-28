@@ -9,7 +9,7 @@ import {
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
-  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed,
+  MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
 } from "lucide-react";
 import { useWalls } from "@/hooks/useWalls";
 import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
@@ -142,6 +142,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(3);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [actions, setActions] = useState<DrawAction[]>([]);
   const [undoneActions, setUndoneActions] = useState<DrawAction[]>([]);
@@ -222,6 +223,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
+
+  // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
+  const wallPreviewRafRef = useRef<number | null>(null);
 
   // ── Token slide animations (smooth movement) ──
   const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -1736,7 +1740,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
-        else if (e.key === "l" || e.key === "L") setTool("line");
         else if (e.key === "m" || e.key === "M") setTool("measure");
         else if (e.key === "t" || e.key === "T") setTool("text");
         else if (e.key === "c" || e.key === "C") setTool("cone");
@@ -1905,7 +1908,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
-      redrawCanvasRef.current();
+      // Coalesce les nombreux events mousemove en un seul redraw par frame
+      if (wallPreviewRafRef.current == null) {
+        wallPreviewRafRef.current = requestAnimationFrame(() => {
+          wallPreviewRafRef.current = null;
+          redrawCanvasRef.current();
+        });
+      }
       return;
     }
     if (!isDrawing) return;
@@ -2120,23 +2129,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   const selectedToken = tokens.find(t => t.id === selectedTokenId);
 
-  // ── Tool definitions ──
-  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean }[] = [
-    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V" },
-    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P" },
-    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E" },
-    { id: "line",      icon: <Ruler className="h-4 w-4" />,         label: "Ligne",        key: "L" },
-    { id: "measure",   icon: <span className="text-xs font-bold leading-none">m</span>, label: "Mesure distance", key: "M" },
-    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle" },
-    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle" },
-    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C" },
-    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z" },
-    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T" },
-    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping" },
-    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true },
-    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true },
-    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true },
-    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true },
+  // ── Tool definitions (rangés par catégorie) ──
+  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[] = [
+    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V", group: "nav" },
+    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
+    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P", group: "draw" },
+    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E", group: "draw" },
+    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle",              group: "draw" },
+    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle",                 group: "draw" },
+    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T", group: "draw" },
+    { id: "measure",   icon: <Ruler className="h-4 w-4" />,         label: "Mesure distance", key: "M", group: "measure" },
+    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C", group: "aoe" },
+    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z", group: "aoe" },
+    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true, group: "gm" },
+    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true, group: "gm" },
+    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true, group: "gm" },
+    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true, group: "gm" },
+  ];
+
+  // Catégories d'outils (dossiers dépliables)
+  const TOOL_GROUPS: { id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[] = [
+    { id: "nav",     label: "Navigation",    icon: <Move className="h-4 w-4" /> },
+    { id: "draw",    label: "Dessin",        icon: <Pencil className="h-4 w-4" /> },
+    { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
+    { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
+    { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
   ];
 
   const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
@@ -2442,20 +2459,74 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         {/* ── LEFT VERTICAL TOOLBAR ── */}
         <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto py-1.5">
 
-          {visibleTools.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTool(t.id)}
-              title={t.key ? `${t.label} (${t.key})` : t.label}
-              className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
-                tool === t.id
-                  ? "bg-primary text-primary-foreground shadow-inner"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              {t.icon}
-            </button>
-          ))}
+          {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
+            const groupTools = visibleTools.filter(t => t.group === group.id);
+            if (groupTools.length === 0) return null;
+            const activeTool = groupTools.find(t => t.id === tool);
+
+            // Catégorie à un seul outil → sélection directe (pas de popover)
+            if (groupTools.length === 1) {
+              const t = groupTools[0];
+              return (
+                <button
+                  key={group.id}
+                  onClick={() => setTool(t.id)}
+                  title={t.key ? `${t.label} (${t.key})` : t.label}
+                  className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                    tool === t.id
+                      ? "bg-primary text-primary-foreground shadow-inner"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {t.icon}
+                </button>
+              );
+            }
+
+            return (
+              <Popover
+                key={group.id}
+                open={openGroup === group.id}
+                onOpenChange={(o) => setOpenGroup(o ? group.id : null)}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    title={group.label}
+                    className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                      activeTool
+                        ? "bg-primary text-primary-foreground shadow-inner"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {activeTool ? activeTool.icon : group.icon}
+                    {/* petit indicateur "dossier" */}
+                    <span className="absolute bottom-0.5 right-0.5 h-1 w-1 rounded-full bg-current opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="right" align="start" className="w-auto p-1.5">
+                  <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {group.label}
+                  </div>
+                  <div className="flex gap-1">
+                    {groupTools.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => { setTool(t.id); setOpenGroup(null); }}
+                        title={t.key ? `${t.label} (${t.key})` : t.label}
+                        className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                          tool === t.id
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {t.icon}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            );
+          })}
 
           {/* Boutons fog supplémentaires — visibles uniquement si fogReveal actif */}
           {isGM && tool === "fogReveal" && (

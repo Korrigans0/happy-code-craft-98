@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Wall, WallType } from "@/components/campaign/vtt/types";
+import { WALL_COLORS, DOOR_OPEN_COLOR } from "@/components/campaign/vtt/types";
 
 const newId = () => crypto.randomUUID();
 
@@ -234,11 +235,11 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       const x2s = wall.x2 * zoom + panOffset.x;
       const y2s = wall.y2 * zoom + panOffset.y;
 
-      // Couleur selon type
-      let color = "#ef4444"; // solid
-      if (wall.type === "door") color = wall.isOpen ? "#22c55e" : "#f59e0b";
-      if (wall.type === "window") color = "#3b82f6";
-      if (wall.type === "terrain") color = "#22c55e";
+      // Couleur selon type (cohérente avec WALL_COLORS)
+      let color = WALL_COLORS.solid;
+      if (wall.type === "door") color = wall.isOpen ? DOOR_OPEN_COLOR : WALL_COLORS.door;
+      if (wall.type === "window") color = WALL_COLORS.window;
+      if (wall.type === "terrain") color = WALL_COLORS.terrain;
 
       // Épaisseur
       const thickness = wall.type === "terrain" ? 2 : 3;
@@ -301,10 +302,10 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       const x2s = end.x * zoom + panOffset.x;
       const y2s = end.y * zoom + panOffset.y;
 
-      let previewColor = "#ef4444";
-      if (selectedWallType === "door") previewColor = "#f59e0b";
-      if (selectedWallType === "window") previewColor = "#3b82f6";
-      if (selectedWallType === "terrain") previewColor = "#22c55e";
+      let previewColor = WALL_COLORS.solid;
+      if (selectedWallType === "door") previewColor = WALL_COLORS.door;
+      if (selectedWallType === "window") previewColor = WALL_COLORS.window;
+      if (selectedWallType === "terrain") previewColor = WALL_COLORS.terrain;
 
       ctx.strokeStyle = previewColor + "88";
       ctx.lineWidth = 3;
