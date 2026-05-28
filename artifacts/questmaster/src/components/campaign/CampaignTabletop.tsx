@@ -2611,6 +2611,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onRedo={wallsHook.redo}
               canUndo={wallsHook.canUndo}
               canRedo={wallsHook.canRedo}
+              rafThrottle={wallRafThrottle}
+              onRafThrottleChange={setWallRafThrottle}
             />
           )}
 
