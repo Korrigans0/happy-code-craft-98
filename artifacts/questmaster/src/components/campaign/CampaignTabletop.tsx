@@ -184,6 +184,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [gridColor, setGridColor] = useState("rgba(255,255,255,0.12)");
   const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
   const [plateauMode, setPlateauMode] = useState<"dark" | "sky">("dark");
+  const [wallRafThrottle, setWallRafThrottle] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("vtt_wall_raf_throttle") : null;
+    return saved ? Math.max(0, Math.min(5, parseInt(saved, 10))) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("vtt_wall_raf_throttle", String(wallRafThrottle));
+  }, [wallRafThrottle]);
 
   const plateauColors = plateauMode === "dark"
     ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
@@ -226,6 +234,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
   const wallPreviewRafRef = useRef<number | null>(null);
+  const wallPreviewFrameRef = useRef(0);
+  const wallRafThrottleRef = useRef(wallRafThrottle);
+  wallRafThrottleRef.current = wallRafThrottle;
 
   // ── Token slide animations (smooth movement) ──
   const tokenLastPosRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -1908,11 +1919,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
-      // Coalesce les nombreux events mousemove en un seul redraw par frame
+      // Throttle rAF ajustable : skip frames selon le réglage utilisateur
       if (wallPreviewRafRef.current == null) {
         wallPreviewRafRef.current = requestAnimationFrame(() => {
           wallPreviewRafRef.current = null;
-          redrawCanvasRef.current();
+          wallPreviewFrameRef.current++;
+          const skip = wallRafThrottleRef.current;
+          if (skip <= 0 || wallPreviewFrameRef.current % (skip + 1) === 0) {
+            redrawCanvasRef.current();
+          }
         });
       }
       return;
@@ -2596,6 +2611,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               onRedo={wallsHook.redo}
               canUndo={wallsHook.canUndo}
               canRedo={wallsHook.canRedo}
+              rafThrottle={wallRafThrottle}
+              onRafThrottleChange={setWallRafThrottle}
             />
           )}
 

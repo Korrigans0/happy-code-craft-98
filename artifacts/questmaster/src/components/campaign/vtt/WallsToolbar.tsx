@@ -3,8 +3,13 @@
 // Fichier : artifacts/questmaster/src/components/campaign/vtt/WallsToolbar.tsx
 // ============================================================
 
-import { Trash2, DoorOpen, DoorClosed, Eye, Layers, Square, Undo2, Redo2 } from "lucide-react";
+import { useState } from "react";
+import { Trash2, DoorOpen, DoorClosed, Eye, Layers, Square, Undo2, Redo2, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import { type WallType, WALL_COLORS, WALL_LABELS } from "./types";
 
 interface WallsToolbarProps {
@@ -17,6 +22,8 @@ interface WallsToolbarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  rafThrottle: number;
+  onRafThrottleChange: (value: number) => void;
 }
 
 const WALL_TYPES: { type: WallType; icon: React.ReactNode; shortLabel: string }[] = [
@@ -52,7 +59,11 @@ export default function WallsToolbar({
   onRedo,
   canUndo,
   canRedo,
+  rafThrottle,
+  onRafThrottleChange,
 }: WallsToolbarProps) {
+  const [openThrottle, setOpenThrottle] = useState(false);
+
   if (!["wall", "wallDoor", "wallDelete"].includes(activeTool)) return null;
 
   return (
@@ -74,6 +85,34 @@ export default function WallsToolbar({
       >
         <Redo2 className="h-4 w-4" />
       </button>
+
+      {/* Throttle rAF */}
+      <Popover open={openThrottle} onOpenChange={setOpenThrottle}>
+        <PopoverTrigger asChild>
+          <button
+            title="Fluidité aperçu murs"
+            className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md border border-border/50 bg-background/40 text-foreground/80 transition-all hover:bg-background/80"
+          >
+            <Gauge className="h-3.5 w-3.5" />
+            <span className="text-[8px] font-bold leading-tight">{rafThrottle + 1}x</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="right" className="w-44 p-3 space-y-2">
+          <p className="text-xs font-medium">Fluidité aperçu</p>
+          <Slider
+            value={[rafThrottle]}
+            onValueChange={([v]) => onRafThrottleChange(v)}
+            min={0}
+            max={5}
+            step={1}
+          />
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {rafThrottle === 0
+              ? "Max fluide (redraw chaque frame)"
+              : `Skip ${rafThrottle} frame${rafThrottle > 1 ? "s" : ""} entre redraws`}
+          </p>
+        </PopoverContent>
+      </Popover>
 
       {/* Séparateur */}
       <div className="my-0.5 w-7 border-t border-border/50" />
