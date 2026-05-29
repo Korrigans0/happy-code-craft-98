@@ -315,8 +315,36 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   }
 
   const currentParticipant = participants[encounter.current_turn];
-  const playersAlive = participants.filter(p => p.is_player && p.current_hp > 0).length;
-  const monstersAlive = participants.filter(p => !p.is_player && p.current_hp > 0).length;
+  const { playersAlive, monstersAlive } = useMemo(() => {
+    let pa = 0, ma = 0;
+    for (const p of participants) {
+      if (p.current_hp <= 0) continue;
+      if (p.is_player) pa++; else ma++;
+    }
+    return { playersAlive: pa, monstersAlive: ma };
+  }, [participants]);
+
+  const handleDamageMinus = useCallback((p: Participant) => {
+    updateParticipantMutation.mutate({ id: p.id, current_hp: Math.max(0, p.current_hp - 1) });
+  }, [updateParticipantMutation]);
+  const handleHealPlus = useCallback((p: Participant) => {
+    updateParticipantMutation.mutate({ id: p.id, current_hp: Math.min(p.max_hp, p.current_hp + 1) });
+  }, [updateParticipantMutation]);
+  const handleOpenHp = useCallback((p: Participant) => {
+    setHpDialogOpen(p.id); setHpAmount(""); setHpMode("damage");
+  }, []);
+  const handleToggleConditions = useCallback((id: string) => {
+    setConditionsOpenFor(prev => prev === id ? null : id);
+  }, []);
+  const handleRemove = useCallback((id: string) => {
+    removeParticipantMutation.mutate(id);
+  }, [removeParticipantMutation]);
+  const handleToggleCondition = useCallback((p: Participant, condition: string) => {
+    const newConditions = (p.conditions || []).includes(condition)
+      ? (p.conditions || []).filter(c => c !== condition)
+      : [...(p.conditions || []), condition];
+    updateParticipantMutation.mutate({ id: p.id, conditions: newConditions });
+  }, [updateParticipantMutation]);
 
   return (
     <>
