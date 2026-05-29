@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { campaignsApi } from "@/lib/api";
@@ -120,6 +120,96 @@ function renderMessageContent(content: string, members: any[], onPingClick?: (us
   return tokens;
 }
 
+interface ChatMessageItemProps {
+  msg: any;
+  isOwn: boolean;
+  profile: any;
+  isMsgGM: boolean;
+  members: any[];
+  onPingClick: (userId: string) => void;
+}
+
+const ChatMessageItem = memo(function ChatMessageItem({ msg, isOwn, profile, isMsgGM, members, onPingClick }: ChatMessageItemProps) {
+  const isMsgWhisper = msg.message_type === "whisper";
+  const trimmedContent = (msg.content || "").trim();
+  const isImage = isImageUrl(trimmedContent);
+  const initials = profile?.display_name
+    ? profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U';
+  const time = useMemo(
+    () => new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    [msg.created_at],
+  );
+
+  return (
+    <div className={`flex gap-3 ${isOwn ? "flex-row-reverse" : ""}`}>
+      <Avatar className="h-8 w-8 shrink-0">
+        <AvatarImage src={profile?.avatar_url || undefined} />
+        <AvatarFallback className="bg-primary/20 text-primary text-xs">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className={`flex flex-col ${isOwn ? "items-end" : ""}`}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-foreground">
+            {profile?.display_name || "Anonyme"}
+          </span>
+          {isMsgGM && (
+            <Badge variant="outline" className="h-4 px-1 text-[10px]">
+              <Crown className="mr-0.5 h-2.5 w-2.5" />
+              MJ
+            </Badge>
+          )}
+          {isMsgWhisper && (
+            <Badge variant="outline" className="h-4 px-1 text-[10px] border-purple-500/50 text-purple-400">
+              <EyeOff className="mr-0.5 h-2.5 w-2.5" />
+              Murmure
+            </Badge>
+          )}
+          <span className="text-[10px] text-muted-foreground">{time}</span>
+        </div>
+        {isImage ? (
+          <div className="mt-1">
+            <img
+              src={trimmedContent}
+              alt="image"
+              className="max-w-[260px] max-h-[200px] rounded-lg border border-border/40 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+              loading="lazy"
+              decoding="async"
+              onClick={() => window.open(trimmedContent, "_blank")}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+            {isGif(trimmedContent) && (
+              <span className="text-[10px] text-muted-foreground">GIF</span>
+            )}
+          </div>
+        ) : (
+          <div
+            className={`mt-1 rounded-lg px-3 py-2 text-sm ${
+              isMsgWhisper
+                ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
+                : msg.message_type === "dice_roll"
+                ? "bg-card text-foreground border border-primary/40"
+                : isOwn
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-foreground"
+            }`}
+          >
+            {renderMessageContent(msg.content, members, onPingClick)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}, (prev, next) =>
+  prev.msg.id === next.msg.id &&
+  prev.msg.content === next.msg.content &&
+  prev.isOwn === next.isOwn &&
+  prev.isMsgGM === next.isMsgGM &&
+  prev.profile === next.profile &&
+  prev.members === next.members,
+);
+
 const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const { user: authUser } = useAuth();
   const userId = authUser?.id ?? "";
@@ -144,7 +234,12 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     queryFn: () => campaignsApi.getMembers(campaignId),
   });
 
-  const profiles = members;
+  // O(1) lookups instead of O(n) per message render
+  const memberMap = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const m of members as any[]) map.set(m.user_id, m);
+    return map;
+  }, [members]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -224,12 +319,12 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     setShowImageInput(false);
   };
 
-  const pingMember = (targetUserId: string) => {
-    const member = members.find((m: any) => m.user_id === targetUserId);
+  const pingMember = useCallback((targetUserId: string) => {
+    const member = memberMap.get(targetUserId);
     if (!member) return;
     const name = member.display_name || "joueur";
     setMessage(prev => `${prev}@${name} `.trimStart());
-  };
+  }, [memberMap]);
 
   const rollDice = (diceStr?: string) => {
     const input = diceStr || diceInput;
@@ -297,22 +392,15 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     setShowQuickActions(false);
   };
 
-  const getProfile = (id: string) => profiles.find((p: any) => p.user_id === id);
-  const getMember = (id: string) => members.find((m: any) => m.user_id === id);
-
-  const getInitials = (profile: any) => {
-    if (profile?.display_name) {
-      return profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-    }
-    return 'U';
-  };
-
-  const visibleMessages = messages.filter((msg: any) => {
-    if (msg.message_type === "whisper") {
-      return isGM || msg.user_id === userId;
-    }
-    return true;
-  });
+  const visibleMessages = useMemo(
+    () => messages.filter((msg: any) => {
+      if (msg.message_type === "whisper") {
+        return isGM || msg.user_id === userId;
+      }
+      return true;
+    }),
+    [messages, isGM, userId],
+  );
 
   return (
     <div className="flex h-full min-h-[420px] flex-col rounded-lg border border-border bg-gradient-card">
