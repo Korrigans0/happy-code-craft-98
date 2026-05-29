@@ -109,20 +109,26 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
       return compendiumApi.getMonsters();
     },
   });
-  const monsters: Monster[] = (monstersData as any[]).map((m: any) => ({
-    id: m.id, name: m.name,
-    hit_points: m.hit_points || String(m.hitPoints || "10"),
-    armor_class: m.armor_class ?? m.armorClass ?? 10,
-  }));
+  const monsters: Monster[] = useMemo(
+    () => (monstersData as any[]).map((m: any) => ({
+      id: m.id, name: m.name,
+      hit_points: m.hit_points || String(m.hitPoints || "10"),
+      armor_class: m.armor_class ?? m.armorClass ?? 10,
+    })),
+    [monstersData]
+  );
 
   const { data: campaignCharactersData = [] } = useQuery({
     queryKey: ["campaignCharacters", campaignId],
     queryFn: () => campaignsApi.getCampaignCharacters(campaignId),
   });
-  const partyCharacters: Character[] = (campaignCharactersData as any[]).map((c: any) => ({
-    id: c.id, name: c.name, hp: c.hp ?? 10, max_hp: c.max_hp ?? c.maxHp ?? 10,
-    armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
-  }));
+  const partyCharacters: Character[] = useMemo(
+    () => (campaignCharactersData as any[]).map((c: any) => ({
+      id: c.id, name: c.name, hp: c.hp ?? 10, max_hp: c.max_hp ?? c.maxHp ?? 10,
+      armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
+    })),
+    [campaignCharactersData]
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] });
 
