@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,144 @@ const CONDITIONS = [
   "Incapacité", "Invisible", "Paralysé", "Pétrifié", "Empoisonné",
   "À terre", "Entravé", "Étourdi", "Inconscient", "Concentration"
 ];
+
+interface ParticipantRowProps {
+  participant: Participant;
+  isCurrent: boolean;
+  isGM: boolean;
+  conditionsOpen: boolean;
+  onMinus: (p: Participant) => void;
+  onPlus: (p: Participant) => void;
+  onOpenHp: (p: Participant) => void;
+  onToggleConditions: (id: string) => void;
+  onRemove: (id: string) => void;
+  onToggleCondition: (p: Participant, condition: string) => void;
+}
+
+const ParticipantRow = memo(({
+  participant: p, isCurrent, isGM, conditionsOpen,
+  onMinus, onPlus, onOpenHp, onToggleConditions, onRemove, onToggleCondition,
+}: ParticipantRowProps) => {
+  const hpPercent = p.max_hp > 0 ? (p.current_hp / p.max_hp) * 100 : 0;
+  const isDead = p.current_hp <= 0;
+  const isBloody = hpPercent <= 50 && hpPercent > 0;
+
+  return (
+    <Card
+      className={`bg-gradient-card border-border transition-all ${
+        isCurrent ? "ring-2 ring-primary shadow-lg" : ""
+      } ${isDead ? "opacity-50" : ""}`}
+    >
+      <CardContent className="flex items-center gap-4 p-4">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-bold text-lg ${
+          isCurrent ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
+        }`}>
+          {p.initiative}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {p.is_player ? <User className="h-4 w-4 text-primary" /> : <Skull className="h-4 w-4 text-destructive" />}
+            <span className="font-semibold text-foreground truncate">{p.name}</span>
+            {isCurrent && <Badge variant="default">En cours</Badge>}
+            {isDead && <Badge variant="destructive">Mort</Badge>}
+            {isBloody && !isDead && (
+              <Badge variant="outline" className="text-orange-400 border-orange-400/30 text-xs">Blessé</Badge>
+            )}
+          </div>
+
+          {p.conditions && p.conditions.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {p.conditions.map(c => (
+                <Badge key={c} variant="outline" className={`text-xs ${
+                  c === "Concentration"
+                    ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                    : "bg-destructive/10 text-destructive border-destructive/30"
+                }`}>
+                  <Zap className="mr-1 h-2 w-2" />{c}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex-1">
+              <Progress
+                value={hpPercent}
+                className={`h-3 ${isDead ? "[&>div]:bg-destructive" : isBloody ? "[&>div]:bg-orange-500" : ""}`}
+              />
+            </div>
+            <span className="text-sm font-medium w-20 text-right">
+              <Heart className="h-3 w-3 inline mr-1 text-destructive" />
+              {p.current_hp}/{p.max_hp}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Shield className="h-4 w-4" />
+            {p.armor_class}
+          </div>
+        </div>
+
+        {isGM && (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onMinus(p)} title="-1 PV">
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
+              onClick={() => onPlus(p)} title="+1 PV">
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => onOpenHp(p)} title="Dégâts/Soins">
+              <Target className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => onToggleConditions(p.id)} title="Conditions">
+              <Zap className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onRemove(p.id)} title="Retirer">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+
+      {conditionsOpen && isGM && (
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Conditions / Effets</p>
+          <div className="flex flex-wrap gap-1">
+            {CONDITIONS.map(condition => {
+              const active = (p.conditions || []).includes(condition);
+              return (
+                <Button
+                  key={condition}
+                  variant={active ? "default" : "outline"}
+                  size="sm"
+                  className={`h-7 text-xs ${
+                    active
+                      ? condition === "Concentration"
+                        ? "bg-purple-600 hover:bg-purple-700"
+                        : "bg-destructive hover:bg-destructive/80"
+                      : ""
+                  }`}
+                  onClick={() => onToggleCondition(p, condition)}
+                >
+                  {condition}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+});
+ParticipantRow.displayName = "ParticipantRow";
 
 const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const queryClient = useQueryClient();
@@ -109,20 +247,26 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
       return compendiumApi.getMonsters();
     },
   });
-  const monsters: Monster[] = (monstersData as any[]).map((m: any) => ({
-    id: m.id, name: m.name,
-    hit_points: m.hit_points || String(m.hitPoints || "10"),
-    armor_class: m.armor_class ?? m.armorClass ?? 10,
-  }));
+  const monsters: Monster[] = useMemo(
+    () => (monstersData as any[]).map((m: any) => ({
+      id: m.id, name: m.name,
+      hit_points: m.hit_points || String(m.hitPoints || "10"),
+      armor_class: m.armor_class ?? m.armorClass ?? 10,
+    })),
+    [monstersData]
+  );
 
   const { data: campaignCharactersData = [] } = useQuery({
     queryKey: ["campaignCharacters", campaignId],
     queryFn: () => campaignsApi.getCampaignCharacters(campaignId),
   });
-  const partyCharacters: Character[] = (campaignCharactersData as any[]).map((c: any) => ({
-    id: c.id, name: c.name, hp: c.hp ?? 10, max_hp: c.max_hp ?? c.maxHp ?? 10,
-    armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
-  }));
+  const partyCharacters: Character[] = useMemo(
+    () => (campaignCharactersData as any[]).map((c: any) => ({
+      id: c.id, name: c.name, hp: c.hp ?? 10, max_hp: c.max_hp ?? c.maxHp ?? 10,
+      armor_class: c.armor_class ?? c.armorClass ?? 10, dexterity: c.dexterity ?? 10,
+    })),
+    [campaignCharactersData]
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] });
 
@@ -309,8 +453,36 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   }
 
   const currentParticipant = participants[encounter.current_turn];
-  const playersAlive = participants.filter(p => p.is_player && p.current_hp > 0).length;
-  const monstersAlive = participants.filter(p => !p.is_player && p.current_hp > 0).length;
+  const { playersAlive, monstersAlive } = useMemo(() => {
+    let pa = 0, ma = 0;
+    for (const p of participants) {
+      if (p.current_hp <= 0) continue;
+      if (p.is_player) pa++; else ma++;
+    }
+    return { playersAlive: pa, monstersAlive: ma };
+  }, [participants]);
+
+  const handleDamageMinus = useCallback((p: Participant) => {
+    updateParticipantMutation.mutate({ id: p.id, current_hp: Math.max(0, p.current_hp - 1) });
+  }, [updateParticipantMutation]);
+  const handleHealPlus = useCallback((p: Participant) => {
+    updateParticipantMutation.mutate({ id: p.id, current_hp: Math.min(p.max_hp, p.current_hp + 1) });
+  }, [updateParticipantMutation]);
+  const handleOpenHp = useCallback((p: Participant) => {
+    setHpDialogOpen(p.id); setHpAmount(""); setHpMode("damage");
+  }, []);
+  const handleToggleConditions = useCallback((id: string) => {
+    setConditionsOpenFor(prev => prev === id ? null : id);
+  }, []);
+  const handleRemove = useCallback((id: string) => {
+    removeParticipantMutation.mutate(id);
+  }, [removeParticipantMutation]);
+  const handleToggleCondition = useCallback((p: Participant, condition: string) => {
+    const newConditions = (p.conditions || []).includes(condition)
+      ? (p.conditions || []).filter(c => c !== condition)
+      : [...(p.conditions || []), condition];
+    updateParticipantMutation.mutate({ id: p.id, conditions: newConditions });
+  }, [updateParticipantMutation]);
 
   return (
     <>
@@ -524,153 +696,23 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
 
       {/* Initiative Tracker */}
       <div className="grid gap-3">
-        {participants.map((p, idx) => {
-          const isCurrent = idx === encounter.current_turn;
-          const hpPercent = p.max_hp > 0 ? (p.current_hp / p.max_hp) * 100 : 0;
-          const isDead = p.current_hp <= 0;
-          const isBloody = hpPercent <= 50 && hpPercent > 0;
-
-          return (
-            <Card
-              key={p.id}
-              className={`bg-gradient-card border-border transition-all ${
-                isCurrent ? "ring-2 ring-primary shadow-lg" : ""
-              } ${isDead ? "opacity-50" : ""}`}
-            >
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-bold text-lg ${
-                  isCurrent ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
-                }`}>
-                  {p.initiative}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {p.is_player ? (
-                      <User className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Skull className="h-4 w-4 text-destructive" />
-                    )}
-                    <span className="font-semibold text-foreground truncate">{p.name}</span>
-                    {isCurrent && <Badge variant="default">En cours</Badge>}
-                    {isDead && <Badge variant="destructive">Mort</Badge>}
-                    {isBloody && !isDead && (
-                      <Badge variant="outline" className="text-orange-400 border-orange-400/30 text-xs">Blessé</Badge>
-                    )}
-                  </div>
-
-                  {p.conditions && p.conditions.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {p.conditions.map(c => (
-                        <Badge key={c} variant="outline" className={`text-xs ${
-                          c === "Concentration"
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                            : "bg-destructive/10 text-destructive border-destructive/30"
-                        }`}>
-                          <Zap className="mr-1 h-2 w-2" />{c}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-2 flex items-center gap-3">
-                    <div className="flex-1">
-                      <Progress
-                        value={hpPercent}
-                        className={`h-3 ${isDead ? "[&>div]:bg-destructive" : isBloody ? "[&>div]:bg-orange-500" : ""}`}
-                      />
-                    </div>
-                    <span className="text-sm font-medium w-20 text-right">
-                      <Heart className="h-3 w-3 inline mr-1 text-destructive" />
-                      {p.current_hp}/{p.max_hp}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Shield className="h-4 w-4" />
-                    {p.armor_class}
-                  </div>
-                </div>
-
-                {isGM && (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => updateParticipantMutation.mutate({ id: p.id, current_hp: Math.max(0, p.current_hp - 1) })}
-                      title="-1 PV"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
-                      onClick={() => updateParticipantMutation.mutate({ id: p.id, current_hp: Math.min(p.max_hp, p.current_hp + 1) })}
-                      title="+1 PV"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => { setHpDialogOpen(p.id); setHpAmount(""); setHpMode("damage"); }}
-                      title="Dégâts/Soins"
-                    >
-                      <Target className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8"
-                      onClick={() => setConditionsOpenFor(conditionsOpenFor === p.id ? null : p.id)}
-                      title="Conditions"
-                    >
-                      <Zap className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => removeParticipantMutation.mutate(p.id)}
-                      title="Retirer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-
-              {conditionsOpenFor === p.id && isGM && (
-                <div className="border-t border-border px-4 py-3">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Conditions / Effets</p>
-                  <div className="flex flex-wrap gap-1">
-                    {CONDITIONS.map(condition => {
-                      const active = (p.conditions || []).includes(condition);
-                      return (
-                        <Button
-                          key={condition}
-                          variant={active ? "default" : "outline"}
-                          size="sm"
-                          className={`h-7 text-xs ${
-                            active
-                              ? condition === "Concentration"
-                                ? "bg-purple-600 hover:bg-purple-700"
-                                : "bg-destructive hover:bg-destructive/80"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            const newConditions = (p.conditions || []).includes(condition)
-                              ? (p.conditions || []).filter(c => c !== condition)
-                              : [...(p.conditions || []), condition];
-                            updateParticipantMutation.mutate({ id: p.id, conditions: newConditions });
-                          }}
-                        >
-                          {condition}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </Card>
-          );
-        })}
+        {participants.map((p, idx) => (
+          <ParticipantRow
+            key={p.id}
+            participant={p}
+            isCurrent={idx === encounter.current_turn}
+            isGM={isGM}
+            conditionsOpen={conditionsOpenFor === p.id}
+            onMinus={handleDamageMinus}
+            onPlus={handleHealPlus}
+            onOpenHp={handleOpenHp}
+            onToggleConditions={handleToggleConditions}
+            onRemove={handleRemove}
+            onToggleCondition={handleToggleCondition}
+          />
+        ))}
       </div>
+
 
       <div className="mt-4 rounded-xl border border-border bg-card/50">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
