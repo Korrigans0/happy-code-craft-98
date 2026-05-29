@@ -53,6 +53,144 @@ const CONDITIONS = [
   "À terre", "Entravé", "Étourdi", "Inconscient", "Concentration"
 ];
 
+interface ParticipantRowProps {
+  participant: Participant;
+  isCurrent: boolean;
+  isGM: boolean;
+  conditionsOpen: boolean;
+  onMinus: (p: Participant) => void;
+  onPlus: (p: Participant) => void;
+  onOpenHp: (p: Participant) => void;
+  onToggleConditions: (id: string) => void;
+  onRemove: (id: string) => void;
+  onToggleCondition: (p: Participant, condition: string) => void;
+}
+
+const ParticipantRow = memo(({
+  participant: p, isCurrent, isGM, conditionsOpen,
+  onMinus, onPlus, onOpenHp, onToggleConditions, onRemove, onToggleCondition,
+}: ParticipantRowProps) => {
+  const hpPercent = p.max_hp > 0 ? (p.current_hp / p.max_hp) * 100 : 0;
+  const isDead = p.current_hp <= 0;
+  const isBloody = hpPercent <= 50 && hpPercent > 0;
+
+  return (
+    <Card
+      className={`bg-gradient-card border-border transition-all ${
+        isCurrent ? "ring-2 ring-primary shadow-lg" : ""
+      } ${isDead ? "opacity-50" : ""}`}
+    >
+      <CardContent className="flex items-center gap-4 p-4">
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-bold text-lg ${
+          isCurrent ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
+        }`}>
+          {p.initiative}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {p.is_player ? <User className="h-4 w-4 text-primary" /> : <Skull className="h-4 w-4 text-destructive" />}
+            <span className="font-semibold text-foreground truncate">{p.name}</span>
+            {isCurrent && <Badge variant="default">En cours</Badge>}
+            {isDead && <Badge variant="destructive">Mort</Badge>}
+            {isBloody && !isDead && (
+              <Badge variant="outline" className="text-orange-400 border-orange-400/30 text-xs">Blessé</Badge>
+            )}
+          </div>
+
+          {p.conditions && p.conditions.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {p.conditions.map(c => (
+                <Badge key={c} variant="outline" className={`text-xs ${
+                  c === "Concentration"
+                    ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                    : "bg-destructive/10 text-destructive border-destructive/30"
+                }`}>
+                  <Zap className="mr-1 h-2 w-2" />{c}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex-1">
+              <Progress
+                value={hpPercent}
+                className={`h-3 ${isDead ? "[&>div]:bg-destructive" : isBloody ? "[&>div]:bg-orange-500" : ""}`}
+              />
+            </div>
+            <span className="text-sm font-medium w-20 text-right">
+              <Heart className="h-3 w-3 inline mr-1 text-destructive" />
+              {p.current_hp}/{p.max_hp}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Shield className="h-4 w-4" />
+            {p.armor_class}
+          </div>
+        </div>
+
+        {isGM && (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onMinus(p)} title="-1 PV">
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-400 hover:text-green-300"
+              onClick={() => onPlus(p)} title="+1 PV">
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => onOpenHp(p)} title="Dégâts/Soins">
+              <Target className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => onToggleConditions(p.id)} title="Conditions">
+              <Zap className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={() => onRemove(p.id)} title="Retirer">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+
+      {conditionsOpen && isGM && (
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Conditions / Effets</p>
+          <div className="flex flex-wrap gap-1">
+            {CONDITIONS.map(condition => {
+              const active = (p.conditions || []).includes(condition);
+              return (
+                <Button
+                  key={condition}
+                  variant={active ? "default" : "outline"}
+                  size="sm"
+                  className={`h-7 text-xs ${
+                    active
+                      ? condition === "Concentration"
+                        ? "bg-purple-600 hover:bg-purple-700"
+                        : "bg-destructive hover:bg-destructive/80"
+                      : ""
+                  }`}
+                  onClick={() => onToggleCondition(p, condition)}
+                >
+                  {condition}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+});
+ParticipantRow.displayName = "ParticipantRow";
+
 const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
