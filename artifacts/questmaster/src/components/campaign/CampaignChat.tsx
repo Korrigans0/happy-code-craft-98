@@ -408,77 +408,17 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
           {visibleMessages.map((msg: any) => {
-            const profile = getProfile(msg.user_id);
-            const member = getMember(msg.user_id);
-            const isOwn = msg.user_id === userId;
-            const isMsgGM = member?.role === 'gm';
-            const isMsgWhisper = msg.message_type === "whisper";
-            const isImage = isImageUrl(msg.content?.trim() || "");
-
+            const member = memberMap.get(msg.user_id);
             return (
-              <div
+              <ChatMessageItem
                 key={msg.id}
-                className={`flex gap-3 ${isOwn ? "flex-row-reverse" : ""}`}
-              >
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                    {getInitials(profile)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={`flex flex-col ${isOwn ? "items-end" : ""}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">
-                      {profile?.display_name || "Anonyme"}
-                    </span>
-                    {isMsgGM && (
-                      <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                        <Crown className="mr-0.5 h-2.5 w-2.5" />
-                        MJ
-                      </Badge>
-                    )}
-                    {isMsgWhisper && (
-                      <Badge variant="outline" className="h-4 px-1 text-[10px] border-purple-500/50 text-purple-400">
-                        <EyeOff className="mr-0.5 h-2.5 w-2.5" />
-                        Murmure
-                      </Badge>
-                    )}
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  {isImage ? (
-                    <div className="mt-1">
-                      <img
-                        src={msg.content.trim()}
-                        alt="image"
-                        className="max-w-[260px] max-h-[200px] rounded-lg border border-border/40 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(msg.content.trim(), "_blank")}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                      {isGif(msg.content.trim()) && (
-                        <span className="text-[10px] text-muted-foreground">GIF</span>
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      className={`mt-1 rounded-lg px-3 py-2 text-sm ${
-                        isMsgWhisper
-                          ? "bg-purple-500/20 text-purple-200 border border-purple-500/30 italic"
-                          : msg.message_type === "dice_roll"
-                          ? "bg-card text-foreground border border-primary/40"
-                          : isOwn
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      {renderMessageContent(msg.content, members, pingMember)}
-                    </div>
-                  )}
-                </div>
-              </div>
+                msg={msg}
+                isOwn={msg.user_id === userId}
+                profile={member}
+                isMsgGM={member?.role === 'gm'}
+                members={members}
+                onPingClick={pingMember}
+              />
             );
           })}
         </div>
