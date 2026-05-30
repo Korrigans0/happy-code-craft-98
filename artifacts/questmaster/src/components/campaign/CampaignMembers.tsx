@@ -161,6 +161,21 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     return "?";
   };
 
+  const handleAssignCharacter = useCallback(
+    (memberId: string, characterId: string | null) => {
+      updateCharacterMutation.mutate({ memberId, characterId });
+    },
+    [updateCharacterMutation]
+  );
+  const handleRemove = useCallback((id: string, name: string) => {
+    setMemberToRemove({ id, name });
+  }, []);
+  const handleOpenPropose = useCallback(() => setProposeDialogOpen(true), []);
+  const handleCancelProposal = useCallback(
+    (proposalId: string) => cancelProposalMutation.mutate(proposalId),
+    [cancelProposalMutation]
+  );
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
