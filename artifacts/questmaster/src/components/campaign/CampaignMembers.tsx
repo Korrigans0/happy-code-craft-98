@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi, charactersApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,12 +62,26 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     queryFn: () => campaignsApi.getProposals(campaignId),
   });
 
-  const pendingProposals = (proposals as any[]).filter((p: any) => p.status === "pending");
+  const pendingProposals = useMemo(
+    () => (proposals as any[]).filter((p: any) => p.status === "pending"),
+    [proposals]
+  );
 
-  const myMember = (members as any[]).find((m: any) => m.user_id === user?.id);
-  const myPendingProposal = !isGM
-    ? (proposals as any[]).find((p: any) => p.status === "pending")
-    : null;
+  const myPendingProposal = useMemo(
+    () => (!isGM ? (proposals as any[]).find((p: any) => p.status === "pending") : null),
+    [proposals, isGM]
+  );
+
+  // O(1) lookup: characters grouped by user_id
+  const charactersByUser = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const c of allCharacters as any[]) {
+      const arr = map.get(c.user_id) ?? [];
+      arr.push(c);
+      map.set(c.user_id, arr);
+    }
+    return map;
+  }, [allCharacters]);
 
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ memberId, characterId }: { memberId: string; characterId: string | null }) => {
@@ -202,112 +216,21 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {(members as any[]).map((member: any) => {
-          const isMemberGM = member.role === "gm";
-          const userChars = (allCharacters as any[]).filter((c: any) => c.user_id === member.user_id);
-          const isCurrentUser = member.user_id === user?.id;
-
-          return (
-            <Card key={member.id} className="bg-gradient-card border-border">
-              <CardContent className="flex items-center gap-4 p-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={member.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/20 text-primary">
-                    {getInitials(member)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground truncate">
-                      {member.display_name || "Joueur"}
-                    </span>
-                    {isMemberGM && (
-                      <Badge variant="default" className="bg-primary/20 text-primary">
-                        <Crown className="mr-1 h-3 w-3" />
-                        MJ
-                      </Badge>
-                    )}
-                  </div>
-
-                  {!isMemberGM && (
-                    <div className="mt-2">
-                      {isGM ? (
-                        <Select
-                          value={member.character_id || "none"}
-                          onValueChange={(value) =>
-                            updateCharacterMutation.mutate({
-                              memberId: member.id,
-                              characterId: value === "none" ? null : value,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Assigner un personnage" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Aucun personnage</SelectItem>
-                            {userChars.map((char: any) => (
-                              <SelectItem key={char.id} value={char.id}>
-                                {char.name} — {char.race} {char.class} Niv.{char.level}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : member.character_name ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Sword className="h-3 w-3" />
-                          {member.character_name} — {member.character_race} {member.character_class}
-                        </div>
-                      ) : isCurrentUser ? (
-                        myPendingProposal ? (
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Proposition en attente
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 text-xs text-muted-foreground hover:text-destructive px-1"
-                              onClick={() => cancelProposalMutation.mutate(myPendingProposal.id)}
-                              disabled={cancelProposalMutation.isPending}
-                            >
-                              Annuler
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/10"
-                            onClick={() => setProposeDialogOpen(true)}
-                          >
-                            <Send className="h-3 w-3 mr-1" />
-                            Proposer un personnage
-                          </Button>
-                        )
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Aucun personnage assigné</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {isGM && !isMemberGM && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => setMemberToRemove({ id: member.id, name: member.display_name || "Joueur" })}
-                  >
-                    <UserMinus className="h-4 w-4" />
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+        {(members as any[]).map((member: any) => (
+          <MemberCard
+            key={member.id}
+            member={member}
+            isGM={isGM}
+            isCurrentUser={member.user_id === user?.id}
+            userChars={charactersByUser.get(member.user_id) ?? EMPTY_ARR}
+            myPendingProposal={myPendingProposal}
+            onAssignCharacter={handleAssignCharacter}
+            onRemove={handleRemove}
+            onPropose={handleOpenPropose}
+            onCancelProposal={handleCancelProposal}
+            cancelPending={cancelProposalMutation.isPending}
+          />
+        ))}
       </div>
 
       {(members as any[]).length === 0 && (
