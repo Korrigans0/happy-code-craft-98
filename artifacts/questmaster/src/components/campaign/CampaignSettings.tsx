@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -97,42 +97,47 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
     onError: () => toast({ title: "Impossible de supprimer la campagne", variant: "destructive" }),
   });
 
-  const handleCodeChange = (val: string) => {
+  const handleCodeChange = useCallback((val: string) => {
     setInviteCode(val.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 16));
     setCodeEdited(true);
-  };
+  }, []);
 
-  const shuffleCode = () => {
-    const code = generateCode();
-    setInviteCode(code);
+  const shuffleCode = useCallback(() => {
+    setInviteCode(generateCode());
     setCodeEdited(true);
-  };
+  }, []);
 
-  const copyCode = () => {
+  const copyCode = useCallback(() => {
     if (inviteCode) {
       navigator.clipboard.writeText(inviteCode);
       toast({ title: "Code copié !" });
     }
-  };
+  }, [inviteCode]);
 
-  const copyLink = () => {
-    if (campaign.invite_code) {
-      navigator.clipboard.writeText(`${window.location.origin}/join/${campaign.invite_code}`);
+  const currentLink = useMemo(
+    () => (campaign.invite_code ? `${window.location.origin}/join/${campaign.invite_code}` : null),
+    [campaign.invite_code]
+  );
+
+  const copyLink = useCallback(() => {
+    if (currentLink) {
+      navigator.clipboard.writeText(currentLink);
       toast({ title: "Lien copié !", description: "Partagez ce lien avec vos joueurs." });
     }
-  };
+  }, [currentLink]);
 
-  const isValidDiscord = (v: string) =>
-    !v || v.startsWith("https://discord.gg/") || v.startsWith("https://discord.com/");
+  const isValidDiscord = useCallback(
+    (v: string) => !v || v.startsWith("https://discord.gg/") || v.startsWith("https://discord.com/"),
+    []
+  );
 
-  const isValidImageUrl = (v: string) => {
+  const isValidImageUrl = useCallback((v: string) => {
     if (!v) return true;
     try { new URL(v); return true; } catch { return false; }
-  };
+  }, []);
 
-  const currentLink = campaign.invite_code
-    ? `${window.location.origin}/join/${campaign.invite_code}`
-    : null;
+  const imageUrlValid = useMemo(() => isValidImageUrl(imageUrl), [imageUrl, isValidImageUrl]);
+  const discordValid = useMemo(() => isValidDiscord(discordLink), [discordLink, isValidDiscord]);
 
   return (
     <div className="space-y-6 max-w-2xl">
