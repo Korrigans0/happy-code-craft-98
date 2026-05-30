@@ -33,6 +33,140 @@ interface CampaignMembersProps {
   isGM: boolean;
 }
 
+const EMPTY_ARR: any[] = [];
+
+interface MemberCardProps {
+  member: any;
+  isGM: boolean;
+  isCurrentUser: boolean;
+  userChars: any[];
+  myPendingProposal: any;
+  onAssignCharacter: (memberId: string, characterId: string | null) => void;
+  onRemove: (id: string, name: string) => void;
+  onPropose: () => void;
+  onCancelProposal: (proposalId: string) => void;
+  cancelPending: boolean;
+}
+
+const getMemberInitials = (member: any) => {
+  if (member.display_name) {
+    return member.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  }
+  return "?";
+};
+
+const MemberCard = memo(function MemberCard({
+  member,
+  isGM,
+  isCurrentUser,
+  userChars,
+  myPendingProposal,
+  onAssignCharacter,
+  onRemove,
+  onPropose,
+  onCancelProposal,
+  cancelPending,
+}: MemberCardProps) {
+  const isMemberGM = member.role === "gm";
+  return (
+    <Card className="bg-gradient-card border-border">
+      <CardContent className="flex items-center gap-4 p-4">
+        <Avatar className="h-12 w-12">
+          <AvatarImage src={member.avatar_url || undefined} />
+          <AvatarFallback className="bg-primary/20 text-primary">
+            {getMemberInitials(member)}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground truncate">
+              {member.display_name || "Joueur"}
+            </span>
+            {isMemberGM && (
+              <Badge variant="default" className="bg-primary/20 text-primary">
+                <Crown className="mr-1 h-3 w-3" />
+                MJ
+              </Badge>
+            )}
+          </div>
+
+          {!isMemberGM && (
+            <div className="mt-2">
+              {isGM ? (
+                <Select
+                  value={member.character_id || "none"}
+                  onValueChange={(value) =>
+                    onAssignCharacter(member.id, value === "none" ? null : value)
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Assigner un personnage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun personnage</SelectItem>
+                    {userChars.map((char: any) => (
+                      <SelectItem key={char.id} value={char.id}>
+                        {char.name} — {char.race} {char.class} Niv.{char.level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : member.character_name ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sword className="h-3 w-3" />
+                  {member.character_name} — {member.character_race} {member.character_class}
+                </div>
+              ) : isCurrentUser ? (
+                myPendingProposal ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs border-primary/40 text-primary">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Proposition en attente
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs text-muted-foreground hover:text-destructive px-1"
+                      onClick={() => onCancelProposal(myPendingProposal.id)}
+                      disabled={cancelPending}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                    onClick={onPropose}
+                  >
+                    <Send className="h-3 w-3 mr-1" />
+                    Proposer un personnage
+                  </Button>
+                )
+              ) : (
+                <span className="text-xs text-muted-foreground">Aucun personnage assigné</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isGM && !isMemberGM && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => onRemove(member.id, member.display_name || "Joueur")}
+          >
+            <UserMinus className="h-4 w-4" />
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
 const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
