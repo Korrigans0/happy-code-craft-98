@@ -136,7 +136,8 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     let closestId: string | null = null;
     let closestDist = Infinity;
 
-    for (const wall of walls) {
+    const current = wallsRef.current;
+    for (const wall of current) {
       const d = distPointToSegment(x, y, wall.x1, wall.y1, wall.x2, wall.y2);
       if (d < threshold && d < closestDist) {
         closestDist = d;
@@ -151,16 +152,17 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
         saveWalls(updated);
         return updated;
       });
-      if (selectedWallId === closestId) setSelectedWallId(null);
+      if (selectedWallIdRef.current === closestId) setSelectedWallId(null);
     }
-  }, [isGM, walls, selectedWallId, saveWalls, pushHistory]);
+  }, [isGM, saveWalls, pushHistory]);
 
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
     let closestId: string | null = null;
     let closestDist = Infinity;
 
-    for (const wall of walls) {
+    const current = wallsRef.current;
+    for (const wall of current) {
       const d = distPointToSegment(x, y, wall.x1, wall.y1, wall.x2, wall.y2);
       if (d < threshold && d < closestDist) {
         closestDist = d;
@@ -169,7 +171,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     }
     setSelectedWallId(closestId);
     return closestId;
-  }, [walls]);
+  }, []);
 
   // ── Ouvrir/Fermer une porte ─────────────────────────────
   const toggleDoor = useCallback((wallId: string) => {
