@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -66,7 +66,7 @@ const CampaignPlay = () => {
 
   const isGM = membership?.role === 'gm';
 
-  const copyInviteCode = () => {
+  const copyInviteCode = useCallback(() => {
     if (campaign?.invite_code) {
       navigator.clipboard.writeText(campaign.invite_code);
       toast({
@@ -74,13 +74,16 @@ const CampaignPlay = () => {
         description: "Partagez ce code avec vos joueurs.",
       });
     }
-  };
+  }, [campaign?.invite_code]);
 
-  const openDiscord = () => {
+  const openDiscord = useCallback(() => {
     if (campaign?.discord_link) {
       window.open(campaign.discord_link, "_blank", "noopener,noreferrer");
     }
-  };
+  }, [campaign?.discord_link]);
+
+  const toggleChat = useCallback(() => setChatOpen(o => !o), []);
+  const closeChat = useCallback(() => setChatOpen(false), []);
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
@@ -125,16 +128,15 @@ const CampaignPlay = () => {
     );
   }
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "tabletop", icon: Map, label: "Partie" },
     { id: "chat", icon: MessageSquare, label: "Chat" },
-    
     { id: "sessions", icon: CalendarDays, label: "Sessions" },
     { id: "notes", icon: BookOpen, label: "Notes" },
     { id: "members", icon: Users, label: "Joueurs" },
     ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
     ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
-  ];
+  ], [isGM]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
@@ -230,7 +232,7 @@ const CampaignPlay = () => {
 
                   {/* Bouton toggle chat — visible sur desktop */}
                   <button
-                    onClick={() => setChatOpen(o => !o)}
+                    onClick={toggleChat}
                     className="hidden md:flex flex-col items-center justify-center w-8 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     title={chatOpen ? "Fermer le chat" : "Ouvrir le chat"}
                   >
@@ -253,7 +255,7 @@ const CampaignPlay = () => {
                           <span className="font-display text-sm font-semibold text-foreground">Chat</span>
                         </div>
                         <button
-                          onClick={() => setChatOpen(false)}
+                          onClick={closeChat}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <X className="h-4 w-4" />

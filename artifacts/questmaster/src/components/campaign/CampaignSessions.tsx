@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,13 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
     },
   });
 
-  const completedCount = sessions.filter(s => s.completed_at).length;
-  const upcomingCount = sessions.filter(s => !s.completed_at).length;
+  const { completedCount, upcomingCount } = useMemo(() => {
+    let c = 0, u = 0;
+    for (const s of sessions as any[]) {
+      if (s.completed_at) c++; else u++;
+    }
+    return { completedCount: c, upcomingCount: u };
+  }, [sessions]);
 
   return (
     <div className="space-y-4">
