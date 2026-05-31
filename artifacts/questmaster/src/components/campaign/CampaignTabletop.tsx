@@ -2853,12 +2853,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           )}
 
-          <DiceRoller3D
-            open={diceOpen}
-            onClose={() => setDiceOpen(false)}
-            campaignId={campaignId}
-            userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
-          />
+          {diceOpen && (
+            <Suspense fallback={null}>
+              <DiceRoller3D
+                open={diceOpen}
+                onClose={() => setDiceOpen(false)}
+                campaignId={campaignId}
+                userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+              />
+            </Suspense>
+          )}
           <DiceBroadcastOverlay campaignId={campaignId} />
         </div>
 
