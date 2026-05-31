@@ -128,16 +128,15 @@ const CampaignPlay = () => {
     );
   }
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { id: "tabletop", icon: Map, label: "Partie" },
     { id: "chat", icon: MessageSquare, label: "Chat" },
-    
     { id: "sessions", icon: CalendarDays, label: "Sessions" },
     { id: "notes", icon: BookOpen, label: "Notes" },
     { id: "members", icon: Users, label: "Joueurs" },
     ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
     ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
-  ];
+  ], [isGM]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
