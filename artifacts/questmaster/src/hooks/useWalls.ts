@@ -3,7 +3,7 @@
 // Fichier : artifacts/questmaster/src/hooks/useWalls.ts
 // ============================================================
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Wall, WallType } from "@/components/campaign/vtt/types";
 import { WALL_COLORS, DOOR_OPEN_COLOR } from "@/components/campaign/vtt/types";
@@ -32,8 +32,16 @@ interface UseWallsOptions {
 
 export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptions) {
   const [walls, setWalls] = useState<Wall[]>([]);
+  const wallsRef = useRef<Wall[]>([]);
+  useEffect(() => { wallsRef.current = walls; }, [walls]);
+
   const [selectedWallType, setSelectedWallType] = useState<WallType>("solid");
+  const selectedWallTypeRef = useRef<WallType>("solid");
+  useEffect(() => { selectedWallTypeRef.current = selectedWallType; }, [selectedWallType]);
+
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
+  const selectedWallIdRef = useRef<string | null>(null);
+  useEffect(() => { selectedWallIdRef.current = selectedWallId; }, [selectedWallId]);
 
   // Point de départ du mur en cours de dessin
   const drawingStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -44,7 +52,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
   const redoStackRef = useRef<Wall[][]>([]);
   const MAX_HISTORY = 50;
   const [historyVersion, setHistoryVersion] = useState(0);
-  const bumpHistory = () => setHistoryVersion(v => v + 1);
+  const bumpHistory = useCallback(() => setHistoryVersion(v => v + 1), []);
 
   // ── Chargement initial ──────────────────────────────────
   const loadWalls = useCallback(async () => {
@@ -128,7 +136,8 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     let closestId: string | null = null;
     let closestDist = Infinity;
 
-    for (const wall of walls) {
+    const current = wallsRef.current;
+    for (const wall of current) {
       const d = distPointToSegment(x, y, wall.x1, wall.y1, wall.x2, wall.y2);
       if (d < threshold && d < closestDist) {
         closestDist = d;
@@ -143,16 +152,17 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
         saveWalls(updated);
         return updated;
       });
-      if (selectedWallId === closestId) setSelectedWallId(null);
+      if (selectedWallIdRef.current === closestId) setSelectedWallId(null);
     }
-  }, [isGM, walls, selectedWallId, saveWalls, pushHistory]);
+  }, [isGM, saveWalls, pushHistory]);
 
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
     let closestId: string | null = null;
     let closestDist = Infinity;
 
-    for (const wall of walls) {
+    const current = wallsRef.current;
+    for (const wall of current) {
       const d = distPointToSegment(x, y, wall.x1, wall.y1, wall.x2, wall.y2);
       if (d < threshold && d < closestDist) {
         closestDist = d;
@@ -161,7 +171,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
     }
     setSelectedWallId(closestId);
     return closestId;
-  }, [walls]);
+  }, []);
 
   // ── Ouvrir/Fermer une porte ─────────────────────────────
   const toggleDoor = useCallback((wallId: string) => {

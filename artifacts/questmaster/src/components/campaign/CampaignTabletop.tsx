@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
@@ -193,9 +193,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     localStorage.setItem("vtt_wall_raf_throttle", String(wallRafThrottle));
   }, [wallRafThrottle]);
 
-  const plateauColors = plateauMode === "dark"
-    ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
-    : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" };
+  const plateauColors = useMemo(() => (
+    plateauMode === "dark"
+      ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
+      : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" }
+  ), [plateauMode]);
 
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);
@@ -2142,10 +2144,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return "crosshair";
   };
 
-  const selectedToken = tokens.find(t => t.id === selectedTokenId);
+  const selectedToken = useMemo(
+    () => tokens.find(t => t.id === selectedTokenId),
+    [tokens, selectedTokenId]
+  );
 
   // ── Tool definitions (rangés par catégorie) ──
-  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[] = [
+  const TOOLS = useMemo<{ id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[]>(() => [
     { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V", group: "nav" },
     { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
     { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P", group: "draw" },
@@ -2160,23 +2165,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true, group: "gm" },
     { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true, group: "gm" },
     { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true, group: "gm" },
-  ];
+  ], []);
 
   // Catégories d'outils (dossiers dépliables)
-  const TOOL_GROUPS: { id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[] = [
+  const TOOL_GROUPS = useMemo<{ id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[]>(() => [
     { id: "nav",     label: "Navigation",    icon: <Move className="h-4 w-4" /> },
     { id: "draw",    label: "Dessin",        icon: <Pencil className="h-4 w-4" /> },
     { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
     { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
     { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
-  ];
+  ], []);
 
-  const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
+  const visibleTools = useMemo(() => TOOLS.filter(t => !t.gmOnly || isGM), [TOOLS, isGM]);
 
   // ── Context menu actions ──
-  const ctxToken = contextMenu?.type === "token"
-    ? tokens.find(t => t.id === contextMenu.tokenId)
-    : undefined;
+  const ctxToken = useMemo(
+    () => contextMenu?.type === "token" ? tokens.find(t => t.id === contextMenu.tokenId) : undefined,
+    [contextMenu, tokens]
+  );
 
   // ── Layout: fullscreen vs embedded ──
   const containerClass = fullscreen
