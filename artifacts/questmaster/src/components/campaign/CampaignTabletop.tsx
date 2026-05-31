@@ -2144,10 +2144,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     return "crosshair";
   };
 
-  const selectedToken = tokens.find(t => t.id === selectedTokenId);
+  const selectedToken = useMemo(
+    () => tokens.find(t => t.id === selectedTokenId),
+    [tokens, selectedTokenId]
+  );
 
   // ── Tool definitions (rangés par catégorie) ──
-  const TOOLS: { id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[] = [
+  const TOOLS = useMemo<{ id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[]>(() => [
     { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V", group: "nav" },
     { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
     { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P", group: "draw" },
@@ -2162,23 +2165,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true, group: "gm" },
     { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true, group: "gm" },
     { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true, group: "gm" },
-  ];
+  ], []);
 
   // Catégories d'outils (dossiers dépliables)
-  const TOOL_GROUPS: { id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[] = [
+  const TOOL_GROUPS = useMemo<{ id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[]>(() => [
     { id: "nav",     label: "Navigation",    icon: <Move className="h-4 w-4" /> },
     { id: "draw",    label: "Dessin",        icon: <Pencil className="h-4 w-4" /> },
     { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
     { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
     { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
-  ];
+  ], []);
 
-  const visibleTools = TOOLS.filter(t => !t.gmOnly || isGM);
+  const visibleTools = useMemo(() => TOOLS.filter(t => !t.gmOnly || isGM), [TOOLS, isGM]);
 
   // ── Context menu actions ──
-  const ctxToken = contextMenu?.type === "token"
-    ? tokens.find(t => t.id === contextMenu.tokenId)
-    : undefined;
+  const ctxToken = useMemo(
+    () => contextMenu?.type === "token" ? tokens.find(t => t.id === contextMenu.tokenId) : undefined,
+    [contextMenu, tokens]
+  );
 
   // ── Layout: fullscreen vs embedded ──
   const containerClass = fullscreen
