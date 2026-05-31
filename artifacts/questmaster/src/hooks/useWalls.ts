@@ -32,8 +32,16 @@ interface UseWallsOptions {
 
 export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptions) {
   const [walls, setWalls] = useState<Wall[]>([]);
+  const wallsRef = useRef<Wall[]>([]);
+  useEffect(() => { wallsRef.current = walls; }, [walls]);
+
   const [selectedWallType, setSelectedWallType] = useState<WallType>("solid");
+  const selectedWallTypeRef = useRef<WallType>("solid");
+  useEffect(() => { selectedWallTypeRef.current = selectedWallType; }, [selectedWallType]);
+
   const [selectedWallId, setSelectedWallId] = useState<string | null>(null);
+  const selectedWallIdRef = useRef<string | null>(null);
+  useEffect(() => { selectedWallIdRef.current = selectedWallId; }, [selectedWallId]);
 
   // Point de départ du mur en cours de dessin
   const drawingStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -44,7 +52,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
   const redoStackRef = useRef<Wall[][]>([]);
   const MAX_HISTORY = 50;
   const [historyVersion, setHistoryVersion] = useState(0);
-  const bumpHistory = () => setHistoryVersion(v => v + 1);
+  const bumpHistory = useCallback(() => setHistoryVersion(v => v + 1), []);
 
   // ── Chargement initial ──────────────────────────────────
   const loadWalls = useCallback(async () => {
