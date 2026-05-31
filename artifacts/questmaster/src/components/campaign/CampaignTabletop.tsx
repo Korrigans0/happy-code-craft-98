@@ -193,9 +193,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     localStorage.setItem("vtt_wall_raf_throttle", String(wallRafThrottle));
   }, [wallRafThrottle]);
 
-  const plateauColors = plateauMode === "dark"
-    ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
-    : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" };
+  const plateauColors = useMemo(() => (
+    plateauMode === "dark"
+      ? { background: "#0f1520", gridMinor: "hsl(216,20%,25%)", gridMajor: "hsl(42,50%,45%)" }
+      : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" }
+  ), [plateauMode]);
 
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);
