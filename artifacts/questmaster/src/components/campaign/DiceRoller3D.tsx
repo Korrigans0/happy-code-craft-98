@@ -625,10 +625,14 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
   const dragStart = useRef<{ x: number; y: number; t: number } | null>(null);
 
   const material = COLOR_PRESETS[colorIdx];
-  const totalDice = Object.values(counts).reduce((a, b) => a + b, 0);
+  const totalDice = useMemo(
+    () => Object.values(counts).reduce((a, b) => a + b, 0),
+    [counts]
+  );
 
-  const updateCount = (t: DieType, d: number) =>
-    setCounts(p => ({ ...p, [t]: Math.max(0, Math.min(15, p[t] + d)) }));
+  const updateCount = useCallback((t: DieType, d: number) =>
+    setCounts(p => ({ ...p, [t]: Math.max(0, Math.min(15, p[t] + d)) })),
+  []);
 
   const buildSpawns = useCallback(
     (countsMap: Partial<Record<DieType, number>>, strengthMul = 1): SpawnSpec[] => {
