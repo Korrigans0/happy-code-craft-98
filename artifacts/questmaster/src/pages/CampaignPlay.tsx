@@ -66,7 +66,7 @@ const CampaignPlay = () => {
 
   const isGM = membership?.role === 'gm';
 
-  const copyInviteCode = () => {
+  const copyInviteCode = useCallback(() => {
     if (campaign?.invite_code) {
       navigator.clipboard.writeText(campaign.invite_code);
       toast({
@@ -74,13 +74,16 @@ const CampaignPlay = () => {
         description: "Partagez ce code avec vos joueurs.",
       });
     }
-  };
+  }, [campaign?.invite_code]);
 
-  const openDiscord = () => {
+  const openDiscord = useCallback(() => {
     if (campaign?.discord_link) {
       window.open(campaign.discord_link, "_blank", "noopener,noreferrer");
     }
-  };
+  }, [campaign?.discord_link]);
+
+  const toggleChat = useCallback(() => setChatOpen(o => !o), []);
+  const closeChat = useCallback(() => setChatOpen(false), []);
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
