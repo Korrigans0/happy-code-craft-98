@@ -736,27 +736,26 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
     });
   }, [modifier, campaignId, userName]);
 
-  const rollAll = () => {
+  const rollAll = useCallback(() => {
     if (totalDice === 0) return;
     launch(counts, 1);
-  };
+  }, [totalDice, launch, counts]);
 
-  const quickRoll = (t: DieType) => launch({ [t]: 1 }, 1);
+  const quickRoll = useCallback((t: DieType) => launch({ [t]: 1 }, 1), [launch]);
 
-  const clearTable = () => { setSpawns([]); setRolls({}); setThrowing(false); };
+  const clearTable = useCallback(() => { setSpawns([]); setRolls({}); setThrowing(false); }, []);
 
   // Click & drag on the canvas wrapper for variable strength
-  const onPointerDown = (e: React.PointerEvent) => {
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
     dragStart.current = { x: e.clientX, y: e.clientY, t: performance.now() };
-  };
-  const onPointerUp = (e: React.PointerEvent) => {
+  }, []);
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragStart.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     dragStart.current = null;
     if (dist < 6) {
-      // simple click — quick d20 if no pool, else rollAll
       if (totalDice > 0) rollAll();
       else quickRoll(20);
     } else {
@@ -764,14 +763,18 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
       if (totalDice > 0) launch(counts, strength);
       else launch({ 20: 1 }, strength);
     }
-  };
+  }, [totalDice, rollAll, quickRoll, launch, counts]);
 
-  const allValues = Object.values(rolls);
-  const settledCount = allValues.filter(r => r.value !== null).length;
+  const allValues = useMemo(() => Object.values(rolls), [rolls]);
+  const settledCount = useMemo(
+    () => allValues.filter(r => r.value !== null).length,
+    [allValues]
+  );
   const isComplete = allValues.length > 0 && settledCount === allValues.length;
-  const total = isComplete
-    ? allValues.reduce((s, r) => s + (r.value ?? 0), 0) + modifier
-    : 0;
+  const total = useMemo(
+    () => isComplete ? allValues.reduce((s, r) => s + (r.value ?? 0), 0) + modifier : 0,
+    [isComplete, allValues, modifier]
+  );
   const lastCrit = history[0]?.crit;
 
   if (!open) return null;
