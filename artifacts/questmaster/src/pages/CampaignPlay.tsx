@@ -232,7 +232,7 @@ const CampaignPlay = () => {
 
                   {/* Bouton toggle chat — visible sur desktop */}
                   <button
-                    onClick={() => setChatOpen(o => !o)}
+                    onClick={toggleChat}
                     className="hidden md:flex flex-col items-center justify-center w-8 rounded-lg border border-border bg-card hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     title={chatOpen ? "Fermer le chat" : "Ouvrir le chat"}
                   >
@@ -255,7 +255,7 @@ const CampaignPlay = () => {
                           <span className="font-display text-sm font-semibold text-foreground">Chat</span>
                         </div>
                         <button
-                          onClick={() => setChatOpen(false)}
+                          onClick={closeChat}
                           className="text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <X className="h-4 w-4" />
