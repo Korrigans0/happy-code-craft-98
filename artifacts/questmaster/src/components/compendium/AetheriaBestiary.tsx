@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { compendiumApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -274,14 +274,22 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
       toast({ title: "Suppression refusée", description: e.message, variant: "destructive" }),
   });
 
-  const filtered = creatures.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const myCreatures = filtered.filter(c => c.created_by === user?.id);
-  const otherCreatures = filtered.filter(c => c.created_by !== user?.id);
-  const publicCreatures = isAdmin ? otherCreatures : otherCreatures.filter(c => c.is_public);
+  const { myCreatures, publicCreatures } = useMemo(() => {
+    const q = search.toLowerCase();
+    const filtered = creatures.filter(c =>
+      c.name.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q)
+    );
+    const mine: typeof filtered = [];
+    const others: typeof filtered = [];
+    for (const c of filtered) {
+      if (c.created_by === user?.id) mine.push(c);
+      else others.push(c);
+    }
+    return {
+      myCreatures: mine,
+      publicCreatures: isAdmin ? others : others.filter(c => c.is_public),
+    };
+  }, [creatures, search, user?.id, isAdmin]);
 
   return (
     <div className="space-y-4">

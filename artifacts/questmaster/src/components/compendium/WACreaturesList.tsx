@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { compendiumApi } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,16 +56,18 @@ const WACreaturesList = ({ searchQuery }: WACreaturesListProps) => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = creatures.filter((c) => {
-    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPower = powerFilter === "all" || c.power_level === powerFilter;
-    const matchesSize = sizeFilter === "all" || c.size === sizeFilter;
-    return matchesSearch && matchesPower && matchesSize;
-  });
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return creatures.filter((c) => {
+      const matchesSearch = c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q);
+      const matchesPower = powerFilter === "all" || c.power_level === powerFilter;
+      const matchesSize = sizeFilter === "all" || c.size === sizeFilter;
+      return matchesSearch && matchesPower && matchesSize;
+    });
+  }, [creatures, searchQuery, powerFilter, sizeFilter]);
 
-  const powers = [...new Set(creatures.map(c => c.power_level))].filter(Boolean);
-  const sizes = [...new Set(creatures.map(c => c.size))].filter(Boolean);
+  const powers = useMemo(() => [...new Set(creatures.map(c => c.power_level))].filter(Boolean), [creatures]);
+  const sizes = useMemo(() => [...new Set(creatures.map(c => c.size))].filter(Boolean), [creatures]);
 
   const getPowerColor = (power: string) => {
     const colors: Record<string, string> = {
