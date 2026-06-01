@@ -3,7 +3,7 @@
 // Fichier : src/components/compendium/AetheriaMatchups.tsx
 // ============================================================
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CLASSES } from "@/lib/aetheria-data";
 import {
   CLASS_MATCHUPS, MATCHUP_LOOPS,
@@ -363,15 +363,16 @@ export default function AetheriaMatchups() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [view, setView] = useState<"classes" | "loops">("classes");
 
-  const coreMatchups = CLASS_MATCHUPS.filter(m => {
-    const cls = CLASSES.find(c => c.id === m.classId);
-    return cls?.tier === "core";
-  });
-
-  const advancedMatchups = CLASS_MATCHUPS.filter(m => {
-    const cls = CLASSES.find(c => c.id === m.classId);
-    return cls?.tier === "advanced";
-  });
+  const { coreMatchups, advancedMatchups } = useMemo(() => {
+    const core: typeof CLASS_MATCHUPS = [];
+    const advanced: typeof CLASS_MATCHUPS = [];
+    for (const m of CLASS_MATCHUPS) {
+      const cls = CLASSES.find(c => c.id === m.classId);
+      if (cls?.tier === "core") core.push(m);
+      else if (cls?.tier === "advanced") advanced.push(m);
+    }
+    return { coreMatchups: core, advancedMatchups: advanced };
+  }, []);
 
   return (
     <div className="space-y-6">
