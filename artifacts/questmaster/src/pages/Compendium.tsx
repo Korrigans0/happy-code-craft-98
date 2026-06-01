@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Search, Swords, BookOpen, Globe, Skull,
   Sparkles, Map, Scroll, Users, Shield, ExternalLink
@@ -194,7 +194,7 @@ const Compendium = () => {
   const [waTab, setWaTab] = useState("wa-bestiary");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const triggerRefresh = () => setRefreshKey(k => k + 1);
+  const triggerRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">

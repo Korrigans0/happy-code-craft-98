@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { charactersApi } from "@/lib/api";
@@ -202,32 +202,31 @@ const Characters = () => {
 
   // ── Handlers ───────────────────────────────────────────────
 
-  const handleSave = (characterData: Partial<Character>) => {
+  const handleSave = useCallback((characterData: Partial<Character>) => {
     if (selectedCharacter?.id) {
       updateMutation.mutate({ ...characterData, id: selectedCharacter.id });
     } else {
       createMutation.mutate(characterData);
     }
-  };
+  }, [selectedCharacter, updateMutation, createMutation]);
 
-  const handleNewCharacter = () => {
+  const handleNewCharacter = useCallback(() => {
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  };
+  }, []);
 
-  const handleSystemSelect = (system: "aetheria" | "wa") => {
+  const handleSystemSelect = useCallback((system: "aetheria" | "wa") => {
     setIsSelectorOpen(false);
     if (system === "aetheria") {
       setIsAetheriaFormOpen(true);
     } else {
       setIsFormOpen(true);
     }
-  };
+  }, []);
 
-  const handleEdit = (character: Character) => {
+  const handleEdit = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setIsSheetOpen(false);
-    // Ouvrir le bon formulaire selon le système
     const isAetheria = character.campaign === "Aetheria" ||
       (() => { try { return JSON.parse(character.inventory || "{}").__aetheria; } catch { return false; } })();
     if (isAetheria) {
@@ -235,20 +234,19 @@ const Characters = () => {
     } else {
       setIsFormOpen(true);
     }
-  };
+  }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     setCharacterToDelete(id);
     setDeleteConfirmOpen(true);
-  };
+  }, []);
 
-  const handleViewSheet = (character: Character) => {
+  const handleViewSheet = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setIsSheetOpen(true);
-  };
+  }, []);
 
-  // Déterminer si un personnage est Aetheria
-  const isAetheriaCharacter = (character: Character) => {
+  const isAetheriaCharacter = useCallback((character: Character) => {
     if (character.campaign === "Aetheria") return true;
     try {
       const data = JSON.parse(character.inventory || "{}");
@@ -256,15 +254,21 @@ const Characters = () => {
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const uniqueClasses = [...new Set(characters.map(c => c.class))].sort();
-  const filteredCharacters = characters.filter(c =>
-    (c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     c.class.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     c.race.toLowerCase().includes(searchQuery.toLowerCase())) &&
-    (classFilter === "all" || c.class === classFilter)
+  const uniqueClasses = useMemo(
+    () => [...new Set(characters.map(c => c.class))].sort(),
+    [characters]
   );
+  const filteredCharacters = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return characters.filter(c =>
+      (c.name.toLowerCase().includes(q) ||
+       c.class.toLowerCase().includes(q) ||
+       c.race.toLowerCase().includes(q)) &&
+      (classFilter === "all" || c.class === classFilter)
+    );
+  }, [characters, searchQuery, classFilter]);
 
   if (authLoading) {
     return (
