@@ -3,7 +3,7 @@
 // Fichier : src/hooks/useTabletopSync.ts
 // ============================================================
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { campaignsApi } from "@/lib/api";
 
 interface TokenItem {
@@ -50,6 +50,8 @@ interface UseTabletopSyncOptions {
   onStateReceived: (state: TabletopState) => void;
   debounceMs?: number;
   pollMs?: number;
+  /** Show browser confirmation when navigating away with unsaved changes */
+  warnOnUnload?: boolean;
 }
 
 const ensureId = (d: Partial<DrawAction>): DrawAction => ({
@@ -68,41 +70,94 @@ const normalize = (data: any): TabletopState => {
   };
 };
 
+// Shallow-stable JSON comparison — avoids enqueuing saves when value didn't actually change.
+const isEqual = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+};
+
 export function useTabletopSync({
   campaignId,
   userId,
   onStateReceived,
   debounceMs = 600,
   pollMs = 3000,
+  warnOnUnload = true,
 }: UseTabletopSyncOptions) {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStateRef = useRef<Partial<TabletopState>>({});
+  const lastSavedRef = useRef<Partial<TabletopState>>({});
   const writeQueueRef = useRef(Promise.resolve());
   const initializedRef = useRef(false);
   const onStateReceivedRef = useRef(onStateReceived);
   const lastUpdatedAtRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
+  const dirtyRef = useRef(false);
+
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  const markDirty = useCallback((value: boolean) => {
+    if (dirtyRef.current === value) return;
+    dirtyRef.current = value;
+    setIsDirty(value);
+  }, []);
 
   useEffect(() => {
     onStateReceivedRef.current = onStateReceived;
   }, [onStateReceived]);
 
   const flush = useCallback(async () => {
-    if (Object.keys(pendingStateRef.current).length === 0) return;
+    if (Object.keys(pendingStateRef.current).length === 0) {
+      markDirty(false);
+      return;
+    }
     const payload = pendingStateRef.current;
     pendingStateRef.current = {};
+    setIsSaving(true);
     writeQueueRef.current = writeQueueRef.current
       .catch(() => undefined)
-      .then(() => campaignsApi.saveTabletop(campaignId, payload).then(() => undefined));
-    await writeQueueRef.current.catch((e) => {
+      .then(() => campaignsApi.saveTabletop(campaignId, payload).then(() => {
+        lastSavedRef.current = { ...lastSavedRef.current, ...payload };
+      }));
+    try {
+      await writeQueueRef.current;
+      setLastSavedAt(new Date());
+    } catch (e) {
       console.error("[Tabletop] Erreur sauvegarde:", e);
-    });
-  }, [campaignId]);
+      // Re-merge failed payload so next save retries it
+      pendingStateRef.current = { ...payload, ...pendingStateRef.current };
+    } finally {
+      setIsSaving(false);
+      if (Object.keys(pendingStateRef.current).length === 0) markDirty(false);
+    }
+  }, [campaignId, markDirty]);
 
   const saveState = useCallback(
     (state: Partial<TabletopState>, options?: { immediate?: boolean }) => {
       if (!initializedRef.current) return;
-      pendingStateRef.current = { ...pendingStateRef.current, ...state };
+
+      // Filter to only fields that actually changed vs last-known saved state
+      const changed: Partial<TabletopState> = {};
+      let hasChange = false;
+      for (const key of Object.keys(state) as (keyof TabletopState)[]) {
+        const next = state[key];
+        const prev = pendingStateRef.current[key] ?? lastSavedRef.current[key];
+        if (!isEqual(next, prev)) {
+          (changed as any)[key] = next;
+          hasChange = true;
+        }
+      }
+      if (!hasChange && !options?.immediate) return;
+
+      pendingStateRef.current = { ...pendingStateRef.current, ...changed };
+      markDirty(true);
+
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
@@ -118,8 +173,16 @@ export function useTabletopSync({
         void flush();
       }, debounceMs);
     },
-    [debounceMs, flush]
+    [debounceMs, flush, markDirty]
   );
+
+  const flushNow = useCallback(async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    await flush();
+  }, [flush]);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +192,8 @@ export function useTabletopSync({
       if (cancelled || inFlightRef.current) return;
       // Skip polling when tab is hidden — saves CPU & bandwidth
       if (!initial && typeof document !== "undefined" && document.hidden) return;
+      // Don't overwrite local pending changes with remote echo
+      if (!initial && dirtyRef.current) return;
       inFlightRef.current = true;
       try {
         const data = await campaignsApi.getTabletop(campaignId);
@@ -140,7 +205,9 @@ export function useTabletopSync({
 
         if (initial || (!isOwnEcho && !unchanged)) {
           lastUpdatedAtRef.current = updatedAt;
-          onStateReceivedRef.current(normalize(data));
+          const normalized = normalize(data);
+          lastSavedRef.current = normalized;
+          onStateReceivedRef.current(normalized);
         }
       } catch (e) {
         if (initial) console.error("[Tabletop] Erreur chargement:", e);
@@ -153,23 +220,33 @@ export function useTabletopSync({
     pull(true);
     const pollInterval = setInterval(() => void pull(false), pollMs);
 
-    // Flush pending state when leaving the page
+    // Flush pending state when tab becomes hidden
     const onVisibility = () => {
-      if (document.hidden) void flush();
+      if (document.hidden && dirtyRef.current) void flush();
     };
     document.addEventListener("visibilitychange", onVisibility);
+
+    // Warn on unload if there are unsaved changes
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!warnOnUnload || !dirtyRef.current) return;
+      void flush();
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     return () => {
       cancelled = true;
       clearInterval(pollInterval);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
       void flush();
     };
-  }, [campaignId, userId, pollMs, flush]);
+  }, [campaignId, userId, pollMs, flush, warnOnUnload]);
 
-  return { saveState };
+  return { saveState, flushNow, isDirty, isSaving, lastSavedAt };
 }
