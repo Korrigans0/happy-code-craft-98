@@ -158,6 +158,19 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     }
   }, [isGM, saveWalls, pushHistory]);
 
+  // ── Supprimer un mur par ID ───────────────────────────
+  const deleteWallById = useCallback((wallId: string) => {
+    if (!isGM) return;
+    setWalls(prev => {
+      if (!prev.some(w => w.id === wallId)) return prev;
+      pushHistory(prev);
+      const updated = prev.filter(w => w.id !== wallId);
+      saveWalls(updated);
+      return updated;
+    });
+    if (selectedWallIdRef.current === wallId) setSelectedWallId(null);
+  }, [isGM, saveWalls, pushHistory]);
+
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
     let closestId: string | null = null;
@@ -438,6 +451,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     finishWall,
     cancelWall,
     deleteWallAt,
+    deleteWallById,
     selectWallAt,
     toggleDoor,
     clearAllWalls,

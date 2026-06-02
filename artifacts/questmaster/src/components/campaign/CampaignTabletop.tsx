@@ -1751,6 +1751,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (k === "z" && !e.shiftKey) { e.preventDefault(); wallsHook.undo(); return; }
         if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); wallsHook.redo(); return; }
       }
+      // Delete / Backspace : supprimer le mur sélectionné (MJ uniquement, hors saisie)
+      if (isGM && (e.key === "Delete" || e.key === "Backspace") && wallsHook.selectedWallId && !selectedTokenId) {
+        e.preventDefault();
+        wallsHook.deleteWallById(wallsHook.selectedWallId);
+        return;
+      }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
@@ -1820,6 +1826,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     e.preventDefault();
     const coords = getCanvasCoords(e);
     const tokenHit = findTokenAt(coords.x, coords.y);
+
+    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement) → suppression directe
+    if (!tokenHit && isGM) {
+      const hitWallId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+      if (hitWallId) {
+        wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
+        toast({ title: "Mur supprimé", description: "Clic droit sur un mur = suppression rapide." });
+        return;
+      }
+    }
+
     setContextMenu({
       screenX: e.clientX,
       screenY: e.clientY,
@@ -1840,7 +1857,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       return;
     }
     if (tool === "wallDelete") {
-      wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
+      wallsHook.deleteWallAt(coords.x, coords.y, Math.max(12, 20 / zoom));
       return;
     }
 
