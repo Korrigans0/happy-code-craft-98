@@ -1820,6 +1820,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     e.preventDefault();
     const coords = getCanvasCoords(e);
     const tokenHit = findTokenAt(coords.x, coords.y);
+
+    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement) → suppression directe
+    if (!tokenHit && isGM) {
+      const hitWallId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+      if (hitWallId) {
+        wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
+        toast({ title: "Mur supprimé", description: "Clic droit sur un mur = suppression rapide." });
+        return;
+      }
+    }
+
     setContextMenu({
       screenX: e.clientX,
       screenY: e.clientY,
