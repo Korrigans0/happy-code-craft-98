@@ -1851,7 +1851,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       return;
     }
     if (tool === "wallDelete") {
-      wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
+      wallsHook.deleteWallAt(coords.x, coords.y, Math.max(12, 20 / zoom));
       return;
     }
 
