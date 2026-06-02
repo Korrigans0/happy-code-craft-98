@@ -333,6 +333,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     campaignId,
     isGM,
     saveStateDebounced: saveState,
+    gridSize: GRID_SIZE,
+    metersPerSquare: M_PER_SQUARE,
   });
   wallsHookRef.current = wallsHook;
 
