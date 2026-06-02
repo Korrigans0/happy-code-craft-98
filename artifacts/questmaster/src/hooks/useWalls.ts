@@ -253,8 +253,11 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
       if (wall.type === "window") color = WALL_COLORS.window;
       if (wall.type === "terrain") color = WALL_COLORS.terrain;
 
-      // Épaisseur
-      const thickness = wall.type === "terrain" ? 2 : 3;
+      // Épaisseur par type
+      let thickness = 3;
+      if (wall.type === "terrain") thickness = 2;
+      if (wall.type === "door") thickness = 5;
+      if (wall.type === "window") thickness = 3;
 
       // Mur sélectionné
       const isSelected = wall.id === selectedWallId;
@@ -265,41 +268,110 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
         ctx.shadowBlur = 8;
       }
 
-      ctx.strokeStyle = color + (wall.type === "terrain" ? "99" : "cc");
-      ctx.lineWidth = (thickness / zoom) * zoom;
+      ctx.strokeStyle = color + (wall.type === "terrain" ? "99" : "ee");
+      ctx.lineWidth = thickness;
 
-      // Porte ouverte = pointillés
-      if (wall.type === "door" && wall.isOpen) {
-        ctx.setLineDash([6 / zoom * zoom, 4 / zoom * zoom]);
-      } else {
-        ctx.setLineDash([]);
-      }
+      // Géométrie du segment
+      const dx = x2s - x1s;
+      const dy = y2s - y1s;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const nx = -uy; // normale
+      const ny = ux;
+      const mx = (x1s + x2s) / 2;
+      const my = (y1s + y2s) / 2;
 
-      ctx.beginPath();
-      ctx.moveTo(x1s, y1s);
-      ctx.lineTo(x2s, y2s);
-      ctx.stroke();
-
-      // Indicateur porte (carré au milieu)
       if (wall.type === "door") {
-        const mx = (x1s + x2s) / 2;
-        const my = (y1s + y2s) / 2;
-        const sz = 6;
-        ctx.fillStyle = color;
-        ctx.fillRect(mx - sz / 2, my - sz / 2, sz, sz);
+        // Porte = trait épais court + cadre aux extrémités + arc d'ouverture
+        // Cadres (jambages) aux extrémités
+        const jambSize = 4;
+        ctx.setLineDash([]);
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.moveTo(x1s + nx * jambSize, y1s + ny * jambSize);
+        ctx.lineTo(x1s - nx * jambSize, y1s - ny * jambSize);
+        ctx.moveTo(x2s + nx * jambSize, y2s + ny * jambSize);
+        ctx.lineTo(x2s - nx * jambSize, y2s - ny * jambSize);
+        ctx.stroke();
+
+        // Battant de porte
+        ctx.lineWidth = thickness;
+        if (wall.isOpen) {
+          ctx.setLineDash([5, 5]);
+        } else {
+          ctx.setLineDash([]);
+        }
+        ctx.beginPath();
+        ctx.moveTo(x1s, y1s);
+        ctx.lineTo(x2s, y2s);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Arc d'ouverture
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = color + "66";
+        ctx.beginPath();
+        const a0 = Math.atan2(dy, dx);
+        ctx.arc(x1s, y1s, len, a0, a0 + (wall.isOpen ? Math.PI / 2 : Math.PI / 6));
+        ctx.stroke();
+      } else if (wall.type === "window") {
+        // Fenêtre = trait pointillé fin + double trait parallèle
+        ctx.setLineDash([8, 4]);
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.moveTo(x1s + nx * 2, y1s + ny * 2);
+        ctx.lineTo(x2s + nx * 2, y2s + ny * 2);
+        ctx.moveTo(x1s - nx * 2, y1s - ny * 2);
+        ctx.lineTo(x2s - nx * 2, y2s - ny * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (wall.type === "terrain") {
+        // Terrain = pointillés
+        ctx.setLineDash([4, 6]);
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.moveTo(x1s, y1s);
+        ctx.lineTo(x2s, y2s);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        // Mur plein
+        ctx.setLineDash([]);
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.moveTo(x1s, y1s);
+        ctx.lineTo(x2s, y2s);
+        ctx.stroke();
       }
 
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
 
-      // Points d'extrémité (MJ uniquement, visibles au hover)
+      // Icône au milieu pour MJ (porte/fenêtre)
+      if (isGMView && (wall.type === "door" || wall.type === "window")) {
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.beginPath();
+        ctx.arc(mx, my, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(wall.type === "door" ? (wall.isOpen ? "○" : "D") : "F", mx, my);
+      }
+
+      // Points d'extrémité (MJ uniquement)
       if (isGMView) {
         ctx.fillStyle = color + "88";
         ctx.beginPath();
-        ctx.arc(x1s, y1s, 4, 0, Math.PI * 2);
+        ctx.arc(x1s, y1s, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x2s, y2s, 4, 0, Math.PI * 2);
+        ctx.arc(x2s, y2s, 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
