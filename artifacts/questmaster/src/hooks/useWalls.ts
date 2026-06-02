@@ -28,9 +28,11 @@ interface UseWallsOptions {
   campaignId: string;
   isGM: boolean;
   saveStateDebounced: (partial: { walls: Wall[] }) => void;
+  gridSize?: number;
+  metersPerSquare?: number;
 }
 
-export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptions) {
+export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, metersPerSquare = 1.5 }: UseWallsOptions) {
   const [walls, setWalls] = useState<Wall[]>([]);
   const wallsRef = useRef<Wall[]>([]);
   useEffect(() => { wallsRef.current = walls; }, [walls]);
