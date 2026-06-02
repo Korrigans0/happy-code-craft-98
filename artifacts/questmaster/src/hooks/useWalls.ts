@@ -28,9 +28,11 @@ interface UseWallsOptions {
   campaignId: string;
   isGM: boolean;
   saveStateDebounced: (partial: { walls: Wall[] }) => void;
+  gridSize?: number;
+  metersPerSquare?: number;
 }
 
-export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptions) {
+export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, metersPerSquare = 1.5 }: UseWallsOptions) {
   const [walls, setWalls] = useState<Wall[]>([]);
   const wallsRef = useRef<Wall[]>([]);
   useEffect(() => { wallsRef.current = walls; }, [walls]);
@@ -332,18 +334,17 @@ export function useWalls({ campaignId, isGM, saveStateDebounced }: UseWallsOptio
       ctx.arc(x1s, y1s, 5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Longueur
-      const len = Math.hypot(
-        end.x - start.x,
-        end.y - start.y
-      ).toFixed(1);
+      // Longueur en mètres (cohérente avec l'outil "Mesure")
+      const lenWorld = Math.hypot(end.x - start.x, end.y - start.y);
+      const lenMeters = ((lenWorld / gridSize) * metersPerSquare).toFixed(1);
+      const lenSquares = (lenWorld / gridSize).toFixed(1);
       ctx.fillStyle = "white";
       ctx.font = "12px sans-serif";
-      ctx.fillText(`${len}m`, (x1s + x2s) / 2 + 6, (y1s + y2s) / 2 - 4);
+      ctx.fillText(`${lenMeters}m (${lenSquares} c)`, (x1s + x2s) / 2 + 6, (y1s + y2s) / 2 - 4);
     }
 
     ctx.restore();
-  }, [walls, selectedWallId, selectedWallType]);
+  }, [walls, selectedWallId, selectedWallType, gridSize, metersPerSquare]);
 
   // ── Recevoir les murs depuis Supabase Realtime ──────────
   const receiveWalls = useCallback((newWalls: Wall[]) => {
