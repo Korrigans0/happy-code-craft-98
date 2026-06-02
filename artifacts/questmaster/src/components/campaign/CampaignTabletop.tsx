@@ -1754,13 +1754,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       // Delete / Backspace : supprimer le mur sélectionné (MJ uniquement, hors saisie)
       if (isGM && (e.key === "Delete" || e.key === "Backspace") && wallsHook.selectedWallId && !selectedTokenId) {
         e.preventDefault();
-        const id = wallsHook.selectedWallId;
-        wallsHook.setWalls(prev => {
-          const updated = prev.filter(w => w.id !== id);
-          wallsHook.receiveWalls(updated);
-          return updated;
-        });
-        wallsHook.setSelectedWallId(null);
+        wallsHook.deleteWallById(wallsHook.selectedWallId);
         return;
       }
       if (!e.ctrlKey && !e.metaKey) {
