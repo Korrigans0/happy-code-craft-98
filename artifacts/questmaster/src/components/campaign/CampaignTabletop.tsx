@@ -1751,6 +1751,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (k === "z" && !e.shiftKey) { e.preventDefault(); wallsHook.undo(); return; }
         if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); wallsHook.redo(); return; }
       }
+      // Delete / Backspace : supprimer le mur sélectionné (MJ uniquement, hors saisie)
+      if (isGM && (e.key === "Delete" || e.key === "Backspace") && wallsHook.selectedWallId && !selectedTokenId) {
+        e.preventDefault();
+        const id = wallsHook.selectedWallId;
+        wallsHook.setWalls(prev => {
+          const updated = prev.filter(w => w.id !== id);
+          wallsHook.receiveWalls(updated);
+          return updated;
+        });
+        wallsHook.setSelectedWallId(null);
+        return;
+      }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
