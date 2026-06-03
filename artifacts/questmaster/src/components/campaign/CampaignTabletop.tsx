@@ -2254,7 +2254,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     <div className={containerClass}>
 
       {/* ── TOP TOOLBAR ────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm">
+      <div className="flex shrink-0 flex-nowrap sm:flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm overflow-x-auto sm:overflow-x-visible scrollbar-thin">
 
         {/* Zoom */}
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} title="Dézoomer">
