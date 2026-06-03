@@ -1751,6 +1751,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           });
           setIsDrawing(false);
         }
+        if (mode === "wall") {
+          const last = lastTouch;
+          const w = toWorld(last.x, last.y);
+          wallsHook.finishWall(w.x, w.y);
+        }
         if (mode === "token") setDragStart(null);
         mode = "none"; activeTokenId = null; setDraggedToken(null);
       } else if (e.touches.length === 1 && mode === "pinch") {
