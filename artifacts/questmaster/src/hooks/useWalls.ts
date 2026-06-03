@@ -296,24 +296,33 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
       const my = (y1s + y2s) / 2;
 
       if (wall.type === "door") {
-        // Porte = trait épais court + cadre aux extrémités + arc d'ouverture
-        // Cadres (jambages) aux extrémités
-        const jambSize = 4;
+        // ── Cadre de porte (jambages + seuil) ───────────────
+        const jambSize = 8;
         ctx.setLineDash([]);
-        ctx.lineWidth = thickness;
+        ctx.lineWidth = Math.max(1, thickness - 1);
+        ctx.strokeStyle = color + "cc";
         ctx.beginPath();
+        // Jambage début
         ctx.moveTo(x1s + nx * jambSize, y1s + ny * jambSize);
         ctx.lineTo(x1s - nx * jambSize, y1s - ny * jambSize);
+        // Jambage fin
         ctx.moveTo(x2s + nx * jambSize, y2s + ny * jambSize);
         ctx.lineTo(x2s - nx * jambSize, y2s - ny * jambSize);
+        // Seuil (trait perpendiculaire au centre)
+        ctx.moveTo(mx + nx * jambSize, my + ny * jambSize);
+        ctx.lineTo(mx - nx * jambSize, my - ny * jambSize);
         ctx.stroke();
 
-        // Battant de porte
+        // ── Battant de porte ────────────────────────────────
         ctx.lineWidth = thickness;
         if (wall.isOpen) {
-          ctx.setLineDash([5, 5]);
+          // Ouverte = presque invisible, très léger
+          ctx.setLineDash([3, 8]);
+          ctx.strokeStyle = color + "55";
         } else {
-          ctx.setLineDash([]);
+          // Fermée = tirets longs bien visibles, immédiatement distinct d'un mur solide
+          ctx.setLineDash([12, 4]);
+          ctx.strokeStyle = color + "ee";
         }
         ctx.beginPath();
         ctx.moveTo(x1s, y1s);
@@ -321,12 +330,13 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Arc d'ouverture
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = color + "66";
+        // ── Arc d'ouverture ─────────────────────────────────
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = color + (wall.isOpen ? "aa" : "88");
         ctx.beginPath();
         const a0 = Math.atan2(dy, dx);
-        ctx.arc(x1s, y1s, len, a0, a0 + (wall.isOpen ? Math.PI / 2 : Math.PI / 6));
+        const arcAngle = wall.isOpen ? Math.PI / 2 : Math.PI / 6;
+        ctx.arc(x1s, y1s, len, a0, a0 + arcAngle);
         ctx.stroke();
       } else if (wall.type === "window") {
         // Fenêtre = trait pointillé fin + double trait parallèle
@@ -406,7 +416,15 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
 
       ctx.strokeStyle = previewColor + "88";
       ctx.lineWidth = 3;
-      ctx.setLineDash([8, 4]);
+      if (selectedWallType === "door") {
+        ctx.setLineDash([12, 4]);
+      } else if (selectedWallType === "window") {
+        ctx.setLineDash([8, 4]);
+      } else if (selectedWallType === "terrain") {
+        ctx.setLineDash([4, 6]);
+      } else {
+        ctx.setLineDash([]);
+      }
       ctx.beginPath();
       ctx.moveTo(x1s, y1s);
       ctx.lineTo(x2s, y2s);
