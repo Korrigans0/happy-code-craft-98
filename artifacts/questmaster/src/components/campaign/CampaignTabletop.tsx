@@ -1567,7 +1567,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Touch support ──
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
-    let mode: "none" | "pan" | "pinch" | "token" | "draw" = "none";
+    let mode: "none" | "pan" | "pinch" | "token" | "draw" | "wall" = "none";
     let lastTouch = { x: 0, y: 0 }, lastDist = 0, lastCenter = { x: 0, y: 0 };
     let activeTokenId: string | null = null, tokenOffset = { x: 0, y: 0 };
 
