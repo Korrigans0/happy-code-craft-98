@@ -1616,6 +1616,36 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         const t = e.touches[0];
         lastTouch = { x: t.clientX, y: t.clientY };
         startLongPress(t.clientX, t.clientY);
+
+        // Wall tools (GM)
+        if (tool === "wall" || tool === "wallDoor") {
+          const w = toWorld(t.clientX, t.clientY);
+          wallsHook.startWall(w.x, w.y);
+          mode = "wall"; return;
+        }
+        if (tool === "wallDelete") {
+          const w = toWorld(t.clientX, t.clientY);
+          wallsHook.deleteWallAt(w.x, w.y, Math.max(16, 24 / zoom));
+          mode = "none"; return;
+        }
+        // Ping
+        if (tool === "ping") {
+          const w = toWorld(t.clientX, t.clientY);
+          broadcastPing(w.x, w.y);
+          mode = "none"; return;
+        }
+        // Text
+        if (tool === "text") {
+          const w = toWorld(t.clientX, t.clientY);
+          const text = prompt("Texte à ajouter :");
+          if (text) {
+            const action: DrawAction = { id: newId(), type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
+            setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
+            setUndoneActions([]);
+          }
+          mode = "none"; return;
+        }
+
         const tokensLayer = layers.find(l => l.id === "tokens");
         if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
           const w = toWorld(t.clientX, t.clientY);
@@ -1629,7 +1659,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           }
           setSelectedTokenId(null);
         }
-        if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone"].includes(tool)) {
+        if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone", "fogReveal"].includes(tool)) {
           const w = toWorld(t.clientX, t.clientY);
           const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
           setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer });
@@ -1639,6 +1669,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       } else if (e.touches.length === 2) {
         cancelLongPress();
         if (mode === "draw") { setCurrentAction(null); setIsDrawing(false); }
+        if (mode === "wall") { wallsHook.cancelWall?.(); }
         mode = "pinch";
         lastDist = dist(e.touches[0], e.touches[1]);
         lastCenter = center(e.touches[0], e.touches[1]);
