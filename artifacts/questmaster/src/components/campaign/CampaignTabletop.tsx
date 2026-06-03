@@ -2248,7 +2248,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Layout: fullscreen vs embedded ──
   const containerClass = fullscreen
     ? "fixed inset-0 z-[100] flex flex-col bg-background"
-    : "flex h-[calc(100vh-200px)] min-h-[500px] flex-col";
+    : "flex h-[calc(100svh-120px)] sm:h-[calc(100vh-200px)] min-h-[420px] sm:min-h-[500px] flex-col";
 
   return (
     <div className={containerClass}>
