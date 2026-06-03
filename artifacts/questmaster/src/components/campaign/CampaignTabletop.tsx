@@ -2539,7 +2539,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto py-1.5">
+        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1.5 max-h-full">
 
           {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
