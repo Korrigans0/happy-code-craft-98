@@ -1567,7 +1567,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Touch support ──
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
-    let mode: "none" | "pan" | "pinch" | "token" | "draw" = "none";
+    let mode: "none" | "pan" | "pinch" | "token" | "draw" | "wall" = "none";
     let lastTouch = { x: 0, y: 0 }, lastDist = 0, lastCenter = { x: 0, y: 0 };
     let activeTokenId: string | null = null, tokenOffset = { x: 0, y: 0 };
 
@@ -1616,6 +1616,36 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         const t = e.touches[0];
         lastTouch = { x: t.clientX, y: t.clientY };
         startLongPress(t.clientX, t.clientY);
+
+        // Wall tools (GM)
+        if (tool === "wall" || tool === "wallDoor") {
+          const w = toWorld(t.clientX, t.clientY);
+          wallsHook.startWall(w.x, w.y);
+          mode = "wall"; return;
+        }
+        if (tool === "wallDelete") {
+          const w = toWorld(t.clientX, t.clientY);
+          wallsHook.deleteWallAt(w.x, w.y, Math.max(16, 24 / zoom));
+          mode = "none"; return;
+        }
+        // Ping
+        if (tool === "ping") {
+          const w = toWorld(t.clientX, t.clientY);
+          broadcastPing(w.x, w.y);
+          mode = "none"; return;
+        }
+        // Text
+        if (tool === "text") {
+          const w = toWorld(t.clientX, t.clientY);
+          const text = prompt("Texte à ajouter :");
+          if (text) {
+            const action: DrawAction = { id: newId(), type: "text", points: [w], color, size: brushSize, text, layer: activeDrawLayer };
+            setActions(prev => prev.some(a => a.id === action.id) ? prev : [...prev, action]);
+            setUndoneActions([]);
+          }
+          mode = "none"; return;
+        }
+
         const tokensLayer = layers.find(l => l.id === "tokens");
         if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
           const w = toWorld(t.clientX, t.clientY);
@@ -1629,7 +1659,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           }
           setSelectedTokenId(null);
         }
-        if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone"].includes(tool)) {
+        if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone", "fogReveal"].includes(tool)) {
           const w = toWorld(t.clientX, t.clientY);
           const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
           setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer });
@@ -1639,6 +1669,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       } else if (e.touches.length === 2) {
         cancelLongPress();
         if (mode === "draw") { setCurrentAction(null); setIsDrawing(false); }
+        if (mode === "wall") { wallsHook.cancelWall?.(); }
         mode = "pinch";
         lastDist = dist(e.touches[0], e.touches[1]);
         lastCenter = center(e.touches[0], e.touches[1]);
@@ -1673,6 +1704,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           if (["pencil", "eraser", "fogReveal"].includes(tool)) return { ...prev, points: [...prev.points, w] };
           return { ...prev, points: [prev.points[0], w] };
         });
+        return;
+      }
+      if (mode === "wall" && e.touches.length === 1) {
+        const t = e.touches[0];
+        const w = toWorld(t.clientX, t.clientY);
+        wallsHook.updateWallPreview(w.x, w.y);
         return;
       }
       if (mode === "pan" && e.touches.length === 1) {
@@ -1714,6 +1751,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           });
           setIsDrawing(false);
         }
+        if (mode === "wall") {
+          const last = lastTouch;
+          const w = toWorld(last.x, last.y);
+          wallsHook.finishWall(w.x, w.y);
+        }
         if (mode === "token") setDragStart(null);
         mode = "none"; activeTokenId = null; setDraggedToken(null);
       } else if (e.touches.length === 1 && mode === "pinch") {
@@ -1733,7 +1775,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid]);
+  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid, zoom, wallsHook, broadcastPing]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -2206,13 +2248,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   // ── Layout: fullscreen vs embedded ──
   const containerClass = fullscreen
     ? "fixed inset-0 z-[100] flex flex-col bg-background"
-    : "flex h-[calc(100vh-200px)] min-h-[500px] flex-col";
+    : "flex h-[calc(100svh-120px)] sm:h-[calc(100vh-200px)] min-h-[420px] sm:min-h-[500px] flex-col";
 
   return (
     <div className={containerClass}>
 
       {/* ── TOP TOOLBAR ────────────────────────────────────── */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm">
+      <div className="flex shrink-0 flex-nowrap sm:flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm overflow-x-auto sm:overflow-x-visible scrollbar-thin">
 
         {/* Zoom */}
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} title="Dézoomer">
@@ -2497,7 +2539,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto py-1.5">
+        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1.5 max-h-full">
 
           {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
