@@ -1706,6 +1706,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         });
         return;
       }
+      if (mode === "wall" && e.touches.length === 1) {
+        const t = e.touches[0];
+        const w = toWorld(t.clientX, t.clientY);
+        wallsHook.updateWallPreview(w.x, w.y);
+        return;
+      }
       if (mode === "pan" && e.touches.length === 1) {
         const t = e.touches[0];
         setPanOffset(p => ({ x: p.x + t.clientX - lastTouch.x, y: p.y + t.clientY - lastTouch.y }));
