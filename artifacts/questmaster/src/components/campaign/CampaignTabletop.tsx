@@ -10,10 +10,13 @@ import {
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
+  Lightbulb, Moon,
 } from "lucide-react";
 import { useWalls } from "@/hooks/useWalls";
+import { useLights } from "@/hooks/useLights";
+import { computeVisibilityPolygon, type Segment } from "@/lib/visibility-polygon";
 import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
-import { WALL_COLORS } from "@/components/campaign/vtt/types";
+import { WALL_COLORS, LIGHT_PRESETS, LIGHT_PRESET_LABELS } from "@/components/campaign/vtt/types";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
