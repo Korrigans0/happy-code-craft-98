@@ -130,6 +130,43 @@ export const WALL_LABELS: Record<WallType, string> = {
   terrain: "Terrain difficile",
 };
 
+// ── LUMIÈRES DYNAMIQUES ─────────────────────────────────────
+
+export type LightPreset = "torch" | "lantern" | "candle" | "daylight" | "darkvision" | "custom";
+
+export interface LightSource {
+  id: string;
+  // Position fixe (si non attachée à un token)
+  x?: number;
+  y?: number;
+  // Ou attachée à un token (suit ses déplacements)
+  tokenId?: string;
+  // Rayons en mètres
+  brightRadius: number;  // pleine lumière
+  dimRadius: number;     // pénombre (au-delà du bright)
+  color: string;         // hex (ex: "#ffb86b")
+  intensity: number;     // 0..1
+  preset?: LightPreset;
+  // Active / inactive (ex: torche éteinte)
+  enabled: boolean;
+}
+
+export const LIGHT_PRESETS: Record<Exclude<LightPreset, "custom">, Omit<LightSource, "id" | "x" | "y" | "tokenId" | "enabled">> = {
+  torch:      { brightRadius: 4.5, dimRadius: 9,  color: "#ffb86b", intensity: 1,    preset: "torch" },
+  lantern:    { brightRadius: 9,   dimRadius: 18, color: "#ffd58a", intensity: 1,    preset: "lantern" },
+  candle:     { brightRadius: 1.5, dimRadius: 3,  color: "#ffcc88", intensity: 0.9,  preset: "candle" },
+  daylight:   { brightRadius: 18,  dimRadius: 36, color: "#fff8e7", intensity: 1,    preset: "daylight" },
+  darkvision: { brightRadius: 0,   dimRadius: 18, color: "#5a6675", intensity: 0.6,  preset: "darkvision" },
+};
+
+export const LIGHT_PRESET_LABELS: Record<Exclude<LightPreset, "custom">, string> = {
+  torch:      "Torche",
+  lantern:    "Lanterne",
+  candle:     "Bougie",
+  daylight:   "Lumière du jour",
+  darkvision: "Vision nocturne",
+};
+
 // ── CONDITIONS ───────────────────────────────────────────────
 
 export const CONDITIONS = [
