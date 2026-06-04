@@ -31,7 +31,7 @@ import GMPanel from "./vtt/GMPanel";
 import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
-  CONDITIONS, AURA_COLORS, VTTScene,
+  CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset,
 } from "./vtt/types";
 import { supabase } from "@/integrations/supabase/client";
 
