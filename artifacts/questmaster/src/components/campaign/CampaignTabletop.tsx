@@ -2793,6 +2793,69 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             );
           })}
 
+          {/* Panneau Lumières — visible si outil light/lightDelete actif */}
+          {isGM && (tool === "light" || tool === "lightDelete") && (
+            <>
+              <div className="my-1 w-7 border-t border-border/50" />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    title={`Preset: ${LIGHT_PRESET_LABELS[lightsHook.selectedPreset === "custom" ? "torch" : lightsHook.selectedPreset]}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted text-amber-400 transition-colors"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="right" className="w-52 p-2">
+                  <p className="text-xs font-semibold mb-2 text-amber-400">Type de lumière</p>
+                  <div className="space-y-1">
+                    {(Object.keys(LIGHT_PRESETS) as Array<keyof typeof LIGHT_PRESETS>).map(k => {
+                      const preset = LIGHT_PRESETS[k];
+                      const active = lightsHook.selectedPreset === k;
+                      return (
+                        <button
+                          key={k}
+                          onClick={() => lightsHook.setSelectedPreset(k as LightPreset)}
+                          className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+                            active ? "bg-primary/15 text-primary" : "hover:bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <span className="h-3 w-3 rounded-full border border-white/20" style={{ backgroundColor: preset.color }} />
+                          <span className="flex-1 text-left">{LIGHT_PRESET_LABELS[k]}</span>
+                          <span className="text-[10px] opacity-60">{preset.brightRadius}/{preset.dimRadius}m</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <button
+                title={lightsHook.nightMode ? "Désactiver le mode nuit" : "Activer le mode nuit"}
+                onClick={() => lightsHook.setNightMode(!lightsHook.nightMode)}
+                className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                  lightsHook.nightMode
+                    ? "bg-indigo-500/20 text-indigo-300"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <Moon className="h-4 w-4" />
+              </button>
+
+              <button
+                title={`Supprimer toutes les lumières (${lightsHook.lights.length})`}
+                onClick={() => {
+                  if (lightsHook.lights.length === 0) return;
+                  if (confirm(`Supprimer ${lightsHook.lights.length} lumière(s) ?`)) lightsHook.clearAllLights();
+                }}
+                disabled={lightsHook.lights.length === 0}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          )}
+
           {/* Boutons fog supplémentaires — visibles uniquement si fogReveal actif */}
           {isGM && tool === "fogReveal" && (
             <>
