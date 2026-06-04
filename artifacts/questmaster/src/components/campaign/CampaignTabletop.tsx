@@ -1534,8 +1534,118 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ctx.drawImage(tmp, 0, 0);
     }
 
+    // ── Lumières dynamiques (composite screen-space) ──────────
+    const activeLights = lightsHook.lights.filter(l => l.enabled !== false);
+    const showLighting = lightsHook.nightMode || activeLights.length > 0;
+    if (showLighting) {
+      // Résoudre les positions monde pour chaque lumière (token → x/y du token)
+      const resolved = activeLights.map(l => {
+        if (l.tokenId) {
+          const tk = tokens.find(t => t.id === l.tokenId);
+          if (!tk) return null;
+          return { light: l, wx: tk.x, wy: tk.y };
+        }
+        if (typeof l.x === "number" && typeof l.y === "number") {
+          return { light: l, wx: l.x, wy: l.y };
+        }
+        return null;
+      }).filter((x): x is { light: LightSource; wx: number; wy: number } => x !== null);
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId]);
+      // Segments bloquants (mur solide + portes fermées) — fenêtres + terrain n'occluent pas
+      const blockers: Segment[] = wallsHook.walls
+        .filter(w => w.type === "solid" || (w.type === "door" && !w.isOpen))
+        .map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }));
+
+      const tmp2 = document.createElement("canvas");
+      tmp2.width = canvas.width;
+      tmp2.height = canvas.height;
+      const lCtx = tmp2.getContext("2d")!;
+
+      // Fond noir si nuit, sinon transparent
+      if (lightsHook.nightMode) {
+        lCtx.fillStyle = "rgba(0, 0, 0, 0.82)";
+        lCtx.fillRect(0, 0, tmp2.width, tmp2.height);
+      }
+
+      // Pour chaque lumière, "punch" un dégradé radial clippé par visibilité
+      lCtx.save();
+      lCtx.globalCompositeOperation = lightsHook.nightMode ? "destination-out" : "lighter";
+
+      for (const { light, wx, wy } of resolved) {
+        const totalR = Math.max(light.brightRadius, light.dimRadius) * GRID_SIZE / M_PER_SQUARE;
+        if (totalR <= 0) continue;
+
+        // Polygone de visibilité en coords monde
+        const poly = blockers.length > 0
+          ? computeVisibilityPolygon(wx, wy, totalR, blockers)
+          : [];
+
+        // Transforme en screen-space
+        const sx = wx * zoom + panOffset.x;
+        const sy = wy * zoom + panOffset.y;
+        const sR = totalR * zoom;
+        const sBright = light.brightRadius * GRID_SIZE / M_PER_SQUARE * zoom;
+
+        lCtx.save();
+        // Clip sur le polygone si on a des murs, sinon cercle plein
+        lCtx.beginPath();
+        if (poly.length >= 3) {
+          for (let i = 0; i < poly.length; i++) {
+            const px = poly[i].x * zoom + panOffset.x;
+            const py = poly[i].y * zoom + panOffset.y;
+            if (i === 0) lCtx.moveTo(px, py);
+            else lCtx.lineTo(px, py);
+          }
+          lCtx.closePath();
+        } else {
+          lCtx.arc(sx, sy, sR, 0, Math.PI * 2);
+        }
+        lCtx.clip();
+
+        // Dégradé radial : clair (centre) → faible → 0
+        const grad = lCtx.createRadialGradient(sx, sy, 0, sx, sy, sR);
+        if (lightsHook.nightMode) {
+          // destination-out : alpha = ce qui est gommé
+          grad.addColorStop(0, `rgba(0,0,0,${1 * light.intensity})`);
+          grad.addColorStop(Math.min(0.99, sBright / sR || 0.4), `rgba(0,0,0,${0.85 * light.intensity})`);
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+        } else {
+          // lighter : on additionne la couleur de la lumière
+          const c = light.color || "#ffb86b";
+          grad.addColorStop(0, hexToRgba(c, 0.45 * light.intensity));
+          grad.addColorStop(Math.min(0.99, sBright / sR || 0.4), hexToRgba(c, 0.22 * light.intensity));
+          grad.addColorStop(1, hexToRgba(c, 0));
+        }
+        lCtx.fillStyle = grad;
+        lCtx.fillRect(sx - sR, sy - sR, sR * 2, sR * 2);
+        lCtx.restore();
+      }
+      lCtx.restore();
+
+      ctx.drawImage(tmp2, 0, 0);
+
+      // Marqueurs visuels des lumières (MJ uniquement)
+      if (isGM) {
+        ctx.save();
+        for (const { light, wx, wy } of resolved) {
+          if (light.tokenId) continue; // ne pas dessiner d'icône sur les tokens
+          const sx = wx * zoom + panOffset.x;
+          const sy = wy * zoom + panOffset.y;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+          ctx.fillStyle = light.color;
+          ctx.globalAlpha = 0.85;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "rgba(0,0,0,0.6)";
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
