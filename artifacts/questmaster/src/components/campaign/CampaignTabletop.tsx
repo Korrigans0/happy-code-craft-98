@@ -2239,9 +2239,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C", group: "aoe" },
     { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z", group: "aoe" },
     { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true, group: "gm" },
-    { id: "wall",       icon: <Square className="h-4 w-4" />,        label: "Mur solide",   gmOnly: true, group: "gm" },
-    { id: "wallDoor",   icon: <DoorClosed className="h-4 w-4" />,    label: "Porte",        gmOnly: true, group: "gm" },
-    { id: "wallDelete", icon: <Eraser className="h-4 w-4" />,        label: "Effacer mur",  gmOnly: true, group: "gm" },
+    { id: "wall",        icon: <Square className="h-4 w-4" />,       label: "Mur solide",   gmOnly: true, group: "gm" },
+    { id: "wallDoor",    icon: <DoorClosed className="h-4 w-4" />,   label: "Porte",        gmOnly: true, group: "gm" },
+    { id: "wallDelete",  icon: <Eraser className="h-4 w-4" />,       label: "Effacer mur",  gmOnly: true, group: "gm" },
+    { id: "light",       icon: <Lightbulb className="h-4 w-4" />,    label: "Lumière",      gmOnly: true, group: "light" },
+    { id: "lightDelete", icon: <Eraser className="h-4 w-4" />,       label: "Retirer lumière", gmOnly: true, group: "light" },
   ], []);
 
   // Catégories d'outils (dossiers dépliables)
