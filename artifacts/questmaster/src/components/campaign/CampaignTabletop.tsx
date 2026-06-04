@@ -1644,6 +1644,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           wallsHook.deleteWallAt(w.x, w.y, Math.max(16, 24 / zoom));
           mode = "none"; return;
         }
+        // Light tools (GM)
+        if (tool === "light") {
+          const w = toWorld(t.clientX, t.clientY);
+          const hit = findTokenAt(w.x, w.y);
+          if (hit) lightsHook.addLightToToken(hit.id, lightsHook.selectedPreset);
+          else lightsHook.addLightAt(w.x, w.y, lightsHook.selectedPreset);
+          mode = "none"; return;
+        }
+        if (tool === "lightDelete") {
+          const w = toWorld(t.clientX, t.clientY);
+          const removed = lightsHook.deleteLightAt(w.x, w.y, Math.max(20, 32 / zoom));
+          if (!removed) {
+            const hit = findTokenAt(w.x, w.y);
+            if (hit) {
+              const attached = lightsHook.lights.find(l => l.tokenId === hit.id);
+              if (attached) lightsHook.deleteLightById(attached.id);
+            }
+          }
+          mode = "none"; return;
+        }
         // Ping
         if (tool === "ping") {
           const w = toWorld(t.clientX, t.clientY);
