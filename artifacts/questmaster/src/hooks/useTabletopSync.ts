@@ -42,6 +42,8 @@ interface TabletopState {
   map_image_url: string | null;
   fog_visible: boolean;
   walls?: unknown[];
+  lights?: unknown[];
+  night_mode?: boolean;
 }
 
 interface UseTabletopSyncOptions {
@@ -67,6 +69,8 @@ const normalize = (data: any): TabletopState => {
     map_image_url: data.map_image_url || null,
     fog_visible: data.fog_visible || false,
     walls: ((data as { walls?: unknown[] }).walls) || [],
+    lights: ((data as { lights?: unknown[] }).lights) || [],
+    night_mode: !!(data as { night_mode?: boolean }).night_mode,
   };
 };
 
