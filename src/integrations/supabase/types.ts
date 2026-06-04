@@ -814,7 +814,9 @@ export type Database = {
           drawings: Json
           fog_visible: boolean
           id: string
+          lights: Json
           map_image_url: string | null
+          night_mode: boolean
           pan_offset: Json
           tokens: Json
           updated_at: string
@@ -827,7 +829,9 @@ export type Database = {
           drawings?: Json
           fog_visible?: boolean
           id?: string
+          lights?: Json
           map_image_url?: string | null
+          night_mode?: boolean
           pan_offset?: Json
           tokens?: Json
           updated_at?: string
@@ -840,7 +844,9 @@ export type Database = {
           drawings?: Json
           fog_visible?: boolean
           id?: string
+          lights?: Json
           map_image_url?: string | null
+          night_mode?: boolean
           pan_offset?: Json
           tokens?: Json
           updated_at?: string
