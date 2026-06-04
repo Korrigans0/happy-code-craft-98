@@ -1,76 +1,54 @@
+# Lumières dynamiques
+
 ## Objectif
-Deux améliorations majeures du tabletop :
-1. Intégration tokens ↔ initiative
-2. Modificateur manuel dans tous les lanceurs de dés
 
----
+Ajouter un système de **sources de lumière** qui éclairent la carte autour d'un point (token ou point fixe), avec **occlusion par les murs dynamiques** (les murs `solid` bloquent la lumière, les `door` ouvertes la laissent passer, `window` la laisse passer).
 
-## 1. Tokens → Initiative
+## Comportement utilisateur
 
-### Fichiers touchés
-- `artifacts/questmaster/src/components/campaign/CampaignCombat.tsx`
-- `artifacts/questmaster/src/components/campaign/vtt/TurnOrderBar.tsx` (lecture seule, déjà OK)
-- `artifacts/questmaster/src/components/campaign/CampaignTabletop.tsx` (exposer la sélection courante via prop ou contexte léger)
-- `artifacts/questmaster/src/pages/CampaignPlay.tsx` (passer tokens + selection à CampaignCombat)
+- Le MJ ajoute une lumière depuis la barre d'outils (nouvel outil "Lumière" 🔦) :
+  - **Clic sur le canvas** → lumière fixe (torche posée au sol)
+  - **Clic sur un token** → lumière attachée au token (suit ses déplacements)
+- Chaque lumière a : couleur, rayon clair (m), rayon faible (m), intensité, animée oui/non.
+- Presets rapides : Torche (4.5m/9m, orange), Lanterne (9m/18m, jaune), Bougie (1.5m/3m), Lumière du jour (30m, blanc), Vision nocturne (token-only, gris).
+- Suppression : clic droit sur la lumière, ou panneau latéral "Lumières".
 
-### Logique
-- `CampaignPlay` détient déjà l'état partagé du tabletop (`tabletopState`). On lit `tokens` et on remonte `selectedTokenId` depuis `CampaignTabletop` via callback `onSelectionChange`.
-- Nouveau prop `CampaignCombat`: `tokens: TokenItem[]`, `selectedTokenId: string | null`.
-- Trois boutons MJ dans le bouton "Ajouter" et dans la barre d'action combat :
-  - **Ajouter la sélection** → crée 1 participant depuis le token sélectionné
-  - **Ajouter tous les tokens** → boucle sur tous les tokens visibles non-déjà-présents
-  - **Lancer les initiatives auto** → bouton existant `autoRollInitiative` renommé/clarifié + applique aussi à participants liés à fiches futures (laisse hook pour `character_id`)
-- Mapping token → participant :
-  - `name` ← `token.name || token.label`
-  - `current_hp/max_hp` ← `token.hp ?? 10`, `token.maxHp ?? 10`
-  - `armor_class` ← `token.ac ?? 10`
-  - `is_player` ← `token.creatureType === "character"`
-  - `notes` (JSON) ← `{ token_id, image_url, color }` pour resync nom/image
-- Anti-doublon : on stocke `token_id` dans `notes` (JSON string) → vérification avant insert.
-- Sync nom : un `useEffect` dans `CampaignCombat` détecte les renames côté tokens et patch le participant correspondant (debounce 500 ms).
-- Suppression d'un token sur le plateau : le participant reste, mais on retire le lien (l'initiative ne casse pas).
-- Temps réel : déjà assuré via `refetchInterval: 3000` + invalidations React Query.
+## Rendu
 
-### TurnOrderBar
-- Le composant existant lit `participants` déjà. Pour afficher l'avatar du token, on étend `Participant` avec un champ optionnel `image_url` extrait du `notes` JSON côté CampaignCombat avant passage au bar.
+- Nouveau **layer "lighting"** composite, dessiné au-dessus du fog mais sous les pings.
+- Pour chaque lumière :
+  1. Calcul du polygone de visibilité (raycasting depuis la source vers chaque extrémité de mur ± epsilon)
+  2. Dégradé radial (clair → faible → noir) clippé sur ce polygone
+- Composition globale : assombrissement de la scène (toggle "Nuit" MJ) puis `lighter` pour additionner les lumières.
+- Cache du polygone tant que ni la source ni les murs ne bougent.
 
----
+## Persistance & sync
 
-## 2. Modificateur manuel dans les lanceurs de dés
+- Nouvelle colonne `lights jsonb` sur `tabletop_state` (default `'[]'`).
+- Sauvegarde via le même `saveStateDebounced` que les murs/tokens.
+- Realtime via le canal existant.
 
-### Fichiers touchés
-- `artifacts/questmaster/src/components/campaign/CampaignCombat.tsx` (lanceur intégré ligne ~174)
-- `artifacts/questmaster/src/pages/DiceRoller.tsx`
-- `artifacts/questmaster/src/components/campaign/DiceRoller3D.tsx` (si présent)
-- Nouveau composant partagé : `artifacts/questmaster/src/components/campaign/vtt/DiceModifierInput.tsx`
+## Technique
 
-### Composant `DiceModifierInput`
-- Input `type="text"` filtré regex `^-?\d*$` (max ±999)
-- Boutons rapides `+1 +2 +5 -1 -2 -5` et `Reset`
-- Affichage live : `{count}d{sides} {±mod}` + résultat preview optionnel
-- Émet `onChange(mod: number)` à chaque keystroke validé
-- Tailwind sémantique, hauteur compacte (h-9), responsive
+```text
+src/components/campaign/vtt/types.ts        + type LightSource, Tool "light"
+src/hooks/useLights.ts                       (nouveau, calqué sur useWalls)
+src/lib/visibility-polygon.ts                (raycasting murs → polygone)
+src/components/campaign/CampaignTabletop.tsx + outil, rendu, panneau
+supabase migration                            + colonne lights, grant
+```
 
-### Intégration
-- Remplacer les blocs +/- existants par `<DiceModifierInput value={mod} onChange={setMod} />`
-- Le lancer `rollDice(sides, count, mod)` reçoit ce modificateur unique
-- Formule affichée dans le toast : `${count}d${sides}${mod >= 0 ? '+' : ''}${mod} = total`
-- Compatible d4/d6/d8/d10/d12/d20 et lancers multiples (champ `count` reste)
+- Raycasting : pour chaque sommet de mur, lancer 3 rayons (angle, angle±0.0001) ; intersecter avec tous les segments murs ; trier par angle ; construire le polygone.
+- Portes : si `door.isOpen === true` → segment ignoré. `window` → toujours ignoré pour la lumière.
+- Perf : limite ~12 lumières actives, recalcul uniquement si la source ou un mur change (hash murs + position).
 
----
+## Permissions
 
-## Détails techniques
-- Pas de migration DB nécessaire (on stocke le lien token via le champ `notes` JSON déjà présent sur `combat_participants`).
-- Pas de nouvelles deps. Tout en HSL semantic tokens.
-- Realtime : on s'appuie sur le polling existant pour rester simple, pas d'ajout de canal Supabase.
-- Validation zod inutile ici (input numérique simple), regex suffit côté UI.
+- Création / suppression / édition : **MJ uniquement**.
+- Tous les membres voient le résultat ; les joueurs peuvent activer "vue joueur" (masque ce qui est hors lumière + hors fog révélé).
 
----
+## Hors scope (pour plus tard)
 
-## Ordre d'exécution
-1. Créer `DiceModifierInput.tsx`
-2. Modifier `CampaignCombat.tsx` (dice + token integration + sync hook)
-3. Modifier `CampaignTabletop.tsx` pour exposer `selectedTokenId` via prop callback
-4. Modifier `CampaignPlay.tsx` pour relier tokens + selection
-5. Mettre à jour `DiceRoller.tsx` (page dédiée)
-6. Vérifier build
+- Ombres douces / pénombres animées avancées
+- Vision spécifique par joueur (chaque token voit sa propre carte)
+- Effets météo (pluie, brouillard volumétrique)

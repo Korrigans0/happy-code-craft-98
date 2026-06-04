@@ -1,0 +1,2 @@
+ALTER TABLE public.tabletop_state ADD COLUMN IF NOT EXISTS lights jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.tabletop_state ADD COLUMN IF NOT EXISTS night_mode boolean NOT NULL DEFAULT false;
