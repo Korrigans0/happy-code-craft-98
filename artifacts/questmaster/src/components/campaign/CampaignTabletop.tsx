@@ -2382,6 +2382,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (tool === "token") return "pointer";
     if (tool === "ping") return "cell";
     if (tool === "fogReveal") return "cell";
+    if (tool === "light" || tool === "lightDelete") return "cell";
     return "crosshair";
   };
 
