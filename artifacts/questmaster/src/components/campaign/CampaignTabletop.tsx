@@ -2253,6 +2253,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
     { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
     { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
+    { id: "light",   label: "Lumières",      icon: <Lightbulb className="h-4 w-4" />, gmOnly: true },
   ], []);
 
   const visibleTools = useMemo(() => TOOLS.filter(t => !t.gmOnly || isGM), [TOOLS, isGM]);
