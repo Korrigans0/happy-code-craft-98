@@ -3022,6 +3022,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             {snapToGrid && <span className="text-primary" title="Magnétisme">⊕</span>}
             {collisionEnabled && <span className="text-primary" title="Collision">⊗</span>}
             {layers.find(l => l.id === "fog")?.visible && <span className="text-purple-400" title="Brouillard actif">🌫️</span>}
+            {lightsHook.nightMode && <span className="text-indigo-300" title="Mode nuit">🌙</span>}
+            {lightsHook.lights.length > 0 && <span className="text-amber-300" title={`${lightsHook.lights.length} lumière(s)`}>💡</span>}
           </div>
 
           {/* Bottom-right sync */}
