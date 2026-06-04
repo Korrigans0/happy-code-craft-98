@@ -306,7 +306,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
           </h3>
           <p className="text-muted-foreground text-xs mt-0.5">
             {creatures.length} créature{creatures.length !== 1 ? "s" : ""}
-            {isAdmin && otherCreatures.length > 0 && ` · ${otherCreatures.length} à modérer`}
+            {isAdmin && publicCreatures.length > 0 && ` · ${publicCreatures.length} à modérer`}
           </p>
         </div>
         {isGM && <AetheriaCreatureDialog campaignId={campaignId} />}
@@ -324,7 +324,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
 
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Chargement...</div>
-      ) : filtered.length === 0 ? (
+      ) : (myCreatures.length + publicCreatures.length) === 0 ? (
         <div className="text-center py-8">
           <Skull className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">
