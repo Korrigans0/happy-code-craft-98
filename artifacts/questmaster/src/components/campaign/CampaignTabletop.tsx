@@ -1919,6 +1919,30 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       return;
     }
 
+    // Light tools (GM)
+    if (tool === "light") {
+      const hit = findTokenAt(coords.x, coords.y);
+      if (hit) {
+        lightsHook.addLightToToken(hit.id, lightsHook.selectedPreset);
+        toast({ title: "Lumière attachée", description: `${LIGHT_PRESET_LABELS[lightsHook.selectedPreset === "custom" ? "torch" : lightsHook.selectedPreset]} sur ${hit.name}` });
+      } else {
+        lightsHook.addLightAt(coords.x, coords.y, lightsHook.selectedPreset);
+      }
+      return;
+    }
+    if (tool === "lightDelete") {
+      const removed = lightsHook.deleteLightAt(coords.x, coords.y, Math.max(18, 28 / zoom));
+      if (!removed) {
+        // Aussi essayer sur un token : retirer toute lumière qui lui est attachée
+        const hit = findTokenAt(coords.x, coords.y);
+        if (hit) {
+          const attached = lightsHook.lights.find(l => l.tokenId === hit.id);
+          if (attached) lightsHook.deleteLightById(attached.id);
+        }
+      }
+      return;
+    }
+
 
     if (e.button === 1 || isSpacePressed) {
       setLastPanPoint({ x: e.clientX, y: e.clientY });
