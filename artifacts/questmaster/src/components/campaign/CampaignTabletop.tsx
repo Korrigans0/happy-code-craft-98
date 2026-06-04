@@ -328,6 +328,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       ));
       const incomingWalls = (state as any).walls;
       if (incomingWalls) wallsHookRef.current?.receiveWalls(incomingWalls);
+      const incomingLights = (state as any).lights;
+      if (incomingLights) lightsHookRef.current?.receiveLights(incomingLights);
+      if (typeof (state as any).night_mode === "boolean") {
+        lightsHookRef.current?.receiveNightMode((state as any).night_mode);
+      }
     },
     debounceMs: 250,
   });
@@ -340,6 +345,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     metersPerSquare: M_PER_SQUARE,
   });
   wallsHookRef.current = wallsHook;
+
+  const lightsHookRef = useRef<ReturnType<typeof useLights> | null>(null);
+  const lightsHook = useLights({
+    campaignId,
+    isGM,
+    saveStateDebounced: saveState,
+  });
+  lightsHookRef.current = lightsHook;
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
