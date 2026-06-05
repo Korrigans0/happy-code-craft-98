@@ -45,6 +45,8 @@ export interface TokenItem {
   auraColor?: string;
   isHidden?: boolean;
   isBoss?: boolean;
+  // Vision dynamique : rayon en mètres (0 ou undefined = pas de vision propre)
+  visionRadius?: number;
 }
 
 export interface MapLayer {

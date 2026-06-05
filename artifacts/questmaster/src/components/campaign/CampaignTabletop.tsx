@@ -1632,6 +1632,47 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       lCtx.restore();
 
+      // ── Vision dynamique des tokens (clarifie en mode nuit) ──
+      // Pour chaque token avec visionRadius > 0, on "perce" un disque
+      // clippé par les murs : le joueur voit autour de son token.
+      if (lightsHook.nightMode) {
+        lCtx.save();
+        lCtx.globalCompositeOperation = "destination-out";
+        for (const tk of tokens) {
+          const vr = tk.visionRadius ?? 0;
+          if (!tk.visible || vr <= 0) continue;
+          const totalR = vr * GRID_SIZE / M_PER_SQUARE;
+          const poly = blockers.length > 0
+            ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
+            : [];
+          const sx = tk.x * zoom + panOffset.x;
+          const sy = tk.y * zoom + panOffset.y;
+          const sR = totalR * zoom;
+          lCtx.save();
+          lCtx.beginPath();
+          if (poly.length >= 3) {
+            for (let i = 0; i < poly.length; i++) {
+              const px = poly[i].x * zoom + panOffset.x;
+              const py = poly[i].y * zoom + panOffset.y;
+              if (i === 0) lCtx.moveTo(px, py);
+              else lCtx.lineTo(px, py);
+            }
+            lCtx.closePath();
+          } else {
+            lCtx.arc(sx, sy, sR, 0, Math.PI * 2);
+          }
+          lCtx.clip();
+          const grad = lCtx.createRadialGradient(sx, sy, 0, sx, sy, sR);
+          grad.addColorStop(0, "rgba(0,0,0,1)");
+          grad.addColorStop(0.7, "rgba(0,0,0,0.9)");
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          lCtx.fillStyle = grad;
+          lCtx.fillRect(sx - sR, sy - sR, sR * 2, sR * 2);
+          lCtx.restore();
+        }
+        lCtx.restore();
+      }
+
       ctx.drawImage(tmp2, 0, 0);
 
       // Marqueurs visuels des lumières (MJ uniquement)
@@ -2727,7 +2768,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1.5 max-h-full">
+        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
 
           {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
@@ -2742,7 +2783,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   key={group.id}
                   onClick={() => setTool(t.id)}
                   title={t.key ? `${t.label} (${t.key})` : t.label}
-                  className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                     tool === t.id
                       ? "bg-primary text-primary-foreground shadow-inner"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2762,7 +2803,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={group.label}
-                    className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                       activeTool
                         ? "bg-primary text-primary-foreground shadow-inner"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2783,7 +2824,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                         key={t.id}
                         onClick={() => { setTool(t.id); setOpenGroup(null); }}
                         title={t.key ? `${t.label} (${t.key})` : t.label}
-                        className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                           tool === t.id
                             ? "bg-primary text-primary-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2806,7 +2847,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={`Preset: ${LIGHT_PRESET_LABELS[lightsHook.selectedPreset === "custom" ? "torch" : lightsHook.selectedPreset]}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted text-amber-400 transition-colors"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md hover:bg-muted text-amber-400 transition-colors"
                   >
                     <Lightbulb className="h-4 w-4" />
                   </button>
@@ -2838,7 +2879,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               <button
                 title={lightsHook.nightMode ? "Désactiver le mode nuit" : "Activer le mode nuit"}
                 onClick={() => lightsHook.setNightMode(!lightsHook.nightMode)}
-                className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                   lightsHook.nightMode
                     ? "bg-indigo-500/20 text-indigo-300"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2854,7 +2895,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   if (confirm(`Supprimer ${lightsHook.lights.length} lumière(s) ?`)) lightsHook.clearAllLights();
                 }}
                 disabled={lightsHook.lights.length === 0}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -2898,7 +2939,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     return updated;
                   });
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
               >
                 <Eye className="h-4 w-4" />
               </button>
@@ -2911,7 +2952,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     return updated;
                   });
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
               >
                 <EyeOff className="h-4 w-4" />
               </button>
@@ -2941,7 +2982,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md hover:bg-muted transition-colors"
                 title="Couleur"
               >
                 <div className="h-5 w-5 rounded-full border-2 border-white/20 shadow-md" style={{ backgroundColor: color }} />
@@ -2961,7 +3002,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           {/* Brush size */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md hover:bg-muted text-muted-foreground transition-colors" title="Taille du pinceau">
+              <button className="flex h-8 w-8 sm:h-9 sm:w-9 flex-col items-center justify-center gap-0 rounded-md hover:bg-muted text-muted-foreground transition-colors" title="Taille du pinceau">
                 <Minus className="h-2.5 w-2.5" />
                 <span className="text-[9px] font-bold leading-tight">{brushSize}</span>
               </button>
@@ -3163,6 +3204,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   <button key={n} className={`rounded text-xs py-0.5 transition-colors ${selectedToken.sizeUnits === n ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}
                     onClick={() => resizeToken(selectedToken.id, n)}>{n}×</button>
                 ))}
+              </div>
+              {/* Vision dynamique (mode nuit) */}
+              <div className="mt-1 rounded border border-border/60 bg-background/40 p-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">👁 Vision</span>
+                  <span className="text-[10px] font-mono text-amber-300">{selectedToken.visionRadius ?? 0} m</span>
+                </div>
+                <div className="grid grid-cols-5 gap-0.5">
+                  {[0, 3, 6, 9, 18].map(v => (
+                    <button
+                      key={v}
+                      className={`rounded text-[10px] py-0.5 transition-colors ${
+                        (selectedToken.visionRadius ?? 0) === v
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border hover:bg-muted"
+                      }`}
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, visionRadius: v } : t))}
+                    >
+                      {v === 0 ? "—" : `${v}m`}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-[9px] text-muted-foreground">
+                  Effet visible en 🌙 Mode nuit. La vision est bloquée par les murs.
+                </p>
               </div>
             </div>
           )}

@@ -3,9 +3,20 @@
 // Fichier : artifacts/questmaster/src/lib/visibility-polygon.ts
 // ============================================================
 //
-// Calcule le polygone visible depuis un point source, en tenant
-// compte des segments bloquants (murs). Utilisé pour clipper les
-// lumières dynamiques dans le VTT.
+// Calcule le polygone visible depuis un point source (lumière /
+// vision de token), borné par un rayon maximum et coupé par des
+// segments bloquants (murs solides + portes fermées).
+//
+// Stratégie :
+//  - On combine deux ensembles d'angles :
+//      (a) les angles des extrémités de chaque mur (± epsilon) → ces
+//          rayons capturent les contours d'ombre.
+//      (b) un échantillonnage uniforme dense sur 360° → ces rayons
+//          garantissent un arc lisse là où aucun mur n'est présent.
+//  - Pour chaque angle, on prend l'intersection murale la plus proche
+//    et on la clampe au rayon R. Le résultat (trié par angle) forme
+//    un polygone fermé qui « grignote » le disque de lumière partout
+//    où un mur l'occulte.
 
 export interface Segment {
   x1: number; y1: number;
@@ -14,8 +25,8 @@ export interface Segment {
 
 export interface Point { x: number; y: number; }
 
-// Intersection rayon (origin + t * dir, t >= 0) avec segment [a, b]
-// Retourne le point et la distance, ou null.
+// Intersection rayon (origin + t * dir, t >= 0) avec segment [a, b].
+// Retourne le point et la distance t le long du rayon, ou null.
 function rayIntersectsSegment(
   ox: number, oy: number,
   dx: number, dy: number,
@@ -32,26 +43,22 @@ function rayIntersectsSegment(
   return { x: ox + dx * t, y: oy + dy * t, t };
 }
 
+const UNIFORM_RAYS = 96; // densité de l'arc circulaire
+
 /**
  * Calcule le polygone de visibilité depuis (ox, oy) avec rayon max R,
- * en tenant compte des segments bloquants fournis.
- * Renvoie une liste de points (dans l'ordre angulaire).
+ * tenant compte des segments bloquants fournis.
+ * Renvoie une liste de points (ordre angulaire, polygone fermé).
  */
 export function computeVisibilityPolygon(
   ox: number, oy: number,
   radius: number,
   blockers: Segment[],
 ): Point[] {
-  // Bounding box : ajoute 4 segments englobants à distance radius
-  const R = radius;
-  const box: Segment[] = [
-    { x1: ox - R, y1: oy - R, x2: ox + R, y2: oy - R },
-    { x1: ox + R, y1: oy - R, x2: ox + R, y2: oy + R },
-    { x1: ox + R, y1: oy + R, x2: ox - R, y2: oy + R },
-    { x1: ox - R, y1: oy + R, x2: ox - R, y2: oy - R },
-  ];
+  const R = Math.max(0, radius);
+  if (R <= 0) return [];
 
-  // Filtre les murs hors zone (optim simple : bbox d'intersection)
+  // Filtrage spatial des murs pertinents
   const relevant: Segment[] = [];
   for (const s of blockers) {
     const minX = Math.min(s.x1, s.x2);
@@ -62,37 +69,36 @@ export function computeVisibilityPolygon(
     relevant.push(s);
   }
 
-  const all = [...relevant, ...box];
-
-  // Points uniques (extrémités)
-  const angles: number[] = [];
-  const seen = new Set<string>();
-  for (const s of all) {
-    for (const [x, y] of [[s.x1, s.y1], [s.x2, s.y2]]) {
-      const k = `${x.toFixed(2)}|${y.toFixed(2)}`;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      const a = Math.atan2(y - oy, x - ox);
-      angles.push(a, a - 0.00005, a + 0.00005);
-    }
+  // Collecte des angles :
+  //  - extrémités de murs (± epsilon pour capturer les bords d'ombre)
+  //  - échantillonnage uniforme pour lisser l'arc
+  const angleSet: number[] = [];
+  const EPS = 0.0002;
+  for (const s of relevant) {
+    const a1 = Math.atan2(s.y1 - oy, s.x1 - ox);
+    const a2 = Math.atan2(s.y2 - oy, s.x2 - ox);
+    angleSet.push(a1, a1 - EPS, a1 + EPS, a2, a2 - EPS, a2 + EPS);
   }
-
-  // Pour chaque angle, lancer un rayon et trouver l'intersection la plus proche
-  const hits: { angle: number; x: number; y: number }[] = [];
-  for (const angle of angles) {
-    const dx = Math.cos(angle);
-    const dy = Math.sin(angle);
-    let closest: { x: number; y: number; t: number } | null = null;
-    for (const s of all) {
-      const hit = rayIntersectsSegment(ox, oy, dx, dy, s.x1, s.y1, s.x2, s.y2);
-      if (!hit) continue;
-      if (hit.t > R) continue;
-      if (!closest || hit.t < closest.t) closest = hit;
-    }
-    if (closest) hits.push({ angle, x: closest.x, y: closest.y });
+  for (let i = 0; i < UNIFORM_RAYS; i++) {
+    angleSet.push((i / UNIFORM_RAYS) * Math.PI * 2 - Math.PI);
   }
 
   // Tri par angle
-  hits.sort((a, b) => a.angle - b.angle);
-  return hits.map(h => ({ x: h.x, y: h.y }));
+  angleSet.sort((a, b) => a - b);
+
+  // Pour chaque rayon : trouver la distance bloquante la plus proche,
+  // clampée à R. Toujours produire un point (sur le cercle si rien).
+  const out: Point[] = [];
+  for (const angle of angleSet) {
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    let bestT = R;
+    for (const s of relevant) {
+      const hit = rayIntersectsSegment(ox, oy, dx, dy, s.x1, s.y1, s.x2, s.y2);
+      if (!hit) continue;
+      if (hit.t > 1e-4 && hit.t < bestT) bestT = hit.t;
+    }
+    out.push({ x: ox + dx * bestT, y: oy + dy * bestT });
+  }
+  return out;
 }
