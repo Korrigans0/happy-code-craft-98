@@ -1632,6 +1632,47 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       lCtx.restore();
 
+      // ── Vision dynamique des tokens (clarifie en mode nuit) ──
+      // Pour chaque token avec visionRadius > 0, on "perce" un disque
+      // clippé par les murs : le joueur voit autour de son token.
+      if (lightsHook.nightMode) {
+        lCtx.save();
+        lCtx.globalCompositeOperation = "destination-out";
+        for (const tk of tokens) {
+          const vr = tk.visionRadius ?? 0;
+          if (!tk.visible || vr <= 0) continue;
+          const totalR = vr * GRID_SIZE / M_PER_SQUARE;
+          const poly = blockers.length > 0
+            ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
+            : [];
+          const sx = tk.x * zoom + panOffset.x;
+          const sy = tk.y * zoom + panOffset.y;
+          const sR = totalR * zoom;
+          lCtx.save();
+          lCtx.beginPath();
+          if (poly.length >= 3) {
+            for (let i = 0; i < poly.length; i++) {
+              const px = poly[i].x * zoom + panOffset.x;
+              const py = poly[i].y * zoom + panOffset.y;
+              if (i === 0) lCtx.moveTo(px, py);
+              else lCtx.lineTo(px, py);
+            }
+            lCtx.closePath();
+          } else {
+            lCtx.arc(sx, sy, sR, 0, Math.PI * 2);
+          }
+          lCtx.clip();
+          const grad = lCtx.createRadialGradient(sx, sy, 0, sx, sy, sR);
+          grad.addColorStop(0, "rgba(0,0,0,1)");
+          grad.addColorStop(0.7, "rgba(0,0,0,0.9)");
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          lCtx.fillStyle = grad;
+          lCtx.fillRect(sx - sR, sy - sR, sR * 2, sR * 2);
+          lCtx.restore();
+        }
+        lCtx.restore();
+      }
+
       ctx.drawImage(tmp2, 0, 0);
 
       // Marqueurs visuels des lumières (MJ uniquement)
