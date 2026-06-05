@@ -2783,7 +2783,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   key={group.id}
                   onClick={() => setTool(t.id)}
                   title={t.key ? `${t.label} (${t.key})` : t.label}
-                  className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                     tool === t.id
                       ? "bg-primary text-primary-foreground shadow-inner"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2803,7 +2803,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={group.label}
-                    className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                       activeTool
                         ? "bg-primary text-primary-foreground shadow-inner"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2824,7 +2824,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                         key={t.id}
                         onClick={() => { setTool(t.id); setOpenGroup(null); }}
                         title={t.key ? `${t.label} (${t.key})` : t.label}
-                        className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                           tool === t.id
                             ? "bg-primary text-primary-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2847,7 +2847,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={`Preset: ${LIGHT_PRESET_LABELS[lightsHook.selectedPreset === "custom" ? "torch" : lightsHook.selectedPreset]}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted text-amber-400 transition-colors"
+                    className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md hover:bg-muted text-amber-400 transition-colors"
                   >
                     <Lightbulb className="h-4 w-4" />
                   </button>
@@ -2879,7 +2879,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               <button
                 title={lightsHook.nightMode ? "Désactiver le mode nuit" : "Activer le mode nuit"}
                 onClick={() => lightsHook.setNightMode(!lightsHook.nightMode)}
-                className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${
+                className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
                   lightsHook.nightMode
                     ? "bg-indigo-500/20 text-indigo-300"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -2895,7 +2895,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   if (confirm(`Supprimer ${lightsHook.lights.length} lumière(s) ?`)) lightsHook.clearAllLights();
                 }}
                 disabled={lightsHook.lights.length === 0}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -2939,7 +2939,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     return updated;
                   });
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 transition-colors"
               >
                 <Eye className="h-4 w-4" />
               </button>
@@ -2952,7 +2952,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     return updated;
                   });
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
               >
                 <EyeOff className="h-4 w-4" />
               </button>
@@ -2982,7 +2982,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted transition-colors"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md hover:bg-muted transition-colors"
                 title="Couleur"
               >
                 <div className="h-5 w-5 rounded-full border-2 border-white/20 shadow-md" style={{ backgroundColor: color }} />
@@ -3002,7 +3002,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           {/* Brush size */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md hover:bg-muted text-muted-foreground transition-colors" title="Taille du pinceau">
+              <button className="flex h-8 w-8 sm:h-9 sm:w-9 flex-col items-center justify-center gap-0 rounded-md hover:bg-muted text-muted-foreground transition-colors" title="Taille du pinceau">
                 <Minus className="h-2.5 w-2.5" />
                 <span className="text-[9px] font-bold leading-tight">{brushSize}</span>
               </button>
