@@ -1682,6 +1682,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   useEffect(() => {
     const container = containerRef.current; if (!container) return;
     const handleWheel = (e: WheelEvent) => {
+      // Ne pas intercepter la molette si elle se produit sur un overlay scrollable
+      // (tapis de dés, panneaux, etc.)
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('[data-vtt-allow-scroll]')) return;
       e.preventDefault();
       if (e.shiftKey && selectedTokenId) { rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
       const canvas = canvasRef.current; if (!canvas) return;
