@@ -780,7 +780,7 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-30 flex flex-col bg-background/95 backdrop-blur-sm animate-fade-in">
+    <div data-vtt-allow-scroll className="absolute inset-0 z-30 flex flex-col bg-background/95 backdrop-blur-sm animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border bg-card/80 px-4 py-3">
         <div className="flex items-center gap-2">
