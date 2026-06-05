@@ -3205,6 +3205,31 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     onClick={() => resizeToken(selectedToken.id, n)}>{n}×</button>
                 ))}
               </div>
+              {/* Vision dynamique (mode nuit) */}
+              <div className="mt-1 rounded border border-border/60 bg-background/40 p-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">👁 Vision</span>
+                  <span className="text-[10px] font-mono text-amber-300">{selectedToken.visionRadius ?? 0} m</span>
+                </div>
+                <div className="grid grid-cols-5 gap-0.5">
+                  {[0, 3, 6, 9, 18].map(v => (
+                    <button
+                      key={v}
+                      className={`rounded text-[10px] py-0.5 transition-colors ${
+                        (selectedToken.visionRadius ?? 0) === v
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border hover:bg-muted"
+                      }`}
+                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, visionRadius: v } : t))}
+                    >
+                      {v === 0 ? "—" : `${v}m`}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-[9px] text-muted-foreground">
+                  Effet visible en 🌙 Mode nuit. La vision est bloquée par les murs.
+                </p>
+              </div>
             </div>
           )}
 
