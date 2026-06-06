@@ -1014,200 +1014,198 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       off.width = canvas.width;
       off.height = canvas.height;
       const octx = off.getContext("2d");
-      if (!octx) {
-        ctx.restore();
-        return;
-      }
-      octx.translate(panOffset.x, panOffset.y);
-      octx.scale(zoom, zoom);
-      octx.globalAlpha = drawingsLayer.opacity / 100;
+      if (octx) {
+        octx.translate(panOffset.x, panOffset.y);
+        octx.scale(zoom, zoom);
 
-      const visibleActions = actions.filter(a =>
-        a.layer === "drawings" && (a.type as string) !== "fogReveal"
-      );
+        const visibleActions = actions.filter(a =>
+          a.layer === "drawings" && (a.type as string) !== "fogReveal"
+        );
 
-      for (const action of visibleActions) {
-        octx.save();
+        for (const action of visibleActions) {
+          octx.save();
+          octx.strokeStyle = action.color;
+          octx.fillStyle = action.color;
+          octx.lineWidth = action.size / zoom;
+          octx.lineCap = "round";
+          octx.lineJoin = "round";
 
-        ctx.strokeStyle = action.color;
-        ctx.fillStyle = action.color;
-        ctx.lineWidth = action.size / zoom;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        switch (action.type) {
-          case "pencil":
-            if (action.points.length < 2) break;
-            ctx.beginPath();
-            ctx.moveTo(action.points[0].x, action.points[0].y);
-            for (const p of action.points.slice(1)) ctx.lineTo(p.x, p.y);
-            ctx.stroke();
-            break;
-          case "eraser": {
-            const prev = ctx.globalCompositeOperation;
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.lineWidth = action.size * 3 / zoom;
-            ctx.beginPath();
-            ctx.moveTo(action.points[0].x, action.points[0].y);
-            for (const p of action.points.slice(1)) ctx.lineTo(p.x, p.y);
-            ctx.stroke();
-            ctx.globalCompositeOperation = prev;
-            break;
-          }
-          case "line":
-            if (action.points.length >= 2) {
-              ctx.beginPath();
-              ctx.moveTo(action.points[0].x, action.points[0].y);
-              ctx.lineTo(action.points[action.points.length - 1].x, action.points[action.points.length - 1].y);
-              ctx.stroke();
-              // Distance label
-              const p1 = action.points[0], p2 = action.points[action.points.length - 1];
-              const dx = p2.x - p1.x, dy = p2.y - p1.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              const sq = Math.round(dist / GRID_SIZE);
-              if (sq > 0) {
-                ctx.font = `${10 / zoom}px sans-serif`;
-                ctx.fillText(`${sq * M_PER_SQUARE}m`, (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
+          switch (action.type) {
+            case "pencil":
+              if (action.points.length < 2) break;
+              octx.beginPath();
+              octx.moveTo(action.points[0].x, action.points[0].y);
+              for (const p of action.points.slice(1)) octx.lineTo(p.x, p.y);
+              octx.stroke();
+              break;
+            case "eraser": {
+              const prev = octx.globalCompositeOperation;
+              octx.globalCompositeOperation = "destination-out";
+              octx.lineWidth = action.size * 3 / zoom;
+              octx.beginPath();
+              octx.moveTo(action.points[0].x, action.points[0].y);
+              for (const p of action.points.slice(1)) octx.lineTo(p.x, p.y);
+              octx.stroke();
+              octx.globalCompositeOperation = prev;
+              break;
+            }
+            case "line":
+              if (action.points.length >= 2) {
+                octx.beginPath();
+                octx.moveTo(action.points[0].x, action.points[0].y);
+                octx.lineTo(action.points[action.points.length - 1].x, action.points[action.points.length - 1].y);
+                octx.stroke();
+                const p1 = action.points[0], p2 = action.points[action.points.length - 1];
+                const dx = p2.x - p1.x, dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const sq = Math.round(dist / GRID_SIZE);
+                if (sq > 0) {
+                  octx.font = `${10 / zoom}px sans-serif`;
+                  octx.fillText(`${sq * M_PER_SQUARE}m`, (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
+                }
               }
-            }
-            break;
-          case "rect":
-            if (action.points.length >= 2) {
-              const [a, b] = action.points;
-              ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-            }
-            break;
-          case "circle":
-            if (action.points.length >= 2) {
-              const [a, b] = action.points;
-              const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
-              ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, Math.PI * 2); ctx.stroke();
-            }
-            break;
-          case "text":
-            if (action.text && action.points[0]) {
-              ctx.font = `${action.size * 3 / zoom}px 'Lora', serif`;
-              ctx.fillText(action.text, action.points[0].x, action.points[0].y);
-            }
-            break;
-          case "cone":
-            renderCone(ctx, action, zoom, GRID_SIZE, M_PER_SQUARE);
-            break;
-          case "zone":
-            renderZone(ctx, action, zoom, GRID_SIZE, M_PER_SQUARE);
-            break;
-          default:
-            break;
-        }
-        ctx.restore();
-      }
-
-      // Current action preview
-      if (currentAction && (currentAction.type as string) !== "fogReveal") {
-        ctx.save();
-        ctx.strokeStyle = currentAction.color;
-        ctx.fillStyle = currentAction.color;
-        ctx.lineWidth = currentAction.size / zoom;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        switch (currentAction.type) {
-          case "pencil":
-            if (currentAction.points.length >= 2) {
-              ctx.beginPath();
-              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
-              for (const p of currentAction.points.slice(1)) ctx.lineTo(p.x, p.y);
-              ctx.stroke();
-            }
-            break;
-          case "eraser": {
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.lineWidth = currentAction.size * 3 / zoom;
-            if (currentAction.points.length >= 2) {
-              ctx.beginPath();
-              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
-              for (const p of currentAction.points.slice(1)) ctx.lineTo(p.x, p.y);
-              ctx.stroke();
-            }
-            break;
+              break;
+            case "rect":
+              if (action.points.length >= 2) {
+                const [a, b] = action.points;
+                octx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+              }
+              break;
+            case "circle":
+              if (action.points.length >= 2) {
+                const [a, b] = action.points;
+                const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+                octx.beginPath(); octx.arc(a.x, a.y, r, 0, Math.PI * 2); octx.stroke();
+              }
+              break;
+            case "text":
+              if (action.text && action.points[0]) {
+                octx.font = `${action.size * 3 / zoom}px 'Lora', serif`;
+                octx.fillText(action.text, action.points[0].x, action.points[0].y);
+              }
+              break;
+            case "cone":
+              renderCone(octx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+              break;
+            case "zone":
+              renderZone(octx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+              break;
+            default:
+              break;
           }
-          case "line":
-            if (currentAction.points.length >= 2) {
-              ctx.beginPath();
-              ctx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
-              ctx.lineTo(currentAction.points[currentAction.points.length - 1].x, currentAction.points[currentAction.points.length - 1].y);
-              ctx.stroke();
-            }
-            break;
-          case "measure":
-            if (currentAction.points.length >= 2) {
-              const mp0 = currentAction.points[0];
-              const mp1 = currentAction.points[currentAction.points.length - 1];
-              const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
-              const mSquares = mDist / GRID_SIZE;
-              const mMeters = (mSquares * M_PER_SQUARE).toFixed(1);
-              ctx.save();
-              ctx.strokeStyle = "#f59e0b";
-              ctx.lineWidth = 2 / zoom;
-              ctx.setLineDash([6 / zoom, 4 / zoom]);
-              ctx.beginPath();
-              ctx.moveTo(mp0.x, mp0.y);
-              ctx.lineTo(mp1.x, mp1.y);
-              ctx.stroke();
-              ctx.setLineDash([]);
-              // Start dot
-              ctx.fillStyle = "#f59e0b";
-              ctx.beginPath();
-              ctx.arc(mp0.x, mp0.y, 4 / zoom, 0, Math.PI * 2);
-              ctx.fill();
-              // End dot
-              ctx.beginPath();
-              ctx.arc(mp1.x, mp1.y, 4 / zoom, 0, Math.PI * 2);
-              ctx.fill();
-              // Label
-              const midX = (mp0.x + mp1.x) / 2;
-              const midY = (mp0.y + mp1.y) / 2;
-              const label = `${mMeters}m (${mSquares.toFixed(1)} cases)`;
-              ctx.font = `bold ${13 / zoom}px 'Lora', serif`;
-              const tw = ctx.measureText(label).width;
-              ctx.fillStyle = "rgba(0,0,0,0.7)";
-              ctx.fillRect(midX - tw / 2 - 4 / zoom, midY - 14 / zoom, tw + 8 / zoom, 18 / zoom);
-              ctx.fillStyle = "#fbbf24";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(label, midX, midY - 5 / zoom);
-              ctx.textAlign = "start";
-              ctx.textBaseline = "alphabetic";
-              ctx.restore();
-            }
-            break;
-          case "rect":
-            if (currentAction.points.length >= 2) {
-              const [a, b] = currentAction.points;
-              ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-            }
-            break;
-          case "circle":
-            if (currentAction.points.length >= 2) {
-              const [a, b] = currentAction.points;
-              const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
-              ctx.beginPath(); ctx.arc(a.x, a.y, r, 0, Math.PI * 2); ctx.stroke();
-            }
-            break;
-          case "cone":
-            renderCone(ctx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
-            break;
-          case "zone":
-            renderZone(ctx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
-            break;
-          default:
-            break;
+          octx.restore();
         }
+
+        // Current action preview
+        if (currentAction && (currentAction.type as string) !== "fogReveal") {
+          octx.save();
+          octx.strokeStyle = currentAction.color;
+          octx.fillStyle = currentAction.color;
+          octx.lineWidth = currentAction.size / zoom;
+          octx.lineCap = "round";
+          octx.lineJoin = "round";
+
+          switch (currentAction.type) {
+            case "pencil":
+              if (currentAction.points.length >= 2) {
+                octx.beginPath();
+                octx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+                for (const p of currentAction.points.slice(1)) octx.lineTo(p.x, p.y);
+                octx.stroke();
+              }
+              break;
+            case "eraser": {
+              octx.globalCompositeOperation = "destination-out";
+              octx.lineWidth = currentAction.size * 3 / zoom;
+              if (currentAction.points.length >= 2) {
+                octx.beginPath();
+                octx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+                for (const p of currentAction.points.slice(1)) octx.lineTo(p.x, p.y);
+                octx.stroke();
+              }
+              break;
+            }
+            case "line":
+              if (currentAction.points.length >= 2) {
+                octx.beginPath();
+                octx.moveTo(currentAction.points[0].x, currentAction.points[0].y);
+                octx.lineTo(currentAction.points[currentAction.points.length - 1].x, currentAction.points[currentAction.points.length - 1].y);
+                octx.stroke();
+              }
+              break;
+            case "measure":
+              if (currentAction.points.length >= 2) {
+                const mp0 = currentAction.points[0];
+                const mp1 = currentAction.points[currentAction.points.length - 1];
+                const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
+                const mSquares = mDist / GRID_SIZE;
+                const mMeters = (mSquares * M_PER_SQUARE).toFixed(1);
+                octx.save();
+                octx.strokeStyle = "#f59e0b";
+                octx.lineWidth = 2 / zoom;
+                octx.setLineDash([6 / zoom, 4 / zoom]);
+                octx.beginPath();
+                octx.moveTo(mp0.x, mp0.y);
+                octx.lineTo(mp1.x, mp1.y);
+                octx.stroke();
+                octx.setLineDash([]);
+                octx.fillStyle = "#f59e0b";
+                octx.beginPath();
+                octx.arc(mp0.x, mp0.y, 4 / zoom, 0, Math.PI * 2);
+                octx.fill();
+                octx.beginPath();
+                octx.arc(mp1.x, mp1.y, 4 / zoom, 0, Math.PI * 2);
+                octx.fill();
+                const midX = (mp0.x + mp1.x) / 2;
+                const midY = (mp0.y + mp1.y) / 2;
+                const label = `${mMeters}m (${mSquares.toFixed(1)} cases)`;
+                octx.font = `bold ${13 / zoom}px 'Lora', serif`;
+                const tw = octx.measureText(label).width;
+                octx.fillStyle = "rgba(0,0,0,0.7)";
+                octx.fillRect(midX - tw / 2 - 4 / zoom, midY - 14 / zoom, tw + 8 / zoom, 18 / zoom);
+                octx.fillStyle = "#fbbf24";
+                octx.textAlign = "center";
+                octx.textBaseline = "middle";
+                octx.fillText(label, midX, midY - 5 / zoom);
+                octx.textAlign = "start";
+                octx.textBaseline = "alphabetic";
+                octx.restore();
+              }
+              break;
+            case "rect":
+              if (currentAction.points.length >= 2) {
+                const [a, b] = currentAction.points;
+                octx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+              }
+              break;
+            case "circle":
+              if (currentAction.points.length >= 2) {
+                const [a, b] = currentAction.points;
+                const r = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2);
+                octx.beginPath(); octx.arc(a.x, a.y, r, 0, Math.PI * 2); octx.stroke();
+              }
+              break;
+            case "cone":
+              renderCone(octx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+              break;
+            case "zone":
+              renderZone(octx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+              break;
+            default:
+              break;
+          }
+          octx.restore();
+        }
+
+        // Composite the offscreen drawings layer onto main canvas (avec son opacité)
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = drawingsLayer.opacity / 100;
+        ctx.drawImage(off, 0, 0);
         ctx.restore();
       }
-
-      ctx.restore();
     }
+
 
     // ── Tokens layer ──────────────────────────────────────────
     const tokensLayer = layers.find(l => l.id === "tokens");
