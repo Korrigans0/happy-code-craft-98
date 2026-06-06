@@ -2484,11 +2484,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   );
 
   // ── Layout: fullscreen vs embedded ──
-  // z-[45] : au-dessus de la bottom nav mobile (z-40) mais en dessous des Popover/Dropdown (z-50)
-  // sinon les outils en popover sont cachés derrière le plein écran sur mobile.
+  // z-[60] : au-dessus du Header sticky (z-50) et de la bottom nav mobile (z-40).
+  // Les Popover/Dropdown sont remontés à z-[70] dans popover.tsx pour rester visibles.
   const containerClass = fullscreen
-
-    ? "fixed inset-0 z-[45] flex flex-col bg-background"
+    ? "fixed inset-0 z-[60] flex flex-col bg-background"
     : "flex h-[calc(100svh-120px)] sm:h-[calc(100vh-200px)] min-h-[420px] sm:min-h-[500px] flex-col";
 
   return (
