@@ -1007,17 +1007,28 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
+    // Rendu sur canvas offscreen pour isoler la gomme du fond/grille/carte.
     const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
-      ctx.save();
-      ctx.globalAlpha = drawingsLayer.opacity / 100;
+      const off = document.createElement("canvas");
+      off.width = canvas.width;
+      off.height = canvas.height;
+      const octx = off.getContext("2d");
+      if (!octx) {
+        ctx.restore();
+        return;
+      }
+      octx.translate(panOffset.x, panOffset.y);
+      octx.scale(zoom, zoom);
+      octx.globalAlpha = drawingsLayer.opacity / 100;
 
       const visibleActions = actions.filter(a =>
         a.layer === "drawings" && (a.type as string) !== "fogReveal"
       );
 
       for (const action of visibleActions) {
-        ctx.save();
+        octx.save();
+
         ctx.strokeStyle = action.color;
         ctx.fillStyle = action.color;
         ctx.lineWidth = action.size / zoom;
