@@ -2570,7 +2570,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-3" side="bottom" align="start">
+            <PopoverContent className="w-72 p-3" side="bottom" align="start" style={{ zIndex: 9999 }}>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold">Scènes</h3>
@@ -2663,7 +2663,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               <span className="hidden sm:inline">Calques</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-72 p-3" side="bottom" align="start">
+          <PopoverContent className="w-72 p-3" side="bottom" align="start" style={{ zIndex: 9999 }}>
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Calques</h3>
               {layers.map(layer => (
@@ -2730,7 +2730,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                       <PopoverTrigger asChild>
                         <button className="h-8 w-8 shrink-0 rounded-md border border-border" style={{ backgroundColor: newTokenColor }} />
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2">
+                      <PopoverContent className="w-auto p-2" style={{ zIndex: 9999 }}>
                         <div className="grid grid-cols-4 gap-1">
                           {TOKEN_COLORS.map(c => (
                             <button key={c} onClick={() => setNewTokenColor(c)}
@@ -2825,7 +2825,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     <span className="absolute bottom-0.5 right-0.5 h-1 w-1 rounded-full bg-current opacity-50" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent side="right" align="start" className="w-auto p-1.5">
+                <PopoverContent side="right" align="start" className="w-auto p-1.5" style={{ zIndex: 9999 }}>
                   <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                     {group.label}
                   </div>
@@ -2863,7 +2863,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     <Lightbulb className="h-4 w-4" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent side="right" className="w-52 p-2">
+                <PopoverContent side="right" className="w-52 p-2" style={{ zIndex: 9999 }}>
                   <p className="text-xs font-semibold mb-2 text-amber-400">Type de lumière</p>
                   <div className="space-y-1">
                     {(Object.keys(LIGHT_PRESETS) as Array<keyof typeof LIGHT_PRESETS>).map(k => {
@@ -2999,7 +2999,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <div className="h-5 w-5 rounded-full border-2 border-white/20 shadow-md" style={{ backgroundColor: color }} />
               </button>
             </PopoverTrigger>
-            <PopoverContent side="right" className="w-auto p-2">
+            <PopoverContent side="right" className="w-auto p-2" style={{ zIndex: 9999 }}>
               <div className="grid grid-cols-4 gap-1">
                 {COLORS.map(c => (
                   <button key={c} onClick={() => setColor(c)}
@@ -3018,7 +3018,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <span className="text-[9px] font-bold leading-tight">{brushSize}</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent side="right" className="w-40 p-3">
+            <PopoverContent side="right" className="w-40 p-3" style={{ zIndex: 9999 }}>
               <div className="space-y-2">
                 <p className="text-xs font-medium">Taille : {brushSize}px</p>
                 <Slider value={[brushSize]} onValueChange={([v]) => setBrushSize(v)} min={1} max={30} step={1} />
