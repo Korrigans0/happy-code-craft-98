@@ -2548,6 +2548,43 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
+        {/* Measure unit (GM only) */}
+        {isGM && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5 text-[10px] font-semibold"
+                title="Unité de la règle">
+                <Ruler className="h-3.5 w-3.5" />
+                <span className="uppercase">{measureUnit === "cases" ? "□" : measureUnit}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-2" side="bottom" align="start" style={{ zIndex: 9999 }}>
+              <div className="space-y-1">
+                <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Unité de mesure
+                </div>
+                {([
+                  { id: "m",     label: "Mètres (1,5 m / case)" },
+                  { id: "ft",    label: "Pieds (5 ft / case)" },
+                  { id: "cases", label: "Cases (brut)" },
+                  { id: "km",    label: "Kilomètres" },
+                ] as { id: MeasureUnit; label: string }[]).map(o => (
+                  <button
+                    key={o.id}
+                    onClick={() => setMeasureUnit(o.id)}
+                    className={`w-full rounded px-2 py-1 text-left text-xs hover:bg-muted ${
+                      measureUnit === o.id ? "bg-primary/20 font-semibold text-primary" : ""
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+
         {/* Plateau mode toggle */}
         <Button variant="ghost" size="icon" className="h-7 w-7"
           onClick={() => setPlateauMode(m => m === "dark" ? "sky" : "dark")}
