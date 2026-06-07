@@ -1163,7 +1163,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 const mp1 = currentAction.points[currentAction.points.length - 1];
                 const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
                 const mSquares = mDist / GRID_SIZE;
-                const mMeters = (mSquares * M_PER_SQUARE).toFixed(1);
                 octx.save();
                 octx.strokeStyle = "#f59e0b";
                 octx.lineWidth = 2 / zoom;
@@ -1182,7 +1181,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 octx.fill();
                 const midX = (mp0.x + mp1.x) / 2;
                 const midY = (mp0.y + mp1.y) / 2;
-                const label = `${mMeters}m (${mSquares.toFixed(1)} cases)`;
+                const label = formatMeasure(mSquares);
                 octx.font = `bold ${13 / zoom}px 'Lora', serif`;
                 const tw = octx.measureText(label).width;
                 octx.fillStyle = "rgba(0,0,0,0.7)";
