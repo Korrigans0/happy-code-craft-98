@@ -308,36 +308,48 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
         // Jambage fin
         ctx.moveTo(x2s + nx * jambSize, y2s + ny * jambSize);
         ctx.lineTo(x2s - nx * jambSize, y2s - ny * jambSize);
-        // Seuil (trait perpendiculaire au centre)
-        ctx.moveTo(mx + nx * jambSize, my + ny * jambSize);
-        ctx.lineTo(mx - nx * jambSize, my - ny * jambSize);
         ctx.stroke();
 
-        // ── Battant de porte ────────────────────────────────
-        ctx.lineWidth = thickness;
-        if (wall.isOpen) {
-          // Ouverte = presque invisible, très léger
-          ctx.setLineDash([3, 8]);
-          ctx.strokeStyle = color + "55";
-        } else {
-          // Fermée = tirets longs bien visibles, immédiatement distinct d'un mur solide
-          ctx.setLineDash([12, 4]);
-          ctx.strokeStyle = color + "ee";
-        }
-        ctx.beginPath();
-        ctx.moveTo(x1s, y1s);
-        ctx.lineTo(x2s, y2s);
-        ctx.stroke();
+        // ── Battant de porte : petits traits perpendiculaires ──
+        // Au lieu d'une ligne continue, on dessine des tirets courts
+        // (comme des traverses) alignés perpendiculairement au mur.
+        ctx.lineWidth = Math.max(1.5, thickness - 1);
+        ctx.strokeStyle = color + (wall.isOpen ? "55" : "ee");
         ctx.setLineDash([]);
-
-        // ── Arc d'ouverture ─────────────────────────────────
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = color + (wall.isOpen ? "aa" : "88");
+        const tickHalf = 5;            // demi-hauteur de chaque petit trait
+        const tickSpacing = 8;          // espace entre traits le long de la porte
+        const tickCount = Math.max(2, Math.floor(len / tickSpacing));
         ctx.beginPath();
-        const a0 = Math.atan2(dy, dx);
-        const arcAngle = wall.isOpen ? Math.PI / 2 : Math.PI / 6;
-        ctx.arc(x1s, y1s, len, a0, a0 + arcAngle);
+        for (let i = 0; i <= tickCount; i++) {
+          const t = i / tickCount;
+          const cx = x1s + ux * len * t;
+          const cy = y1s + uy * len * t;
+          ctx.moveTo(cx + nx * tickHalf, cy + ny * tickHalf);
+          ctx.lineTo(cx - nx * tickHalf, cy - ny * tickHalf);
+        }
         ctx.stroke();
+
+        // ── Étiquette "Porte" au-dessus du centre ──────────
+        if (isGMView) {
+          // Décalage perpendiculaire (du côté "extérieur" — au-dessus)
+          // On choisit le côté qui pointe vers le haut de l'écran.
+          const offset = 16;
+          const sign = ny <= 0 ? 1 : -1; // normale vers le haut si possible
+          const lx = mx + nx * offset * sign;
+          const ly = my + ny * offset * sign;
+          ctx.save();
+          ctx.font = "bold 10px 'Lora', serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const label = wall.isOpen ? "Porte (ouverte)" : "Porte";
+          const tw = ctx.measureText(label).width;
+          ctx.fillStyle = "rgba(0,0,0,0.65)";
+          ctx.fillRect(lx - tw / 2 - 4, ly - 8, tw + 8, 14);
+          ctx.fillStyle = color;
+          ctx.fillText(label, lx, ly);
+          ctx.restore();
+        }
+
       } else if (wall.type === "window") {
         // Fenêtre = trait pointillé fin + double trait parallèle
         ctx.setLineDash([8, 4]);
