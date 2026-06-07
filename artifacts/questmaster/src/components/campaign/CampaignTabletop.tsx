@@ -2340,11 +2340,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
   const clearAll = () => {
     if (!perms.canClearBoard) { denied("Seul le MJ peut effacer le plateau"); return; }
-    if (!confirm("Effacer tout le plateau ?")) return;
+    if (!confirm("Effacer tout le plateau ? (dessins, tokens, murs, lumières)")) return;
     tokens.forEach(t => deletedTokenIdsRef.current.add(t.id));
     setActions([]); setUndoneActions([]); setTokens([]); setPanOffset({ x: 0, y: 0 }); setZoom(1);
     mapImageRef.current = null;
     setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+    try { wallsHook.clearAllWalls?.(); } catch {}
+    try { lightsHook.clearAllLights?.(); } catch {}
     saveState({ tokens: [], drawings: [], map_image_url: null }, { immediate: true });
   };
 
