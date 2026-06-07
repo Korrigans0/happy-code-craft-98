@@ -164,6 +164,30 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const [lastPanPoint, setLastPanPoint] = useState<{ x: number; y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
 
+  // ── Measurement unit (GM-configurable, persisted per campaign) ──
+  type MeasureUnit = "m" | "ft" | "cases" | "km";
+  const [measureUnit, setMeasureUnitState] = useState<MeasureUnit>(() => {
+    try {
+      const v = localStorage.getItem(`vtt-measure-unit-${campaignId}`);
+      if (v === "m" || v === "ft" || v === "cases" || v === "km") return v;
+    } catch {}
+    return "m";
+  });
+  const setMeasureUnit = (u: MeasureUnit) => {
+    setMeasureUnitState(u);
+    try { localStorage.setItem(`vtt-measure-unit-${campaignId}`, u); } catch {}
+  };
+  const formatMeasure = useCallback((squares: number): string => {
+    const cases = `${squares.toFixed(1)} case${squares >= 2 ? "s" : ""}`;
+    switch (measureUnit) {
+      case "ft":    return `${(squares * 5).toFixed(0)} ft (${cases})`;
+      case "cases": return cases;
+      case "km":    return `${((squares * M_PER_SQUARE) / 1000).toFixed(3)} km (${cases})`;
+      case "m":
+      default:      return `${(squares * M_PER_SQUARE).toFixed(1)} m (${cases})`;
+    }
+  }, [measureUnit]);
+
   // ── Token state ──
   const [tokens, setTokens] = useState<TokenItem[]>([]);
   const [draggedToken, setDraggedToken] = useState<string | null>(null);
@@ -1139,7 +1163,6 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 const mp1 = currentAction.points[currentAction.points.length - 1];
                 const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
                 const mSquares = mDist / GRID_SIZE;
-                const mMeters = (mSquares * M_PER_SQUARE).toFixed(1);
                 octx.save();
                 octx.strokeStyle = "#f59e0b";
                 octx.lineWidth = 2 / zoom;
@@ -1158,7 +1181,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 octx.fill();
                 const midX = (mp0.x + mp1.x) / 2;
                 const midY = (mp0.y + mp1.y) / 2;
-                const label = `${mMeters}m (${mSquares.toFixed(1)} cases)`;
+                const label = formatMeasure(mSquares);
                 octx.font = `bold ${13 / zoom}px 'Lora', serif`;
                 const tw = octx.measureText(label).width;
                 octx.fillStyle = "rgba(0,0,0,0.7)";
@@ -1705,7 +1728,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
@@ -2524,6 +2547,43 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         </Button>
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
+
+        {/* Measure unit (GM only) */}
+        {isGM && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5 text-[10px] font-semibold"
+                title="Unité de la règle">
+                <Ruler className="h-3.5 w-3.5" />
+                <span className="uppercase">{measureUnit === "cases" ? "□" : measureUnit}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-2" side="bottom" align="start" style={{ zIndex: 9999 }}>
+              <div className="space-y-1">
+                <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Unité de mesure
+                </div>
+                {([
+                  { id: "m",     label: "Mètres (1,5 m / case)" },
+                  { id: "ft",    label: "Pieds (5 ft / case)" },
+                  { id: "cases", label: "Cases (brut)" },
+                  { id: "km",    label: "Kilomètres" },
+                ] as { id: MeasureUnit; label: string }[]).map(o => (
+                  <button
+                    key={o.id}
+                    onClick={() => setMeasureUnit(o.id)}
+                    className={`w-full rounded px-2 py-1 text-left text-xs hover:bg-muted ${
+                      measureUnit === o.id ? "bg-primary/20 font-semibold text-primary" : ""
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
 
         {/* Plateau mode toggle */}
         <Button variant="ghost" size="icon" className="h-7 w-7"
