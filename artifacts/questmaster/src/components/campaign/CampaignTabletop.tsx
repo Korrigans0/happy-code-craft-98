@@ -1833,7 +1833,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         // Wall tools (GM)
         if (tool === "wall" || tool === "wallDoor") {
           const w = toWorld(t.clientX, t.clientY);
-          wallsHook.startWall(w.x, w.y);
+          wallsHook.startWall(w.x, w.y, tool === "wallDoor" ? "door" : "solid");
           mode = "wall"; return;
         }
         if (tool === "wallDelete") {
@@ -2128,7 +2128,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const coords = getCanvasCoords(e);
 
     if (tool === "wall" || tool === "wallDoor") {
-      wallsHook.startWall(coords.x, coords.y);
+      wallsHook.startWall(coords.x, coords.y, tool === "wallDoor" ? "door" : "solid");
       return;
     }
     if (tool === "wallDelete") {
