@@ -1026,12 +1026,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // ── Map layer ─────────────────────────────────────────────
     const mapLayer = layers.find(l => l.id === "map");
-    if (mapLayer?.visible && mapImageRef.current) {
+    if (mapLayer?.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
       ctx.save();
       ctx.globalAlpha = mapLayer.opacity / 100;
-      ctx.drawImage(mapImageRef.current, 0, 0);
+      try { ctx.drawImage(mapImageRef.current, 0, 0); } catch { /* image pas prête */ }
       ctx.restore();
     }
+
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
     // Rendu sur canvas offscreen pour isoler la gomme du fond/grille/carte.
