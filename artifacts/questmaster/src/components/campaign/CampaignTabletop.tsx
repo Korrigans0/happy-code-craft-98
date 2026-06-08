@@ -972,8 +972,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Évite "drawImage on canvas with width/height 0" lors du tout 1er rendu
+    if (!canvas.width || !canvas.height) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = plateauColors.background;
@@ -1023,12 +1026,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
     // ── Map layer ─────────────────────────────────────────────
     const mapLayer = layers.find(l => l.id === "map");
-    if (mapLayer?.visible && mapImageRef.current) {
+    if (mapLayer?.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
       ctx.save();
       ctx.globalAlpha = mapLayer.opacity / 100;
-      ctx.drawImage(mapImageRef.current, 0, 0);
+      try { ctx.drawImage(mapImageRef.current, 0, 0); } catch { /* image pas prête */ }
       ctx.restore();
     }
+
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
     // Rendu sur canvas offscreen pour isoler la gomme du fond/grille/carte.
