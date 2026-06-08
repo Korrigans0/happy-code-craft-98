@@ -972,8 +972,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Évite "drawImage on canvas with width/height 0" lors du tout 1er rendu
+    if (!canvas.width || !canvas.height) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = plateauColors.background;
