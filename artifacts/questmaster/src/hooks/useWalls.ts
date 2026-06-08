@@ -48,6 +48,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
   // Point de départ du mur en cours de dessin
   const drawingStartRef = useRef<{ x: number; y: number } | null>(null);
   const previewEndRef = useRef<{ x: number; y: number } | null>(null);
+  const drawingWallTypeRef = useRef<WallType | null>(null);
 
   // ── Historique undo/redo ───────────────────────────────
   const undoStackRef = useRef<Wall[][]>([]);
@@ -81,10 +82,11 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
   }, []);
 
   // ── Commencer à dessiner un mur ────────────────────────
-  const startWall = useCallback((x: number, y: number) => {
+  const startWall = useCallback((x: number, y: number, wallTypeOverride?: WallType) => {
     if (!isGM) return;
     drawingStartRef.current = { x, y };
     previewEndRef.current = { x, y };
+    drawingWallTypeRef.current = wallTypeOverride ?? selectedWallTypeRef.current;
   }, [isGM]);
 
   // ── Mise à jour preview ────────────────────────────────
@@ -108,7 +110,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
 
     const newWall: Wall = {
       id: newId(),
-      type: selectedWallType,
+      type: drawingWallTypeRef.current ?? selectedWallTypeRef.current,
       x1: start.x,
       y1: start.y,
       x2: x,
@@ -124,12 +126,14 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
 
     drawingStartRef.current = null;
     previewEndRef.current = null;
-  }, [isGM, selectedWallType, saveWalls, pushHistory]);
+    drawingWallTypeRef.current = null;
+  }, [isGM, saveWalls, pushHistory]);
 
   // ── Annuler le dessin en cours (Echap) ─────────────────
   const cancelWall = useCallback(() => {
     drawingStartRef.current = null;
     previewEndRef.current = null;
+    drawingWallTypeRef.current = null;
   }, []);
 
   // ── Supprimer le mur le plus proche du clic ────────────
@@ -421,18 +425,19 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
       const x2s = end.x * zoom + panOffset.x;
       const y2s = end.y * zoom + panOffset.y;
 
+      const previewWallType = drawingWallTypeRef.current ?? selectedWallType;
       let previewColor = WALL_COLORS.solid;
-      if (selectedWallType === "door") previewColor = WALL_COLORS.door;
-      if (selectedWallType === "window") previewColor = WALL_COLORS.window;
-      if (selectedWallType === "terrain") previewColor = WALL_COLORS.terrain;
+      if (previewWallType === "door") previewColor = WALL_COLORS.door;
+      if (previewWallType === "window") previewColor = WALL_COLORS.window;
+      if (previewWallType === "terrain") previewColor = WALL_COLORS.terrain;
 
       ctx.strokeStyle = previewColor + "88";
       ctx.lineWidth = 3;
-      if (selectedWallType === "door") {
+      if (previewWallType === "door") {
         ctx.setLineDash([12, 4]);
-      } else if (selectedWallType === "window") {
+      } else if (previewWallType === "window") {
         ctx.setLineDash([8, 4]);
-      } else if (selectedWallType === "terrain") {
+      } else if (previewWallType === "terrain") {
         ctx.setLineDash([4, 6]);
       } else {
         ctx.setLineDash([]);
