@@ -9,6 +9,11 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuYXdweHJlam1jeGZiaWlvd3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDgwNTEsImV4cCI6MjA4MjA4NDA1MX0.1knQmnMMqbD4XetxEFJ7YO8IZSN959KpNF1ZXyWTwz0";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: {
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
   realtime: { params: { eventsPerSecond: 20 } },
 });
