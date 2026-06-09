@@ -2330,10 +2330,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (!t) return prev;
         const sx = snapValue(t.x), sy = snapValue(t.y);
         let nx = sx, ny = sy;
+        // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
+        if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
         if (collisionEnabled) {
           const overlaps = prev.some(o =>
             o.id !== id && o.visible &&
-            tokensOverlap({ x: sx, y: sy, size: t.size }, { x: o.x, y: o.y, size: o.size })
+            tokensOverlap({ x: nx, y: ny, size: t.size }, { x: o.x, y: o.y, size: o.size })
           );
           if (overlaps) {
             const last = tokenLastPosRef.current.get(id);
