@@ -15,9 +15,19 @@ const Auth = () => {
   const navigate = useNavigate();
   const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const REMEMBER_KEY = "aetheria.remember.credentials";
+  const remembered = (() => {
+    try {
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      return raw ? (JSON.parse(raw) as { email?: string; password?: string }) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [email, setEmail] = useState(remembered?.email ?? "");
+  const [password, setPassword] = useState(remembered?.password ?? "");
   const [displayName, setDisplayName] = useState("");
+  const [remember, setRemember] = useState(!!remembered);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -45,6 +55,11 @@ const Auth = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (remember) {
+          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, password }));
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
         toast.success("Connexion réussie");
       }
     } catch (err: unknown) {
@@ -98,6 +113,17 @@ const Auth = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {mode === "signin" && (
+            <label className="flex items-center gap-2 text-sm text-amber-100/80 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              Se souvenir de mon email et mot de passe
+            </label>
+          )}
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? "..." : mode === "signin" ? "Se connecter" : "Créer un compte"}
           </Button>
