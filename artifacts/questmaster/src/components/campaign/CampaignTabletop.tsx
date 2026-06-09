@@ -773,7 +773,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
+      if (crossesBlocker(t.x, t.y, t.x + dx, t.y + dy)) return t;
       const free = findFreePosition(t.x + dx, t.y + dy, t.size, t.id);
+      if (crossesBlocker(t.x, t.y, free.x, free.y)) return t;
       return { ...t, x: free.x, y: free.y };
     }));
   };
