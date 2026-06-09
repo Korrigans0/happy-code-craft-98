@@ -388,6 +388,28 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   });
   lightsHookRef.current = lightsHook;
 
+  // ── Collision murs / portes fermées : segments traversants bloqués ──
+  const segmentsIntersect = (
+    ax: number, ay: number, bx: number, by: number,
+    cx: number, cy: number, dx: number, dy: number,
+  ): boolean => {
+    const d1x = bx - ax, d1y = by - ay;
+    const d2x = dx - cx, d2y = dy - cy;
+    const denom = d1x * d2y - d1y * d2x;
+    if (Math.abs(denom) < 1e-9) return false;
+    const t = ((cx - ax) * d2y - (cy - ay) * d2x) / denom;
+    const u = ((cx - ax) * d1y - (cy - ay) * d1x) / denom;
+    return t > 0 && t < 1 && u > 0 && u < 1;
+  };
+  const crossesBlocker = useCallback((x1: number, y1: number, x2: number, y2: number): boolean => {
+    if (x1 === x2 && y1 === y2) return false;
+    const blockers = wallsHook.walls.filter(w => w.type === "solid" || (w.type === "door" && !w.isOpen));
+    for (const w of blockers) {
+      if (segmentsIntersect(x1, y1, x2, y2, w.x1, w.y1, w.x2, w.y2)) return true;
+    }
+    return false;
+  }, [wallsHook.walls]);
+
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
 
