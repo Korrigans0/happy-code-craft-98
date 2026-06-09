@@ -19,13 +19,13 @@ const Auth = () => {
   const remembered = (() => {
     try {
       const raw = localStorage.getItem(REMEMBER_KEY);
-      return raw ? (JSON.parse(raw) as { email?: string; password?: string }) : null;
+      return raw ? (JSON.parse(raw) as { email?: string }) : null;
     } catch {
       return null;
     }
   })();
   const [email, setEmail] = useState(remembered?.email ?? "");
-  const [password, setPassword] = useState(remembered?.password ?? "");
+  const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [remember, setRemember] = useState(!!remembered);
   const [busy, setBusy] = useState(false);
@@ -56,7 +56,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (remember) {
-          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, password }));
+          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
         } else {
           localStorage.removeItem(REMEMBER_KEY);
         }
@@ -121,7 +121,7 @@ const Auth = () => {
                 onChange={(e) => setRemember(e.target.checked)}
                 className="h-4 w-4 accent-amber-500"
               />
-              Se souvenir de mon email et mot de passe
+              Se souvenir de mon email
             </label>
           )}
           <Button type="submit" disabled={busy} className="w-full">
