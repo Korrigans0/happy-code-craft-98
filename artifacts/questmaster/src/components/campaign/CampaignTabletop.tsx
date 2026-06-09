@@ -2288,6 +2288,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       // Free follow during drag (no snap) — snapping happens on release with a slide animation
       const nextX = coords.x - tokenDragOffset.x;
       const nextY = coords.y - tokenDragOffset.y;
+      // Bloque la traversée des murs/portes fermées
+      if (crossesBlocker(draggedT.x, draggedT.y, nextX, nextY)) return;
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
