@@ -388,6 +388,28 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   });
   lightsHookRef.current = lightsHook;
 
+  // ── Collision murs / portes fermées : segments traversants bloqués ──
+  const segmentsIntersect = (
+    ax: number, ay: number, bx: number, by: number,
+    cx: number, cy: number, dx: number, dy: number,
+  ): boolean => {
+    const d1x = bx - ax, d1y = by - ay;
+    const d2x = dx - cx, d2y = dy - cy;
+    const denom = d1x * d2y - d1y * d2x;
+    if (Math.abs(denom) < 1e-9) return false;
+    const t = ((cx - ax) * d2y - (cy - ay) * d2x) / denom;
+    const u = ((cx - ax) * d1y - (cy - ay) * d1x) / denom;
+    return t > 0 && t < 1 && u > 0 && u < 1;
+  };
+  const crossesBlocker = useCallback((x1: number, y1: number, x2: number, y2: number): boolean => {
+    if (x1 === x2 && y1 === y2) return false;
+    const blockers = wallsHook.walls.filter(w => w.type === "solid" || (w.type === "door" && !w.isOpen));
+    for (const w of blockers) {
+      if (segmentsIntersect(x1, y1, x2, y2, w.x1, w.y1, w.x2, w.y2)) return true;
+    }
+    return false;
+  }, [wallsHook.walls]);
+
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
 
@@ -751,7 +773,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const moveTokenBy = (tokenId: string, dx: number, dy: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
+      if (crossesBlocker(t.x, t.y, t.x + dx, t.y + dy)) return t;
       const free = findFreePosition(t.x + dx, t.y + dy, t.size, t.id);
+      if (crossesBlocker(t.x, t.y, free.x, free.y)) return t;
       return { ...t, x: free.x, y: free.y };
     }));
   };
@@ -2264,6 +2288,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       // Free follow during drag (no snap) — snapping happens on release with a slide animation
       const nextX = coords.x - tokenDragOffset.x;
       const nextY = coords.y - tokenDragOffset.y;
+      // Bloque la traversée des murs/portes fermées
+      if (crossesBlocker(draggedT.x, draggedT.y, nextX, nextY)) return;
       setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
       return;
     }
@@ -2304,10 +2330,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         if (!t) return prev;
         const sx = snapValue(t.x), sy = snapValue(t.y);
         let nx = sx, ny = sy;
+        // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
+        if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
         if (collisionEnabled) {
           const overlaps = prev.some(o =>
             o.id !== id && o.visible &&
-            tokensOverlap({ x: sx, y: sy, size: t.size }, { x: o.x, y: o.y, size: o.size })
+            tokensOverlap({ x: nx, y: ny, size: t.size }, { x: o.x, y: o.y, size: o.size })
           );
           if (overlaps) {
             const last = tokenLastPosRef.current.get(id);
