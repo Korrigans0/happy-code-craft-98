@@ -113,6 +113,17 @@ const Auth = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {mode === "signin" && (
+            <label className="flex items-center gap-2 text-sm text-amber-100/80 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 accent-amber-500"
+              />
+              Se souvenir de mon email et mot de passe
+            </label>
+          )}
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? "..." : mode === "signin" ? "Se connecter" : "Créer un compte"}
           </Button>
