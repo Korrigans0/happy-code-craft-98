@@ -15,9 +15,19 @@ const Auth = () => {
   const navigate = useNavigate();
   const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const REMEMBER_KEY = "aetheria.remember.credentials";
+  const remembered = (() => {
+    try {
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      return raw ? (JSON.parse(raw) as { email?: string; password?: string }) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [email, setEmail] = useState(remembered?.email ?? "");
+  const [password, setPassword] = useState(remembered?.password ?? "");
   const [displayName, setDisplayName] = useState("");
+  const [remember, setRemember] = useState(!!remembered);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
