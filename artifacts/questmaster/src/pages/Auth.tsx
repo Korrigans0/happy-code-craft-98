@@ -55,6 +55,11 @@ const Auth = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (remember) {
+          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, password }));
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
         toast.success("Connexion réussie");
       }
     } catch (err: unknown) {
