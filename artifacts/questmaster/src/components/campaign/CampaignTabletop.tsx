@@ -2783,7 +2783,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         )}
 
         {/* Calques */}
+        {!isMobilePlayer && (
         <Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
+
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
               <Layers className="h-3.5 w-3.5" />
