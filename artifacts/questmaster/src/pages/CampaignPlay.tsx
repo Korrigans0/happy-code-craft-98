@@ -230,7 +230,7 @@ const CampaignPlay = () => {
 
         {/* ── MAIN CONTENT ─────────────────────────────────── */}
         <div className="container mx-auto flex-1 px-4 py-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
             <TabsList
               className="grid w-full bg-muted"
               style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
