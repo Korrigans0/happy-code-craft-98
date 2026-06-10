@@ -10,8 +10,9 @@ import {
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
-  Lightbulb, Moon,
+  Lightbulb, Moon, Smartphone,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
 import { useLights } from "@/hooks/useLights";
 import { computeVisibilityPolygon, type Segment } from "@/lib/visibility-polygon";
