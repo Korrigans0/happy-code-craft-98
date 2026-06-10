@@ -2878,6 +2878,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           </PopoverContent>
         </Popover>
+        )}
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -2891,11 +2892,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
         {/* GM Panel toggle */}
+        {!isMobilePlayer && (
         <Button variant={gmPanelOpen ? "default" : "ghost"} size="icon" className="h-7 w-7"
           onClick={() => setGmPanelOpen(o => !o)}
           title={gmPanelOpen ? "Fermer le panneau" : "Ouvrir le panneau MJ"}>
           {gmPanelOpen ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRight className="h-3.5 w-3.5" />}
         </Button>
+        )}
 
         {/* Fullscreen toggle */}
         <Button variant={fullscreen ? "default" : "ghost"} size="icon" className="h-7 w-7"
