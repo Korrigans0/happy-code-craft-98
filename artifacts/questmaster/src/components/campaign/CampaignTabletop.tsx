@@ -3424,7 +3424,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onClose={() => setGmPanelOpen(false)}
           />
         )}
-        {gmPanelOpen && !isGM && (
+        {gmPanelOpen && !isGM && !isMobile && (
           <PlayerPanel
             tokens={tokens}
             initiative={initiative}
