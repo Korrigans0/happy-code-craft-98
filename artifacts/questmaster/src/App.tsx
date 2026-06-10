@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import MobileBanner from "@/components/MobileBanner";
 import CookieBanner from "@/components/CookieBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -67,6 +68,7 @@ const AppRoutes = () => (
       </Routes>
       <MobileBottomNav />
       <CookieBanner />
+      <MobileBanner />
     </TooltipProvider>
   </BrowserRouter>
 );

@@ -10,8 +10,9 @@ import {
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
-  Lightbulb, Moon,
+  Lightbulb, Moon, Smartphone,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
 import { useLights } from "@/hooks/useLights";
 import { computeVisibilityPolygon, type Segment } from "@/lib/visibility-polygon";
@@ -152,6 +153,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const pingAnimRef = useRef<number | null>(null);
 
   // ── Core tool state ──
+  const isMobile = useIsMobile();
+  const isMobilePlayer = isMobile && !isGM;
+  const isMobileGM = isMobile && isGM;
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(3);
@@ -2532,7 +2536,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "light",   label: "Lumières",      icon: <Lightbulb className="h-4 w-4" />, gmOnly: true },
   ], []);
 
-  const visibleTools = useMemo(() => TOOLS.filter(t => !t.gmOnly || isGM), [TOOLS, isGM]);
+  const visibleTools = useMemo(() => {
+    let list = TOOLS.filter(t => !t.gmOnly || isGM);
+    if (isMobilePlayer) {
+      const allowed = new Set(["move", "pencil", "eraser"]);
+      list = list.filter(t => allowed.has(t.id));
+    } else if (isMobileGM) {
+      // Hide walls + dynamic lights on mobile GM
+      const hidden = new Set(["wall", "wallDoor", "wallDelete", "light", "lightDelete"]);
+      list = list.filter(t => !hidden.has(t.id));
+    }
+    return list;
+  }, [TOOLS, isGM, isMobilePlayer, isMobileGM]);
 
   // ── Context menu actions ──
   const ctxToken = useMemo(
@@ -2547,8 +2562,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     ? "fixed inset-0 z-[60] flex flex-col bg-background"
     : "flex h-[calc(100svh-120px)] sm:h-[calc(100vh-200px)] min-h-[420px] sm:min-h-[500px] flex-col";
 
+  const currentTurnEntry = initiativeActiveIdx >= 0 ? initiative[initiativeActiveIdx] : null;
+
   return (
     <div className={containerClass}>
+
+      {isMobileGM && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 mx-2 mt-2 px-3 py-2 text-xs text-amber-400">
+          <Smartphone className="h-3.5 w-3.5 shrink-0" />
+          <span>Mode mobile MJ — fonctions avancées (murs, lumières, tableaux) disponibles uniquement sur desktop.</span>
+        </div>
+      )}
+
+      {isMobilePlayer && currentTurnEntry && (
+        <div className="flex items-center justify-center gap-2 border-b border-border/60 bg-card/80 px-3 py-1.5 text-xs">
+          <span className="text-muted-foreground">Tour de :</span>
+          <span className="font-semibold text-primary">{currentTurnEntry.name}</span>
+          <span className="text-[10px] text-muted-foreground">(round {initiativeRound})</span>
+        </div>
+      )}
+
 
       {/* ── TOP TOOLBAR ────────────────────────────────────── */}
       <div className="flex shrink-0 flex-nowrap sm:flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm overflow-x-auto sm:overflow-x-visible scrollbar-thin">
@@ -2750,7 +2783,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         )}
 
         {/* Calques */}
+        {!isMobilePlayer && (
         <Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
+
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
               <Layers className="h-3.5 w-3.5" />
@@ -2843,6 +2878,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </div>
           </PopoverContent>
         </Popover>
+        )}
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -2856,11 +2892,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
         {/* GM Panel toggle */}
+        {!isMobilePlayer && (
         <Button variant={gmPanelOpen ? "default" : "ghost"} size="icon" className="h-7 w-7"
           onClick={() => setGmPanelOpen(o => !o)}
           title={gmPanelOpen ? "Fermer le panneau" : "Ouvrir le panneau MJ"}>
           {gmPanelOpen ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRight className="h-3.5 w-3.5" />}
         </Button>
+        )}
 
         {/* Fullscreen toggle */}
         <Button variant={fullscreen ? "default" : "ghost"} size="icon" className="h-7 w-7"
@@ -3064,7 +3102,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </>
           )}
 
-          {isGM && (
+          {isGM && !isMobile && (
             <WallsToolbar
               selectedWallType={wallsHook.selectedWallType}
               onSelectType={wallsHook.setSelectedWallType}
@@ -3386,7 +3424,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onClose={() => setGmPanelOpen(false)}
           />
         )}
-        {gmPanelOpen && !isGM && (
+        {gmPanelOpen && !isGM && !isMobile && (
           <PlayerPanel
             tokens={tokens}
             initiative={initiative}

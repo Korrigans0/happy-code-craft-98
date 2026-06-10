@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { 
-  Loader2, MessageSquare, BookOpen, Users, 
+import {
+  Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X
+  Volume2, ExternalLink, Wand2, X, Dices,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import CampaignChat from "@/components/campaign/CampaignChat";
 
 import CampaignNotes from "@/components/campaign/CampaignNotes";
@@ -85,15 +86,35 @@ const CampaignPlay = () => {
   const toggleChat = useCallback(() => setChatOpen(o => !o), []);
   const closeChat = useCallback(() => setChatOpen(false), []);
 
-  const tabs = useMemo(() => [
-    { id: "tabletop", icon: Map, label: "Partie" },
-    { id: "chat", icon: MessageSquare, label: "Chat" },
-    { id: "sessions", icon: CalendarDays, label: "Sessions" },
-    { id: "notes", icon: BookOpen, label: "Notes" },
-    { id: "members", icon: Users, label: "Joueurs" },
-    ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
-    ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
-  ], [isGM]);
+  const isMobile = useIsMobile();
+  const isMobilePlayer = isMobile && !isGM;
+
+  const tabs = useMemo(() => {
+    if (isMobilePlayer) {
+      return [
+        { id: "tabletop", icon: Map, label: "Plateau" },
+        { id: "dice", icon: Dices, label: "Dés" },
+        { id: "chat", icon: MessageSquare, label: "Chat" },
+      ];
+    }
+    return [
+      { id: "tabletop", icon: Map, label: "Partie" },
+      { id: "chat", icon: MessageSquare, label: "Chat" },
+      { id: "sessions", icon: CalendarDays, label: "Sessions" },
+      { id: "notes", icon: BookOpen, label: "Notes" },
+      { id: "members", icon: Users, label: "Joueurs" },
+      ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
+      ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
+    ];
+  }, [isGM, isMobilePlayer]);
+
+  const handleTabChange = useCallback((v: string) => {
+    if (v === "dice") {
+      navigate("/dice");
+      return;
+    }
+    setActiveTab(v);
+  }, [navigate]);
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
@@ -209,7 +230,7 @@ const CampaignPlay = () => {
 
         {/* ── MAIN CONTENT ─────────────────────────────────── */}
         <div className="container mx-auto flex-1 px-4 py-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
             <TabsList
               className="grid w-full bg-muted"
               style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
