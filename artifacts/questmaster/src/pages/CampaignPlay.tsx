@@ -86,15 +86,35 @@ const CampaignPlay = () => {
   const toggleChat = useCallback(() => setChatOpen(o => !o), []);
   const closeChat = useCallback(() => setChatOpen(false), []);
 
-  const tabs = useMemo(() => [
-    { id: "tabletop", icon: Map, label: "Partie" },
-    { id: "chat", icon: MessageSquare, label: "Chat" },
-    { id: "sessions", icon: CalendarDays, label: "Sessions" },
-    { id: "notes", icon: BookOpen, label: "Notes" },
-    { id: "members", icon: Users, label: "Joueurs" },
-    ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
-    ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
-  ], [isGM]);
+  const isMobile = useIsMobile();
+  const isMobilePlayer = isMobile && !isGM;
+
+  const tabs = useMemo(() => {
+    if (isMobilePlayer) {
+      return [
+        { id: "tabletop", icon: Map, label: "Plateau" },
+        { id: "dice", icon: Dices, label: "Dés" },
+        { id: "chat", icon: MessageSquare, label: "Chat" },
+      ];
+    }
+    return [
+      { id: "tabletop", icon: Map, label: "Partie" },
+      { id: "chat", icon: MessageSquare, label: "Chat" },
+      { id: "sessions", icon: CalendarDays, label: "Sessions" },
+      { id: "notes", icon: BookOpen, label: "Notes" },
+      { id: "members", icon: Users, label: "Joueurs" },
+      ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
+      ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
+    ];
+  }, [isGM, isMobilePlayer]);
+
+  const handleTabChange = useCallback((v: string) => {
+    if (v === "dice") {
+      navigate("/dice");
+      return;
+    }
+    setActiveTab(v);
+  }, [navigate]);
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
