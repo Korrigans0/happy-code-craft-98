@@ -2562,8 +2562,26 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     ? "fixed inset-0 z-[60] flex flex-col bg-background"
     : "flex h-[calc(100svh-120px)] sm:h-[calc(100vh-200px)] min-h-[420px] sm:min-h-[500px] flex-col";
 
+  const currentTurnEntry = initiativeActiveIdx >= 0 ? initiative[initiativeActiveIdx] : null;
+
   return (
     <div className={containerClass}>
+
+      {isMobileGM && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 mx-2 mt-2 px-3 py-2 text-xs text-amber-400">
+          <Smartphone className="h-3.5 w-3.5 shrink-0" />
+          <span>Mode mobile MJ — fonctions avancées (murs, lumières, tableaux) disponibles uniquement sur desktop.</span>
+        </div>
+      )}
+
+      {isMobilePlayer && currentTurnEntry && (
+        <div className="flex items-center justify-center gap-2 border-b border-border/60 bg-card/80 px-3 py-1.5 text-xs">
+          <span className="text-muted-foreground">Tour de :</span>
+          <span className="font-semibold text-primary">{currentTurnEntry.name}</span>
+          <span className="text-[10px] text-muted-foreground">(round {initiativeRound})</span>
+        </div>
+      )}
+
 
       {/* ── TOP TOOLBAR ────────────────────────────────────── */}
       <div className="flex shrink-0 flex-nowrap sm:flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm overflow-x-auto sm:overflow-x-visible scrollbar-thin">
