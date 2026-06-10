@@ -2536,7 +2536,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "light",   label: "Lumières",      icon: <Lightbulb className="h-4 w-4" />, gmOnly: true },
   ], []);
 
-  const visibleTools = useMemo(() => TOOLS.filter(t => !t.gmOnly || isGM), [TOOLS, isGM]);
+  const visibleTools = useMemo(() => {
+    let list = TOOLS.filter(t => !t.gmOnly || isGM);
+    if (isMobilePlayer) {
+      const allowed = new Set(["move", "pencil", "eraser"]);
+      list = list.filter(t => allowed.has(t.id));
+    } else if (isMobileGM) {
+      // Hide walls + dynamic lights on mobile GM
+      const hidden = new Set(["wall", "wallDoor", "wallDelete", "light", "lightDelete"]);
+      list = list.filter(t => !hidden.has(t.id));
+    }
+    return list;
+  }, [TOOLS, isGM, isMobilePlayer, isMobileGM]);
 
   // ── Context menu actions ──
   const ctxToken = useMemo(
