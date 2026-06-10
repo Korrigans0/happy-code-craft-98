@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { 
-  Loader2, MessageSquare, BookOpen, Users, 
+import {
+  Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X
+  Volume2, ExternalLink, Wand2, X, Dices,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import CampaignChat from "@/components/campaign/CampaignChat";
 
 import CampaignNotes from "@/components/campaign/CampaignNotes";
