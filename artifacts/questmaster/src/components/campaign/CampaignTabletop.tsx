@@ -153,6 +153,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const pingAnimRef = useRef<number | null>(null);
 
   // ── Core tool state ──
+  const isMobile = useIsMobile();
+  const isMobilePlayer = isMobile && !isGM;
+  const isMobileGM = isMobile && isGM;
   const [tool, setTool] = useState<Tool>("move");
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(3);
