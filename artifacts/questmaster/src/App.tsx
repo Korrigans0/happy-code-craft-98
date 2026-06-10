@@ -68,6 +68,7 @@ const AppRoutes = () => (
       </Routes>
       <MobileBottomNav />
       <CookieBanner />
+      <MobileBanner />
     </TooltipProvider>
   </BrowserRouter>
 );
