@@ -3102,7 +3102,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             </>
           )}
 
-          {isGM && (
+          {isGM && !isMobile && (
             <WallsToolbar
               selectedWallType={wallsHook.selectedWallType}
               onSelectType={wallsHook.setSelectedWallType}
