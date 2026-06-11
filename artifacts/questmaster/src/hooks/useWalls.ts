@@ -206,6 +206,19 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     });
   }, [saveWalls, pushHistory]);
 
+  // ── Ouvrir / fermer toutes les portes ───────────────────
+  const setAllDoorsOpen = useCallback((isOpen: boolean) => {
+    if (!isGM) return;
+    setWalls(prev => {
+      const hasChange = prev.some(w => w.type === "door" && !!w.isOpen !== isOpen);
+      if (!hasChange) return prev;
+      pushHistory(prev);
+      const updated = prev.map(w => w.type === "door" ? { ...w, isOpen } : w);
+      saveWalls(updated);
+      return updated;
+    });
+  }, [isGM, saveWalls, pushHistory]);
+
   // ── Tout effacer ────────────────────────────────────────
   const clearAllWalls = useCallback(() => {
     if (!isGM) return;
