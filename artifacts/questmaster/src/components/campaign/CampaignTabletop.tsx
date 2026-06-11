@@ -2134,10 +2134,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const coords = getCanvasCoords(e);
     const tokenHit = findTokenAt(coords.x, coords.y);
 
-    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement) → suppression directe
+    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement)
     if (!tokenHit && isGM) {
       const hitWallId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
       if (hitWallId) {
+        const hitWall = wallsHook.walls.find(w => w.id === hitWallId);
+        // Porte → bascule ouvert/fermé (au lieu de supprimer)
+        if (hitWall?.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+        // Autres types → suppression rapide
         wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
         toast({ title: "Mur supprimé", description: "Clic droit sur un mur = suppression rapide." });
         return;
