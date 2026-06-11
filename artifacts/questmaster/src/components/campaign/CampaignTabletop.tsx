@@ -2160,6 +2160,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const coords = getCanvasCoords(e);
 
     if (tool === "wall" || tool === "wallDoor") {
+      // Si on clique sur une porte existante avec l'outil porte → bascule ouvert/fermé
+      if (tool === "wallDoor") {
+        const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+        const hitWall = hitId ? wallsHook.walls.find(w => w.id === hitId) : null;
+        if (hitWall && hitWall.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+      }
       wallsHook.startWall(coords.x, coords.y, tool === "wallDoor" ? "door" : "solid");
       return;
     }
