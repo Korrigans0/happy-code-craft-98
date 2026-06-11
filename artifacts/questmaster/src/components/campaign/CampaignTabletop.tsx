@@ -3268,7 +3268,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
           {/* Selected token panel (floating bottom) */}
           {selectedToken && !gmPanelOpen && (
-            <div className="absolute bottom-12 right-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
+            <div className="absolute bottom-12 left-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
               <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-full border border-primary/40" style={{ backgroundColor: selectedToken.color }} />
                 <div className="flex-1 min-w-0">
