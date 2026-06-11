@@ -4,8 +4,10 @@
 // ============================================================
 
 import { useState } from "react";
-import { Trash2, DoorOpen, DoorClosed, Eye, Layers, Square, Undo2, Redo2, Gauge } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Trash2, DoorOpen, DoorClosed, Eye, Layers, Square,
+  Undo2, Redo2, Gauge, HelpCircle,
+} from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -24,29 +26,18 @@ interface WallsToolbarProps {
   canRedo: boolean;
   rafThrottle: number;
   onRafThrottleChange: (value: number) => void;
+  // Portes
+  doorsOpen?: number;
+  doorsClosed?: number;
+  onOpenAllDoors?: () => void;
+  onCloseAllDoors?: () => void;
 }
 
 const WALL_TYPES: { type: WallType; icon: React.ReactNode; shortLabel: string }[] = [
-  {
-    type: "solid",
-    icon: <Square className="h-4 w-4" />,
-    shortLabel: "Mur",
-  },
-  {
-    type: "door",
-    icon: <DoorClosed className="h-4 w-4" />,
-    shortLabel: "Porte",
-  },
-  {
-    type: "window",
-    icon: <Eye className="h-4 w-4" />,
-    shortLabel: "Fenêtre",
-  },
-  {
-    type: "terrain",
-    icon: <Layers className="h-4 w-4" />,
-    shortLabel: "Terrain",
-  },
+  { type: "solid",   icon: <Square className="h-4 w-4" />,     shortLabel: "Mur" },
+  { type: "door",    icon: <DoorClosed className="h-4 w-4" />, shortLabel: "Porte" },
+  { type: "window",  icon: <Eye className="h-4 w-4" />,        shortLabel: "Fenêtre" },
+  { type: "terrain", icon: <Layers className="h-4 w-4" />,     shortLabel: "Terrain" },
 ];
 
 export default function WallsToolbar({
@@ -61,13 +52,45 @@ export default function WallsToolbar({
   canRedo,
   rafThrottle,
   onRafThrottleChange,
+  doorsOpen = 0,
+  doorsClosed = 0,
+  onOpenAllDoors,
+  onCloseAllDoors,
 }: WallsToolbarProps) {
   const [openThrottle, setOpenThrottle] = useState(false);
+  const [openHelp, setOpenHelp] = useState(false);
 
   if (!["wall", "wallDoor", "wallDelete"].includes(activeTool)) return null;
 
+  const totalDoors = doorsOpen + doorsClosed;
+
   return (
     <div className="flex flex-col gap-1.5">
+      {/* Aide */}
+      <Popover open={openHelp} onOpenChange={setOpenHelp}>
+        <PopoverTrigger asChild>
+          <button
+            title="Aide murs & portes"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-400 transition-all hover:bg-amber-500/20"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="right" align="start" className="w-72 p-3 space-y-2 text-xs">
+          <p className="font-display text-sm font-semibold text-amber-400">
+            Murs & portes dynamiques
+          </p>
+          <ul className="space-y-1.5 text-muted-foreground leading-snug">
+            <li>• <b>Outil Mur / Porte</b> : clic-glisser pour tracer.</li>
+            <li>• <b>Porte</b> : clic gauche dessus avec l'outil Porte = ouvrir/fermer.</li>
+            <li>• <b>Outil Déplacer</b> : clic sur une porte = ouvrir/fermer (MJ).</li>
+            <li>• <b>Clic droit</b> sur un mur = supprimer, sur une porte = bascule.</li>
+            <li>• <b>Suppr / Backspace</b> efface le mur sélectionné.</li>
+            <li>• Murs solides et portes fermées bloquent les jetons et la vision.</li>
+          </ul>
+        </PopoverContent>
+      </Popover>
+
       {/* Undo / Redo */}
       <button
         title="Annuler (Ctrl+Z)"
@@ -86,7 +109,7 @@ export default function WallsToolbar({
         <Redo2 className="h-4 w-4" />
       </button>
 
-      {/* Throttle rAF */}
+      {/* Fluidité */}
       <Popover open={openThrottle} onOpenChange={setOpenThrottle}>
         <PopoverTrigger asChild>
           <button
@@ -114,15 +137,13 @@ export default function WallsToolbar({
         </PopoverContent>
       </Popover>
 
-      {/* Séparateur */}
       <div className="my-0.5 w-7 border-t border-border/50" />
 
-      {/* Label */}
       <span className="text-center text-[8px] uppercase tracking-wider text-muted-foreground">
         Type
       </span>
 
-      {/* Sélecteur de type */}
+      {/* Sélecteur de type avec label visible */}
       {WALL_TYPES.map(({ type, icon, shortLabel }) => {
         const color = WALL_COLORS[type];
         const isSelected = selectedWallType === type;
@@ -131,27 +152,62 @@ export default function WallsToolbar({
             key={type}
             title={WALL_LABELS[type]}
             onClick={() => onSelectType(type)}
-            className="flex h-9 w-9 items-center justify-center rounded-md transition-all"
+            className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md transition-all"
             style={{
               background: isSelected ? `${color}33` : "transparent",
-              color: isSelected ? color : "#64748b",
+              color: isSelected ? color : "#94a3b8",
               border: isSelected ? `1px solid ${color}66` : "1px solid transparent",
               boxShadow: isSelected ? `0 0 8px ${color}44` : "none",
             }}
           >
             {icon}
+            <span className="text-[8px] font-semibold leading-none mt-0.5">
+              {shortLabel}
+            </span>
           </button>
         );
       })}
 
-      {/* Séparateur */}
+      {/* Contrôles portes globaux */}
+      {totalDoors > 0 && (
+        <>
+          <div className="my-0.5 w-7 border-t border-border/50" />
+          <span className="text-center text-[8px] uppercase tracking-wider text-muted-foreground leading-none">
+            Portes
+          </span>
+          <span className="text-center text-[8px] text-amber-400/80 leading-none">
+            {doorsOpen}/{totalDoors}
+          </span>
+          {onOpenAllDoors && (
+            <button
+              title="Ouvrir toutes les portes"
+              onClick={onOpenAllDoors}
+              disabled={doorsClosed === 0}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <DoorOpen className="h-4 w-4" />
+            </button>
+          )}
+          {onCloseAllDoors && (
+            <button
+              title="Fermer toutes les portes"
+              onClick={onCloseAllDoors}
+              disabled={doorsOpen === 0}
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-400 transition-colors hover:bg-rose-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <DoorClosed className="h-4 w-4" />
+            </button>
+          )}
+        </>
+      )}
+
       <div className="my-0.5 w-7 border-t border-border/50" />
 
       {/* Effacer tous les murs */}
       {wallCount > 0 && (
         <>
-          <span className="text-center text-[8px] text-slate-500">
-            {wallCount}
+          <span className="text-center text-[8px] text-slate-500 leading-none">
+            {wallCount} mur{wallCount > 1 ? "s" : ""}
           </span>
           <button
             title={`Effacer tous les murs (${wallCount})`}
@@ -162,9 +218,6 @@ export default function WallsToolbar({
           >
             <Trash2 className="h-4 w-4" />
           </button>
-          <span className="text-center text-[8px] text-red-400/60 leading-none">
-            Clear
-          </span>
         </>
       )}
     </div>

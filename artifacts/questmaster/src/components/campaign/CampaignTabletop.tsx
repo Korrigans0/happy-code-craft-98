@@ -2134,10 +2134,18 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const coords = getCanvasCoords(e);
     const tokenHit = findTokenAt(coords.x, coords.y);
 
-    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement) → suppression directe
+    // Clic droit sur un mur (sans token sous le curseur, MJ uniquement)
     if (!tokenHit && isGM) {
       const hitWallId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
       if (hitWallId) {
+        const hitWall = wallsHook.walls.find(w => w.id === hitWallId);
+        // Porte → bascule ouvert/fermé (au lieu de supprimer)
+        if (hitWall?.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+        // Autres types → suppression rapide
         wallsHook.deleteWallAt(coords.x, coords.y, 15 / zoom);
         toast({ title: "Mur supprimé", description: "Clic droit sur un mur = suppression rapide." });
         return;
@@ -2160,6 +2168,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     const coords = getCanvasCoords(e);
 
     if (tool === "wall" || tool === "wallDoor") {
+      // Si on clique sur une porte existante avec l'outil porte → bascule ouvert/fermé
+      if (tool === "wallDoor") {
+        const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+        const hitWall = hitId ? wallsHook.walls.find(w => w.id === hitId) : null;
+        if (hitWall && hitWall.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+      }
       wallsHook.startWall(coords.x, coords.y, tool === "wallDoor" ? "door" : "solid");
       return;
     }
@@ -2247,6 +2265,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
     if (tool === "move") {
+      // Bascule une porte si on clique dessus (MJ)
+      if (isGM) {
+        const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+        const hitWall = hitId ? wallsHook.walls.find(w => w.id === hitId) : null;
+        if (hitWall && hitWall.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+      }
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       setIsDrawing(true);
       return;
@@ -3115,6 +3143,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               canRedo={wallsHook.canRedo}
               rafThrottle={wallRafThrottle}
               onRafThrottleChange={setWallRafThrottle}
+              doorsOpen={wallsHook.walls.filter(w => w.type === "door" && w.isOpen).length}
+              doorsClosed={wallsHook.walls.filter(w => w.type === "door" && !w.isOpen).length}
+              onOpenAllDoors={() => wallsHook.setAllDoorsOpen(true)}
+              onCloseAllDoors={() => wallsHook.setAllDoorsOpen(false)}
             />
           )}
 
