@@ -2265,6 +2265,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }
 
     if (tool === "move") {
+      // Bascule une porte si on clique dessus (MJ)
+      if (isGM) {
+        const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
+        const hitWall = hitId ? wallsHook.walls.find(w => w.id === hitId) : null;
+        if (hitWall && hitWall.type === "door") {
+          wallsHook.toggleDoor(hitWall.id);
+          toast({ title: hitWall.isOpen ? "Porte fermée" : "Porte ouverte" });
+          return;
+        }
+      }
       setLastPanPoint({ x: e.clientX, y: e.clientY });
       setIsDrawing(true);
       return;
