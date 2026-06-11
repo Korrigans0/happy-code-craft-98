@@ -3143,6 +3143,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               canRedo={wallsHook.canRedo}
               rafThrottle={wallRafThrottle}
               onRafThrottleChange={setWallRafThrottle}
+              doorsOpen={wallsHook.walls.filter(w => w.type === "door" && w.isOpen).length}
+              doorsClosed={wallsHook.walls.filter(w => w.type === "door" && !w.isOpen).length}
+              onOpenAllDoors={() => wallsHook.setAllDoorsOpen(true)}
+              onCloseAllDoors={() => wallsHook.setAllDoorsOpen(false)}
             />
           )}
 
