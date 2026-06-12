@@ -1,74 +1,110 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Sparkles, Sword, BookOpen } from 'lucide-react';
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Sword, BookOpen, Sparkles, Users, Gem, Cloud, Shield } from "lucide-react";
+import heroBg from "@/assets/hero-fantasy-bg.jpg";
+import MagicParticles from "./fantasy/MagicParticles";
+import FloatingRunes from "./fantasy/FloatingRunes";
+import MistOverlay from "./fantasy/MistOverlay";
+import SideDecorations from "./fantasy/SideDecorations";
+
+const badges = [
+  { icon: Users, label: "MJ & PJ", sub: "Réunis", hue: 43 },
+  { icon: Sparkles, label: "WA", sub: "Intégré", hue: 270 },
+  { icon: Gem, label: "VTT", sub: "Immersif", hue: 190 },
+  { icon: Cloud, label: "Cloud", sub: "Sécurisé", hue: 155 },
+];
 
 const HeroSection = () => {
   const { user, loading } = useAuth();
 
   return (
-    <section className="relative overflow-hidden py-24 md:py-36">
-      {/* Atmospheric background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full opacity-20 blur-[180px]"
-          style={{ background: "radial-gradient(circle, hsl(43,75%,50%) 0%, transparent 70%)" }} />
-        <div className="absolute right-1/4 bottom-0 h-96 w-96 opacity-10 blur-[120px]"
-          style={{ background: "radial-gradient(circle, hsl(215,80%,40%) 0%, transparent 70%)" }} />
-        {/* Floating particles */}
-        <div className="absolute top-20 left-[15%] h-1 w-1 rounded-full bg-amber-400/40 animate-float" style={{ animationDelay: '0s' }} />
-        <div className="absolute top-40 right-[20%] h-1.5 w-1.5 rounded-full bg-amber-400/30 animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-32 left-[30%] h-1 w-1 rounded-full bg-amber-400/35 animate-float" style={{ animationDelay: '0.5s' }} />
-        <div className="absolute top-60 right-[35%] h-0.5 w-0.5 rounded-full bg-amber-400/50 animate-float" style={{ animationDelay: '1.5s' }} />
+    <section className="relative overflow-hidden">
+      {/* ── Fond image fantasy ── */}
+      <div className="absolute inset-0">
+        <img
+          src={heroBg}
+          alt=""
+          aria-hidden
+          className="h-full w-full object-cover"
+          fetchPriority="high"
+        />
+        {/* Vignette + overlay sombre pour lisibilité */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, hsl(215, 70%, 6%, 0.35) 0%, hsl(215, 75%, 5%, 0.75) 70%, hsl(215, 80%, 4%, 0.95) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-40"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent, hsl(215, 70%, 8%))",
+          }}
+        />
       </div>
 
-      <div className="container relative mx-auto px-4 text-center md:px-6">
-        {/* Logo principal */}
-        <div className="mb-10 flex justify-center">
-          <div className="relative">
-            <div className="absolute inset-0 scale-125 animate-pulse-slow rounded-full blur-3xl opacity-30"
-              style={{ background: "radial-gradient(circle, hsl(43,75%,50%) 0%, transparent 70%)" }} />
-            <img
-              src="/aetheria-logo.png"
-              alt="Aetheria VTT"
-              className="relative h-32 w-32 rounded-full object-cover animate-float"
-              style={{
-                filter: "drop-shadow(0 0 30px hsl(43,75%,50%,0.6)) drop-shadow(0 0 60px hsl(43,75%,50%,0.25))",
-                animationDuration: "4s",
-              }}
-            />
-          </div>
+      {/* ── Ambiance ── */}
+      <MistOverlay />
+      <SideDecorations />
+      <MagicParticles />
+      <FloatingRunes />
+
+      {/* ── Contenu ── */}
+      <div className="relative mx-auto max-w-5xl px-4 py-24 text-center md:py-36 md:px-6">
+        {/* Tagline runique */}
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <div
+            className="h-px w-16 md:w-24"
+            style={{ background: "linear-gradient(90deg, transparent, hsl(43, 75%, 55%))" }}
+          />
+          <Shield className="h-3.5 w-3.5 text-amber-400/70" />
+          <span className="font-display text-[10px] md:text-xs uppercase tracking-[0.35em] text-amber-300/70">
+            Table Virtuelle Immersive
+          </span>
+          <Shield className="h-3.5 w-3.5 text-amber-400/70" />
+          <div
+            className="h-px w-16 md:w-24"
+            style={{ background: "linear-gradient(270deg, transparent, hsl(43, 75%, 55%))" }}
+          />
         </div>
 
-        <h2 className="font-display text-5xl font-bold text-gradient-gold md:text-6xl lg:text-7xl tracking-wide">
-          Aetheria VTT
-        </h2>
-
-        {/* Decorative divider */}
-        <div className="mx-auto mt-5 flex items-center justify-center gap-4">
-          <div className="h-px w-24" style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,50%,0.5))" }} />
-          <Sparkles className="h-3.5 w-3.5 text-amber-500/70" />
-          <div className="h-px w-24" style={{ background: "linear-gradient(270deg, transparent, hsl(43,75%,50%,0.5))" }} />
-        </div>
-
-        <p className="mx-auto mt-4 max-w-lg text-xs uppercase tracking-[0.3em] text-amber-500/50 font-display">
-          Table Virtuelle Immersive
-        </p>
-        <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground md:text-lg leading-relaxed">
-          Explorez l'univers d'Aetheria. Invoquez des créatures du bestiaire sur la carte,
-          gérez vos campagnes et vivez des aventures épiques dans un VTT dédié.
+        {/* Titre */}
+        <h1 className="font-display text-5xl font-bold tracking-wide text-gradient-gold md:text-7xl lg:text-8xl">
+          AETHERIA
+        </h1>
+        <p
+          className="mt-1 font-display text-2xl font-semibold tracking-[0.4em] md:text-3xl"
+          style={{
+            background: "linear-gradient(90deg, hsl(190, 95%, 75%), hsl(270, 80%, 75%))",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          VTT
         </p>
 
+        <p className="mx-auto mt-8 max-w-2xl text-sm leading-relaxed text-slate-300/85 md:text-base">
+          Entrez dans l'univers d'Aetheria, où la magie prend vie et où chaque
+          histoire devient légendaire. Créez, explorez, partagez des aventures
+          épiques dans un VTT pensé pour les MJ et les joueurs.
+        </p>
+
+        {/* CTAs */}
         {!loading && (
-          <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             {user ? (
               <>
-                <Button variant="gold" size="lg" asChild className="shadow-gold group">
+                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(215,70%,8%)" }}>
                   <Link to="/campaigns">
                     <Sword className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
-                    Lancer une session
+                    Créer mon aventure
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" asChild className="group border-amber-500/20 hover:border-amber-500/40">
+                <Button asChild size="lg" variant="outline" className="group border-cyan-400/30 bg-slate-950/40 backdrop-blur hover:border-cyan-400/60 hover:bg-cyan-500/5">
                   <Link to="/compendium">
                     <BookOpen className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
                     Explorer le Codex
@@ -77,16 +113,16 @@ const HeroSection = () => {
               </>
             ) : (
               <>
-                <Button variant="gold" size="lg" asChild className="shadow-gold group">
-                  <Link to="/sign-in">
+                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(215,70%,8%)" }}>
+                  <Link to="/sign-up">
                     <Sparkles className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
-                    Entrer dans Aetheria
+                    Créer mon aventure
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" asChild className="group border-amber-500/20 hover:border-amber-500/40">
-                  <Link to="/compendium">
-                    <BookOpen className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
-                    Explorer le Codex
+                <Button asChild size="lg" variant="outline" className="group border-cyan-400/30 bg-slate-950/40 backdrop-blur hover:border-cyan-400/60 hover:bg-cyan-500/5">
+                  <Link to="/campaigns">
+                    <Sword className="mr-2 h-5 w-5 transition-transform group-hover:scale-110" />
+                    Rejoindre une partie
                   </Link>
                 </Button>
               </>
@@ -94,22 +130,26 @@ const HeroSection = () => {
           </div>
         )}
 
-        {/* Stats row */}
-        <div className="mx-auto mt-16 flex max-w-md items-center justify-center gap-8 text-center">
-          <div className="space-y-1">
-            <p className="font-display text-2xl font-bold text-gradient-gold">∞</p>
-            <p className="text-xs text-muted-foreground">Aventures</p>
-          </div>
-          <div className="h-8 w-px bg-border/50" />
-          <div className="space-y-1">
-            <p className="font-display text-2xl font-bold text-gradient-gold">WA</p>
-            <p className="text-xs text-muted-foreground">Système natif</p>
-          </div>
-          <div className="h-8 w-px bg-border/50" />
-          <div className="space-y-1">
-            <p className="font-display text-2xl font-bold text-gradient-gold">VTT</p>
-            <p className="text-xs text-muted-foreground">Immersif</p>
-          </div>
+        {/* Badges */}
+        <div className="mx-auto mt-14 grid max-w-2xl grid-cols-4 gap-3 md:gap-6">
+          {badges.map((b) => (
+            <div key={b.label} className="flex flex-col items-center gap-1.5">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full border md:h-14 md:w-14"
+                style={{
+                  borderColor: `hsl(${b.hue}, 75%, 55%, 0.4)`,
+                  background: `radial-gradient(circle, hsl(${b.hue}, 70%, 30%, 0.35) 0%, hsl(215, 70%, 10%, 0.6) 100%)`,
+                  boxShadow: `0 0 18px hsl(${b.hue}, 80%, 55%, 0.25), inset 0 0 12px hsl(${b.hue}, 80%, 55%, 0.1)`,
+                }}
+              >
+                <b.icon className="h-5 w-5 md:h-6 md:w-6" style={{ color: `hsl(${b.hue}, 85%, 70%)` }} />
+              </div>
+              <span className="font-display text-[10px] font-semibold uppercase tracking-wider text-slate-200 md:text-xs">
+                {b.label}
+              </span>
+              <span className="text-[9px] text-slate-400 md:text-[10px]">{b.sub}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
