@@ -553,6 +553,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const campaignSystem = campaignInfo?.system ?? "Aetheria";
   const allowHomebrew = !!campaignInfo?.allow_homebrew_characters;
 
+  const { data: waCreatures = [] } = useQuery({
+    queryKey: ["vtt-wa-creatures", campaignSystem],
+    enabled: campaignSystem === "Worlds Awakening",
+    queryFn: async () => {
+      try { return await (await import("@/lib/api")).compendiumApi.getWaCreatures(); }
+      catch { return []; }
+    },
+  });
+
   const { data: aetheriaCreatures = [] } = useQuery({
     queryKey: ["aetheria-creatures-tabletop", campaignId, campaignSystem],
     enabled: campaignSystem === "Aetheria",
