@@ -252,6 +252,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const tokenClipboardRef = useRef<TokenItem | null>(null);
   const [hasClipboard, setHasClipboard] = useState(false);
 
+  // ── Click vs drag tracking (simple click on token = open sheet) ──
+  const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
+  const didDragRef = useRef(false);
+
   // ── Voir fiche dialog ──
   const [sheetToken, setSheetToken] = useState<TokenItem | null>(null);
 
