@@ -49,7 +49,7 @@ const VAELORIA = {
 
 const Partners = () => {
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-dark animate-fade-in">
+    <div className="relative flex min-h-screen flex-col animate-fade-in">
       <PageAmbiance />
       <SEO
         title="Partenaires — Aetheria VTT"
