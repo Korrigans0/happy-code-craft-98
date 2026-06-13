@@ -267,6 +267,65 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (live !== sheetToken) setSheetToken(live);
   }, [tokens, sheetToken]);
 
+  // ── Fiche complète liée au token (sync token ↔ fiche personnage) ──
+  const queryClient = useQueryClient();
+  const [fullSheetCharId, setFullSheetCharId] = useState<string | null>(null);
+
+  const { data: fullSheetCharacter } = useQuery({
+    queryKey: ["vtt-linked-character", fullSheetCharId],
+    enabled: !!fullSheetCharId,
+    queryFn: async () => {
+      if (!fullSheetCharId) return null;
+      try { return await charactersApi.get(fullSheetCharId); }
+      catch { return null; }
+    },
+  });
+
+  // Realtime: refresh sheet when its character row changes
+  useEffect(() => {
+    if (!fullSheetCharId) return;
+    const ch = supabase
+      .channel(`character-sheet-${fullSheetCharId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "characters", filter: `id=eq.${fullSheetCharId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["vtt-linked-character", fullSheetCharId] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fullSheetCharId, queryClient]);
+
+  const updateCharacterMutation = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      return await charactersApi.update(id, patch);
+    },
+    onSuccess: (updated: any) => {
+      queryClient.invalidateQueries({ queryKey: ["vtt-linked-character", updated?.id] });
+      queryClient.invalidateQueries({ queryKey: ["vtt-user-characters"] });
+      // Mirror key fields to all tokens linked to this character
+      if (updated?.id) {
+        setTokens(prev => prev.map(t => (
+          t.creatureType === "character" && t.creatureId === updated.id
+            ? {
+                ...t,
+                name: updated.name ?? t.name,
+                hp: typeof updated.hp === "number" ? updated.hp : t.hp,
+                maxHp: typeof updated.max_hp === "number" ? updated.max_hp : t.maxHp,
+                ac: typeof updated.armor_class === "number" ? updated.armor_class : t.ac,
+                imageUrl: updated.avatar_url ?? t.imageUrl,
+              }
+            : t
+        )));
+      }
+      toast({ title: "Fiche enregistrée" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erreur", description: err?.message ?? "Sauvegarde impossible", variant: "destructive" });
+    },
+  });
+
   // ── Notes MJ dialog ──
   const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
   const [gmNotesContent, setGmNotesContent] = useState("");
