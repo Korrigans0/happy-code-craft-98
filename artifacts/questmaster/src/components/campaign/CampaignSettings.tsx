@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { GAME_SYSTEMS } from "@/lib/game-systems";
+import { SYSTEM_LIST } from "@/lib/systems";
 import {
   Save, Trash2, RefreshCw, Copy, Link2, ExternalLink,
   Volume2, MessageCircle, Image, Shield, Users, Lock,
@@ -30,6 +30,7 @@ interface Campaign {
   gm_id?: string;
   discord_link?: string | null;
   image_url?: string | null;
+  allow_homebrew_characters?: boolean | null;
 }
 
 interface CampaignSettingsProps {
@@ -48,6 +49,7 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const [title, setTitle] = useState(campaign.title);
   const [description, setDescription] = useState(campaign.description || "");
   const [system, setSystem] = useState(campaign.system || "Aetheria");
+  const [allowHomebrew, setAllowHomebrew] = useState(!!campaign.allow_homebrew_characters);
   const [isActive, setIsActive] = useState(campaign.is_active ?? true);
   const [imageUrl, setImageUrl] = useState(campaign.image_url || "");
   const [imagePreviewError, setImagePreviewError] = useState(false);
@@ -74,7 +76,8 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
         is_active: isActive,
         image_url: imageUrl || null,
         discord_link: discordLink || null,
-      }),
+        allow_homebrew_characters: allowHomebrew,
+      } as any),
     onSuccess: () => { invalidate(); toast({ title: "Campagne mise à jour ✓" }); },
     onError: () => toast({ title: "Erreur lors de la sauvegarde", variant: "destructive" }),
   });
@@ -185,27 +188,28 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {GAME_SYSTEMS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                {SYSTEM_LIST.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <span className="mr-2">{s.emoji}</span>{s.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {system === "Personnalisé" ? (
-              <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1.5">
-                <p className="font-medium text-primary">✨ Mode Personnalisé — règles libres</p>
-                <p>Aucune restriction de système : vous pouvez mélanger librement <strong>Worlds Awakening</strong>, <strong>Aetheria</strong> et vos propres créations dans la même campagne.</p>
-                <ul className="list-disc list-inside space-y-0.5 pl-1">
-                  <li>Fiches de personnages : choisissez le système souhaité à la création de chaque PJ.</li>
-                  <li>Bestiaire : importez ou créez des créatures depuis WA, Aetheria ou homebrew.</li>
-                  <li>Combat &amp; VTT : tous les jetons et créatures cohabitent sur la même carte.</li>
-                  <li>Idéal pour les univers crossover ou les MJ qui inventent leurs propres règles.</li>
-                </ul>
-              </div>
-            ) : (
+            <p className="text-xs text-muted-foreground">
+              Le système verrouille les personnages, le bestiaire et le codex disponibles dans cette campagne.
+            </p>
+          </div>
+
+          {/* Autoriser les personnages Homebrew */}
+          <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+            <div className="flex-1 pr-3">
+              <p className="text-sm font-medium">Autoriser les personnages Homebrew</p>
               <p className="text-xs text-muted-foreground">
-                Astuce : choisissez <strong>✨ Personnalisé</strong> pour mélanger WA, Aetheria et vos créations sans restriction.
+                Permet aux joueurs de rejoindre cette campagne avec un personnage du système Personnalisé,
+                en plus du système principal. Désactivé par défaut.
               </p>
-            )}
+            </div>
+            <Switch checked={allowHomebrew} onCheckedChange={setAllowHomebrew} />
           </div>
 
           {/* Statut actif */}

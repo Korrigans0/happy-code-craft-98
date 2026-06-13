@@ -20,9 +20,10 @@ interface Spell {
 
 interface SpellsListProps {
   searchQuery: string;
+  system?: string;
 }
 
-const SpellsList = ({ searchQuery }: SpellsListProps) => {
+const SpellsList = ({ searchQuery, system }: SpellsListProps) => {
   const [spells, setSpells] = useState<Spell[]>([]);
   const [loading, setLoading] = useState(true);
   const [levelFilter, setLevelFilter] = useState<string>("all");
@@ -32,11 +33,13 @@ const SpellsList = ({ searchQuery }: SpellsListProps) => {
 
   useEffect(() => {
     fetchSpells();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
 
   const fetchSpells = async () => {
+    setLoading(true);
     try {
-      const data = await compendiumApi.getSpells();
+      const data = await compendiumApi.getSpells(system);
       setSpells(data || []);
     } catch (e) { console.error(e); }
     setLoading(false);

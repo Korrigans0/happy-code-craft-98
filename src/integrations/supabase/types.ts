@@ -315,6 +315,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          allow_homebrew_characters: boolean
           created_at: string
           description: string | null
           discord_link: string | null
@@ -322,12 +323,13 @@ export type Database = {
           image_url: string | null
           invite_code: string | null
           is_active: boolean | null
-          system: string | null
+          system: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          allow_homebrew_characters?: boolean
           created_at?: string
           description?: string | null
           discord_link?: string | null
@@ -335,12 +337,13 @@ export type Database = {
           image_url?: string | null
           invite_code?: string | null
           is_active?: boolean | null
-          system?: string | null
+          system?: string
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          allow_homebrew_characters?: boolean
           created_at?: string
           description?: string | null
           discord_link?: string | null
@@ -348,7 +351,7 @@ export type Database = {
           image_url?: string | null
           invite_code?: string | null
           is_active?: boolean | null
-          system?: string | null
+          system?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -664,6 +667,7 @@ export type Database = {
       magic_items: {
         Row: {
           attunement: boolean
+          campaign_id: string | null
           created_at: string
           created_by: string | null
           description: string
@@ -671,10 +675,13 @@ export type Database = {
           name: string
           properties: string | null
           rarity: string
+          scope: string
+          system: string
           type: string
         }
         Insert: {
           attunement?: boolean
+          campaign_id?: string | null
           created_at?: string
           created_by?: string | null
           description: string
@@ -682,10 +689,13 @@ export type Database = {
           name: string
           properties?: string | null
           rarity: string
+          scope?: string
+          system?: string
           type: string
         }
         Update: {
           attunement?: boolean
+          campaign_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string
@@ -693,14 +703,25 @@ export type Database = {
           name?: string
           properties?: string | null
           rarity?: string
+          scope?: string
+          system?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "magic_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monsters: {
         Row: {
           alignment: string
           armor_class: number
+          campaign_id: string | null
           challenge_rating: string
           created_at: string
           created_by: string | null
@@ -708,13 +729,16 @@ export type Database = {
           hit_points: string
           id: string
           name: string
+          scope: string
           size: string
           speed: string
+          system: string
           type: string
         }
         Insert: {
           alignment: string
           armor_class: number
+          campaign_id?: string | null
           challenge_rating: string
           created_at?: string
           created_by?: string | null
@@ -722,13 +746,16 @@ export type Database = {
           hit_points: string
           id?: string
           name: string
+          scope?: string
           size: string
           speed: string
+          system?: string
           type: string
         }
         Update: {
           alignment?: string
           armor_class?: number
+          campaign_id?: string | null
           challenge_rating?: string
           created_at?: string
           created_by?: string | null
@@ -736,11 +763,21 @@ export type Database = {
           hit_points?: string
           id?: string
           name?: string
+          scope?: string
           size?: string
           speed?: string
+          system?: string
           type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "monsters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -771,6 +808,7 @@ export type Database = {
       }
       spells: {
         Row: {
+          campaign_id: string | null
           casting_time: string
           classes: string[]
           components: string
@@ -783,8 +821,11 @@ export type Database = {
           name: string
           range: string
           school: string
+          scope: string
+          system: string
         }
         Insert: {
+          campaign_id?: string | null
           casting_time: string
           classes?: string[]
           components: string
@@ -797,8 +838,11 @@ export type Database = {
           name: string
           range: string
           school: string
+          scope?: string
+          system?: string
         }
         Update: {
+          campaign_id?: string | null
           casting_time?: string
           classes?: string[]
           components?: string
@@ -811,8 +855,18 @@ export type Database = {
           name?: string
           range?: string
           school?: string
+          scope?: string
+          system?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spells_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tabletop_state: {
         Row: {
