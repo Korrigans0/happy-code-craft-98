@@ -168,8 +168,8 @@ const Compendium = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
-  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Homebrew). CoC masqué pour rester proche du périmètre demandé.
-  const visibleSystems = SYSTEM_LIST.filter((s) => s.id !== "Call of Cthulhu");
+  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Homebrew).
+  const visibleSystems = SYSTEM_LIST;
 
   return (
     <div className="relative flex min-h-screen flex-col bg-gradient-dark">
