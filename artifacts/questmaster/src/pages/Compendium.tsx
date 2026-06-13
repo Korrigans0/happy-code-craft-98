@@ -165,8 +165,7 @@ const Compendium = () => {
   const [system, setSystem] = useState<string>("Aetheria");
   const [aetheriaTab, setAetheriaTab] = useState("aetheria-bestiary");
   const [waTab, setWaTab] = useState("wa-bestiary");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const [refreshKey] = useState(0);
 
   // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Homebrew).
   const visibleSystems = SYSTEM_LIST;
