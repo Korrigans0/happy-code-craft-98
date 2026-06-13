@@ -15,6 +15,7 @@ import CharacterCard from "@/components/characters/CharacterCard";
 import CharacterForm from "@/components/characters/CharacterForm";
 import CharacterSheet from "@/components/characters/CharacterSheet";
 import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 interface Character {
   id: string;
@@ -279,7 +280,8 @@ const Characters = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col bg-gradient-dark">
+      <PageAmbiance />
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">

@@ -16,6 +16,7 @@ import AetheriaMatchups from "@/components/compendium/AetheriaMatchups";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 import SEO from "@/components/SEO";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 const COMPENDIUM_SEO = (
   <SEO
@@ -197,7 +198,8 @@ const Compendium = () => {
   const triggerRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col bg-gradient-dark">
+      <PageAmbiance />
       {COMPENDIUM_SEO}
       <Header />
       <main className="flex-1 py-12">
