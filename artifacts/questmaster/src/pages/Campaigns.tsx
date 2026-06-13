@@ -158,7 +158,7 @@ const Campaigns = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col">
       <PageAmbiance />
       <Header />
       <main className="flex-1 py-10">

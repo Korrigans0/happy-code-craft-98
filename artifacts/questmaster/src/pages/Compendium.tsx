@@ -171,7 +171,7 @@ const Compendium = () => {
   const visibleSystems = SYSTEM_LIST;
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col">
       <PageAmbiance />
       {COMPENDIUM_SEO}
       <Header />
