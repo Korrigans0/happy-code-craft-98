@@ -745,6 +745,38 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     } as TokenItem]);
   };
 
+  const spawnSystemMonster = (monster: any) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
+    const su = monster.size === "Huge" || monster.size === "Très grand" ? 3
+            : monster.size === "Large" || monster.size === "Grand" ? 2 : 1;
+    const size = GRID_SIZE * su;
+    const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
+    const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
+    const free = findFreePosition(wx, wy, size);
+    const hpVal = (() => {
+      const m = String(monster.hit_points ?? "10").match(/^(\d+)/);
+      return m ? Number(m[1]) : 10;
+    })();
+    setTokens(prev => [...prev, {
+      id: newId(),
+      name: monster.name,
+      x: free.x, y: free.y,
+      size, sizeUnits: su,
+      rotation: 0,
+      color: "#ef4444",
+      label: monster.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: monster.id,
+      creatureType: "monster",
+      hp: hpVal,
+      maxHp: hpVal,
+      ac: Number(monster.armor_class) || 10,
+      conditions: [],
+    } as TokenItem]);
+  };
+
+
   const addToken = () => {
     if (!newTokenName.trim()) return;
     if (!perms.canAddToken) { denied(); return; }
