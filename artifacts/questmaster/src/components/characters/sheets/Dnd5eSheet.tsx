@@ -264,6 +264,75 @@ const Dnd5eSheet = ({ character, editable = false, onSave, onClose, onEdit }: Dn
             </div>
           </div>
 
+          {/* Jets de la mort & dés de vie */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-card p-3">
+              <div className="mb-2 text-xs font-semibold text-muted-foreground">Jets de la mort</div>
+              <div className="grid grid-cols-2 gap-3">
+                <DeathTrack
+                  label="Succès" color="text-emerald-400"
+                  value={sysData.death_success ?? 0}
+                  onChange={(v) => updateSystemData("death_success", v)}
+                  disabled={!editable}
+                />
+                <DeathTrack
+                  label="Échecs" color="text-red-400"
+                  value={sysData.death_fail ?? 0}
+                  onChange={(v) => updateSystemData("death_fail", v)}
+                  disabled={!editable}
+                />
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-3">
+              <div className="mb-2 text-xs font-semibold text-muted-foreground">Dés de vie</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px]">Type (ex: d8)</Label>
+                  <Input value={sysData.hit_dice_type ?? "d8"}
+                    onChange={(e) => updateSystemData("hit_dice_type", e.target.value)}
+                    disabled={!editable} className="h-8" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Restants / Total</Label>
+                  <div className="flex items-center gap-1">
+                    <Input type="number" value={sysData.hit_dice_used ?? 0}
+                      onChange={(e) => updateSystemData("hit_dice_used", Number(e.target.value) || 0)}
+                      disabled={!editable} className="h-8 w-14 text-center" />
+                    <span>/</span>
+                    <Input type="number" value={sysData.hit_dice_max ?? local.level ?? 1}
+                      onChange={(e) => updateSystemData("hit_dice_max", Number(e.target.value) || 1)}
+                      disabled={!editable} className="h-8 w-14 text-center" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Aptitudes & traits */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["features", "Aptitudes de classe"],
+              ["racial_traits", "Traits raciaux"],
+              ["proficiencies", "Maîtrises & langues"],
+              ["other_proficiencies", "Autres maîtrises"],
+            ].map(([key, label]) => (
+              <div key={key}>
+                <Label className="text-xs">{label}</Label>
+                {editable ? (
+                  <textarea
+                    value={sysData[key] ?? ""}
+                    onChange={(e) => updateSystemData(key, e.target.value)}
+                    className="w-full min-h-[60px] rounded-md border border-input bg-background p-2 text-xs"
+                  />
+                ) : (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap rounded-md border border-border bg-card p-2 min-h-[60px]">
+                    {sysData[key] || <span className="italic">—</span>}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
           <SheetInventory character={local} editable={editable} onChange={update} />
           <SheetNotes character={local} editable={editable} onChange={update} />
         </div>
@@ -271,6 +340,32 @@ const Dnd5eSheet = ({ character, editable = false, onSave, onClose, onEdit }: Dn
     </div>
   );
 };
+
+function DeathTrack({ label, color, value, onChange, disabled }: {
+  label: string; color: string; value: number;
+  onChange: (v: number) => void; disabled?: boolean;
+}) {
+  const v = Math.max(0, Math.min(3, value));
+  return (
+    <div>
+      <div className={`text-xs font-semibold ${color}`}>{label}</div>
+      <div className="mt-1 flex gap-1">
+        {[1, 2, 3].map((n) => (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(v === n ? n - 1 : n)}
+            className={`h-6 w-6 rounded-full border-2 transition ${
+              v >= n ? `${color} bg-current` : "border-muted-foreground/40"
+            }`}
+            aria-label={`${label} ${n}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface CombatStatProps {
   icon?: React.ReactNode;
