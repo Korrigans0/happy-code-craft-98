@@ -14,7 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Campaigns from "./pages/Campaigns";
 import Characters from "./pages/Characters";
 import Compendium from "./pages/Compendium";
-import DiceRoller from "./pages/DiceRoller";
+
 import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
@@ -62,7 +62,7 @@ const AppRoutes = () => (
         <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
         <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
         <Route path="/compendium" element={<Compendium />} />
-        <Route path="/dice" element={<DiceRoller />} />
+        
         <Route path="/join/:code" element={<JoinCampaign />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
