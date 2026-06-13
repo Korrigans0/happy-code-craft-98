@@ -56,7 +56,25 @@ const SheetRouter = ({ character, editable, onSave, onClose, onEdit }: SheetRout
         />
       );
     case "pathfinder2e":
+      return (
+        <Pathfinder2eSheet
+          character={character}
+          editable={editable}
+          onSave={onSave}
+          onClose={onClose}
+          onEdit={onEdit}
+        />
+      );
     case "cthulhu7e":
+      return (
+        <Cthulhu7eSheet
+          character={character}
+          editable={editable}
+          onSave={onSave}
+          onClose={onClose}
+          onEdit={onEdit}
+        />
+      );
     default:
       return (
         <GenericSystemSheet
