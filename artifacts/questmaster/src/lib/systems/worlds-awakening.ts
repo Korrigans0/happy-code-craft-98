@@ -1,5 +1,5 @@
 import type { SystemDefinition } from "./types";
-import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../game-systems";
+import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../wa-data";
 
 // Worlds Awakening — système partenaire (mécaniques identiques à Aetheria en v1).
 export const WA_SYSTEM: SystemDefinition = {

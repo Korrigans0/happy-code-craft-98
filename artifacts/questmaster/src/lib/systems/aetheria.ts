@@ -1,5 +1,5 @@
 import type { SystemDefinition } from "./types";
-import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../game-systems";
+import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../wa-data";
 
 // Aetheria — système phare maison. Stats en modificateur, défense PHY/MAG, monnaie NX.
 export const AETHERIA_SYSTEM: SystemDefinition = {
