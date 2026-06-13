@@ -543,14 +543,46 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     },
   });
 
+  // Système verrouillé de la campagne (sépare les codex)
+  const { data: campaignInfo } = useQuery({
+    queryKey: ["campaign-info-tabletop", campaignId],
+    enabled: !!campaignId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("campaigns")
+        .select("system, allow_homebrew_characters")
+        .eq("id", campaignId)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const campaignSystem = campaignInfo?.system ?? "Aetheria";
+  const allowHomebrew = !!campaignInfo?.allow_homebrew_characters;
+
   const { data: aetheriaCreatures = [] } = useQuery({
-    queryKey: ["aetheria-creatures-tabletop", campaignId],
+    queryKey: ["aetheria-creatures-tabletop", campaignId, campaignSystem],
+    enabled: campaignSystem === "Aetheria",
     queryFn: async () => {
       const { data } = await supabase
         .from("aetheria_creatures")
         .select("*")
         .or(`campaign_id.eq.${campaignId},is_public.eq.true`)
         .order("name");
+      return data || [];
+    },
+  });
+
+  // Bestiaire générique (D&D, PF2e, Cthulhu, Personnalisé) — filtré strict par système
+  const { data: systemMonsters = [] } = useQuery({
+    queryKey: ["system-monsters-tabletop", campaignId, campaignSystem, allowHomebrew],
+    enabled: ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"].includes(campaignSystem),
+    queryFn: async () => {
+      let q = supabase.from("monsters").select("*").eq("system", campaignSystem);
+      if (!allowHomebrew) {
+        // Officiels + perso du MJ + de la campagne
+        q = q.or(`scope.eq.official,campaign_id.eq.${campaignId},created_by.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`);
+      }
+      const { data } = await q.order("name");
       return data || [];
     },
   });
