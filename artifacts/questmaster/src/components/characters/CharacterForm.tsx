@@ -360,65 +360,117 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 />
               </div>
 
+              {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
+              {!character?.id && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Système de jeu</Label>
+                  <Select
+                    value={(formData.system as string) || initialSystem}
+                    onValueChange={(v) => {
+                      const cfg = getSystemConfig(v);
+                      // On réinitialise race/classe/sous-classe aux premières valeurs du nouveau système.
+                      setFormData((prev) => ({
+                        ...prev,
+                        system: v,
+                        race: cfg.races[0] || "",
+                        class: cfg.classes[0] || "",
+                        subclass: "",
+                      }));
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SYSTEM_LIST.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.emoji} {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">{systemDef.description}</p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label>Ascendance</Label>
-                <Select
-                  value={formData.race || systemConfig.races[0]}
-                  onValueChange={(v) => updateField("race", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {systemConfig.races.map((race) => (
-                      <SelectItem key={race} value={race}>
-                        {race}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>{systemConfig.raceLabel}</Label>
+                {systemConfig.races.length > 0 ? (
+                  <Select
+                    value={formData.race || systemConfig.races[0]}
+                    onValueChange={(v) => updateField("race", v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.races.map((race) => (
+                        <SelectItem key={race} value={race}>{race}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={formData.race || ""}
+                    onChange={(e) => updateField("race", e.target.value)}
+                    placeholder={`Saisir une ${systemConfig.raceLabel.toLowerCase()}...`}
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label>Classe</Label>
-                <Select
-                  value={formData.class || systemConfig.classes[0]}
-                  onValueChange={(v) => {
-                    updateField("class", v);
-                    updateField("subclass", "");
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {systemConfig.classes.map((cls) => (
-                      <SelectItem key={cls} value={cls}>
-                        {cls}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>{systemConfig.classLabel}</Label>
+                {systemConfig.classes.length > 0 ? (
+                  <Select
+                    value={formData.class || systemConfig.classes[0]}
+                    onValueChange={(v) => {
+                      updateField("class", v);
+                      updateField("subclass", "");
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.classes.map((cls) => (
+                        <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={formData.class || ""}
+                    onChange={(e) => updateField("class", e.target.value)}
+                    placeholder={`Saisir une ${systemConfig.classLabel.toLowerCase()}...`}
+                  />
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Tenue</Label>
-                <Select
-                  value={formData.subclass || ""}
-                  onValueChange={(v) => updateField("subclass", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir une tenue..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(WA_TENUES[formData.class || ""] || []).map((tenue) => (
-                      <SelectItem key={tenue} value={tenue}>
-                        {tenue}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Sous-classe / Tenue — uniquement si le système en a. */}
+              {(() => {
+                const subs = systemConfig.subclassesByClass?.[formData.class || ""] || [];
+                if (!systemConfig.hasTenues && subs.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <Label>{systemConfig.subclassLabel}</Label>
+                    {subs.length > 0 ? (
+                      <Select
+                        value={formData.subclass || ""}
+                        onValueChange={(v) => updateField("subclass", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Choisir une ${systemConfig.subclassLabel.toLowerCase()}...`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subs.map((sub) => (
+                            <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={formData.subclass || ""}
+                        onChange={(e) => updateField("subclass", e.target.value)}
+                        placeholder={`${systemConfig.subclassLabel}...`}
+                      />
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="space-y-2">
                 <Label htmlFor="campaign">Campagne</Label>
