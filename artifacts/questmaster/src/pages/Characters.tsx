@@ -127,6 +127,8 @@ const Characters = () => {
   const [isAetheriaFormOpen, setIsAetheriaFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  /** Système sélectionné lors de la création (Aetheria, D&D 5e, Pathfinder 2e, etc.). */
+  const [pendingSystem, setPendingSystem] = useState<string>("Aetheria");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
 
