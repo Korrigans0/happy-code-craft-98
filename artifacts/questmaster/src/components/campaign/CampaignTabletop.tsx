@@ -3602,6 +3602,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               if (!canEdit) return;
               updateToken(tok.id, updates);
               setSheetToken(s => s ? { ...s, ...updates } : s);
+              // Mirror to linked character row (token → fiche sync)
+              if (tok.creatureType === "character" && tok.creatureId) {
+                const charPatch: any = {};
+                if (updates.hp !== undefined) charPatch.hp = updates.hp;
+                if (updates.maxHp !== undefined) charPatch.max_hp = updates.maxHp;
+                if (updates.ac !== undefined) charPatch.armor_class = updates.ac;
+                if (updates.name !== undefined) charPatch.name = updates.name;
+                if (Object.keys(charPatch).length > 0) {
+                  charactersApi.update(tok.creatureId, charPatch).catch(() => {});
+                }
+              }
             };
             const adjustHp = (delta: number) => {
               if (!canEdit) return;
