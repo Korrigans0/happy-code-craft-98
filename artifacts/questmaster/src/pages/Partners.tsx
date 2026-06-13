@@ -122,6 +122,13 @@ const Partners = () => {
                   </div>
                 </div>
               </div>
+              <ScreenshotGallery
+                images={[
+                  { src: waHome, alt: "Page d'accueil de Worlds Awakening" },
+                  { src: waCodex, alt: "Codex de Worlds Awakening" },
+                  { src: waDiscord, alt: "Serveur Discord de Worlds Awakening" },
+                ]}
+              />
             </article>
 
             {/* Guildry */}
