@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,14 +16,15 @@ interface CreateSpellDialogProps {
   defaultSystem?: string;
 }
 
-const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Aetheria", "Worlds Awakening", "Personnalisé"];
+// Aetheria et WA ont leurs propres listes de sorts, exclus ici.
+const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"];
 
-const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellDialogProps) => {
+const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: CreateSpellDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [scope, setScope] = useState<"custom_personal" | "custom_campaign">("custom_personal");
+  const [isPublic, setIsPublic] = useState(false);
   const [form, setForm] = useState({
     name: "", level: "0", school: "Évocation", casting_time: "1 action",
     range: "9 mètres", components: "V, S", duration: "Instantanée",
@@ -39,7 +41,8 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellD
         level: parseInt(form.level),
         classes: form.classes.split(",").map(c => c.trim()).filter(Boolean),
         system,
-        scope,
+        scope: "custom_personal",
+        is_public: isPublic,
       });
     }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
@@ -60,24 +63,21 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellD
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nouveau sort personnalisé</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Système</Label>
+            <Select value={system} onValueChange={setSystem}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
             <div>
-              <Label>Système</Label>
-              <Select value={system} onValueChange={setSystem}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-sm">Partager avec la communauté</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPublic ? "Visible par tous les joueurs Aetheria VTT." : "Visible uniquement par vous."}
+              </p>
             </div>
-            <div>
-              <Label>Portée</Label>
-              <Select value={scope} onValueChange={(v) => setScope(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="custom_personal">Codex personnel</SelectItem>
-                  <SelectItem value="custom_campaign">Pour cette campagne</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
           </div>
           <div><Label>Nom</Label><Input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-4">

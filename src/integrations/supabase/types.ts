@@ -672,6 +672,7 @@ export type Database = {
           created_by: string | null
           description: string
           id: string
+          is_public: boolean
           name: string
           properties: string | null
           rarity: string
@@ -686,6 +687,7 @@ export type Database = {
           created_by?: string | null
           description: string
           id?: string
+          is_public?: boolean
           name: string
           properties?: string | null
           rarity: string
@@ -700,6 +702,7 @@ export type Database = {
           created_by?: string | null
           description?: string
           id?: string
+          is_public?: boolean
           name?: string
           properties?: string | null
           rarity?: string
@@ -728,6 +731,7 @@ export type Database = {
           description: string
           hit_points: string
           id: string
+          is_public: boolean
           name: string
           scope: string
           size: string
@@ -745,6 +749,7 @@ export type Database = {
           description: string
           hit_points: string
           id?: string
+          is_public?: boolean
           name: string
           scope?: string
           size: string
@@ -762,6 +767,7 @@ export type Database = {
           description?: string
           hit_points?: string
           id?: string
+          is_public?: boolean
           name?: string
           scope?: string
           size?: string
@@ -817,6 +823,7 @@ export type Database = {
           description: string
           duration: string
           id: string
+          is_public: boolean
           level: number
           name: string
           range: string
@@ -834,6 +841,7 @@ export type Database = {
           description: string
           duration: string
           id?: string
+          is_public?: boolean
           level?: number
           name: string
           range: string
@@ -851,6 +859,7 @@ export type Database = {
           description?: string
           duration?: string
           id?: string
+          is_public?: boolean
           level?: number
           name?: string
           range?: string

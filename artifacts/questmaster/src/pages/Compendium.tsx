@@ -18,12 +18,14 @@ import Footer from "@/components/Footer";
 import WACreaturesList from "@/components/compendium/WACreaturesList";
 import WACodex from "@/components/compendium/WACodex";
 import WAHistoire from "@/components/compendium/WAHistoire";
-import CreateWACreatureDialog from "@/components/compendium/CreateWACreatureDialog";
 import AetheriaBestiary from "@/components/compendium/AetheriaBestiary";
 import AetheriaMatchups from "@/components/compendium/AetheriaMatchups";
 import MonstersList from "@/components/compendium/MonstersList";
 import SpellsList from "@/components/compendium/SpellsList";
 import ItemsList from "@/components/compendium/ItemsList";
+import CreateMonsterDialog from "@/components/compendium/CreateMonsterDialog";
+import CreateSpellDialog from "@/components/compendium/CreateSpellDialog";
+import CreateItemDialog from "@/components/compendium/CreateItemDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 import { SYSTEM_LIST } from "@/lib/systems";
@@ -113,26 +115,45 @@ const AetheriaLore = () => (
   </div>
 );
 
-// ── Codex générique pour D&D / Pathfinder / Homebrew ──────
-// Affiche monstres + sorts + objets filtrés par système.
-const SystemCodex = ({ system, searchQuery }: { system: string; searchQuery: string }) => {
+// ── Codex générique pour D&D / Pathfinder / Cthulhu / Homebrew ──────
+// Affiche monstres + sorts + objets filtrés par système, avec création possible.
+const SystemCodex = ({
+  system,
+  searchQuery,
+  canCreate,
+}: {
+  system: string;
+  searchQuery: string;
+  canCreate: boolean;
+}) => {
   const [tab, setTab] = useState<"monsters" | "spells" | "items">("monsters");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-      <TabsList className="flex gap-1 bg-muted/50 p-1 mb-4">
-        <TabsTrigger value="monsters" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Skull className="h-3.5 w-3.5" /> Bestiaire
-        </TabsTrigger>
-        <TabsTrigger value="spells" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Wand2 className="h-3.5 w-3.5" /> Sorts
-        </TabsTrigger>
-        <TabsTrigger value="items" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Gem className="h-3.5 w-3.5" /> Objets
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="monsters"><MonstersList searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="spells"><SpellsList searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="items"><ItemsList searchQuery={searchQuery} system={system} /></TabsContent>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <TabsList className="flex gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="monsters" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Skull className="h-3.5 w-3.5" /> Bestiaire
+          </TabsTrigger>
+          <TabsTrigger value="spells" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Wand2 className="h-3.5 w-3.5" /> Sorts
+          </TabsTrigger>
+          <TabsTrigger value="items" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Gem className="h-3.5 w-3.5" /> Objets
+          </TabsTrigger>
+        </TabsList>
+        {canCreate && (
+          <div className="flex flex-wrap gap-2">
+            {tab === "monsters" && <CreateMonsterDialog defaultSystem={system} onCreated={triggerRefresh} />}
+            {tab === "spells" && <CreateSpellDialog defaultSystem={system} onCreated={triggerRefresh} />}
+            {tab === "items" && <CreateItemDialog defaultSystem={system} onCreated={triggerRefresh} />}
+          </div>
+        )}
+      </div>
+      <TabsContent value="monsters"><MonstersList key={`m-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
+      <TabsContent value="spells"><SpellsList key={`s-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
+      <TabsContent value="items"><ItemsList key={`i-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
     </Tabs>
   );
 };
@@ -144,11 +165,10 @@ const Compendium = () => {
   const [system, setSystem] = useState<string>("Aetheria");
   const [aetheriaTab, setAetheriaTab] = useState("aetheria-bestiary");
   const [waTab, setWaTab] = useState("wa-bestiary");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const [refreshKey] = useState(0);
 
-  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Homebrew). CoC masqué pour rester proche du périmètre demandé.
-  const visibleSystems = SYSTEM_LIST.filter((s) => s.id !== "Call of Cthulhu");
+  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Homebrew).
+  const visibleSystems = SYSTEM_LIST;
 
   return (
     <div className="relative flex min-h-screen flex-col bg-gradient-dark">
@@ -212,7 +232,7 @@ const Compendium = () => {
                   <Swords className="h-3.5 w-3.5" /> Matchups
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={!!user} /></TabsContent>
+              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={false} /></TabsContent>
               <TabsContent value="aetheria-codex"><AetheriaLore /></TabsContent>
               <TabsContent value="aetheria-matchups"><AetheriaMatchups /></TabsContent>
             </Tabs>
@@ -232,7 +252,6 @@ const Compendium = () => {
                     <Globe className="h-3.5 w-3.5" /> Histoire
                   </TabsTrigger>
                 </TabsList>
-                {user && waTab === "wa-bestiary" && <CreateWACreatureDialog onCreated={triggerRefresh} />}
               </div>
               <TabsContent value="wa-bestiary"><WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} /></TabsContent>
               <TabsContent value="wa-codex"><WACodex /></TabsContent>
@@ -240,8 +259,8 @@ const Compendium = () => {
             </Tabs>
           )}
 
-          {(system === "D&D 5e" || system === "Pathfinder 2e") && (
-            <SystemCodex system={system} searchQuery={searchQuery} />
+          {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "Call of Cthulhu") && (
+            <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
 
           {system === "Personnalisé" && (
@@ -251,13 +270,13 @@ const Compendium = () => {
                 <div>
                   <h3 className="font-display text-lg font-semibold text-amber-400">Codex Homebrew</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Vos créations personnelles : créatures, sorts et objets marqués comme Homebrew.
-                    Ce contenu peut être réutilisé dans n'importe quelle campagne dont le MJ a activé l'option
-                    « Autoriser les personnages Homebrew ».
+                    Vos créations personnelles : créatures, sorts et objets Homebrew. Lors de la création,
+                    vous choisissez si votre contenu reste privé ou s'il est partagé avec la communauté
+                    Aetheria VTT (visible par tous).
                   </p>
                 </div>
               </div>
-              <SystemCodex system="Personnalisé" searchQuery={searchQuery} />
+              <SystemCodex system="Personnalisé" searchQuery={searchQuery} canCreate={!!user} />
             </div>
           )}
         </div>
