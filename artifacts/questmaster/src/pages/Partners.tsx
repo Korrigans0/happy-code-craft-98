@@ -7,6 +7,33 @@ import vaeloriaLogo from "@/assets/vaeloria-logo-big.svg";
 import guildryLogo from "@/assets/guildry-logo.webp";
 import waLogo from "@/assets/wa-logo.png";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import waHome from "@/assets/partners/wa-home.png";
+import waCodex from "@/assets/partners/wa-codex.png";
+import waDiscord from "@/assets/partners/wa-discord.png";
+import guildryHome from "@/assets/partners/guildry-home.png";
+import vaeloriaHome from "@/assets/partners/vaeloria-home.png";
+import vaeloriaDiscord from "@/assets/partners/vaeloria-discord.png";
+
+const ScreenshotGallery = ({ images }: { images: { src: string; alt: string }[] }) => (
+  <div className="grid gap-3 px-6 pb-6 md:grid-cols-3 md:px-8 md:pb-8">
+    {images.map((img) => (
+      <a
+        key={img.src}
+        href={img.src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative block overflow-hidden rounded-lg border border-[#d4b86a]/40 bg-black/40 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-gold"
+      >
+        <img
+          src={img.src}
+          alt={img.alt}
+          loading="lazy"
+          className="h-32 w-full object-cover object-top transition-transform duration-500 group-hover:scale-105 md:h-40"
+        />
+      </a>
+    ))}
+  </div>
+);
 
 const VAELORIA = {
   copper: "#b87d48",
