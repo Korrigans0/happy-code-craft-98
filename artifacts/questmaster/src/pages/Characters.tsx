@@ -231,8 +231,14 @@ const Characters = () => {
   const handleEdit = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setIsSheetOpen(false);
-    const isAetheria = character.campaign === "Aetheria" ||
-      (() => { try { return JSON.parse(character.inventory || "{}").__aetheria; } catch { return false; } })();
+    // Priorité au nouveau champ `system`, fallback sur l'ancien marqueur (`campaign === "Aetheria"`
+    // ou inventory.__aetheria) pour rester compatible avec les fiches créées avant le multi-système.
+    const sys = character.system as string | undefined;
+    const isAetheria = sys
+      ? sys === "Aetheria"
+      : character.campaign === "Aetheria" ||
+        (() => { try { return JSON.parse(character.inventory || "{}").__aetheria; } catch { return false; } })();
+    setPendingSystem(sys || (isAetheria ? "Aetheria" : "Worlds Awakening"));
     if (isAetheria) {
       setIsAetheriaFormOpen(true);
     } else {
