@@ -53,9 +53,14 @@ interface Character {
   created_at: string;
 }
 
-// ── Sélecteur de système ────────────────────────────────────
+// ── Sélecteur de système (multi-système) ───────────────────
+// Affiche tous les systèmes du registre `src/lib/systems/`.
+// Aetheria reste le système phare (mis en avant), les autres ouvrent le
+// CharacterForm générique avec leur configuration propre.
+import { SYSTEM_LIST } from "@/lib/systems";
+
 interface SystemSelectorProps {
-  onSelect: (system: "aetheria" | "wa") => void;
+  onSelect: (systemId: string) => void;
   onCancel: () => void;
 }
 
@@ -67,50 +72,42 @@ const SystemSelector = ({ onSelect, onCancel }: SystemSelectorProps) => (
       </h2>
       <Button variant="ghost" size="sm" onClick={onCancel}>Annuler</Button>
     </div>
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+    <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
       <p className="text-center text-muted-foreground">
-        Choisissez le système de jeu pour votre personnage
+        Choisissez le système de jeu de votre personnage
       </p>
-      <div className="grid w-full max-w-md gap-4">
-
-        {/* Aetheria */}
-        <button
-          onClick={() => onSelect("aetheria")}
-          className="group flex flex-col items-center gap-3 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 p-6 text-center transition-all hover:border-amber-500/60 hover:bg-amber-500/10"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20 text-3xl group-hover:bg-amber-500/30 transition-colors">
-            ⚔️
-          </div>
-          <div>
-            <p className="font-display text-lg font-bold text-amber-400">Aetheria</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Système maison — Force, Agilité, Esprit, Endurance
-            </p>
-            <p className="mt-0.5 text-xs text-amber-400/60">
-              17 races • 8 classes core • Réactions avancées
-            </p>
-          </div>
-        </button>
-
-        {/* Worlds Awakening */}
-        <button
-          onClick={() => onSelect("wa")}
-          className="group flex flex-col items-center gap-3 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 p-6 text-center transition-all hover:border-blue-500/60 hover:bg-blue-500/10"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-500/20 text-3xl group-hover:bg-blue-500/30 transition-colors">
-            🌍
-          </div>
-          <div>
-            <p className="font-display text-lg font-bold text-blue-400">Worlds Awakening</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Système communautaire de Nicolas Bédé
-            </p>
-            <p className="mt-0.5 text-xs text-blue-400/60">
-              Gratuit • Règles génériques • Multivers
-            </p>
-          </div>
-        </button>
-
+      <div className="mx-auto grid w-full max-w-2xl gap-3 sm:grid-cols-2">
+        {SYSTEM_LIST.map((sys) => {
+          const tone = sys.featured
+            ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/70 hover:bg-amber-500/10"
+            : sys.partner
+            ? "border-blue-500/30 bg-blue-500/5 hover:border-blue-500/60 hover:bg-blue-500/10"
+            : sys.custom
+            ? "border-violet-500/30 bg-violet-500/5 hover:border-violet-500/60 hover:bg-violet-500/10"
+            : "border-border bg-card hover:border-primary/50 hover:bg-card/80";
+          return (
+            <button
+              key={sys.id}
+              onClick={() => onSelect(sys.id)}
+              className={`group flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition-all ${tone}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-background/60 text-2xl">
+                  {sys.emoji}
+                </div>
+                <div>
+                  <p className="font-display text-base font-bold text-foreground">
+                    {sys.label}
+                    {sys.featured && <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">Phare</span>}
+                    {sys.partner && <span className="ml-2 rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">Partenaire</span>}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{sys.defaultRollHint}</p>
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">{sys.description}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   </div>
