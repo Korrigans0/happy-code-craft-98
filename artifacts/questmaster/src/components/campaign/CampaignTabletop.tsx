@@ -36,9 +36,10 @@ import {
 } from "./vtt/types";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useQuery } from "@tanstack/react-query";
-import { campaignsApi } from "@/lib/api";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { campaignsApi, charactersApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
@@ -265,6 +266,65 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (!live) { setSheetToken(null); return; }
     if (live !== sheetToken) setSheetToken(live);
   }, [tokens, sheetToken]);
+
+  // ── Fiche complète liée au token (sync token ↔ fiche personnage) ──
+  const queryClient = useQueryClient();
+  const [fullSheetCharId, setFullSheetCharId] = useState<string | null>(null);
+
+  const { data: fullSheetCharacter } = useQuery({
+    queryKey: ["vtt-linked-character", fullSheetCharId],
+    enabled: !!fullSheetCharId,
+    queryFn: async () => {
+      if (!fullSheetCharId) return null;
+      try { return await charactersApi.get(fullSheetCharId); }
+      catch { return null; }
+    },
+  });
+
+  // Realtime: refresh sheet when its character row changes
+  useEffect(() => {
+    if (!fullSheetCharId) return;
+    const ch = supabase
+      .channel(`character-sheet-${fullSheetCharId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "characters", filter: `id=eq.${fullSheetCharId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["vtt-linked-character", fullSheetCharId] });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fullSheetCharId, queryClient]);
+
+  const updateCharacterMutation = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      return await charactersApi.update(id, patch);
+    },
+    onSuccess: (updated: any) => {
+      queryClient.invalidateQueries({ queryKey: ["vtt-linked-character", updated?.id] });
+      queryClient.invalidateQueries({ queryKey: ["vtt-user-characters"] });
+      // Mirror key fields to all tokens linked to this character
+      if (updated?.id) {
+        setTokens(prev => prev.map(t => (
+          t.creatureType === "character" && t.creatureId === updated.id
+            ? {
+                ...t,
+                name: updated.name ?? t.name,
+                hp: typeof updated.hp === "number" ? updated.hp : t.hp,
+                maxHp: typeof updated.max_hp === "number" ? updated.max_hp : t.maxHp,
+                ac: typeof updated.armor_class === "number" ? updated.armor_class : t.ac,
+                imageUrl: updated.avatar_url ?? t.imageUrl,
+              }
+            : t
+        )));
+      }
+      toast({ title: "Fiche enregistrée" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erreur", description: err?.message ?? "Sauvegarde impossible", variant: "destructive" });
+    },
+  });
 
   // ── Notes MJ dialog ──
   const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
@@ -3542,6 +3602,17 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               if (!canEdit) return;
               updateToken(tok.id, updates);
               setSheetToken(s => s ? { ...s, ...updates } : s);
+              // Mirror to linked character row (token → fiche sync)
+              if (tok.creatureType === "character" && tok.creatureId) {
+                const charPatch: any = {};
+                if (updates.hp !== undefined) charPatch.hp = updates.hp;
+                if (updates.maxHp !== undefined) charPatch.max_hp = updates.maxHp;
+                if (updates.ac !== undefined) charPatch.armor_class = updates.ac;
+                if (updates.name !== undefined) charPatch.name = updates.name;
+                if (Object.keys(charPatch).length > 0) {
+                  charactersApi.update(tok.creatureId, charPatch).catch(() => {});
+                }
+              }
             };
             const adjustHp = (delta: number) => {
               if (!canEdit) return;
@@ -3727,15 +3798,56 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               )}
 
               {tok.creatureId && tok.creatureType === "character" && (
-                <p className="text-xs text-muted-foreground">
-                  Fiche complète disponible dans la page Personnages.
-                </p>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => setFullSheetCharId(tok.creatureId!)}
+                >
+                  Ouvrir la fiche complète
+                </Button>
               )}
             </div>
             );
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Fiche complète liée au token (multi-systèmes) */}
+      <Dialog open={!!fullSheetCharId} onOpenChange={(o) => !o && setFullSheetCharId(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:max-w-none max-sm:rounded-none max-sm:p-3">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Fiche personnage</DialogTitle>
+            <DialogDescription>Fiche complète liée au jeton sélectionné</DialogDescription>
+          </DialogHeader>
+          {fullSheetCharacter && (() => {
+            const linkedTok = tokens.find(t => t.creatureType === "character" && t.creatureId === fullSheetCharacter.id) ?? null;
+            const canEditSheet = isGM || (user?.id && fullSheetCharacter.user_id === user.id);
+            return (
+              <SheetRouter
+                character={fullSheetCharacter}
+                editable={!!canEditSheet}
+                onSave={(charPatch: any) => {
+                  if (!canEditSheet) return;
+                  updateCharacterMutation.mutate({ id: fullSheetCharacter.id, patch: charPatch });
+                  // Immediate optimistic mirror to the token (fiche → token sync)
+                  if (linkedTok) {
+                    const tokPatch: Partial<TokenItem> = {};
+                    if (typeof charPatch.hp === "number") tokPatch.hp = charPatch.hp;
+                    if (typeof charPatch.max_hp === "number") tokPatch.maxHp = charPatch.max_hp;
+                    if (typeof charPatch.armor_class === "number") tokPatch.ac = charPatch.armor_class;
+                    if (charPatch.name) tokPatch.name = charPatch.name;
+                    if (charPatch.avatar_url) tokPatch.imageUrl = charPatch.avatar_url;
+                    if (Object.keys(tokPatch).length > 0) updateToken(linkedTok.id, tokPatch);
+                  }
+                }}
+                onClose={() => setFullSheetCharId(null)}
+              />
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
 
 
       {/* Notes MJ privées */}
