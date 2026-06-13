@@ -215,9 +215,13 @@ const Characters = () => {
     setIsSelectorOpen(true);
   }, []);
 
-  const handleSystemSelect = useCallback((system: "aetheria" | "wa") => {
+  const handleSystemSelect = useCallback((systemId: string) => {
     setIsSelectorOpen(false);
-    if (system === "aetheria") {
+    setPendingSystem(systemId);
+    // Aetheria a sa propre fiche dédiée. Tous les autres systèmes
+    // (WA, D&D 5e, Pathfinder 2e, L'Appel de Cthulhu, Personnalisé)
+    // passent par le CharacterForm générique configuré via le registre.
+    if (systemId === "Aetheria") {
       setIsAetheriaFormOpen(true);
     } else {
       setIsFormOpen(true);
