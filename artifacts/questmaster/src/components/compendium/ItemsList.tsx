@@ -35,7 +35,7 @@ const ItemsList = ({ searchQuery, system }: ItemsListProps) => {
     setLoading(true);
     try {
       const data = await compendiumApi.getItems(system);
-      setItems(data || []);
+      setItems((data as MagicItem[]) || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };

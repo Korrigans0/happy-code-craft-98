@@ -40,7 +40,7 @@ const MonstersList = ({ searchQuery, system }: MonstersListProps) => {
     setLoading(true);
     try {
       const data = await compendiumApi.getMonsters(system);
-      setMonsters(data || []);
+      setMonsters((data as Monster[]) || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };

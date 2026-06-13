@@ -40,7 +40,7 @@ const SpellsList = ({ searchQuery, system }: SpellsListProps) => {
     setLoading(true);
     try {
       const data = await compendiumApi.getSpells(system);
-      setSpells(data || []);
+      setSpells((data as Spell[]) || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
