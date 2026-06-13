@@ -390,11 +390,12 @@ const Characters = () => {
         </SheetContent>
       </Sheet>
 
-      {/* ── FORMULAIRE WA ────────────────────────────────── */}
+      {/* ── FORMULAIRE GÉNÉRIQUE (multi-système hors Aetheria) ─ */}
       <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
         <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
           <CharacterForm
             character={selectedCharacter}
+            gameSystem={pendingSystem}
             onSave={handleSave}
             onCancel={() => { setIsFormOpen(false); setSelectedCharacter(null); }}
           />
