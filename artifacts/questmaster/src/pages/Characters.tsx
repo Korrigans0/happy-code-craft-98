@@ -13,7 +13,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CharacterCard from "@/components/characters/CharacterCard";
 import CharacterForm from "@/components/characters/CharacterForm";
-import CharacterSheet from "@/components/characters/CharacterSheet";
+import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
@@ -420,24 +420,17 @@ const Characters = () => {
         </SheetContent>
       </Sheet>
 
-      {/* ── FICHE DE VISUALISATION ───────────────────────── */}
+      {/* ── FICHE DE VISUALISATION (routeur multi-système) ── */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="right" className="w-full p-0 sm:max-w-2xl">
+        <SheetContent side="right" className="w-full p-0 sm:max-w-3xl">
           {selectedCharacter && (
-            isAetheriaCharacter(selectedCharacter) ? (
-              <AetheriaCharacterSheet
-                character={selectedCharacter}
-                onEdit={() => handleEdit(selectedCharacter)}
-                onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
-                onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
-              />
-            ) : (
-              <CharacterSheet
-                character={selectedCharacter}
-                onEdit={() => handleEdit(selectedCharacter)}
-                onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
-              />
-            )
+            <SheetRouter
+              character={selectedCharacter}
+              editable={true}
+              onEdit={() => handleEdit(selectedCharacter)}
+              onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
+              onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
+            />
           )}
         </SheetContent>
       </Sheet>

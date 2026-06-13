@@ -16,9 +16,10 @@ interface MagicItem {
 
 interface ItemsListProps {
   searchQuery: string;
+  system?: string;
 }
 
-const ItemsList = ({ searchQuery }: ItemsListProps) => {
+const ItemsList = ({ searchQuery, system }: ItemsListProps) => {
   const [items, setItems] = useState<MagicItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -27,12 +28,14 @@ const ItemsList = ({ searchQuery }: ItemsListProps) => {
 
   useEffect(() => {
     fetchItems();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
 
   const fetchItems = async () => {
+    setLoading(true);
     try {
-      const data = await compendiumApi.getItems();
-      setItems(data || []);
+      const data = await compendiumApi.getItems(system);
+      setItems((data as MagicItem[]) || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };

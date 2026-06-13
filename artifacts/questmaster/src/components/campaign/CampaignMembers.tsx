@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send } from "lucide-react";
+import { filterCompatibleCharacters } from "@/lib/system-compatibility";
+import { getSystem } from "@/lib/systems";
 
 interface CampaignMembersProps {
   campaignId: string;
@@ -174,6 +176,11 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
 
+  const { data: campaign } = useQuery({
+    queryKey: ["campaign", campaignId],
+    queryFn: () => campaignsApi.get(campaignId),
+  });
+
   const { data: members = [] } = useQuery({
     queryKey: ["campaignMembers", campaignId],
     queryFn: () => campaignsApi.getMembers(campaignId),
@@ -185,11 +192,17 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     enabled: isGM,
   });
 
-  const { data: myCharacters = [] } = useQuery({
+  const { data: myCharactersRaw = [] } = useQuery({
     queryKey: ["myCharacters"],
     queryFn: () => charactersApi.list(),
     enabled: !isGM,
   });
+
+  const myCharacters = useMemo(
+    () => filterCompatibleCharacters(myCharactersRaw as any[], campaign as any ?? {}),
+    [myCharactersRaw, campaign],
+  );
+  const myCharsHidden = (myCharactersRaw as any[]).length - myCharacters.length;
 
   const { data: proposals = [] } = useQuery({
     queryKey: ["campaignProposals", campaignId],
@@ -206,16 +219,17 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     [proposals, isGM]
   );
 
-  // O(1) lookup: characters grouped by user_id
+  // O(1) lookup: characters grouped by user_id, filtré par compatibilité système
   const charactersByUser = useMemo(() => {
+    const compat = filterCompatibleCharacters(allCharacters as any[], campaign as any ?? {});
     const map = new Map<string, any[]>();
-    for (const c of allCharacters as any[]) {
+    for (const c of compat) {
       const arr = map.get(c.user_id) ?? [];
       arr.push(c);
       map.set(c.user_id, arr);
     }
     return map;
-  }, [allCharacters]);
+  }, [allCharacters, campaign]);
 
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ memberId, characterId }: { memberId: string; characterId: string | null }) => {
@@ -420,13 +434,23 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
           <DialogHeader>
             <DialogTitle>Proposer un personnage</DialogTitle>
             <DialogDescription>
-              Choisissez l'un de vos personnages à soumettre au MJ pour approbation.
+              {campaign?.system ? (
+                <>Système de la campagne : <strong>{getSystem(campaign.system).label}</strong>
+                  {campaign.allow_homebrew_characters && <> · Homebrew accepté</>}
+                </>
+              ) : "Choisissez l'un de vos personnages à soumettre au MJ pour approbation."}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-2">
-            {(myCharacters as any[]).length === 0 ? (
+          <div className="py-2 space-y-2">
+            {myCharsHidden > 0 && (
+              <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
+                {myCharsHidden} personnage{myCharsHidden > 1 ? "s" : ""} masqué{myCharsHidden > 1 ? "s" : ""} car
+                incompatible{myCharsHidden > 1 ? "s" : ""} avec le système de la campagne.
+              </p>
+            )}
+            {myCharacters.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Vous n'avez aucun personnage. Créez-en un dans la section Personnages.
+                Aucun personnage compatible avec le système de la campagne. Créez-en un dans la section Personnages.
               </p>
             ) : (
               <Select value={selectedCharacterId} onValueChange={setSelectedCharacterId}>
@@ -434,7 +458,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
                   <SelectValue placeholder="Sélectionner un personnage" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(myCharacters as any[]).map((char: any) => (
+                  {myCharacters.map((char: any) => (
                     <SelectItem key={char.id} value={char.id}>
                       {char.name} — {char.race} {char.class} Niv.{char.level}
                     </SelectItem>

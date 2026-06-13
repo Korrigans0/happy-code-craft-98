@@ -19,9 +19,11 @@ interface Monster {
 
 interface MonstersListProps {
   searchQuery: string;
+  /** Filtre par système ; omis = tous systèmes. */
+  system?: string;
 }
 
-const MonstersList = ({ searchQuery }: MonstersListProps) => {
+const MonstersList = ({ searchQuery, system }: MonstersListProps) => {
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -31,12 +33,14 @@ const MonstersList = ({ searchQuery }: MonstersListProps) => {
 
   useEffect(() => {
     fetchMonsters();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [system]);
 
   const fetchMonsters = async () => {
+    setLoading(true);
     try {
-      const data = await compendiumApi.getMonsters();
-      setMonsters(data || []);
+      const data = await compendiumApi.getMonsters(system);
+      setMonsters((data as Monster[]) || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   };

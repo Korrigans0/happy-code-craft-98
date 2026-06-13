@@ -360,6 +360,13 @@ async function listTable(table: string) {
   const r = await supabase.from(table).select("*").order("created_at", { ascending: false });
   return unwrap(r) ?? [];
 }
+async function listTableBySystem(table: string, system?: string) {
+  let q: any = supabase.from(table).select("*");
+  if (system) q = q.eq("system", system);
+  q = q.order("created_at", { ascending: false });
+  const r = await q;
+  return unwrap(r) ?? [];
+}
 async function createInTable(table: string, data: Record<string, unknown>) {
   const userId = await uid();
   const r = await supabase.from(table).insert({ ...data, created_by: userId }).select().single();
@@ -367,16 +374,15 @@ async function createInTable(table: string, data: Record<string, unknown>) {
 }
 
 export const compendiumApi = {
-  getSpells: () => listTable("spells"),
+  getSpells: (system?: string) => listTableBySystem("spells", system),
   createSpell: (d: Record<string, unknown>) => createInTable("spells", d),
-  getMonsters: () => listTable("monsters"),
+  getMonsters: (system?: string) => listTableBySystem("monsters", system),
   createMonster: (d: Record<string, unknown>) => createInTable("monsters", d),
-  getItems: () => listTable("magic_items"),
+  getItems: (system?: string) => listTableBySystem("magic_items", system),
   createItem: (d: Record<string, unknown>) => createInTable("magic_items", d),
   getWaCreatures: () => listTable("wa_creatures"),
   createWaCreature: (d: Record<string, unknown>) => createInTable("wa_creatures", d),
   syncWaCreatures: async () => {
-    // Edge function based sync — not implemented in Supabase-direct mode
     return { ok: true, synced: 0 };
   },
   getAetheriaCreatures: () => listTable("aetheria_creatures"),
