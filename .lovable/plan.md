@@ -1,112 +1,123 @@
-# Refonte visuelle Aetheria VTT — Dark Fantasy premium
+## Objectif
 
-Objectif : transformer l'apparence du site (page d'accueil, navigation, cartes, ambiance) pour évoquer un véritable monde fantasy vivant, tout en conservant toutes les fonctionnalités existantes (VTT, campagnes, codex, auth, etc.). Ajout d'une nouvelle page **Abonnements**.
+Ouvrir Aetheria VTT au **multi-système** : conserver Aetheria/WA comme système principal, et ajouter D&D 5e, Pathfinder 2e, L'Appel de Cthulhu (et architecture extensible). Le système est choisi **par campagne** et **par personnage**, et l'UI (fiche, jets, combat, compendium) s'adapte automatiquement.
+
+> ⚠️ Note : cela contredit la règle mémoire actuelle « Exclusively Aetheria & WA ». Je mettrai à jour `mem://index.md` après validation.
 
 ## Périmètre
 
-Pages touchées : `Index` (Hero, Features, GameSystems, Campaigns), `Header`, `Footer`, `MobileBottomNav`, design tokens globaux (`index.css`, `tailwind.config.ts`).
+### Systèmes livrés en v1
+1. **Aetheria** (existant — système phare, par défaut)
+2. **Worlds Awakening** (existant — partenaire)
+3. **D&D 5e** (nouveau)
+4. **Pathfinder 2e** (nouveau)
+5. **L'Appel de Cthulhu 7e** (nouveau)
+6. **Personnalisé / Homebrew** (stats & règles libres définies par le MJ)
 
-Pages non touchées (fonctionnel intact) : `CampaignPlay`, `Campaigns`, `Characters`, `Compendium`, `DiceRoller`, `Auth`, `Profile`, etc.
+### Ce qui change selon le système
+- Caractéristiques (FOR/DEX/CON… vs STR/DEX/CON… vs FOR/CON/TAI/DEX/APP/INT/POU/ÉDU)
+- Mode de stats : **modificateur** (Aetheria/WA) vs **score** (5e/PF2) vs **pourcentage** (CoC)
+- Race/Classe/Sous-classe (libellés et listes)
+- PV, CA/Défense, Initiative, jets de sauvegarde
+- Monnaie (NX, PO, $/£)
+- Dés de jet par défaut (d20+mod, 2d10, d100…)
+- Compendium filtré par système
 
-## 1. Direction artistique & tokens
+### Ce qui ne change pas
+- Tabletop / tokens / brouillard / dessins / chat / dés 3D
+- Auth, campagnes, RLS, permissions
+- Identité visuelle dark fantasy
 
-- Palette HSL enrichie dans `index.css` :
-  - `--background` bleu-nuit très profond (~`220 50% 5%`)
-  - `--primary` or lumineux (`43 90% 58%`)
-  - Nouveaux tokens : `--magic-violet` (`270 70% 55%`), `--magic-cyan` (`190 90% 60%`), `--magic-emerald` (`155 65% 45%`), `--magic-deep` (`230 65% 12%`)
-  - Gradients : `--gradient-fantasy` (bleu nuit → violet), `--gradient-gold-rune`, `--gradient-portal` (cyan→violet)
-  - Shadows : `--shadow-magic`, `--shadow-rune-glow`
-- Polices conservées (Cinzel / Lora).
-- Nouveaux keyframes globaux : `float-slow`, `rune-pulse`, `sparkle`, `mist-drift`, `portal-spin`.
+## Architecture technique
 
-## 2. Composants d'ambiance réutilisables
+### 1. Registre de systèmes (`src/lib/systems/`)
+```text
+src/lib/systems/
+├── index.ts              # registre + getSystem(id)
+├── types.ts              # SystemDefinition, StatDef, RollMode…
+├── aetheria.ts           # (ré-export aetheria-data)
+├── worlds-awakening.ts   # (constantes WA existantes)
+├── dnd5e.ts              # nouveau
+├── pathfinder2e.ts       # nouveau
+├── cthulhu7e.ts          # nouveau
+└── custom.ts             # mode homebrew
+```
 
-Nouveau dossier `src/components/fantasy/` :
+Chaque `SystemDefinition` expose :
+- `id`, `label`, `icon`, `description`
+- `stats: StatDef[]` (clé, label, mode: "modifier" | "score" | "percentage", default, min/max)
+- `races[]`, `classes[]`, `subclassesByClass{}`
+- `currency`, `speedUnit`, `hitPointsFormula`
+- `defenseStats[]` (ex: AC, Def PHY/MAG, Esquive)
+- `defaultRoll(stat)` (formule de jet)
+- `hasSpellcasting`, `hasTenues`, `hasSanity`
+- `rendererHints` (quelles sections afficher dans la fiche)
 
-- `MagicParticles.tsx` — canvas léger (50–80 particules dorées/cyan flottantes, désactivé sur mobile via `useIsMobile`).
-- `FloatingRunes.tsx` — runes SVG positionnées en absolute, animées `rune-pulse`.
-- `MistOverlay.tsx` — gradient radial animé (brouillard).
-- `SideDecorations.tsx` — branches/orchidées/cristaux SVG sur les bords (cachés < md).
-- `D20Float.tsx` — D20 SVG flottant décoratif.
+### 2. Base de données
+- `campaigns.game_system` (text) — déjà présent, juste élargir les valeurs autorisées (pas d'enum stricte côté DB).
+- `characters.system` (text, défaut `"Aetheria"`) — **nouveau champ**, migration nécessaire.
+- `characters.system_data` (jsonb, défaut `'{}'`) — **nouveau** : stocke les champs propres au système (sanity, prof bonus 5e, etc.) sans casser le schéma actuel.
 
-Performance : tout est `pointer-events-none`, `will-change` limité, particules réduites/désactivées sur mobile.
+Migration :
+```sql
+ALTER TABLE public.characters
+  ADD COLUMN IF NOT EXISTS system text NOT NULL DEFAULT 'Aetheria',
+  ADD COLUMN IF NOT EXISTS system_data jsonb NOT NULL DEFAULT '{}'::jsonb;
+```
 
-## 3. Hero Section (refonte totale)
+### 3. Fiche de personnage adaptative
+- `CharacterSheet` devient un **routeur** : selon `character.system`, rend `<AetheriaSheet>`, `<Dnd5eSheet>`, `<Pf2eSheet>`, `<CthulhuSheet>` ou `<CustomSheet>`.
+- Sections communes extraites (`SheetHeader`, `SheetNotes`, `SheetInventory`) — réutilisées par tous.
+- Stats rendues via composant générique piloté par `StatDef`.
 
-- Suppression du gros logo central (logo reste uniquement dans le Header).
-- Fond : image fantasy générée (ruines elfiques + portail magique + cristaux + cascade lointaine + brume).
-- Overlay sombre + vignette pour lisibilité.
-- Décorations latérales SVG (orchidées lumineuses + cristaux flottants + fées) en absolute, cachées sur mobile.
-- Titre `AETHERIA VTT` en Cinzel doré avec halo + sous-titre.
-- 2 CTA : « Créer mon aventure » (or) / « Rejoindre une partie » (outline rune).
-- 4 mini-badges : MJ & PJ réunis, WA intégré, VTT immersif, Cloud sécurisé.
-- Particules magiques + mist overlay.
+### 4. Création de personnage
+- `CharacterForm` : étape 0 = **choix du système** (présélectionné depuis la campagne si fourni en query param).
+- Les étapes suivantes (race/classe/stats) lisent `getSystem(systemId)` pour leurs listes.
 
-## 4. Cartes de fonctionnalités
+### 5. Sélection du système au niveau campagne
+- `Campaigns.tsx` : le champ `Système de jeu` propose les 6 options (sélecteur avec icônes).
+- Quand un joueur rejoint et crée un PJ pour cette campagne, le système est pré-rempli.
 
-Refonte `FeaturesSection` : 6 cartes (Campagnes, Personnages, Codex, Dés, Table virtuelle, Univers), chacune avec :
-- Bordure dégradée (or/violet/cyan/émeraude variable selon catégorie)
-- Effet verre (`backdrop-blur` + `bg-card/40`)
-- Lueur au survol (`shadow-magic`)
-- Icône Lucide unique + petite illustration runique en fond
-- Couleur d'accent par catégorie
+### 6. Jets de dés
+- `rollStat(character, statKey)` lit le `SystemDefinition.defaultRoll`.
+- Aetheria/WA → `1d20 + mod`
+- 5e → `1d20 + floor((score-10)/2) + prof?`
+- PF2 → `1d20 + mod + prof`
+- CoC → `1d100` vs valeur (% sous le score)
 
-## 5. Header & Navigation
+### 7. Combat tracker
+- Initiative formule depuis le système (`initiativeFormula`).
+- Colonnes HP/AC/Def adaptées au système actif de la campagne.
 
-- Ajout d'un lien **Abonnements** entre Codex et Partenaires.
-- Légère refonte : fond verre, séparateurs runiques discrets.
+### 8. Compendium
+- Filtre `system` ajouté. Le contenu Aetheria/WA existant reste taggé `Aetheria`/`Worlds Awakening`. Les SRD 5e/PF2 ne sont **pas** importés en v1 (licences) — les MJ ajoutent leur propre contenu via le GM custom content.
 
-`MobileBottomNav` : remplacer un item (Dés ou Partenaires) — on garde 6 items en ajoutant Abonnements via icône `Crown`. → Remplacement de « Partenaires » par « Premium » dans la barre mobile (Partenaires reste accessible via le footer).
+## UI
 
-## 6. Nouvelle page Abonnements
+- Badge système (chip doré) visible sur :
+  - Cartes de campagne
+  - Cartes de personnage
+  - En-tête de fiche
+  - En-tête CampaignPlay
+- Page d'accueil : mention « Multi-système : Aetheria, D&D 5e, Pathfinder, Cthulhu… » dans le Hero.
+- Sélecteur système avec aperçu (icône + 1 phrase descriptive) dans création campagne / personnage.
 
-`src/pages/Subscriptions.tsx` + route `/subscriptions` dans `App.tsx`.
+## Plan d'exécution (commits logiques)
 
-4 plans en cartes premium (verre + bordure dorée pour le plan recommandé) :
+1. **Migration DB** : `characters.system` + `characters.system_data`.
+2. **Registre systèmes** : créer `src/lib/systems/*` avec les 6 définitions. Refactor `game-systems.ts` pour ré-exporter le registre (compat ascendante).
+3. **Fiche adaptative** : router + sheets 5e / PF2 / CoC / Custom (versions essentielles : stats, PV, défense, compétences, inventaire texte, notes). Aetheria/WA inchangés.
+4. **Formulaire création** : étape choix du système + listes dynamiques.
+5. **Sélecteur campagne** : élargir options + propager système au PJ créé pour la campagne.
+6. **Jets & combat** : brancher `defaultRoll` et `initiativeFormula`.
+7. **UI badges & Hero** : afficher le système partout + mention sur la home.
+8. **Mémoire** : mettre à jour `mem://index.md` (lever la contrainte « Aetheria/WA exclusivement ») et ajouter `mem://technical/architecture/multi-system-registry`.
 
-| Plan | Prix | Highlights |
-|---|---|---|
-| Gratuit | 0 € | 3 campagnes, 3 persos, 5 joueurs, 1 To, brouillard, vision, codex |
-| Premium PJ | 2 €/mois | 20 persos, inventaire avancé, portraits HD, historique, effets |
-| Premium MJ | 3 €/mois | 20 campagnes, 10 joueurs, 5 To, lumières/murs dynamiques avancés |
-| Premium Mixte ⭐ | 4 €/mois | 50/50, 10 To, badge Fondateur, monde illimité |
+## Hors périmètre v1
 
-CTA non fonctionnels (toast « Bientôt disponible ») — pas d'intégration paiement dans cette itération (à confirmer plus tard).
+- Import SRD officiel (5e/PF2) — questions de licence.
+- Conversion automatique d'un PJ d'un système à un autre.
+- Sheets ultra-détaillées avec automatisation complète des sorts/feats 5e/PF2 (v1 = champs structurés + texte libre).
+- Système custom : éditeur visuel des stats (v1 = JSON simple côté MJ).
 
-Ambiance : particules + runes + mist, fond fantasy.
-
-## 7. Footer & sections existantes
-
-- `GameSystemsSection` et `CampaignsSection` : adaptation au nouveau langage visuel (cartes verre, accents colorés) sans changer le contenu.
-- Footer : légère touche dorée + runique.
-
-## 8. Génération d'assets
-
-Images générées (premium quality où utile) :
-- `src/assets/hero-fantasy-bg.jpg` — scène ruines elfiques + portail
-- `src/assets/card-campaigns.jpg`, `card-characters.jpg`, `card-codex.jpg`, `card-dice.jpg`, `card-vtt.jpg`, `card-universe.jpg` — illustrations carrées
-- `src/assets/side-orchids-left.png` (transparent), `side-orchids-right.png` (transparent)
-
-## 9. Responsive & performance
-
-- Décorations latérales : `hidden md:block`.
-- Particules : nombre divisé par 3 sur mobile, `prefers-reduced-motion` respecté.
-- Images `loading="lazy"` sauf hero.
-- Aucune dépendance ajoutée.
-
-## 10. Hors périmètre (intact)
-
-- Fonctionnalités VTT, plateau, murs/portes, tokens, auth, base de données, edge functions.
-- Aucune migration SQL.
-
-## Détails techniques
-
-- Tous les couleurs via tokens HSL (jamais de hex en dur dans les composants).
-- Composants ambiance : `pointer-events-none`, `aria-hidden`.
-- Le canvas particules s'arrête quand l'onglet est masqué (`document.hidden`).
-- Route `/subscriptions` ajoutée AVANT la route catch-all `*`.
-- `MobileBanner` et `CookieBanner` conservés tels quels.
-
----
-
-Confirme que je peux : (1) remplacer « Partenaires » par « Premium » dans la barre mobile, (2) laisser les boutons d'abonnement non-fonctionnels pour cette itération (paiement à brancher plus tard), (3) générer ~8 images pour l'ambiance.
+Confirme et je commence par la migration DB + le registre, puis je livre les sheets par paliers.
