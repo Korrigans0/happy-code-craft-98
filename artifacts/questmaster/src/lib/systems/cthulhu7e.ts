@@ -1,6 +1,13 @@
-import type { SystemDefinition } from "./types";
+import type { SystemDefinition, CalculationsAPI } from "./types";
+import { genericStatModifier } from "./types";
 
-// L'Appel de Cthulhu 7e — caractéristiques en pourcentage, jet sous la valeur au d100.
+// L'Appel de Cthulhu 7e — caractéristiques en pourcentage, jet 1d100 ≤ valeur.
+const calculations: CalculationsAPI = {
+  statModifier: genericStatModifier,
+  maxHp: ({ stats }) => Math.floor(((stats.CON ?? 50) + (stats.TAI ?? 50)) / 10),
+  initiative: ({ stats }) => Math.floor((stats.DEX ?? 50) / 5),
+};
+
 export const COC_SYSTEM: SystemDefinition = {
   id: "Call of Cthulhu",
   label: "L'Appel de Cthulhu 7e",
@@ -20,6 +27,21 @@ export const COC_SYSTEM: SystemDefinition = {
   defenses: [
     { key: "esquive", label: "Esquive", hint: "DEX/2 par défaut", default: 25 },
   ],
+  resources: [
+    { key: "hp",     label: "PV",          display: "bar",     min: 0 },
+    { key: "san",    label: "Santé ment.", display: "bar",     min: 0 },
+    { key: "luck",   label: "Chance",      display: "bar",     min: 0 },
+    { key: "mp",     label: "Pts magie",   display: "counter", min: 0 },
+  ],
+  skills: [
+    { key: "spot_hidden",  label: "Trouver objet caché", stat: "INT" },
+    { key: "listen",       label: "Écouter",             stat: "INT" },
+    { key: "library_use",  label: "Bibliothèque",        stat: "EDU" },
+    { key: "psychology",   label: "Psychologie",         stat: "INT" },
+    { key: "stealth",      label: "Discrétion",          stat: "DEX" },
+    { key: "occult",       label: "Occultisme",          stat: "EDU" },
+    { key: "first_aid",    label: "Premiers soins",      stat: "DEX" },
+  ],
   raceLabel: "Nationalité",
   races: ["Américaine", "Britannique", "Française", "Allemande", "Italienne", "Autre"],
   classLabel: "Profession",
@@ -34,4 +56,6 @@ export const COC_SYSTEM: SystemDefinition = {
   hasTenues: false,
   hasSanity: true,
   hasAlignments: false,
+  calculations,
+  sheetComponent: "cthulhu7e",
 };
