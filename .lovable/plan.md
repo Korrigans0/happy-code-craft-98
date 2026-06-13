@@ -1,123 +1,117 @@
-## Objectif
+# Refonte multi-systèmes — Fiches, Campagnes & Codex
 
-Ouvrir Aetheria VTT au **multi-système** : conserver Aetheria/WA comme système principal, et ajouter D&D 5e, Pathfinder 2e, L'Appel de Cthulhu (et architecture extensible). Le système est choisi **par campagne** et **par personnage**, et l'UI (fiche, jets, combat, compendium) s'adapte automatiquement.
+Objectif : transformer Aetheria VTT en plateforme type Foundry/Roll20 où chaque système (Aetheria, D&D 5e, Pathfinder 2e, Worlds Awakening, Homebrew) possède sa **propre fiche, ses propres règles et son propre codex**, tout en partageant le tabletop.
 
-> ⚠️ Note : cela contredit la règle mémoire actuelle « Exclusively Aetheria & WA ». Je mettrai à jour `mem://index.md` après validation.
+Vu l'ampleur (architecture + 5 fiches + codex cloisonné + restrictions), je propose une **livraison en 4 phases**. Vous validez/ajustez avant que je code.
 
-## Périmètre
+---
 
-### Systèmes livrés en v1
-1. **Aetheria** (existant — système phare, par défaut)
-2. **Worlds Awakening** (existant — partenaire)
-3. **D&D 5e** (nouveau)
-4. **Pathfinder 2e** (nouveau)
-5. **L'Appel de Cthulhu 7e** (nouveau)
-6. **Personnalisé / Homebrew** (stats & règles libres définies par le MJ)
+## Phase 1 — Architecture modulaire (fondations)
 
-### Ce qui change selon le système
-- Caractéristiques (FOR/DEX/CON… vs STR/DEX/CON… vs FOR/CON/TAI/DEX/APP/INT/POU/ÉDU)
-- Mode de stats : **modificateur** (Aetheria/WA) vs **score** (5e/PF2) vs **pourcentage** (CoC)
-- Race/Classe/Sous-classe (libellés et listes)
-- PV, CA/Défense, Initiative, jets de sauvegarde
-- Monnaie (NX, PO, $/£)
-- Dés de jet par défaut (d20+mod, 2d10, d100…)
-- Compendium filtré par système
+Étendre `src/lib/systems/` pour qu'un système expose **tout** : stats, compétences, ressources, calculs, capacités UI.
 
-### Ce qui ne change pas
-- Tabletop / tokens / brouillard / dessins / chat / dés 3D
-- Auth, campagnes, RLS, permissions
-- Identité visuelle dark fantasy
-
-## Architecture technique
-
-### 1. Registre de systèmes (`src/lib/systems/`)
 ```text
 src/lib/systems/
-├── index.ts              # registre + getSystem(id)
-├── types.ts              # SystemDefinition, StatDef, RollMode…
-├── aetheria.ts           # (ré-export aetheria-data)
-├── worlds-awakening.ts   # (constantes WA existantes)
-├── dnd5e.ts              # nouveau
-├── pathfinder2e.ts       # nouveau
-├── cthulhu7e.ts          # nouveau
-└── custom.ts             # mode homebrew
+├── types.ts              # SystemDefinition étendu
+├── index.ts              # registre + getSystem()
+├── aetheria/
+│   ├── definition.ts     # SystemDefinition
+│   ├── calculations.ts   # HP, def PHY/MAG, mod, etc.
+│   ├── skills.ts
+│   └── data.ts           # races, classes, tenues
+├── dnd5e/
+│   ├── definition.ts     # 6 stats score-based, prof bonus
+│   ├── calculations.ts   # mod = (score-10)/2, prof, CA, DC sorts
+│   ├── skills.ts         # 18 skills SRD
+│   └── data.ts           # classes, races, backgrounds SRD
+├── pathfinder2e/
+│   ├── definition.ts     # 4 prof tiers, ability boosts
+│   ├── calculations.ts   # mod + prof + level
+│   └── ...
+├── worlds-awakening/     # déjà partiellement présent
+├── cthulhu7e/            # gardé (déjà présent)
+└── homebrew/
+    ├── definition.ts     # squelette générique
+    └── schema.ts         # champs custom JSON
 ```
 
-Chaque `SystemDefinition` expose :
-- `id`, `label`, `icon`, `description`
-- `stats: StatDef[]` (clé, label, mode: "modifier" | "score" | "percentage", default, min/max)
-- `races[]`, `classes[]`, `subclassesByClass{}`
-- `currency`, `speedUnit`, `hitPointsFormula`
-- `defenseStats[]` (ex: AC, Def PHY/MAG, Esquive)
-- `defaultRoll(stat)` (formule de jet)
-- `hasSpellcasting`, `hasTenues`, `hasSanity`
-- `rendererHints` (quelles sections afficher dans la fiche)
+Nouveaux champs `SystemDefinition` :
+- `skills: SkillDef[]` (avec stat liée)
+- `resources: ResourceDef[]` (HP, Mana, PE, Sanity, etc.)
+- `calculations: { hp, defenses, attackBonus, saveDC, initiative }` — fonctions pures
+- `inventorySchema`, `spellSchema`, `featureSchema`
+- `sheetComponent: string` (clé pour résoudre la fiche React)
 
-### 2. Base de données
-- `campaigns.game_system` (text) — déjà présent, juste élargir les valeurs autorisées (pas d'enum stricte côté DB).
-- `characters.system` (text, défaut `"Aetheria"`) — **nouveau champ**, migration nécessaire.
-- `characters.system_data` (jsonb, défaut `'{}'`) — **nouveau** : stocke les champs propres au système (sanity, prof bonus 5e, etc.) sans casser le schéma actuel.
+## Phase 2 — Fiches dédiées par système
 
-Migration :
-```sql
-ALTER TABLE public.characters
-  ADD COLUMN IF NOT EXISTS system text NOT NULL DEFAULT 'Aetheria',
-  ADD COLUMN IF NOT EXISTS system_data jsonb NOT NULL DEFAULT '{}'::jsonb;
-```
+Composant routeur `CharacterSheet` qui résout vers :
+- `AetheriaSheet` (existant, à brancher sur `definition`)
+- `Dnd5eSheet` (nouveau) : 6 caracs score-based, jets de sauvegarde, 18 compétences, CA, slots de sorts par niveau, inventaire, traits/idéaux/liens/défauts
+- `Pathfinder2eSheet` (nouveau) : ability boosts, proficiency tiers (U/T/E/M/L), AC, saves, skills, feats
+- `WorldsAwakeningSheet` (existant Aetheria-like, à isoler)
+- `HomebrewSheet` (nouveau) : éditeur de champs (groupes de stats/ressources/compétences personnalisés stockés en `system_data` jsonb)
 
-### 3. Fiche de personnage adaptative
-- `CharacterSheet` devient un **routeur** : selon `character.system`, rend `<AetheriaSheet>`, `<Dnd5eSheet>`, `<Pf2eSheet>`, `<CthulhuSheet>` ou `<CustomSheet>`.
-- Sections communes extraites (`SheetHeader`, `SheetNotes`, `SheetInventory`) — réutilisées par tous.
-- Stats rendues via composant générique piloté par `StatDef`.
+Sections partagées : `<SheetHeader>`, `<SheetNotes>`, `<SheetInventory>`, `<SheetAvatar>`.
 
-### 4. Création de personnage
-- `CharacterForm` : étape 0 = **choix du système** (présélectionné depuis la campagne si fourni en query param).
-- Les étapes suivantes (race/classe/stats) lisent `getSystem(systemId)` pour leurs listes.
+Toutes les fiches :
+- autosave debounce 800 ms sur `characters` + `system_data`
+- responsive (tabs sur mobile, colonnes sur desktop)
+- synchronisation token ↔ fiche (HP/conditions déjà branchés)
 
-### 5. Sélection du système au niveau campagne
-- `Campaigns.tsx` : le champ `Système de jeu` propose les 6 options (sélecteur avec icônes).
-- Quand un joueur rejoint et crée un PJ pour cette campagne, le système est pré-rempli.
+## Phase 3 — Restrictions de campagne
 
-### 6. Jets de dés
-- `rollStat(character, statKey)` lit le `SystemDefinition.defaultRoll`.
-- Aetheria/WA → `1d20 + mod`
-- 5e → `1d20 + floor((score-10)/2) + prof?`
-- PF2 → `1d20 + mod + prof`
-- CoC → `1d100` vs valeur (% sous le score)
+Migration `campaigns` :
+- `system` text NOT NULL (déjà partiel) — devient source de vérité
+- `allow_homebrew_characters` boolean default false
 
-### 7. Combat tracker
-- Initiative formule depuis le système (`initiativeFormula`).
-- Colonnes HP/AC/Def adaptées au système actif de la campagne.
+Règle d'invitation/jointure (front + RLS) :
+- Un PJ ne peut associer à une campagne qu'un personnage dont `character.system === campaign.system`
+- **Exception** : `character.system === 'Homebrew'` autorisé si `campaign.allow_homebrew_characters = true`
+- Sinon : toast d'erreur clair + filtre dans la liste de sélection
 
-### 8. Compendium
-- Filtre `system` ajouté. Le contenu Aetheria/WA existant reste taggé `Aetheria`/`Worlds Awakening`. Les SRD 5e/PF2 ne sont **pas** importés en v1 (licences) — les MJ ajoutent leur propre contenu via le GM custom content.
+UI `Campaigns.tsx` :
+- Sélecteur 5 systèmes lors de la création
+- Toggle "Autoriser les personnages Homebrew" (paramètres campagne)
+- Badge système sur chaque CampaignCard
 
-## UI
+## Phase 4 — Codex cloisonné par système
 
-- Badge système (chip doré) visible sur :
-  - Cartes de campagne
-  - Cartes de personnage
-  - En-tête de fiche
-  - En-tête CampaignPlay
-- Page d'accueil : mention « Multi-système : Aetheria, D&D 5e, Pathfinder, Cthulhu… » dans le Hero.
-- Sélecteur système avec aperçu (icône + 1 phrase descriptive) dans création campagne / personnage.
+Migration : ajouter `system` text à `monsters`, `spells`, `magic_items` (+ `aetheria_creatures`/`wa_creatures` déjà tagués implicitement).
 
-## Plan d'exécution (commits logiques)
+Nouveau modèle :
+- Chaque entrée Codex a un `system` (ou "Homebrew")
+- Champ `scope` : `official` | `custom_campaign` | `custom_personal`
+- `owner_user_id`, `campaign_id` (nullable) pour le contenu MJ
 
-1. **Migration DB** : `characters.system` + `characters.system_data`.
-2. **Registre systèmes** : créer `src/lib/systems/*` avec les 6 définitions. Refactor `game-systems.ts` pour ré-exporter le registre (compat ascendante).
-3. **Fiche adaptative** : router + sheets 5e / PF2 / CoC / Custom (versions essentielles : stats, PV, défense, compétences, inventaire texte, notes). Aetheria/WA inchangés.
-4. **Formulaire création** : étape choix du système + listes dynamiques.
-5. **Sélecteur campagne** : élargir options + propager système au PJ créé pour la campagne.
-6. **Jets & combat** : brancher `defaultRoll` et `initiativeFormula`.
-7. **UI badges & Hero** : afficher le système partout + mention sur la home.
-8. **Mémoire** : mettre à jour `mem://index.md` (lever la contrainte « Aetheria/WA exclusivement ») et ajouter `mem://technical/architecture/multi-system-registry`.
+Page `Compendium.tsx` :
+- Onglet par système (Aetheria / D&D 5e / Pathfinder / WA / Homebrew / Personnalisé)
+- En contexte campagne : auto-filtré sur `campaign.system` + Homebrew du MJ
+- Recherche & sélecteurs (tabletop "Ajouter créature") ne montrent QUE le système courant + customs MJ
 
-## Hors périmètre v1
+Création MJ (créatures, PNJ, objets, sorts, classes, races) :
+- Bouton "Créer" partout dans le Codex
+- Choix de portée : **Cette campagne** / **Toutes mes campagnes** / **Codex Homebrew personnel**
+- RLS : MJ voit les siens + officiels du système courant
 
-- Import SRD officiel (5e/PF2) — questions de licence.
-- Conversion automatique d'un PJ d'un système à un autre.
-- Sheets ultra-détaillées avec automatisation complète des sorts/feats 5e/PF2 (v1 = champs structurés + texte libre).
-- Système custom : éditeur visuel des stats (v1 = JSON simple côté MJ).
+Intégration tabletop : `TokenAddDialog` filtre les créatures par `campaign.system` ∪ customs MJ.
 
-Confirme et je commence par la migration DB + le registre, puis je livre les sheets par paliers.
+---
+
+## Détails techniques
+
+- **Stockage spécifique** : champs hors schéma commun stockés dans `characters.system_data` (jsonb). Les colonnes existantes restent compatibles Aetheria/WA.
+- **Calculs** : fonctions pures par système, jamais d'`if (system === 'dnd5e')` dans les composants.
+- **Migration douce** : personnages existants → `system = 'Aetheria'` (déjà fait), aucune perte.
+- **Homebrew** : 100% configurable, sert de template pour systèmes communautaires futurs.
+- **RLS** : policies sur monsters/spells/magic_items étendues avec `scope` + `owner_user_id`.
+
+---
+
+## Questions avant de coder
+
+1. **Périmètre Phase 2** : je livre les **5 fiches en une fois** (gros) ou je commence par **D&D 5e + Homebrew** (les plus demandés) et j'enchaîne Pathfinder ensuite ?
+2. **Contenu officiel SRD** (sorts/monstres D&D 5e, Pathfinder) : j'importe un seed SRD libre de droits dès maintenant, ou je laisse le codex vide par défaut et le MJ remplit via Homebrew/import ?
+3. **Personnages existants en campagne** : si une campagne est marquée D&D 5e et contient des PJ Aetheria, je les **migre en Homebrew** automatiquement, je les **bloque** (le MJ doit régler), ou je **grandfather** (tolérés mais marqués "système incompatible") ?
+4. **Ordre de livraison** : OK pour Phase 1 → 2 → 3 → 4 (architecture d'abord, restrictions en dernier) ou vous voulez les restrictions de campagne (Phase 3) avant les nouvelles fiches ?
+
+Répondez à ces 4 points et j'attaque la Phase 1 dans la foulée.
