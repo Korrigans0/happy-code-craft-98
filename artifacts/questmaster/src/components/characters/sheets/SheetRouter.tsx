@@ -8,6 +8,8 @@ import AetheriaCharacterSheet from "../AetheriaCharacterSheet";
 import Dnd5eSheet from "./Dnd5eSheet";
 import HomebrewSheet from "./HomebrewSheet";
 import GenericSystemSheet from "./GenericSystemSheet";
+import Pathfinder2eSheet from "./Pathfinder2eSheet";
+import Cthulhu7eSheet from "./Cthulhu7eSheet";
 
 interface SheetRouterProps {
   character: any;
@@ -54,7 +56,25 @@ const SheetRouter = ({ character, editable, onSave, onClose, onEdit }: SheetRout
         />
       );
     case "pathfinder2e":
+      return (
+        <Pathfinder2eSheet
+          character={character}
+          editable={editable}
+          onSave={onSave}
+          onClose={onClose}
+          onEdit={onEdit}
+        />
+      );
     case "cthulhu7e":
+      return (
+        <Cthulhu7eSheet
+          character={character}
+          editable={editable}
+          onSave={onSave}
+          onClose={onClose}
+          onEdit={onEdit}
+        />
+      );
     default:
       return (
         <GenericSystemSheet
