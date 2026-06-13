@@ -13,12 +13,17 @@ import { toast } from "sonner";
 
 interface CreateItemDialogProps {
   onCreated: () => void;
+  defaultSystem?: string;
 }
 
-const CreateItemDialog = ({ onCreated }: CreateItemDialogProps) => {
+const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Aetheria", "Worlds Awakening", "Personnalisé"];
+
+const CreateItemDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateItemDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [system, setSystem] = useState(defaultSystem);
+  const [scope, setScope] = useState<"custom_personal" | "custom_campaign">("custom_personal");
   const [form, setForm] = useState({
     name: "", type: "Arme", rarity: "Commune", attunement: false,
     description: "", properties: "",
@@ -28,7 +33,7 @@ const CreateItemDialog = ({ onCreated }: CreateItemDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createItem({ ...form, properties: form.properties || null }); }
+    try { await compendiumApi.createItem({ ...form, properties: form.properties || null, system, scope }); }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Objet créé !");
