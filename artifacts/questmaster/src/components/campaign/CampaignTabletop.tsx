@@ -2238,6 +2238,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           setSelectedTokenIds(canSel ? new Set([tokenHit.id]) : new Set());
           setLastPanPoint({ x: e.clientX, y: e.clientY });
           setIsDrawing(true);
+          // Track click for sheet/access-denied detection
+          clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: !canSel };
+          didDragRef.current = false;
           return;
         }
         // Shift+click → toggle in multi-selection (no drag)
@@ -2257,6 +2260,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
+        // Click-vs-drag detection: simple click on own token = open sheet
+        clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: false };
+        didDragRef.current = false;
         return;
       } else if (e.shiftKey && tool === "move") {
         // Shift+drag on empty → marquee selection
