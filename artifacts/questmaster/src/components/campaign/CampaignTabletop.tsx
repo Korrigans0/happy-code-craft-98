@@ -36,9 +36,10 @@ import {
 } from "./vtt/types";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useQuery } from "@tanstack/react-query";
-import { campaignsApi } from "@/lib/api";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { campaignsApi, charactersApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
