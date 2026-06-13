@@ -115,26 +115,45 @@ const AetheriaLore = () => (
   </div>
 );
 
-// ── Codex générique pour D&D / Pathfinder / Homebrew ──────
-// Affiche monstres + sorts + objets filtrés par système.
-const SystemCodex = ({ system, searchQuery }: { system: string; searchQuery: string }) => {
+// ── Codex générique pour D&D / Pathfinder / Cthulhu / Homebrew ──────
+// Affiche monstres + sorts + objets filtrés par système, avec création possible.
+const SystemCodex = ({
+  system,
+  searchQuery,
+  canCreate,
+}: {
+  system: string;
+  searchQuery: string;
+  canCreate: boolean;
+}) => {
   const [tab, setTab] = useState<"monsters" | "spells" | "items">("monsters");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-      <TabsList className="flex gap-1 bg-muted/50 p-1 mb-4">
-        <TabsTrigger value="monsters" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Skull className="h-3.5 w-3.5" /> Bestiaire
-        </TabsTrigger>
-        <TabsTrigger value="spells" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Wand2 className="h-3.5 w-3.5" /> Sorts
-        </TabsTrigger>
-        <TabsTrigger value="items" className="text-xs sm:text-sm flex items-center gap-1.5">
-          <Gem className="h-3.5 w-3.5" /> Objets
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="monsters"><MonstersList searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="spells"><SpellsList searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="items"><ItemsList searchQuery={searchQuery} system={system} /></TabsContent>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <TabsList className="flex gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="monsters" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Skull className="h-3.5 w-3.5" /> Bestiaire
+          </TabsTrigger>
+          <TabsTrigger value="spells" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Wand2 className="h-3.5 w-3.5" /> Sorts
+          </TabsTrigger>
+          <TabsTrigger value="items" className="text-xs sm:text-sm flex items-center gap-1.5">
+            <Gem className="h-3.5 w-3.5" /> Objets
+          </TabsTrigger>
+        </TabsList>
+        {canCreate && (
+          <div className="flex flex-wrap gap-2">
+            {tab === "monsters" && <CreateMonsterDialog defaultSystem={system} onCreated={triggerRefresh} />}
+            {tab === "spells" && <CreateSpellDialog defaultSystem={system} onCreated={triggerRefresh} />}
+            {tab === "items" && <CreateItemDialog defaultSystem={system} onCreated={triggerRefresh} />}
+          </div>
+        )}
+      </div>
+      <TabsContent value="monsters"><MonstersList key={`m-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
+      <TabsContent value="spells"><SpellsList key={`s-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
+      <TabsContent value="items"><ItemsList key={`i-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
     </Tabs>
   );
 };
