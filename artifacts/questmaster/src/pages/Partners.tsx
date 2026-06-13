@@ -6,6 +6,7 @@ import { ExternalLink, MessageCircle } from "lucide-react";
 import vaeloriaLogo from "@/assets/vaeloria-logo-big.svg";
 import guildryLogo from "@/assets/guildry-logo.webp";
 import waLogo from "@/assets/wa-logo.png";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 const VAELORIA = {
   copper: "#b87d48",
@@ -21,7 +22,8 @@ const VAELORIA = {
 
 const Partners = () => {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark animate-fade-in">
+    <div className="relative flex min-h-screen flex-col bg-gradient-dark animate-fade-in">
+      <PageAmbiance />
       <SEO
         title="Partenaires — Aetheria VTT"
         description="Découvrez les partenaires d'Aetheria VTT : communautés, créateurs et univers JDR francophones."
