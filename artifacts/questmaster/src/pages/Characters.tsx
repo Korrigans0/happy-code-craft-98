@@ -158,19 +158,25 @@ const Characters = () => {
       if (!user) throw new Error("Non authentifié");
       return charactersApi.create(character);
     },
-    onSuccess: () => {
+    onSuccess: (created: any) => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({ title: "Personnage créé ✓" });
-      setIsFormOpen(false);
-      setIsAetheriaFormOpen(false);
-      setSelectedCharacter(null);
+      // On garde la fiche ouverte avec l'id reçu pour que les éditions
+      // suivantes (autosave) deviennent des updates et non des doublons.
+      if (created?.id) {
+        setSelectedCharacter((prev) => ({ ...(prev ?? {} as Character), ...created }));
+      } else {
+        setIsFormOpen(false);
+        setIsAetheriaFormOpen(false);
+        setSelectedCharacter(null);
+      }
     },
     onError: () => {
       toast({ title: "Erreur", description: "Impossible de créer le personnage.", variant: "destructive" });
     },
   });
 
-  // Mettre à jour personnage
+  // Mettre à jour personnage (autosave silencieux)
   const updateMutation = useMutation({
     mutationFn: async (character: Partial<Character>) => {
       if (!character.id) throw new Error("ID manquant");
@@ -179,11 +185,6 @@ const Characters = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
-      toast({ title: "Personnage mis à jour ✓" });
-      setIsFormOpen(false);
-      setIsAetheriaFormOpen(false);
-      setIsSheetOpen(false);
-      setSelectedCharacter(null);
     },
     onError: () => {
       toast({ title: "Erreur", description: "Impossible de mettre à jour.", variant: "destructive" });
@@ -210,45 +211,54 @@ const Characters = () => {
     if (selectedCharacter?.id) {
       updateMutation.mutate({ ...characterData, id: selectedCharacter.id });
     } else {
-      createMutation.mutate(characterData);
+      // Première sauvegarde : attache le système choisi pour router les fiches.
+      createMutation.mutate({ ...characterData, system: pendingSystem });
     }
-  }, [selectedCharacter, updateMutation, createMutation]);
+  }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
 
   const handleNewCharacter = useCallback(() => {
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
   }, []);
 
+  // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
+  const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
+    () => new Set(["Aetheria", "D&D 5e", "Pathfinder 2e", "Call of Cthulhu"]),
+    [],
+  );
+
   const handleSystemSelect = useCallback((systemId: string) => {
     setIsSelectorOpen(false);
     setPendingSystem(systemId);
-    // Aetheria a sa propre fiche dédiée. Tous les autres systèmes
-    // (WA, D&D 5e, Pathfinder 2e, L'Appel de Cthulhu, Personnalisé)
-    // passent par le CharacterForm générique configuré via le registre.
     if (systemId === "Aetheria") {
       setIsAetheriaFormOpen(true);
+    } else if (SYSTEMS_WITH_DEDICATED_SHEET.has(systemId)) {
+      // Ouvre directement la fiche dédiée du système en mode édition (création).
+      setSelectedCharacter({ system: systemId } as Character);
+      setIsSheetOpen(true);
     } else {
       setIsFormOpen(true);
     }
-  }, []);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
 
   const handleEdit = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setIsSheetOpen(false);
-    // Priorité au nouveau champ `system`, fallback sur l'ancien marqueur (`campaign === "Aetheria"`
-    // ou inventory.__aetheria) pour rester compatible avec les fiches créées avant le multi-système.
     const sys = character.system as string | undefined;
     const isAetheria = sys
       ? sys === "Aetheria"
       : character.campaign === "Aetheria" ||
         (() => { try { return JSON.parse(character.inventory || "{}").__aetheria; } catch { return false; } })();
-    setPendingSystem(sys || (isAetheria ? "Aetheria" : "Worlds Awakening"));
+    const resolved = sys || (isAetheria ? "Aetheria" : "Worlds Awakening");
+    setPendingSystem(resolved);
     if (isAetheria) {
       setIsAetheriaFormOpen(true);
+    } else if (SYSTEMS_WITH_DEDICATED_SHEET.has(resolved)) {
+      setIsSheetOpen(true);
     } else {
       setIsFormOpen(true);
     }
-  }, []);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
 
   const handleDelete = useCallback((id: string) => {
     setCharacterToDelete(id);
@@ -428,7 +438,7 @@ const Characters = () => {
               character={selectedCharacter}
               editable={true}
               onEdit={() => handleEdit(selectedCharacter)}
-              onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
+              onSave={handleSave}
               onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
             />
           )}
