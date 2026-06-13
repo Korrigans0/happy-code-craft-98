@@ -580,6 +580,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       hp: char.hp ?? char.max_hp ?? 10, maxHp: char.max_hp ?? 10,
       ac: char.armor_class ?? 10, imageUrl: char.avatar_url || undefined,
       conditions: [],
+      ownerUserId: char.user_id ?? user?.id,
     };
   };
 
