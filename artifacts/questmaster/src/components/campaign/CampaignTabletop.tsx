@@ -2323,6 +2323,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       return;
     }
+    // Track movement for click-vs-drag detection on tokens
+    if (clickStartRef.current && !didDragRef.current) {
+      const dx = e.clientX - clickStartRef.current.x;
+      const dy = e.clientY - clickStartRef.current.y;
+      if (dx * dx + dy * dy > 25) didDragRef.current = true;
+    }
     if (!isDrawing) return;
     if (draggedToken) {
       const coords = getCanvasCoords(e);
