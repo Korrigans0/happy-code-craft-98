@@ -535,13 +535,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   }, [tokens, draggedToken, tickTokenAnim]);
 
   // ── Data fetching ──
-  const { data: waCreatures = [] } = useQuery({
-    queryKey: ["vtt-wa-creatures"],
-    queryFn: async () => {
-      try { return await (await import("@/lib/api")).compendiumApi.getWaCreatures(); }
-      catch { return []; }
-    },
-  });
+  // (la query waCreatures est plus bas, gatée par campaignSystem)
 
   // Système verrouillé de la campagne (sépare les codex)
   const { data: campaignInfo } = useQuery({
