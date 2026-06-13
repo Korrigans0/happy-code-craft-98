@@ -3619,6 +3619,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onSelectToken={(id) => { setSelectedTokenId(id); centerOnToken(id); }}
             onSpawnCreature={spawnWACreature}
             onSpawnAetheriaCreature={spawnAetheriaCreature}
+            onSpawnSystemMonster={spawnSystemMonster}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
             onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
