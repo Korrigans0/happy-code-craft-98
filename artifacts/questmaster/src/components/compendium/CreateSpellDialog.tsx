@@ -12,12 +12,17 @@ import { toast } from "sonner";
 
 interface CreateSpellDialogProps {
   onCreated: () => void;
+  defaultSystem?: string;
 }
 
-const CreateSpellDialog = ({ onCreated }: CreateSpellDialogProps) => {
+const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Aetheria", "Worlds Awakening", "Personnalisé"];
+
+const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [system, setSystem] = useState(defaultSystem);
+  const [scope, setScope] = useState<"custom_personal" | "custom_campaign">("custom_personal");
   const [form, setForm] = useState({
     name: "", level: "0", school: "Évocation", casting_time: "1 action",
     range: "9 mètres", components: "V, S", duration: "Instantanée",
@@ -28,7 +33,15 @@ const CreateSpellDialog = ({ onCreated }: CreateSpellDialogProps) => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
-    try { await compendiumApi.createSpell({ ...form, level: parseInt(form.level), classes: form.classes.split(",").map(c => c.trim()).filter(Boolean) }); }
+    try {
+      await compendiumApi.createSpell({
+        ...form,
+        level: parseInt(form.level),
+        classes: form.classes.split(",").map(c => c.trim()).filter(Boolean),
+        system,
+        scope,
+      });
+    }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
     setLoading(false);
     toast.success("Sort créé !");
