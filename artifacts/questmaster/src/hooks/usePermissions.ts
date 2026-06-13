@@ -35,6 +35,7 @@ export function usePermissions({ isGM, userId, ownCharacterId }: PermissionsInpu
       if (!token) return false;
       if (isGM) return true;
       if (token.ownerId && userId && token.ownerId === userId) return true;
+      if (token.ownerUserId && userId && token.ownerUserId === userId) return true;
       if (
         token.creatureType === "character" &&
         ownCharacterId &&
