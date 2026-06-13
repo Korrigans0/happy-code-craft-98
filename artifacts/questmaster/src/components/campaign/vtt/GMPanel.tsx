@@ -682,7 +682,7 @@ export default function GMPanel({
                   </>
                 )}
                 {/* Creatures */}
-                {filteredCreatures.length > 0 && (
+                {campaignSystem === "Worlds Awakening" && filteredCreatures.length > 0 && (
                   <>
                     <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Créatures WA</p>
                     {filteredCreatures.map(creature => (
