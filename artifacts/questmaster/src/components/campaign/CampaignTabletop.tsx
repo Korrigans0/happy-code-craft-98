@@ -3813,6 +3813,42 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         </DialogContent>
       </Dialog>
 
+      {/* Fiche complète liée au token (multi-systèmes) */}
+      <Dialog open={!!fullSheetCharId} onOpenChange={(o) => !o && setFullSheetCharId(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:max-w-none max-sm:rounded-none max-sm:p-3">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Fiche personnage</DialogTitle>
+            <DialogDescription>Fiche complète liée au jeton sélectionné</DialogDescription>
+          </DialogHeader>
+          {fullSheetCharacter && (() => {
+            const linkedTok = tokens.find(t => t.creatureType === "character" && t.creatureId === fullSheetCharacter.id) ?? null;
+            const canEditSheet = isGM || (user?.id && fullSheetCharacter.user_id === user.id);
+            return (
+              <SheetRouter
+                character={fullSheetCharacter}
+                editable={!!canEditSheet}
+                onSave={(charPatch: any) => {
+                  if (!canEditSheet) return;
+                  updateCharacterMutation.mutate({ id: fullSheetCharacter.id, patch: charPatch });
+                  // Immediate optimistic mirror to the token (fiche → token sync)
+                  if (linkedTok) {
+                    const tokPatch: Partial<TokenItem> = {};
+                    if (typeof charPatch.hp === "number") tokPatch.hp = charPatch.hp;
+                    if (typeof charPatch.max_hp === "number") tokPatch.maxHp = charPatch.max_hp;
+                    if (typeof charPatch.armor_class === "number") tokPatch.ac = charPatch.armor_class;
+                    if (charPatch.name) tokPatch.name = charPatch.name;
+                    if (charPatch.avatar_url) tokPatch.imageUrl = charPatch.avatar_url;
+                    if (Object.keys(tokPatch).length > 0) updateToken(linkedTok.id, tokPatch);
+                  }
+                }}
+                onClose={() => setFullSheetCharId(null)}
+              />
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* Notes MJ privées */}
       <Dialog open={!!gmNotesToken} onOpenChange={(o) => !o && setGmNotesToken(null)}>
