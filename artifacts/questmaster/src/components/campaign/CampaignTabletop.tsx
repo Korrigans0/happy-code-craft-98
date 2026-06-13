@@ -3609,6 +3609,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             selectedTokenId={selectedTokenId}
             waCreatures={waCreatures}
             aetheriaCreatures={aetheriaCreatures as any}
+            systemMonsters={systemMonsters as any}
+            campaignSystem={campaignSystem}
             userCharacters={userCharacters}
             initiative={initiative}
             initiativeRound={initiativeRound}
