@@ -252,8 +252,19 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   const tokenClipboardRef = useRef<TokenItem | null>(null);
   const [hasClipboard, setHasClipboard] = useState(false);
 
+  // ── Click vs drag tracking (simple click on token = open sheet) ──
+  const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
+  const didDragRef = useRef(false);
+
   // ── Voir fiche dialog ──
   const [sheetToken, setSheetToken] = useState<TokenItem | null>(null);
+  // Keep the open sheet in sync with the live token state (realtime updates, condition toggles, etc.)
+  useEffect(() => {
+    if (!sheetToken) return;
+    const live = tokens.find(t => t.id === sheetToken.id);
+    if (!live) { setSheetToken(null); return; }
+    if (live !== sheetToken) setSheetToken(live);
+  }, [tokens, sheetToken]);
 
   // ── Notes MJ dialog ──
   const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
@@ -580,6 +591,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       hp: char.hp ?? char.max_hp ?? 10, maxHp: char.max_hp ?? 10,
       ac: char.armor_class ?? 10, imageUrl: char.avatar_url || undefined,
       conditions: [],
+      ownerUserId: char.user_id ?? user?.id,
     };
   };
 
@@ -2233,6 +2245,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           setSelectedTokenIds(canSel ? new Set([tokenHit.id]) : new Set());
           setLastPanPoint({ x: e.clientX, y: e.clientY });
           setIsDrawing(true);
+          // Track click for sheet/access-denied detection
+          clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: !canSel };
+          didDragRef.current = false;
           return;
         }
         // Shift+click → toggle in multi-selection (no drag)
@@ -2252,6 +2267,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
+        // Click-vs-drag detection: simple click on own token = open sheet
+        clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: false };
+        didDragRef.current = false;
         return;
       } else if (e.shiftKey && tool === "move") {
         // Shift+drag on empty → marquee selection
@@ -2312,6 +2330,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       }
       return;
     }
+    // Track movement for click-vs-drag detection on tokens
+    if (clickStartRef.current && !didDragRef.current) {
+      const dx = e.clientX - clickStartRef.current.x;
+      const dy = e.clientY - clickStartRef.current.y;
+      if (dx * dx + dy * dy > 25) didDragRef.current = true;
+    }
     if (!isDrawing) return;
     if (draggedToken) {
       const coords = getCanvasCoords(e);
@@ -2349,6 +2373,32 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current && e) {
       const w = getCanvasCoords(e);
       wallsHook.finishWall(w.x, w.y);
+      return;
+    }
+    // ── Click vs drag: simple click on a token opens the character sheet ──
+    const pendingClick = clickStartRef.current;
+    const wasClick =
+      !!pendingClick && !didDragRef.current && Date.now() - pendingClick.t < 500;
+    clickStartRef.current = null;
+    didDragRef.current = false;
+    if (wasClick && pendingClick) {
+      const tok = tokens.find(t => t.id === pendingClick.tokenId);
+      // Reset any pending drag/pan state cleanly
+      setDraggedToken(null);
+      setDragStart(null);
+      setIsDrawing(false);
+      setLastPanPoint(null);
+      if (tok) {
+        if (pendingClick.denied) {
+          toast({
+            title: "Accès refusé",
+            description: "Cette fiche ne vous appartient pas",
+            variant: "destructive",
+          });
+        } else if (perms.canSelectToken(tok)) {
+          openTokenSheet(tok);
+        }
+      }
       return;
     }
     if (draggedToken) {
@@ -3467,64 +3517,171 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         )}
       </div>
 
-      {/* Voir la fiche du jeton */}
+      {/* Fiche personnage interactive du jeton */}
       <Dialog open={!!sheetToken} onOpenChange={(o) => !o && setSheetToken(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:max-w-none max-sm:rounded-none max-sm:p-4 overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-serif">
               <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: sheetToken?.color }} />
               {sheetToken?.name}
             </DialogTitle>
             <DialogDescription>
               {sheetToken?.creatureType === "character" ? "Personnage joueur" :
                sheetToken?.creatureType === "wa_creature" ? "Créature (Worlds Awakening)" :
+               sheetToken?.creatureType === "aetheria_creature" ? "Créature Aetheria" :
                sheetToken?.creatureType === "monster" ? "Monstre" : "Jeton"}
+              {sheetToken && !perms.canEditTokenStats(sheetToken) && (
+                <span className="ml-2 text-xs text-muted-foreground italic">(lecture seule)</span>
+              )}
             </DialogDescription>
           </DialogHeader>
-          {sheetToken && (
-            <div className="space-y-3 text-sm">
-              {sheetToken.imageUrl && (
-                <img src={sheetToken.imageUrl} alt={sheetToken.name} className="w-full h-40 object-cover rounded-md border border-border" />
+          {sheetToken && (() => {
+            const canEdit = perms.canEditTokenStats(sheetToken);
+            const tok = sheetToken;
+            const patch = (updates: Partial<TokenItem>) => {
+              if (!canEdit) return;
+              updateToken(tok.id, updates);
+              setSheetToken(s => s ? { ...s, ...updates } : s);
+            };
+            const adjustHp = (delta: number) => {
+              if (!canEdit) return;
+              const max = tok.maxHp ?? 999;
+              const next = Math.max(0, Math.min(max, (tok.hp ?? 0) + delta));
+              patch({ hp: next });
+            };
+            const adjustPe = (delta: number) => {
+              if (!canEdit) return;
+              const max = tok.maxPe ?? 999;
+              const next = Math.max(0, Math.min(max, (tok.pe ?? 0) + delta));
+              patch({ pe: next });
+            };
+            return (
+            <div className="space-y-4 text-sm">
+              {tok.imageUrl && (
+                <img src={tok.imageUrl} alt={tok.name} className="w-full h-40 object-cover rounded-md border border-border" />
               )}
+
+              {/* PV */}
+              <div className="rounded-lg border border-border bg-card/40 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Points de vie</span>
+                  <span className="text-xs text-muted-foreground">{tok.hp ?? 0} / {tok.maxHp ?? 0}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustHp(-5)}>-5</Button>
+                  <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustHp(-1)}>-1</Button>
+                  <Input
+                    type="number"
+                    value={tok.hp ?? 0}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ hp: Math.max(0, Math.min(tok.maxHp ?? 999, Number(e.target.value) || 0)) })}
+                    className="h-8 text-center"
+                  />
+                  <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustHp(1)}>+1</Button>
+                  <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustHp(5)}>+5</Button>
+                </div>
+                {isGM && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">PV max</span>
+                    <Input
+                      type="number"
+                      value={tok.maxHp ?? 0}
+                      onChange={(e) => patch({ maxHp: Math.max(1, Number(e.target.value) || 1) })}
+                      className="h-7 w-20 text-center"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* PE / Mana */}
+              {(tok.pe !== undefined || isGM) && (
+                <div className="rounded-lg border border-border bg-card/40 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Énergie / Mana</span>
+                    <span className="text-xs text-muted-foreground">{tok.pe ?? 0} / {tok.maxPe ?? 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustPe(-1)}>-1</Button>
+                    <Input
+                      type="number"
+                      value={tok.pe ?? 0}
+                      disabled={!canEdit}
+                      onChange={(e) => patch({ pe: Math.max(0, Math.min(tok.maxPe ?? 999, Number(e.target.value) || 0)) })}
+                      className="h-8 text-center"
+                    />
+                    <Button type="button" size="sm" variant="outline" disabled={!canEdit} onClick={() => adjustPe(1)}>+1</Button>
+                    {isGM && (
+                      <Input
+                        type="number"
+                        value={tok.maxPe ?? 0}
+                        onChange={(e) => patch({ maxPe: Math.max(0, Number(e.target.value) || 0) })}
+                        className="h-8 w-20 text-center"
+                        placeholder="Max"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* CA / Défense + Taille */}
               <div className="grid grid-cols-2 gap-2">
-                {sheetToken.hp !== undefined && (
-                  <div className="rounded border border-border p-2">
-                    <div className="text-xs text-muted-foreground">PV</div>
-                    <div className="font-semibold">{sheetToken.hp} / {sheetToken.maxHp}</div>
-                  </div>
-                )}
-                {sheetToken.pe !== undefined && (
-                  <div className="rounded border border-border p-2">
-                    <div className="text-xs text-muted-foreground">PE</div>
-                    <div className="font-semibold">{sheetToken.pe} / {sheetToken.maxPe}</div>
-                  </div>
-                )}
-                {sheetToken.ac !== undefined && (
-                  <div className="rounded border border-border p-2">
-                    <div className="text-xs text-muted-foreground">CA</div>
-                    <div className="font-semibold">{sheetToken.ac}</div>
-                  </div>
-                )}
+                <div className="rounded border border-border p-2">
+                  <div className="text-xs text-muted-foreground">Défense / CA</div>
+                  {canEdit ? (
+                    <Input
+                      type="number"
+                      value={tok.ac ?? 10}
+                      onChange={(e) => patch({ ac: Math.max(0, Number(e.target.value) || 0) })}
+                      className="h-8 mt-1 text-center"
+                    />
+                  ) : (
+                    <div className="font-semibold">{tok.ac ?? "—"}</div>
+                  )}
+                </div>
                 <div className="rounded border border-border p-2">
                   <div className="text-xs text-muted-foreground">Taille</div>
-                  <div className="font-semibold">{sheetToken.sizeUnits}× case{sheetToken.sizeUnits > 1 ? "s" : ""}</div>
+                  <div className="font-semibold">{tok.sizeUnits}× case{tok.sizeUnits > 1 ? "s" : ""}</div>
                 </div>
               </div>
-              {sheetToken.conditions && sheetToken.conditions.length > 0 && (
-                <div>
-                  <div className="text-xs text-muted-foreground mb-1">Conditions actives</div>
-                  <div className="flex flex-wrap gap-1">
-                    {sheetToken.conditions.map(c => {
-                      const def = CONDITIONS.find(x => x.id === c);
-                      return (
-                        <span key={c} className="inline-flex items-center gap-1 rounded bg-primary/15 text-primary px-2 py-0.5 text-xs">
-                          <span>{def?.emoji}</span>{def?.label ?? c}
-                        </span>
-                      );
-                    })}
-                  </div>
+
+              {/* Conditions */}
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">États & conditions</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {CONDITIONS.map(c => {
+                    const active = tok.conditions?.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={!canEdit}
+                        onClick={() => toggleTokenCondition(tok.id, c.id)}
+                        className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs border transition ${
+                          active
+                            ? "bg-primary/20 border-primary text-primary"
+                            : "border-border text-muted-foreground hover:bg-muted/40"
+                        } ${!canEdit ? "opacity-60 cursor-not-allowed" : ""}`}
+                      >
+                        <span>{c.emoji}</span>{c.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+
+              {/* Notes rapides */}
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Notes rapides</div>
+                <Textarea
+                  rows={3}
+                  value={tok.notes ?? ""}
+                  disabled={!canEdit}
+                  placeholder={canEdit ? "Ajouter une note rapide…" : "Aucune note"}
+                  onChange={(e) => patch({ notes: e.target.value })}
+                />
+              </div>
+
+              {/* Statut Boss (MJ) */}
               {isGM && (
                 <div className="flex items-center justify-between rounded border border-border p-2">
                   <div>
@@ -3533,25 +3690,53 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   </div>
                   <button
                     type="button"
-                    className={`px-3 py-1 rounded text-xs font-semibold border ${sheetToken.isBoss ? "bg-amber-500/20 border-amber-500 text-amber-300" : "border-border text-muted-foreground hover:bg-muted/40"}`}
-                    onClick={() => {
-                      setTokens(prev => prev.map(t => t.id === sheetToken.id ? { ...t, isBoss: !t.isBoss } : t));
-                      setSheetToken(s => s ? { ...s, isBoss: !s.isBoss } : s);
-                    }}
+                    className={`px-3 py-1 rounded text-xs font-semibold border ${tok.isBoss ? "bg-amber-500/20 border-amber-500 text-amber-300" : "border-border text-muted-foreground hover:bg-muted/40"}`}
+                    onClick={() => patch({ isBoss: !tok.isBoss })}
                   >
-                    {sheetToken.isBoss ? "★ Boss" : "Marquer Boss"}
+                    {tok.isBoss ? "★ Boss" : "Marquer Boss"}
                   </button>
                 </div>
               )}
-              {sheetToken.creatureId && (
+
+              {/* Lier une fiche personnage (MJ uniquement, jeton sans fiche) */}
+              {isGM && !tok.creatureId && userCharacters.length > 0 && (
+                <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+                  <div className="text-xs text-muted-foreground">Lier une fiche personnage</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {userCharacters.map((char: any) => (
+                      <button
+                        key={char.id}
+                        type="button"
+                        onClick={() => patch({
+                          creatureId: char.id,
+                          creatureType: "character",
+                          hp: char.hp ?? char.max_hp ?? tok.hp,
+                          maxHp: char.max_hp ?? tok.maxHp,
+                          ac: char.armor_class ?? tok.ac,
+                          imageUrl: char.avatar_url || tok.imageUrl,
+                          name: char.name,
+                          ownerUserId: char.user_id ?? tok.ownerUserId,
+                        })}
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-primary/10 hover:border-primary"
+                      >
+                        {char.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tok.creatureId && tok.creatureType === "character" && (
                 <p className="text-xs text-muted-foreground">
-                  Pour la fiche complète, ouvrir le compendium ou le bestiaire.
+                  Fiche complète disponible dans la page Personnages.
                 </p>
               )}
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
+
 
       {/* Notes MJ privées */}
       <Dialog open={!!gmNotesToken} onOpenChange={(o) => !o && setGmNotesToken(null)}>
