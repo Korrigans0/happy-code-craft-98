@@ -6,22 +6,16 @@
 
 export * from "./aetheria-data";
 
-export const GAME_SYSTEMS = [
-  { value: "Personnalisé",    label: "✨ Personnalisé (libre — WA + Aetheria + créations)" },
-  { value: "Aetheria",        label: "⚔️ Aetheria" },
-  { value: "Worlds Awakening",label: "🌍 Worlds Awakening" },
-  { value: "D&D 5e",          label: "🐉 Donjons & Dragons 5e" },
-  { value: "Pathfinder 2e",   label: "🗺️ Pathfinder 2e" },
-  { value: "Call of Cthulhu", label: "🦑 L'Appel de Cthulhu" },
-  { value: "Warhammer 4",     label: "💀 Warhammer 4e" },
-  { value: "Savage Worlds",   label: "🃏 Savage Worlds" },
-  { value: "Starfinder",      label: "🚀 Starfinder" },
-  { value: "Chroniques Oubliées", label: "📜 Chroniques Oubliées" },
-  { value: "Symbaroum",       label: "🌲 Symbaroum" },
-  { value: "Autre",           label: "🎲 Autre / Homebrew" },
-] as const;
+// Liste des systèmes proposés dans l'UI. Source de vérité : src/lib/systems/.
+// On reconstruit ce tableau à partir du registre pour rester synchronisé.
+import { SYSTEM_LIST } from "./systems";
 
-export type GameSystem = typeof GAME_SYSTEMS[number]["value"];
+export const GAME_SYSTEMS = SYSTEM_LIST.map((s) => ({
+  value: s.id,
+  label: `${s.emoji} ${s.label}`,
+}));
+
+export type GameSystem = string;
 
 // Worlds Awakening data (from official Codex)
 export const WA_ASCENDANCES = [
@@ -121,19 +115,34 @@ export const WA_EQUIPMENTS = [
   { name: "Garde-Bras", bonus: "+1 Atq Contact", use: "Main Secondaire", price: "20 NX" },
 ];
 
-// Get system-specific config (WA only)
-export function getSystemConfig(_system?: string) {
+// Configuration de système — délègue au registre multi-système.
+// `getSystemConfig(systemId)` retourne la config dérivée du SystemDefinition
+// correspondant. Si `systemId` est absent ou inconnu, on tombe sur Aetheria.
+import { getSystem } from "./systems";
+
+export function getSystemConfig(systemId?: string | null) {
+  const sys = getSystem(systemId);
+  // Mode de stats global : si toutes les stats partagent le même mode on l'utilise,
+  // sinon on retombe sur "modifier" (compatibilité avec le code existant).
+  const modes = new Set(sys.stats.map((s) => s.mode));
+  const statMode = modes.size === 1 ? sys.stats[0].mode : "modifier";
   return {
-    raceLabel: "Ascendance",
-    classLabel: "Classe",
-    subclassLabel: "Tenue",
-    races: WA_ASCENDANCES,
-    classes: WA_CLASSES,
+    systemId: sys.id,
+    raceLabel: sys.raceLabel,
+    classLabel: sys.classLabel,
+    subclassLabel: sys.subclassLabel ?? "Sous-classe",
+    races: sys.races,
+    classes: sys.classes,
     backgrounds: [] as string[],
-    hasAlignments: false,
-    hasSpellcasting: false,
-    hasTenues: true,
-    statMode: "modifier" as const,
-    speedUnit: "m",
+    hasAlignments: sys.hasAlignments,
+    hasSpellcasting: sys.hasSpellcasting,
+    hasTenues: sys.hasTenues,
+    hasSanity: sys.hasSanity,
+    statMode: statMode as "modifier" | "score" | "percentage",
+    speedUnit: sys.speedUnit,
+    currency: sys.currency,
+    stats: sys.stats,
+    defenses: sys.defenses,
+    subclassesByClass: sys.subclassesByClass,
   };
 }

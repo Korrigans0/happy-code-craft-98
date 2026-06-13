@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getSystemConfig, WA_TENUES, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
+import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
+import { getSystem, SYSTEM_LIST } from "@/lib/systems";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
@@ -20,17 +21,22 @@ interface CharacterFormProps {
   character?: Character | null;
   onSave: (character: Partial<Character>) => void;
   onCancel: () => void;
+  /** Système initial quand on crée un nouveau personnage (Aetheria, D&D 5e, …). */
   gameSystem?: string;
 }
 
 
-const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
-  const systemConfig = getSystemConfig();
+const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFormProps) => {
+  // Système actif : priorité à la fiche existante, sinon le système passé en prop,
+  // sinon WA (compat ascendante — l'ancien formulaire était mono-WA).
+  const initialSystem = character?.system || gameSystem || "Worlds Awakening";
+  const initialSystemConfig = getSystemConfig(initialSystem);
   const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
-    race: systemConfig.races[0],
-    class: systemConfig.classes[0],
+    system: initialSystem,
+    race: initialSystemConfig.races[0] || "",
+    class: initialSystemConfig.classes[0] || "",
     subclass: "",
     level: 1,
     background: "",
@@ -52,10 +58,14 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     armor_class: 10,
     speed: 30,
     gold: 0,
-    campaign: "Worlds Awakening",
+    campaign: initialSystem,
     saving_throws: [],
     ...character,
   });
+
+  // Recalculé à chaque rendu en fonction du système actif de la fiche.
+  const systemConfig = getSystemConfig(formData.system as string);
+  const systemDef = getSystem(formData.system as string);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
@@ -195,10 +205,17 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
 
   return (
     <div className="flex h-full flex-col bg-gradient-dark">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="font-display text-xl font-bold text-foreground">
-          {character ? "Modifier le Personnage" : "Créer un Personnage"}
-        </h2>
+      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <h2 className="font-display text-xl font-bold text-foreground truncate">
+            {character ? "Modifier le Personnage" : "Créer un Personnage"}
+          </h2>
+          {/* Badge système : visuel de l'identité de jeu (Aetheria, D&D, …). */}
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <span>{systemDef.emoji}</span>
+            <span>{systemDef.shortLabel}</span>
+          </span>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onCancel}>
             <X className="mr-2 h-4 w-4" />
@@ -350,65 +367,117 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
                 />
               </div>
 
+              {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
+              {!character?.id && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Système de jeu</Label>
+                  <Select
+                    value={(formData.system as string) || initialSystem}
+                    onValueChange={(v) => {
+                      const cfg = getSystemConfig(v);
+                      // On réinitialise race/classe/sous-classe aux premières valeurs du nouveau système.
+                      setFormData((prev) => ({
+                        ...prev,
+                        system: v,
+                        race: cfg.races[0] || "",
+                        class: cfg.classes[0] || "",
+                        subclass: "",
+                      }));
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SYSTEM_LIST.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.emoji} {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">{systemDef.description}</p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label>Ascendance</Label>
-                <Select
-                  value={formData.race || systemConfig.races[0]}
-                  onValueChange={(v) => updateField("race", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {systemConfig.races.map((race) => (
-                      <SelectItem key={race} value={race}>
-                        {race}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>{systemConfig.raceLabel}</Label>
+                {systemConfig.races.length > 0 ? (
+                  <Select
+                    value={formData.race || systemConfig.races[0]}
+                    onValueChange={(v) => updateField("race", v)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.races.map((race) => (
+                        <SelectItem key={race} value={race}>{race}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={formData.race || ""}
+                    onChange={(e) => updateField("race", e.target.value)}
+                    placeholder={`Saisir une ${systemConfig.raceLabel.toLowerCase()}...`}
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label>Classe</Label>
-                <Select
-                  value={formData.class || systemConfig.classes[0]}
-                  onValueChange={(v) => {
-                    updateField("class", v);
-                    updateField("subclass", "");
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {systemConfig.classes.map((cls) => (
-                      <SelectItem key={cls} value={cls}>
-                        {cls}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>{systemConfig.classLabel}</Label>
+                {systemConfig.classes.length > 0 ? (
+                  <Select
+                    value={formData.class || systemConfig.classes[0]}
+                    onValueChange={(v) => {
+                      updateField("class", v);
+                      updateField("subclass", "");
+                    }}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {systemConfig.classes.map((cls) => (
+                        <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={formData.class || ""}
+                    onChange={(e) => updateField("class", e.target.value)}
+                    placeholder={`Saisir une ${systemConfig.classLabel.toLowerCase()}...`}
+                  />
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Tenue</Label>
-                <Select
-                  value={formData.subclass || ""}
-                  onValueChange={(v) => updateField("subclass", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir une tenue..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(WA_TENUES[formData.class || ""] || []).map((tenue) => (
-                      <SelectItem key={tenue} value={tenue}>
-                        {tenue}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Sous-classe / Tenue — uniquement si le système en a. */}
+              {(() => {
+                const subs = systemConfig.subclassesByClass?.[formData.class || ""] || [];
+                if (!systemConfig.hasTenues && subs.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <Label>{systemConfig.subclassLabel}</Label>
+                    {subs.length > 0 ? (
+                      <Select
+                        value={formData.subclass || ""}
+                        onValueChange={(v) => updateField("subclass", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={`Choisir une ${systemConfig.subclassLabel.toLowerCase()}...`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subs.map((sub) => (
+                            <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={formData.subclass || ""}
+                        onChange={(e) => updateField("subclass", e.target.value)}
+                        placeholder={`${systemConfig.subclassLabel}...`}
+                      />
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="space-y-2">
                 <Label htmlFor="campaign">Campagne</Label>
