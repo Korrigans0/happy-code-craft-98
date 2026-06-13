@@ -314,6 +314,12 @@ const Partners = () => {
                   </div>
                 </div>
               </div>
+              <ScreenshotGallery
+                images={[
+                  { src: vaeloriaHome, alt: "Site Le Repos de Vaeloria" },
+                  { src: vaeloriaDiscord, alt: "Discord Le Repos de Vaeloria" },
+                ]}
+              />
             </article>
           </div>
         </section>
