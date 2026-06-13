@@ -2368,6 +2368,32 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       wallsHook.finishWall(w.x, w.y);
       return;
     }
+    // ── Click vs drag: simple click on a token opens the character sheet ──
+    const pendingClick = clickStartRef.current;
+    const wasClick =
+      !!pendingClick && !didDragRef.current && Date.now() - pendingClick.t < 500;
+    clickStartRef.current = null;
+    didDragRef.current = false;
+    if (wasClick && pendingClick) {
+      const tok = tokens.find(t => t.id === pendingClick.tokenId);
+      // Reset any pending drag/pan state cleanly
+      setDraggedToken(null);
+      setDragStart(null);
+      setIsDrawing(false);
+      setLastPanPoint(null);
+      if (tok) {
+        if (pendingClick.denied) {
+          toast({
+            title: "Accès refusé",
+            description: "Cette fiche ne vous appartient pas",
+            variant: "destructive",
+          });
+        } else if (perms.canSelectToken(tok)) {
+          openTokenSheet(tok);
+        }
+      }
+      return;
+    }
     if (draggedToken) {
       const id = draggedToken;
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
