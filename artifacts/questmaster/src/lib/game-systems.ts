@@ -115,19 +115,34 @@ export const WA_EQUIPMENTS = [
   { name: "Garde-Bras", bonus: "+1 Atq Contact", use: "Main Secondaire", price: "20 NX" },
 ];
 
-// Get system-specific config (WA only)
-export function getSystemConfig(_system?: string) {
+// Configuration de système — délègue au registre multi-système.
+// `getSystemConfig(systemId)` retourne la config dérivée du SystemDefinition
+// correspondant. Si `systemId` est absent ou inconnu, on tombe sur Aetheria.
+import { getSystem } from "./systems";
+
+export function getSystemConfig(systemId?: string | null) {
+  const sys = getSystem(systemId);
+  // Mode de stats global : si toutes les stats partagent le même mode on l'utilise,
+  // sinon on retombe sur "modifier" (compatibilité avec le code existant).
+  const modes = new Set(sys.stats.map((s) => s.mode));
+  const statMode = modes.size === 1 ? sys.stats[0].mode : "modifier";
   return {
-    raceLabel: "Ascendance",
-    classLabel: "Classe",
-    subclassLabel: "Tenue",
-    races: WA_ASCENDANCES,
-    classes: WA_CLASSES,
+    systemId: sys.id,
+    raceLabel: sys.raceLabel,
+    classLabel: sys.classLabel,
+    subclassLabel: sys.subclassLabel ?? "Sous-classe",
+    races: sys.races,
+    classes: sys.classes,
     backgrounds: [] as string[],
-    hasAlignments: false,
-    hasSpellcasting: false,
-    hasTenues: true,
-    statMode: "modifier" as const,
-    speedUnit: "m",
+    hasAlignments: sys.hasAlignments,
+    hasSpellcasting: sys.hasSpellcasting,
+    hasTenues: sys.hasTenues,
+    hasSanity: sys.hasSanity,
+    statMode: statMode as "modifier" | "score" | "percentage",
+    speedUnit: sys.speedUnit,
+    currency: sys.currency,
+    stats: sys.stats,
+    defenses: sys.defenses,
+    subclassesByClass: sys.subclassesByClass,
   };
 }
