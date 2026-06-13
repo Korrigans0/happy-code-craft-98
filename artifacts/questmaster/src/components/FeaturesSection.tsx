@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
-import { Sparkles, Sword, User, BookOpen, Dices, Map, Globe } from "lucide-react";
+import { Sparkles, Sword, User, BookOpen, Map, Globe } from "lucide-react";
 import cardCampaigns from "@/assets/card-campaigns.jpg";
 import cardCharacters from "@/assets/card-characters.jpg";
 import cardCodex from "@/assets/card-codex.jpg";
-import cardDice from "@/assets/card-dice.jpg";
 import cardVtt from "@/assets/card-vtt.jpg";
 import cardUniverse from "@/assets/card-universe.jpg";
 
@@ -21,7 +20,6 @@ const features: Feature[] = [
   { icon: Sword, title: "Campagnes", subtitle: "Organisez sessions et joueurs en toute simplicité.", href: "/campaigns", image: cardCampaigns, hue: 43, cta: "Lancer" },
   { icon: User, title: "Personnages", subtitle: "Fiches Aetheria complètes, évolutives et illustrées.", href: "/characters", image: cardCharacters, hue: 320, cta: "Créer" },
   { icon: BookOpen, title: "Codex", subtitle: "Bestiaire, races, classes et lore vivant.", href: "/compendium", image: cardCodex, hue: 270, cta: "Explorer" },
-  { icon: Dices, title: "Dés", subtitle: "Lanceur 3D pour tous les dés JdR.", href: "/dice", image: cardDice, hue: 190, cta: "Lancer" },
   { icon: Map, title: "Table virtuelle", subtitle: "Plateau, tokens, murs et lumières dynamiques.", href: "/campaigns", image: cardVtt, hue: 155, cta: "Voir" },
   { icon: Globe, title: "Univers", subtitle: "Aetheria & Worlds Awakening, deux mondes intégrés.", href: "/compendium", image: cardUniverse, hue: 43, cta: "Découvrir" },
 ];

@@ -19,7 +19,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
             <Link to="/campaigns" className="hover:text-amber-400 transition-colors">Campagnes</Link>
             <Link to="/characters" className="hover:text-amber-400 transition-colors">Personnages</Link>
             <Link to="/compendium" className="hover:text-amber-400 transition-colors">Codex</Link>
-            <Link to="/dice" className="hover:text-amber-400 transition-colors">Dés</Link>
+            <Link to="/subscriptions" className="hover:text-amber-400 transition-colors">Abonnements</Link>
           </nav>
 
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground/50">

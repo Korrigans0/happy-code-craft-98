@@ -1,5 +1,5 @@
 import {
-  Menu, X, User, BookOpen, Dices,
+  Menu, X, User, BookOpen,
   Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ const navLinks = [
   { to: "/campaigns", label: "Campagnes", icon: Map },
   { to: "/characters", label: "Personnages", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
-  { to: "/dice", label: "Dés", icon: Dices },
   { to: "/subscriptions", label: "Abonnements", icon: Crown },
   { to: "/partners", label: "Partenaires", icon: Handshake },
 ];

@@ -1,12 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Sword, User, BookOpen, Dices, Crown } from "lucide-react";
+import { Home, Sword, User, BookOpen, Crown } from "lucide-react";
 
 const items = [
   { to: "/", label: "Accueil", icon: Home },
   { to: "/campaigns", label: "Campagnes", icon: Sword },
   { to: "/characters", label: "Persos", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
-  { to: "/dice", label: "Dés", icon: Dices },
   { to: "/subscriptions", label: "Premium", icon: Crown },
 ];
 
@@ -24,7 +23,7 @@ const MobileBottomNav = () => {
       aria-label="Navigation principale"
       className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid grid-cols-6">
+      <ul className="grid grid-cols-5">
         {items.map((it) => {
           const active = isActive(location.pathname, it.to);
           const Icon = it.icon;

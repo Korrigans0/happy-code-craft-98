@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X, Dices,
+  Volume2, ExternalLink, Wand2, X,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CampaignChat from "@/components/campaign/CampaignChat";
@@ -93,7 +93,6 @@ const CampaignPlay = () => {
     if (isMobilePlayer) {
       return [
         { id: "tabletop", icon: Map, label: "Plateau" },
-        { id: "dice", icon: Dices, label: "Dés" },
         { id: "chat", icon: MessageSquare, label: "Chat" },
       ];
     }
@@ -109,12 +108,8 @@ const CampaignPlay = () => {
   }, [isGM, isMobilePlayer]);
 
   const handleTabChange = useCallback((v: string) => {
-    if (v === "dice") {
-      navigate("/dice");
-      return;
-    }
     setActiveTab(v);
-  }, [navigate]);
+  }, []);
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
