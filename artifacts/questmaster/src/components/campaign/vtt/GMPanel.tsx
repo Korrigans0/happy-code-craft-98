@@ -39,6 +39,8 @@ interface GMPanelProps {
   selectedTokenId?: string | null;
   waCreatures: WACreature[];
   aetheriaCreatures: AetheriaCreature[];
+  systemMonsters?: any[];
+  campaignSystem?: string;
   userCharacters: PlayerChar[];
   initiative: InitiativeEntry[];
   initiativeRound: number;
