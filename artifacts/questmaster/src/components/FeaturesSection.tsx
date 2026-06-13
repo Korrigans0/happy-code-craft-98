@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sparkles, Sword, User, BookOpen, Map, Globe } from "lucide-react";
+import { Sparkles, Sword, User, BookOpen, Crown, Handshake } from "lucide-react";
 import cardCampaigns from "@/assets/card-campaigns.jpg";
 import cardCharacters from "@/assets/card-characters.jpg";
 import cardCodex from "@/assets/card-codex.jpg";
@@ -16,12 +16,13 @@ interface Feature {
   cta: string;
 }
 
+// Chaque carte mène à une page unique pour éviter les doublons de navigation.
 const features: Feature[] = [
-  { icon: Sword, title: "Campagnes", subtitle: "Organisez sessions et joueurs en toute simplicité.", href: "/campaigns", image: cardCampaigns, hue: 43, cta: "Lancer" },
+  { icon: Sword, title: "Campagnes", subtitle: "Plateau, tokens, murs et lumières dynamiques en temps réel.", href: "/campaigns", image: cardCampaigns, hue: 43, cta: "Lancer" },
   { icon: User, title: "Personnages", subtitle: "Fiches Aetheria complètes, évolutives et illustrées.", href: "/characters", image: cardCharacters, hue: 320, cta: "Créer" },
   { icon: BookOpen, title: "Codex", subtitle: "Bestiaire, races, classes et lore vivant.", href: "/compendium", image: cardCodex, hue: 270, cta: "Explorer" },
-  { icon: Map, title: "Table virtuelle", subtitle: "Plateau, tokens, murs et lumières dynamiques.", href: "/campaigns", image: cardVtt, hue: 155, cta: "Voir" },
-  { icon: Globe, title: "Univers", subtitle: "Aetheria & Worlds Awakening, deux mondes intégrés.", href: "/compendium", image: cardUniverse, hue: 43, cta: "Découvrir" },
+  { icon: Crown, title: "Abonnements", subtitle: "Choisissez la formule adaptée à votre aventure.", href: "/subscriptions", image: cardVtt, hue: 155, cta: "Découvrir" },
+  { icon: Handshake, title: "Partenaires", subtitle: "Worlds Awakening, Vaeloria et l'écosystème Aetheria.", href: "/partners", image: cardUniverse, hue: 190, cta: "Voir" },
 ];
 
 const FeaturesSection = () => {
