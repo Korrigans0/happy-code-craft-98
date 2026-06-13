@@ -177,6 +177,9 @@ const Partners = () => {
                   </div>
                 </div>
               </div>
+              <ScreenshotGallery
+                images={[{ src: guildryHome, alt: "Page d'accueil de Guildry" }]}
+              />
             </article>
 
 
