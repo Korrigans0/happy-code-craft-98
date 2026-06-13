@@ -438,7 +438,7 @@ const Characters = () => {
               character={selectedCharacter}
               editable={true}
               onEdit={() => handleEdit(selectedCharacter)}
-              onSave={(data) => updateMutation.mutate({ ...data, id: selectedCharacter.id })}
+              onSave={handleSave}
               onClose={() => { setIsSheetOpen(false); setSelectedCharacter(null); }}
             />
           )}
