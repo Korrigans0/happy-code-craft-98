@@ -1,6 +1,25 @@
-import type { SystemDefinition } from "./types";
+import type { SystemDefinition, CalculationsAPI } from "./types";
+import { genericStatModifier } from "./types";
 
-// Pathfinder 2e — modificateurs directs (-1 à +7), CA, niveaux de maîtrise.
+// Pathfinder 2e — modificateurs directs + niveau + bonus de maîtrise.
+// Niveaux de maîtrise : Non-formé (0), Formé (+2), Expert (+4), Maître (+6), Légendaire (+8) — tous + niveau.
+const calculations: CalculationsAPI = {
+  statModifier: genericStatModifier,
+  maxHp: ({ level, stats, systemData }) => {
+    const ancestryHp = Number((systemData?.ancestryHp as number) ?? 8);
+    const classHp = Number((systemData?.classHp as number) ?? 8);
+    const conMod = stats.CON ?? 0;
+    return ancestryHp + (classHp + conMod) * Math.max(1, level);
+  },
+  initiative: ({ stats, level }) => (stats.WIS ?? 0) + level,
+  proficiencyBonus: ({ level }) => level + 2,
+  attackBonus: ({ stats, level }) => (stats.STR ?? 0) + level + 2,
+  spellSaveDC: ({ stats, level, systemData }) => {
+    const ability = (systemData?.spellcastingAbility as string) ?? "WIS";
+    return 10 + ((stats[ability] as number) ?? 0) + level + 2;
+  },
+};
+
 export const PF2E_SYSTEM: SystemDefinition = {
   id: "Pathfinder 2e",
   label: "Pathfinder 2e",
@@ -17,6 +36,29 @@ export const PF2E_SYSTEM: SystemDefinition = {
   ],
   defenses: [
     { key: "ac", label: "CA", hint: "Classe d'armure", default: 10 },
+  ],
+  resources: [
+    { key: "hp",         label: "PV",        display: "bar",     min: 0 },
+    { key: "hero_points",label: "Pts héros", display: "counter", min: 0 },
+    { key: "focus",      label: "Pts focus", display: "counter", min: 0 },
+  ],
+  skills: [
+    { key: "acrobatics",  label: "Acrobaties",   stat: "DEX" },
+    { key: "arcana",      label: "Arcane",        stat: "INT" },
+    { key: "athletics",   label: "Athlétisme",   stat: "STR" },
+    { key: "crafting",    label: "Artisanat",     stat: "INT" },
+    { key: "deception",   label: "Tromperie",    stat: "CHA" },
+    { key: "diplomacy",   label: "Diplomatie",   stat: "CHA" },
+    { key: "intimidation",label: "Intimidation", stat: "CHA" },
+    { key: "medicine",    label: "Médecine",     stat: "WIS" },
+    { key: "nature",      label: "Nature",       stat: "WIS" },
+    { key: "occultism",   label: "Occultisme",   stat: "INT" },
+    { key: "performance", label: "Représentation",stat: "CHA" },
+    { key: "religion",    label: "Religion",     stat: "WIS" },
+    { key: "society",     label: "Société",     stat: "INT" },
+    { key: "stealth",     label: "Discrétion",  stat: "DEX" },
+    { key: "survival",    label: "Survie",       stat: "WIS" },
+    { key: "thievery",    label: "Vol",          stat: "DEX" },
   ],
   raceLabel: "Ascendance",
   races: [
@@ -36,4 +78,6 @@ export const PF2E_SYSTEM: SystemDefinition = {
   hasTenues: false,
   hasSanity: false,
   hasAlignments: true,
+  calculations,
+  sheetComponent: "pathfinder2e",
 };

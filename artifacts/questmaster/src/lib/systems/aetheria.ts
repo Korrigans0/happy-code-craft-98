@@ -1,7 +1,17 @@
-import type { SystemDefinition } from "./types";
+import type { SystemDefinition, CalculationsAPI } from "./types";
+import { genericStatModifier } from "./types";
 import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../wa-data";
 
 // Aetheria — système phare maison. Stats en modificateur, défense PHY/MAG, monnaie NX.
+// Calculs : mod direct ; PV = 10 + CON * niveau + bonus tenue (déjà géré en BDD).
+const calculations: CalculationsAPI = {
+  statModifier: genericStatModifier,
+  maxHp: ({ level, stats }) => 10 + (stats.CON ?? 0) * Math.max(1, level),
+  initiative: ({ stats }) => stats.DEX ?? 0,
+  attackBonus: ({ stats }) => stats.FOR ?? 0,
+  spellSaveDC: ({ stats }) => 10 + Math.max(stats.INT ?? 0, stats.SAG ?? 0),
+};
+
 export const AETHERIA_SYSTEM: SystemDefinition = {
   id: "Aetheria",
   label: "Aetheria",
@@ -21,6 +31,21 @@ export const AETHERIA_SYSTEM: SystemDefinition = {
     { key: "phy_def", label: "Déf. PHY", hint: "Défense physique", default: 10 },
     { key: "mag_def", label: "Déf. MAG", hint: "Défense magique", default: 10 },
   ],
+  resources: [
+    { key: "hp", label: "PV", display: "bar", min: 0 },
+    { key: "pe", label: "PE", hint: "Points d'énergie", display: "bar", min: 0 },
+  ],
+  skills: [
+    { key: "athletisme",   label: "Athlétisme",      stat: "FOR" },
+    { key: "acrobaties",   label: "Acrobaties",      stat: "DEX" },
+    { key: "discretion",   label: "Discrétion",      stat: "DEX" },
+    { key: "perception",   label: "Perception",      stat: "SAG" },
+    { key: "intimidation", label: "Intimidation",    stat: "CHA" },
+    { key: "persuasion",   label: "Persuasion",      stat: "CHA" },
+    { key: "arcanes",      label: "Arcanes",         stat: "INT" },
+    { key: "histoire",     label: "Histoire",        stat: "INT" },
+    { key: "medecine",     label: "Médecine",        stat: "SAG" },
+  ],
   raceLabel: "Ascendance",
   races: WA_ASCENDANCES,
   classLabel: "Classe",
@@ -34,4 +59,6 @@ export const AETHERIA_SYSTEM: SystemDefinition = {
   hasTenues: true,
   hasSanity: false,
   hasAlignments: false,
+  calculations,
+  sheetComponent: "aetheria",
 };

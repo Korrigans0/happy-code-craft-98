@@ -1,7 +1,16 @@
-import type { SystemDefinition } from "./types";
+import type { SystemDefinition, CalculationsAPI } from "./types";
+import { genericStatModifier } from "./types";
 import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../wa-data";
 
-// Worlds Awakening — système partenaire (mécaniques identiques à Aetheria en v1).
+// Worlds Awakening — système partenaire. Mécaniques identiques à Aetheria en v1
+// mais fiche dédiée (codex/univers distincts).
+const calculations: CalculationsAPI = {
+  statModifier: genericStatModifier,
+  maxHp: ({ level, stats }) => 10 + (stats.CON ?? 0) * Math.max(1, level),
+  initiative: ({ stats }) => stats.DEX ?? 0,
+  attackBonus: ({ stats }) => stats.FOR ?? 0,
+};
+
 export const WA_SYSTEM: SystemDefinition = {
   id: "Worlds Awakening",
   label: "Worlds Awakening",
@@ -21,6 +30,16 @@ export const WA_SYSTEM: SystemDefinition = {
     { key: "phy_def", label: "Déf. PHY", hint: "Défense physique", default: 10 },
     { key: "mag_def", label: "Déf. MAG", hint: "Défense magique", default: 10 },
   ],
+  resources: [
+    { key: "hp", label: "PV", display: "bar", min: 0 },
+    { key: "pe", label: "PE", hint: "Points d'énergie", display: "bar", min: 0 },
+  ],
+  skills: [
+    { key: "athletisme", label: "Athlétisme",   stat: "FOR" },
+    { key: "discretion", label: "Discrétion",   stat: "DEX" },
+    { key: "perception", label: "Perception",   stat: "SAG" },
+    { key: "persuasion", label: "Persuasion",   stat: "CHA" },
+  ],
   raceLabel: "Ascendance",
   races: WA_ASCENDANCES,
   classLabel: "Classe",
@@ -34,4 +53,6 @@ export const WA_SYSTEM: SystemDefinition = {
   hasTenues: true,
   hasSanity: false,
   hasAlignments: false,
+  calculations,
+  sheetComponent: "worlds-awakening",
 };
