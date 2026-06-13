@@ -401,6 +401,8 @@ export type Database = {
           spellcasting_ability: string | null
           strength: number
           subclass: string | null
+          system: string
+          system_data: Json
           temp_hp: number | null
           updated_at: string
           user_id: string | null
@@ -451,6 +453,8 @@ export type Database = {
           spellcasting_ability?: string | null
           strength?: number
           subclass?: string | null
+          system?: string
+          system_data?: Json
           temp_hp?: number | null
           updated_at?: string
           user_id?: string | null
@@ -501,6 +505,8 @@ export type Database = {
           spellcasting_ability?: string | null
           strength?: number
           subclass?: string | null
+          system?: string
+          system_data?: Json
           temp_hp?: number | null
           updated_at?: string
           user_id?: string | null
