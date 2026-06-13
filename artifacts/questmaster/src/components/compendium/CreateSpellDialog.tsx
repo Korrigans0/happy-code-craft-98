@@ -63,24 +63,21 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nouveau sort personnalisé</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Système</Label>
+            <Select value={system} onValueChange={setSystem}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
             <div>
-              <Label>Système</Label>
-              <Select value={system} onValueChange={setSystem}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-sm">Partager avec la communauté</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPublic ? "Visible par tous les joueurs Aetheria VTT." : "Visible uniquement par vous."}
+              </p>
             </div>
-            <div>
-              <Label>Portée</Label>
-              <Select value={scope} onValueChange={(v) => setScope(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="custom_personal">Codex personnel</SelectItem>
-                  <SelectItem value="custom_campaign">Pour cette campagne</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
           </div>
           <div><Label>Nom</Label><Input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-4">
