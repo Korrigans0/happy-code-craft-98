@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,14 +16,15 @@ interface CreateSpellDialogProps {
   defaultSystem?: string;
 }
 
-const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Aetheria", "Worlds Awakening", "Personnalisé"];
+// Aetheria et WA ont leurs propres listes de sorts, exclus ici.
+const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"];
 
-const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellDialogProps) => {
+const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: CreateSpellDialogProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [scope, setScope] = useState<"custom_personal" | "custom_campaign">("custom_personal");
+  const [isPublic, setIsPublic] = useState(false);
   const [form, setForm] = useState({
     name: "", level: "0", school: "Évocation", casting_time: "1 action",
     range: "9 mètres", components: "V, S", duration: "Instantanée",
@@ -39,7 +41,8 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateSpellD
         level: parseInt(form.level),
         classes: form.classes.split(",").map(c => c.trim()).filter(Boolean),
         system,
-        scope,
+        scope: "custom_personal",
+        is_public: isPublic,
       });
     }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
