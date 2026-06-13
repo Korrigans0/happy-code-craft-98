@@ -8,6 +8,8 @@ import AetheriaCharacterSheet from "../AetheriaCharacterSheet";
 import Dnd5eSheet from "./Dnd5eSheet";
 import HomebrewSheet from "./HomebrewSheet";
 import GenericSystemSheet from "./GenericSystemSheet";
+import Pathfinder2eSheet from "./Pathfinder2eSheet";
+import Cthulhu7eSheet from "./Cthulhu7eSheet";
 
 interface SheetRouterProps {
   character: any;
