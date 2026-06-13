@@ -47,6 +47,10 @@ export interface TokenItem {
   isBoss?: boolean;
   // Vision dynamique : rayon en mètres (0 ou undefined = pas de vision propre)
   visionRadius?: number;
+  // Propriétaire (user.id) — utilisé pour les permissions côté client.
+  ownerUserId?: string;
+  // Notes rapides éditables depuis la fiche du token.
+  notes?: string;
 }
 
 export interface MapLayer {
