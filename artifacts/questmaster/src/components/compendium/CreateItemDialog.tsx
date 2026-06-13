@@ -51,6 +51,25 @@ const CreateItemDialog = ({ onCreated, defaultSystem = "D&D 5e" }: CreateItemDia
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Nouvel objet personnalisé</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Système</Label>
+              <Select value={system} onValueChange={setSystem}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Portée</Label>
+              <Select value={scope} onValueChange={(v) => setScope(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom_personal">Codex personnel</SelectItem>
+                  <SelectItem value="custom_campaign">Pour cette campagne</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div><Label>Nom</Label><Input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Type</Label><Input value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} /></div>
