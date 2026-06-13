@@ -233,7 +233,7 @@ const Compendium = () => {
                   <Swords className="h-3.5 w-3.5" /> Matchups
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={!!user} /></TabsContent>
+              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={false} /></TabsContent>
               <TabsContent value="aetheria-codex"><AetheriaLore /></TabsContent>
               <TabsContent value="aetheria-matchups"><AetheriaMatchups /></TabsContent>
             </Tabs>
@@ -253,7 +253,6 @@ const Compendium = () => {
                     <Globe className="h-3.5 w-3.5" /> Histoire
                   </TabsTrigger>
                 </TabsList>
-                {user && waTab === "wa-bestiary" && <CreateWACreatureDialog onCreated={triggerRefresh} />}
               </div>
               <TabsContent value="wa-bestiary"><WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} /></TabsContent>
               <TabsContent value="wa-codex"><WACodex /></TabsContent>
@@ -261,8 +260,8 @@ const Compendium = () => {
             </Tabs>
           )}
 
-          {(system === "D&D 5e" || system === "Pathfinder 2e") && (
-            <SystemCodex system={system} searchQuery={searchQuery} />
+          {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "Call of Cthulhu") && (
+            <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
 
           {system === "Personnalisé" && (
@@ -272,13 +271,13 @@ const Compendium = () => {
                 <div>
                   <h3 className="font-display text-lg font-semibold text-amber-400">Codex Homebrew</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Vos créations personnelles : créatures, sorts et objets marqués comme Homebrew.
-                    Ce contenu peut être réutilisé dans n'importe quelle campagne dont le MJ a activé l'option
-                    « Autoriser les personnages Homebrew ».
+                    Vos créations personnelles : créatures, sorts et objets Homebrew. Lors de la création,
+                    vous choisissez si votre contenu reste privé ou s'il est partagé avec la communauté
+                    Aetheria VTT (visible par tous).
                   </p>
                 </div>
               </div>
-              <SystemCodex system="Personnalisé" searchQuery={searchQuery} />
+              <SystemCodex system="Personnalisé" searchQuery={searchQuery} canCreate={!!user} />
             </div>
           )}
         </div>
