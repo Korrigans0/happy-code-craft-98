@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getSystemConfig, WA_TENUES, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
+import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
+import { getSystem, SYSTEM_LIST } from "@/lib/systems";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
@@ -20,17 +21,22 @@ interface CharacterFormProps {
   character?: Character | null;
   onSave: (character: Partial<Character>) => void;
   onCancel: () => void;
+  /** Système initial quand on crée un nouveau personnage (Aetheria, D&D 5e, …). */
   gameSystem?: string;
 }
 
 
-const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
-  const systemConfig = getSystemConfig();
+const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFormProps) => {
+  // Système actif : priorité à la fiche existante, sinon le système passé en prop,
+  // sinon WA (compat ascendante — l'ancien formulaire était mono-WA).
+  const initialSystem = character?.system || gameSystem || "Worlds Awakening";
+  const initialSystemConfig = getSystemConfig(initialSystem);
   const { user } = useAuth();
   const [formData, setFormData] = useState<Partial<Character>>({
     name: "",
-    race: systemConfig.races[0],
-    class: systemConfig.classes[0],
+    system: initialSystem,
+    race: initialSystemConfig.races[0] || "",
+    class: initialSystemConfig.classes[0] || "",
     subclass: "",
     level: 1,
     background: "",
@@ -52,10 +58,14 @@ const CharacterForm = ({ character, onSave, onCancel }: CharacterFormProps) => {
     armor_class: 10,
     speed: 30,
     gold: 0,
-    campaign: "Worlds Awakening",
+    campaign: initialSystem,
     saving_throws: [],
     ...character,
   });
+
+  // Recalculé à chaque rendu en fonction du système actif de la fiche.
+  const systemConfig = getSystemConfig(formData.system as string);
+  const systemDef = getSystem(formData.system as string);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
