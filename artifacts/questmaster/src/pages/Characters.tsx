@@ -44,6 +44,10 @@ interface Character {
   speed: number;
   gold: number;
   campaign?: string | null;
+  /** Système de jeu (Aetheria, D&D 5e, Pathfinder 2e, …). Ajouté avec le multi-système. */
+  system?: string | null;
+  /** Données propres au système (jsonb côté DB). */
+  system_data?: Record<string, unknown> | null;
   skills?: any;
   languages?: any;
   inventory?: string | null;
