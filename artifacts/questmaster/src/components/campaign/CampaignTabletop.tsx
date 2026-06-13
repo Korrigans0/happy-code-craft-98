@@ -258,6 +258,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Voir fiche dialog ──
   const [sheetToken, setSheetToken] = useState<TokenItem | null>(null);
+  // Keep the open sheet in sync with the live token state (realtime updates, condition toggles, etc.)
+  useEffect(() => {
+    if (!sheetToken) return;
+    const live = tokens.find(t => t.id === sheetToken.id);
+    if (!live) { setSheetToken(null); return; }
+    if (live !== sheetToken) setSheetToken(live);
+  }, [tokens, sheetToken]);
 
   // ── Notes MJ dialog ──
   const [gmNotesToken, setGmNotesToken] = useState<TokenItem | null>(null);
