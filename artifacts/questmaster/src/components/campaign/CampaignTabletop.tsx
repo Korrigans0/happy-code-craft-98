@@ -3798,9 +3798,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
               )}
 
               {tok.creatureId && tok.creatureType === "character" && (
-                <p className="text-xs text-muted-foreground">
-                  Fiche complète disponible dans la page Personnages.
-                </p>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => setFullSheetCharId(tok.creatureId!)}
+                >
+                  Ouvrir la fiche complète
+                </Button>
               )}
             </div>
             );
