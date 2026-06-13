@@ -205,10 +205,17 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
 
   return (
     <div className="flex h-full flex-col bg-gradient-dark">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="font-display text-xl font-bold text-foreground">
-          {character ? "Modifier le Personnage" : "Créer un Personnage"}
-        </h2>
+      <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <h2 className="font-display text-xl font-bold text-foreground truncate">
+            {character ? "Modifier le Personnage" : "Créer un Personnage"}
+          </h2>
+          {/* Badge système : visuel de l'identité de jeu (Aetheria, D&D, …). */}
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <span>{systemDef.emoji}</span>
+            <span>{systemDef.shortLabel}</span>
+          </span>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={onCancel}>
             <X className="mr-2 h-4 w-4" />
