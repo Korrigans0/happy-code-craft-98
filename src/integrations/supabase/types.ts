@@ -720,6 +720,65 @@ export type Database = {
           },
         ]
       }
+      media_assets: {
+        Row: {
+          campaign_id: string | null
+          checksum: string | null
+          created_at: string
+          file_type: string
+          height: number | null
+          id: string
+          mime: string
+          name: string
+          owner_id: string
+          size_bytes: number
+          storage_path: string
+          thumbnail_path: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          checksum?: string | null
+          created_at?: string
+          file_type: string
+          height?: number | null
+          id?: string
+          mime: string
+          name: string
+          owner_id: string
+          size_bytes: number
+          storage_path: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          campaign_id?: string | null
+          checksum?: string | null
+          created_at?: string
+          file_type?: string
+          height?: number | null
+          id?: string
+          mime?: string
+          name?: string
+          owner_id?: string
+          size_bytes?: number
+          storage_path?: string
+          thumbnail_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monsters: {
         Row: {
           alignment: string
@@ -791,6 +850,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
           user_id: string
         }
@@ -799,6 +859,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id: string
         }
@@ -807,6 +868,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
           user_id?: string
         }
@@ -1062,6 +1124,19 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
+      get_storage_quota: {
+        Args: { _tier: Database["public"]["Enums"]["subscription_tier"] }
+        Returns: number
+      }
+      get_storage_usage: {
+        Args: { _user_id: string }
+        Returns: {
+          file_count: number
+          quota_bytes: number
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          used_bytes: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1082,6 +1157,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       campaign_role: "gm" | "player"
+      subscription_tier: "free" | "gm_premium" | "premium_plus"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1211,6 +1287,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       campaign_role: ["gm", "player"],
+      subscription_tier: ["free", "gm_premium", "premium_plus"],
     },
   },
 } as const
