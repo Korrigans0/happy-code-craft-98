@@ -33,12 +33,9 @@ interface WallsToolbarProps {
   onCloseAllDoors?: () => void;
 }
 
-const WALL_TYPES: { type: WallType; icon: React.ReactNode; shortLabel: string }[] = [
-  { type: "solid",   icon: <Square className="h-4 w-4" />,     shortLabel: "Mur" },
-  { type: "door",    icon: <DoorClosed className="h-4 w-4" />, shortLabel: "Porte" },
-  { type: "window",  icon: <Eye className="h-4 w-4" />,        shortLabel: "Fenêtre" },
-  { type: "terrain", icon: <Layers className="h-4 w-4" />,     shortLabel: "Terrain" },
-];
+// Note: Layers, Square, WallType conservés pour compat éventuelle (props selectedWallType)
+void Layers; void Square;
+type _WT = WallType;
 
 export default function WallsToolbar({
   selectedWallType,
