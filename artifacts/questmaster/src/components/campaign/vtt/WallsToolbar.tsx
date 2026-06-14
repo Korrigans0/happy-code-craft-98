@@ -60,7 +60,7 @@ export default function WallsToolbar({
   const [openThrottle, setOpenThrottle] = useState(false);
   const [openHelp, setOpenHelp] = useState(false);
 
-  if (!["wall", "wallDoor", "wallDelete"].includes(activeTool)) return null;
+  if (!["wall", "wallDoor", "wallWindow", "wallTerrain", "wallDelete"].includes(activeTool)) return null;
 
   const totalDoors = doorsOpen + doorsClosed;
 
