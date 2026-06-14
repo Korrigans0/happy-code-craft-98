@@ -64,6 +64,7 @@ const AppRoutes = () => (
         <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
         <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
         <Route path="/compendium" element={<Compendium />} />
+        <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
         
         <Route path="/join/:code" element={<JoinCampaign />} />
         <Route path="/partners" element={<Partners />} />
