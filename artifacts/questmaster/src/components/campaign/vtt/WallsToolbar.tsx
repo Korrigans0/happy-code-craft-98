@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import {
-  Trash2, DoorOpen, DoorClosed, Layers, Square,
+  Trash2, DoorOpen, DoorClosed,
   Undo2, Redo2, Gauge, HelpCircle,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -33,9 +33,6 @@ interface WallsToolbarProps {
   onCloseAllDoors?: () => void;
 }
 
-// Note: Layers, Square, WallType conservés pour compat éventuelle (props selectedWallType)
-void Layers; void Square;
-type _WT = WallType;
 
 export default function WallsToolbar({
   selectedWallType,
