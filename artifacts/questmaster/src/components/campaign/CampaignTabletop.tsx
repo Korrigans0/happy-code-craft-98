@@ -2339,7 +2339,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (e.button === 2) return; // handled by onContextMenu
     const coords = getCanvasCoords(e);
 
-    if (tool === "wall" || tool === "wallDoor") {
+    if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") {
       // Si on clique sur une porte existante avec l'outil porte → bascule ouvert/fermé
       if (tool === "wallDoor") {
         const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
@@ -2350,7 +2350,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           return;
         }
       }
-      wallsHook.startWall(coords.x, coords.y, tool === "wallDoor" ? "door" : "solid");
+      const wType = tool === "wallDoor" ? "door" : tool === "wallWindow" ? "window" : tool === "wallTerrain" ? "terrain" : "solid";
+      wallsHook.startWall(coords.x, coords.y, wType);
       return;
     }
     if (tool === "wallDelete") {
