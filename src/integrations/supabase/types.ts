@@ -883,6 +883,9 @@ export type Database = {
           drawings: Json
           fog_visible: boolean
           id: string
+          initiative: Json
+          initiative_active_idx: number
+          initiative_round: number
           lights: Json
           map_image_url: string | null
           night_mode: boolean
@@ -898,6 +901,9 @@ export type Database = {
           drawings?: Json
           fog_visible?: boolean
           id?: string
+          initiative?: Json
+          initiative_active_idx?: number
+          initiative_round?: number
           lights?: Json
           map_image_url?: string | null
           night_mode?: boolean
@@ -913,6 +919,9 @@ export type Database = {
           drawings?: Json
           fog_visible?: boolean
           id?: string
+          initiative?: Json
+          initiative_active_idx?: number
+          initiative_round?: number
           lights?: Json
           map_image_url?: string | null
           night_mode?: boolean

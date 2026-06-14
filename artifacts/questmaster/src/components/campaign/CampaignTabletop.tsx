@@ -442,6 +442,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (typeof (state as any).night_mode === "boolean") {
         lightsHookRef.current?.receiveNightMode((state as any).night_mode);
       }
+      // ── Initiative (persistée) ──
+      const incomingInit = (state as any).initiative;
+      if (Array.isArray(incomingInit)) setInitiative(incomingInit as InitiativeEntry[]);
+      const incomingRound = (state as any).initiative_round;
+      if (typeof incomingRound === "number") setInitiativeRound(incomingRound);
+      const incomingActive = (state as any).initiative_active_idx;
+      if (typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
     },
     debounceMs: 250,
   });
@@ -487,6 +494,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
+  // Persistance de l'initiative (ordre, round, tour actif)
+  useEffect(() => {
+    if (user?.id) saveState({
+      initiative: initiative as unknown as unknown[],
+      initiative_round: initiativeRound,
+      initiative_active_idx: initiativeActiveIdx,
+    });
+  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
@@ -535,8 +550,27 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   }, [tokens, draggedToken, tickTokenAnim]);
 
   // ── Data fetching ──
+  // (la query waCreatures est plus bas, gatée par campaignSystem)
+
+  // Système verrouillé de la campagne (sépare les codex)
+  const { data: campaignInfo } = useQuery({
+    queryKey: ["campaign-info-tabletop", campaignId],
+    enabled: !!campaignId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("campaigns")
+        .select("system, allow_homebrew_characters")
+        .eq("id", campaignId)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const campaignSystem = campaignInfo?.system ?? "Aetheria";
+  const allowHomebrew = !!campaignInfo?.allow_homebrew_characters;
+
   const { data: waCreatures = [] } = useQuery({
-    queryKey: ["vtt-wa-creatures"],
+    queryKey: ["vtt-wa-creatures", campaignSystem],
+    enabled: campaignSystem === "Worlds Awakening",
     queryFn: async () => {
       try { return await (await import("@/lib/api")).compendiumApi.getWaCreatures(); }
       catch { return []; }
@@ -544,13 +578,29 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   });
 
   const { data: aetheriaCreatures = [] } = useQuery({
-    queryKey: ["aetheria-creatures-tabletop", campaignId],
+    queryKey: ["aetheria-creatures-tabletop", campaignId, campaignSystem],
+    enabled: campaignSystem === "Aetheria",
     queryFn: async () => {
       const { data } = await supabase
         .from("aetheria_creatures")
         .select("*")
         .or(`campaign_id.eq.${campaignId},is_public.eq.true`)
         .order("name");
+      return data || [];
+    },
+  });
+
+  // Bestiaire générique (D&D, PF2e, Cthulhu, Personnalisé) — filtré strict par système
+  const { data: systemMonsters = [] } = useQuery({
+    queryKey: ["system-monsters-tabletop", campaignId, campaignSystem, allowHomebrew],
+    enabled: ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"].includes(campaignSystem),
+    queryFn: async () => {
+      let q = supabase.from("monsters").select("*").eq("system", campaignSystem);
+      if (!allowHomebrew) {
+        // Officiels + perso du MJ + de la campagne
+        q = q.or(`scope.eq.official,campaign_id.eq.${campaignId},created_by.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`);
+      }
+      const { data } = await q.order("name");
       return data || [];
     },
   });
@@ -709,6 +759,38 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       conditions: [],
     } as TokenItem]);
   };
+
+  const spawnSystemMonster = (monster: any) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
+    const su = monster.size === "Huge" || monster.size === "Très grand" ? 3
+            : monster.size === "Large" || monster.size === "Grand" ? 2 : 1;
+    const size = GRID_SIZE * su;
+    const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
+    const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
+    const free = findFreePosition(wx, wy, size);
+    const hpVal = (() => {
+      const m = String(monster.hit_points ?? "10").match(/^(\d+)/);
+      return m ? Number(m[1]) : 10;
+    })();
+    setTokens(prev => [...prev, {
+      id: newId(),
+      name: monster.name,
+      x: free.x, y: free.y,
+      size, sizeUnits: su,
+      rotation: 0,
+      color: "#ef4444",
+      label: monster.name.substring(0, 2).toUpperCase(),
+      layer: "tokens",
+      visible: true,
+      creatureId: monster.id,
+      creatureType: "monster",
+      hp: hpVal,
+      maxHp: hpVal,
+      ac: Number(monster.armor_class) || 10,
+      conditions: [],
+    } as TokenItem]);
+  };
+
 
   const addToken = () => {
     if (!newTokenName.trim()) return;
@@ -3542,6 +3624,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             selectedTokenId={selectedTokenId}
             waCreatures={waCreatures}
             aetheriaCreatures={aetheriaCreatures as any}
+            systemMonsters={systemMonsters as any}
+            campaignSystem={campaignSystem}
             userCharacters={userCharacters}
             initiative={initiative}
             initiativeRound={initiativeRound}
@@ -3550,6 +3634,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
             onSelectToken={(id) => { setSelectedTokenId(id); centerOnToken(id); }}
             onSpawnCreature={spawnWACreature}
             onSpawnAetheriaCreature={spawnAetheriaCreature}
+            onSpawnSystemMonster={spawnSystemMonster}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
             onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}

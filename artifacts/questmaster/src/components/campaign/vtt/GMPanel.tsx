@@ -39,6 +39,8 @@ interface GMPanelProps {
   selectedTokenId?: string | null;
   waCreatures: WACreature[];
   aetheriaCreatures: AetheriaCreature[];
+  systemMonsters?: any[];
+  campaignSystem?: string;
   userCharacters: PlayerChar[];
   initiative: InitiativeEntry[];
   initiativeRound: number;
@@ -47,6 +49,7 @@ interface GMPanelProps {
   onSelectToken: (tokenId: string) => void;
   onSpawnCreature: (creature: WACreature) => void;
   onSpawnAetheriaCreature: (creature: AetheriaCreature) => void;
+  onSpawnSystemMonster?: (monster: any) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
   onAddSelectedTokenToInitiative?: () => void;
@@ -81,10 +84,10 @@ function parseRollCommand(input: string): { formula: string; label?: string } | 
 
 export default function GMPanel({
   campaignId, isGM, currentUserId, userName,
-  tokens, selectedTokenId, waCreatures, aetheriaCreatures, userCharacters,
+  tokens, selectedTokenId, waCreatures, aetheriaCreatures, systemMonsters = [], campaignSystem = "Aetheria", userCharacters,
   initiative, initiativeRound, initiativeActiveIdx,
   onUpdateTokenHp, onSelectToken,
-  onSpawnCreature, onSpawnAetheriaCreature, onSpawnCharacter,
+  onSpawnCreature, onSpawnAetheriaCreature, onSpawnSystemMonster, onSpawnCharacter,
   onAddToInitiative, onAddSelectedTokenToInitiative, onAddAllTokensToInitiative,
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
@@ -679,7 +682,7 @@ export default function GMPanel({
                   </>
                 )}
                 {/* Creatures */}
-                {filteredCreatures.length > 0 && (
+                {campaignSystem === "Worlds Awakening" && filteredCreatures.length > 0 && (
                   <>
                     <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Créatures WA</p>
                     {filteredCreatures.map(creature => (
@@ -701,7 +704,7 @@ export default function GMPanel({
                     ))}
                   </>
                 )}
-                {aetheriaCreatures.filter(c =>
+                {campaignSystem === "Aetheria" && aetheriaCreatures.filter(c =>
                   c.name.toLowerCase().includes(bestiarySearch.toLowerCase())
                 ).length > 0 && (
                   <>
@@ -735,6 +738,39 @@ export default function GMPanel({
                       ))}
                   </>
                 )}
+
+                {/* Monstres génériques (D&D 5e / Pathfinder 2e / Cthulhu / Personnalisé) */}
+                {["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"].includes(campaignSystem) && (() => {
+                  const list = systemMonsters.filter((m: any) => m.name.toLowerCase().includes(bestiarySearch.toLowerCase()));
+                  if (list.length === 0) return null;
+                  return (
+                    <>
+                      <Separator className="my-1" />
+                      <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Bestiaire {campaignSystem}
+                      </p>
+                      {list.map((m: any) => (
+                        <div key={m.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
+                            <Skull className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{m.name}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {m.size} • CR {m.challenge_rating} • PV {m.hit_points} • CA {m.armor_class}
+                            </p>
+                          </div>
+                          {isGM && onSpawnSystemMonster && (
+                            <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => onSpawnSystemMonster(m)}>
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
                 {filteredCreatures.length === 0 && userCharacters.length === 0 && (
                   <p className="py-8 text-center text-xs text-muted-foreground">Aucune créature trouvée</p>
                 )}
