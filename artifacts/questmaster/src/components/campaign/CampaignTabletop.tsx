@@ -2784,7 +2784,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       list = list.filter(t => allowed.has(t.id));
     } else if (isMobileGM) {
       // Hide walls + dynamic lights on mobile GM
-      const hidden = new Set(["wall", "wallDoor", "wallDelete", "light", "lightDelete"]);
+      const hidden = new Set(["wall", "wallDoor", "wallWindow", "wallTerrain", "wallDelete", "light", "lightDelete"]);
       list = list.filter(t => !hidden.has(t.id));
     }
     return list;
