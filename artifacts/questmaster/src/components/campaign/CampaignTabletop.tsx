@@ -3408,21 +3408,48 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           }`}
           style={{ cursor: getCursor() }}
           onDragOver={(e) => {
-            if (e.dataTransfer.types.includes("application/x-aetheria-char")) {
+            const types = e.dataTransfer.types;
+            if (
+              types.includes("application/x-aetheria-char") ||
+              types.includes("application/x-aetheria-creature") ||
+              types.includes("application/x-aetheria-wa") ||
+              types.includes("application/x-aetheria-monster")
+            ) {
               e.preventDefault(); e.dataTransfer.dropEffect = "copy";
               if (!isDragOverCanvas) setIsDragOverCanvas(true);
             }
           }}
           onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragOverCanvas(false); }}
           onDrop={(e) => {
-            const charId = e.dataTransfer.getData("application/x-aetheria-char");
             setIsDragOverCanvas(false); setDraggingCharId(null);
-            if (!charId) return;
-            const char = userCharacters.find((c: any) => c.id === charId);
-            if (!char) return;
-            e.preventDefault();
-            spawnCharacterAt(char, e.clientX, e.clientY);
+            const charId = e.dataTransfer.getData("application/x-aetheria-char");
+            if (charId) {
+              const char = userCharacters.find((c: any) => c.id === charId);
+              if (char) { e.preventDefault(); spawnCharacterAt(char, e.clientX, e.clientY); }
+              return;
+            }
+            const world = clientToWorld(e.clientX, e.clientY);
+            if (!world) return;
+            const aetId = e.dataTransfer.getData("application/x-aetheria-creature");
+            if (aetId) {
+              const c = (aetheriaCreatures as any[]).find((x: any) => x.id === aetId);
+              if (c) { e.preventDefault(); spawnAetheriaCreature(c, world.x, world.y); }
+              return;
+            }
+            const waId = e.dataTransfer.getData("application/x-aetheria-wa");
+            if (waId) {
+              const c = (waCreatures as any[]).find((x: any) => x.id === waId);
+              if (c) { e.preventDefault(); spawnWACreature(c, world.x, world.y); }
+              return;
+            }
+            const monId = e.dataTransfer.getData("application/x-aetheria-monster");
+            if (monId) {
+              const m = (systemMonsters as any[]).find((x: any) => x.id === monId);
+              if (m) { e.preventDefault(); spawnSystemMonster(m, world.x, world.y); }
+              return;
+            }
           }}
+
         >
           <canvas
             ref={canvasRef}
