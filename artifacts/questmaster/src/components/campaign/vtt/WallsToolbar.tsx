@@ -5,18 +5,18 @@
 
 import { useState } from "react";
 import {
-  Trash2, DoorOpen, DoorClosed, Eye, Layers, Square,
+  Trash2, DoorOpen, DoorClosed,
   Undo2, Redo2, Gauge, HelpCircle,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { type WallType, WALL_COLORS, WALL_LABELS } from "./types";
+import { type WallType } from "./types";
 
 interface WallsToolbarProps {
-  selectedWallType: WallType;
-  onSelectType: (type: WallType) => void;
+  selectedWallType?: WallType;
+  onSelectType?: (type: WallType) => void;
   onClearAll: () => void;
   wallCount: number;
   activeTool: string;
@@ -33,16 +33,8 @@ interface WallsToolbarProps {
   onCloseAllDoors?: () => void;
 }
 
-const WALL_TYPES: { type: WallType; icon: React.ReactNode; shortLabel: string }[] = [
-  { type: "solid",   icon: <Square className="h-4 w-4" />,     shortLabel: "Mur" },
-  { type: "door",    icon: <DoorClosed className="h-4 w-4" />, shortLabel: "Porte" },
-  { type: "window",  icon: <Eye className="h-4 w-4" />,        shortLabel: "Fenêtre" },
-  { type: "terrain", icon: <Layers className="h-4 w-4" />,     shortLabel: "Terrain" },
-];
 
 export default function WallsToolbar({
-  selectedWallType,
-  onSelectType,
   onClearAll,
   wallCount,
   activeTool,
@@ -60,7 +52,7 @@ export default function WallsToolbar({
   const [openThrottle, setOpenThrottle] = useState(false);
   const [openHelp, setOpenHelp] = useState(false);
 
-  if (!["wall", "wallDoor", "wallDelete"].includes(activeTool)) return null;
+  if (!["wall", "wallDoor", "wallWindow", "wallTerrain", "wallDelete"].includes(activeTool)) return null;
 
   const totalDoors = doorsOpen + doorsClosed;
 
@@ -78,15 +70,15 @@ export default function WallsToolbar({
         </PopoverTrigger>
         <PopoverContent side="right" align="start" className="w-72 p-3 space-y-2 text-xs">
           <p className="font-display text-sm font-semibold text-amber-400">
-            Murs & portes dynamiques
+            Murs dynamiques
           </p>
           <ul className="space-y-1.5 text-muted-foreground leading-snug">
-            <li>• <b>Outil Mur / Porte</b> : clic-glisser pour tracer.</li>
-            <li>• <b>Porte</b> : clic gauche dessus avec l'outil Porte = ouvrir/fermer.</li>
-            <li>• <b>Outil Déplacer</b> : clic sur une porte = ouvrir/fermer (MJ).</li>
-            <li>• <b>Clic droit</b> sur un mur = supprimer, sur une porte = bascule.</li>
-            <li>• <b>Suppr / Backspace</b> efface le mur sélectionné.</li>
-            <li>• Murs solides et portes fermées bloquent les jetons et la vision.</li>
+            <li>• <b>Mur solide</b> (W) : bloque mouvement et vision.</li>
+            <li>• <b>Porte</b> (D) : bloque si fermée ; clic = ouvrir/fermer.</li>
+            <li>• <b>Fenêtre</b> : bloque mouvement, laisse passer la vision.</li>
+            <li>• <b>Terrain difficile</b> : ralentit, ne bloque pas.</li>
+            <li>• <b>Clic-glisser</b> pour tracer ; <b>clic droit</b> ou Suppr pour effacer.</li>
+            <li>• Ctrl+Z / Ctrl+Shift+Z : annuler / rétablir.</li>
           </ul>
         </PopoverContent>
       </Popover>
@@ -139,34 +131,6 @@ export default function WallsToolbar({
 
       <div className="my-0.5 w-7 border-t border-border/50" />
 
-      <span className="text-center text-[8px] uppercase tracking-wider text-muted-foreground">
-        Type
-      </span>
-
-      {/* Sélecteur de type avec label visible */}
-      {WALL_TYPES.map(({ type, icon, shortLabel }) => {
-        const color = WALL_COLORS[type];
-        const isSelected = selectedWallType === type;
-        return (
-          <button
-            key={type}
-            title={WALL_LABELS[type]}
-            onClick={() => onSelectType(type)}
-            className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md transition-all"
-            style={{
-              background: isSelected ? `${color}33` : "transparent",
-              color: isSelected ? color : "#94a3b8",
-              border: isSelected ? `1px solid ${color}66` : "1px solid transparent",
-              boxShadow: isSelected ? `0 0 8px ${color}44` : "none",
-            }}
-          >
-            {icon}
-            <span className="text-[8px] font-semibold leading-none mt-0.5">
-              {shortLabel}
-            </span>
-          </button>
-        );
-      })}
 
       {/* Contrôles portes globaux */}
       {totalDoors > 0 && (

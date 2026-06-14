@@ -1,20 +1,12 @@
 # Refonte multi-systèmes — Fiches, Campagnes & Codex
 
-## 🔴 TÂCHE PRIORITAIRE — Refonte barre d'outils VTT
+## ✅ TÂCHE PRIORITAIRE — Refonte barre d'outils VTT (FAIT)
 
-Problèmes identifiés :
-- **Doublons murs / portes** : `wall`, `wallDoor`, `wallDelete` dans la barre principale **+** sélecteur de type (solid / door / window / terrain) dans `WallsToolbar`. Les deux concepts se chevauchent.
-- **Fenêtre inaccessible** : type `window` existe dans `WallsToolbar` mais n'est jamais activable directement depuis la barre principale → le MJ ne peut pas en placer simplement.
-- **Terrain** : même problème, type orphelin.
-
-Refonte à prévoir :
-1. Une **seule** entrée "Murs dynamiques" dans la barre principale (popover) avec **4 boutons types** : Mur solide / Porte / Fenêtre / Terrain — chacun sélectionne directement le bon outil + bon type.
-2. Bouton "Effacer mur" séparé, ou clic droit sur mur uniquement.
-3. Supprimer le sélecteur de type dupliqué dans `WallsToolbar` (ne garder que undo/redo, fluidité, contrôles portes globaux, compteur).
-4. Même logique à appliquer à **Lumières** (vérifier doublons).
-5. Raccourcis clavier : `W` mur, `D` porte, `F` fenêtre, `T` terrain.
-
-Fichiers : `CampaignTabletop.tsx` (tools array ~L2740), `WallsToolbar.tsx`.
+- 4 outils murs séparés dans la barre principale : **Mur solide / Porte / Fenêtre / Terrain difficile** + Effacer mur.
+- Type `Tool` étendu (`wallWindow`, `wallTerrain`).
+- Sélecteur de type dupliqué retiré de `WallsToolbar` (ne reste : aide, undo/redo, fluidité, contrôles portes globaux, compteur, effacer tous).
+- Raccourcis clavier MJ : `W` mur, `D` porte.
+- Aide popover mise à jour avec les 4 types.
 
 ---
 

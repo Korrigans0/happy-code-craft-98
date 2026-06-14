@@ -6,7 +6,7 @@
 export type Tool =
   | "pencil" | "eraser" | "line" | "rect" | "circle" | "text"
   | "move" | "token" | "cone" | "zone" | "fogReveal" | "ping"
-  | "measure" | "wall" | "wallDoor" | "wallDelete"
+  | "measure" | "wall" | "wallDoor" | "wallWindow" | "wallTerrain" | "wallDelete"
   | "light" | "lightDelete";
 
 export interface DrawAction {

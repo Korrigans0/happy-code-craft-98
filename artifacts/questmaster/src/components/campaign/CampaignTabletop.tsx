@@ -10,7 +10,7 @@ import {
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
-  Lightbulb, Moon, Smartphone,
+  Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -2034,9 +2034,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         startLongPress(t.clientX, t.clientY);
 
         // Wall tools (GM)
-        if (tool === "wall" || tool === "wallDoor") {
+        if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") {
           const w = toWorld(t.clientX, t.clientY);
-          wallsHook.startWall(w.x, w.y, tool === "wallDoor" ? "door" : "solid");
+          const wType = tool === "wallDoor" ? "door" : tool === "wallWindow" ? "window" : tool === "wallTerrain" ? "terrain" : "solid";
+          wallsHook.startWall(w.x, w.y, wType);
           mode = "wall"; return;
         }
         if (tool === "wallDelete") {
@@ -2224,7 +2225,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (e.code === "Space") { e.preventDefault(); setIsSpacePressed(true); return; }
       if (e.key === "F" && !e.ctrlKey) { setFullscreen(f => !f); return; }
       // Wall undo/redo (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) — only when a wall tool is active
-      if ((e.ctrlKey || e.metaKey) && isGM && (tool === "wall" || tool === "wallDoor" || tool === "wallDelete")) {
+      if ((e.ctrlKey || e.metaKey) && isGM && (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain" || tool === "wallDelete")) {
         const k = e.key.toLowerCase();
         if (k === "z" && !e.shiftKey) { e.preventDefault(); wallsHook.undo(); return; }
         if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); wallsHook.redo(); return; }
@@ -2244,10 +2245,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "c" || e.key === "C") setTool("cone");
         else if (e.key === "z" || e.key === "Z") setTool("zone");
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
+        else if (isGM && (e.key === "w" || e.key === "W")) setTool("wall");
+        else if (isGM && (e.key === "d" || e.key === "D")) setTool("wallDoor");
         else if (e.key === "Escape") {
           setContextMenu(null);
           if (fullscreen) setFullscreen(false);
-          if (tool === "wall" || tool === "wallDoor") wallsHook.cancelWall();
+          if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") wallsHook.cancelWall();
         }
       }
       if (selectedTokenId) {
@@ -2338,7 +2341,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     if (e.button === 2) return; // handled by onContextMenu
     const coords = getCanvasCoords(e);
 
-    if (tool === "wall" || tool === "wallDoor") {
+    if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") {
       // Si on clique sur une porte existante avec l'outil porte → bascule ouvert/fermé
       if (tool === "wallDoor") {
         const hitId = wallsHook.selectWallAt(coords.x, coords.y, 15 / zoom);
@@ -2349,7 +2352,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           return;
         }
       }
-      wallsHook.startWall(coords.x, coords.y, tool === "wallDoor" ? "door" : "solid");
+      const wType = tool === "wallDoor" ? "door" : tool === "wallWindow" ? "window" : tool === "wallTerrain" ? "terrain" : "solid";
+      wallsHook.startWall(coords.x, coords.y, wType);
       return;
     }
     if (tool === "wallDelete") {
@@ -2473,7 +2477,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
+    if ((tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
       // Throttle rAF ajustable : skip frames selon le réglage utilisateur
@@ -2529,7 +2533,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = (e?: React.MouseEvent<HTMLCanvasElement>) => {
-    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current && e) {
+    if ((tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") && wallsHook.drawingStart.current && e) {
       const w = getCanvasCoords(e);
       wallsHook.finishWall(w.x, w.y);
       return;
@@ -2756,9 +2760,11 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C", group: "aoe" },
     { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z", group: "aoe" },
     { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true, group: "gm" },
-    { id: "wall",        icon: <Square className="h-4 w-4" />,       label: "Mur solide",   gmOnly: true, group: "gm" },
-    { id: "wallDoor",    icon: <DoorClosed className="h-4 w-4" />,   label: "Porte",        gmOnly: true, group: "gm" },
-    { id: "wallDelete",  icon: <Eraser className="h-4 w-4" />,       label: "Effacer mur",  gmOnly: true, group: "gm" },
+    { id: "wall",        icon: <Square className="h-4 w-4" />,             label: "Mur solide",     key: "W", gmOnly: true, group: "gm" },
+    { id: "wallDoor",    icon: <DoorClosed className="h-4 w-4" />,         label: "Porte",          key: "D", gmOnly: true, group: "gm" },
+    { id: "wallWindow",  icon: <RectangleHorizontal className="h-4 w-4" />, label: "Fenêtre",        gmOnly: true, group: "gm" },
+    { id: "wallTerrain", icon: <Trees className="h-4 w-4" />,              label: "Terrain difficile", gmOnly: true, group: "gm" },
+    { id: "wallDelete",  icon: <Eraser className="h-4 w-4" />,             label: "Effacer mur",    gmOnly: true, group: "gm" },
     { id: "light",       icon: <Lightbulb className="h-4 w-4" />,    label: "Lumière",      gmOnly: true, group: "light" },
     { id: "lightDelete", icon: <Eraser className="h-4 w-4" />,       label: "Retirer lumière", gmOnly: true, group: "light" },
   ], []);
@@ -2780,7 +2786,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       list = list.filter(t => allowed.has(t.id));
     } else if (isMobileGM) {
       // Hide walls + dynamic lights on mobile GM
-      const hidden = new Set(["wall", "wallDoor", "wallDelete", "light", "lightDelete"]);
+      const hidden = new Set(["wall", "wallDoor", "wallWindow", "wallTerrain", "wallDelete", "light", "lightDelete"]);
       list = list.filter(t => !hidden.has(t.id));
     }
     return list;
