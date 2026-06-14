@@ -17,13 +17,19 @@
 - Route `/guide` avec hero vidéo, sommaire, 11 sections, raccourcis clavier.
 - Liens header + footer.
 
-### 🔜 PROCHAINES PRIORITÉS (à enchaîner)
+### 🔜 PROCHAINES PRIORITÉS (état au tour courant)
 
-1. **Drag & Drop bestiaire → tabletop** : glisser une créature du codex sur la carte crée un token (MJ).
-2. **Filtre codex par système de campagne** : la recherche "Ajouter créature" ne montre que le système courant + Homebrew MJ.
-3. **Badge système sur CampaignCard** + sélecteur 5 systèmes à la création.
-4. **Toggle "Autoriser Homebrew"** dans paramètres campagne.
-5. **Réponses aux 4 questions Phase 2** (cf. bas du document) pour démarrer les fiches dédiées.
+1. ✅ **Drag & Drop bestiaire → tabletop** — déjà câblé (`GMPanel.tsx` 690/727/767 + drop handlers `CampaignTabletop.tsx` 3429+).
+2. ✅ **Filtre codex par système de campagne** — `GMPanel.tsx` n'affiche que les listes du `campaignSystem` courant.
+3. ✅ **Badge système sur CampaignCard + sélecteur 5 systèmes** — `Campaigns.tsx` (GAME_SYSTEMS, SYSTEM_COLORS).
+4. ✅ **Toggle "Autoriser Homebrew"** — `CampaignSettings.tsx` (`allow_homebrew_characters`) + `system-compatibility.ts`.
+
+### ⏭️ Prochains chantiers réels (non commencés)
+
+A. **Création MJ de contenu Codex avec portée** (`scope`: campagne / toutes mes campagnes / homebrew perso) + RLS.
+B. **Migration Codex** : colonne `system` sur `monsters`, `spells`, `magic_items` + filtres front cohérents.
+C. **Fiches dédiées par système** (Phase 2) — démarrer par D&D 5e + Homebrew (réponses aux 4 questions du bas requises).
+D. **Bestiaire Aetheria mobile** : drag long-press tactile + boutons "Ajouter" toujours visibles sur petit écran.
 
 ---
 
