@@ -25,7 +25,7 @@ const CreateItemDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Create
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [isPublic, setIsPublic] = useState(false);
+  const [scope, setScope] = useState<"custom_personal" | "custom_global">("custom_personal");
   const [form, setForm] = useState({
     name: "", type: "Arme", rarity: "Commune", attunement: false,
     description: "", properties: "",
