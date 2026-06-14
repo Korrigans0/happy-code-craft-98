@@ -139,34 +139,6 @@ export default function WallsToolbar({
 
       <div className="my-0.5 w-7 border-t border-border/50" />
 
-      <span className="text-center text-[8px] uppercase tracking-wider text-muted-foreground">
-        Type
-      </span>
-
-      {/* Sélecteur de type avec label visible */}
-      {WALL_TYPES.map(({ type, icon, shortLabel }) => {
-        const color = WALL_COLORS[type];
-        const isSelected = selectedWallType === type;
-        return (
-          <button
-            key={type}
-            title={WALL_LABELS[type]}
-            onClick={() => onSelectType(type)}
-            className="flex h-9 w-9 flex-col items-center justify-center gap-0 rounded-md transition-all"
-            style={{
-              background: isSelected ? `${color}33` : "transparent",
-              color: isSelected ? color : "#94a3b8",
-              border: isSelected ? `1px solid ${color}66` : "1px solid transparent",
-              boxShadow: isSelected ? `0 0 8px ${color}44` : "none",
-            }}
-          >
-            {icon}
-            <span className="text-[8px] font-semibold leading-none mt-0.5">
-              {shortLabel}
-            </span>
-          </button>
-        );
-      })}
 
       {/* Contrôles portes globaux */}
       {totalDoors > 0 && (
