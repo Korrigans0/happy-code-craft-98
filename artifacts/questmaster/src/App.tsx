@@ -67,6 +67,7 @@ const AppRoutes = () => (
         <Route path="/join/:code" element={<JoinCampaign />} />
         <Route path="/partners" element={<Partners />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/guide" element={<Guide />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <MobileBottomNav />
