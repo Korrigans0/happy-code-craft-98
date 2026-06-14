@@ -15,8 +15,8 @@ import {
 import { type WallType } from "./types";
 
 interface WallsToolbarProps {
-  selectedWallType: WallType;
-  onSelectType: (type: WallType) => void;
+  selectedWallType?: WallType;
+  onSelectType?: (type: WallType) => void;
   onClearAll: () => void;
   wallCount: number;
   activeTool: string;
