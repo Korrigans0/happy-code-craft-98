@@ -2475,7 +2475,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current) {
+    if ((tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") && wallsHook.drawingStart.current) {
       const w = getCanvasCoords(e);
       wallsHook.updateWallPreview(w.x, w.y);
       // Throttle rAF ajustable : skip frames selon le réglage utilisateur
