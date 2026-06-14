@@ -2034,9 +2034,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         startLongPress(t.clientX, t.clientY);
 
         // Wall tools (GM)
-        if (tool === "wall" || tool === "wallDoor") {
+        if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") {
           const w = toWorld(t.clientX, t.clientY);
-          wallsHook.startWall(w.x, w.y, tool === "wallDoor" ? "door" : "solid");
+          const wType = tool === "wallDoor" ? "door" : tool === "wallWindow" ? "window" : tool === "wallTerrain" ? "terrain" : "solid";
+          wallsHook.startWall(w.x, w.y, wType);
           mode = "wall"; return;
         }
         if (tool === "wallDelete") {
