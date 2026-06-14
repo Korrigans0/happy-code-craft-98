@@ -102,20 +102,31 @@ const RowSummary = ({ kind, row }: { kind: Kind; row: Row }) => {
   return <>{row.type ?? "—"} • {row.rarity ?? "Commun"}</>;
 };
 
+const updateFor = (kind: Kind) => (id: string, patch: Record<string, unknown>) => {
+  if (kind === "monsters") return compendiumApi.updateMonster(id, patch);
+  if (kind === "spells") return compendiumApi.updateSpell(id, patch);
+  return compendiumApi.updateItem(id, patch);
+};
+
 const LibraryTab = ({ kind }: { kind: Kind }) => {
   const meta = KIND_META[kind];
+  const update = updateFor(kind);
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [system, setSystem] = useState<string>("all");
   const [scope, setScope] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkTarget, setBulkTarget] = useState<string>("");
+  const [migrating, setMigrating] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
       const data = await meta.fetch();
       setRows(data ?? []);
+      setSelected(new Set());
     } catch (e) {
       console.error(e);
       toast({ title: "Erreur de chargement", description: "Impossible de charger votre bibliothèque.", variant: "destructive" });
@@ -140,10 +151,40 @@ const LibraryTab = ({ kind }: { kind: Kind }) => {
     try {
       await meta.remove(id);
       setRows((prev) => prev.filter((r) => r.id !== id));
+      setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
       toast({ title: "Supprimé", description: `« ${name} » a été retiré de votre bibliothèque.` });
     } catch (e: any) {
       toast({ title: "Suppression refusée", description: e?.message ?? "Erreur inconnue.", variant: "destructive" });
     }
+  };
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allFilteredSelected = filtered.length > 0 && filtered.every((r) => selected.has(r.id));
+  const toggleAll = () =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (allFilteredSelected) filtered.forEach((r) => n.delete(r.id));
+      else filtered.forEach((r) => n.add(r.id));
+      return n;
+    });
+
+  const applyMigration = async () => {
+    if (!bulkTarget || selected.size === 0) return;
+    setMigrating(true);
+    const ids = Array.from(selected);
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try { await update(id, { system: bulkTarget }); ok++; }
+      catch (e) { console.error(e); fail++; }
+    }
+    setMigrating(false);
+    toast({
+      title: "Migration terminée",
+      description: `${ok} entrée(s) réassignée(s)${fail ? `, ${fail} échec(s)` : ""}.`,
+      variant: fail ? "destructive" : "default",
+    });
+    await reload();
   };
 
   return (
@@ -178,6 +219,40 @@ const LibraryTab = ({ kind }: { kind: Kind }) => {
         </span>
       </div>
 
+      {/* Barre de migration de masse */}
+      {filtered.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              onChange={toggleAll}
+              className="h-4 w-4 accent-primary"
+            />
+            Tout sélectionner
+          </label>
+          <span className="text-sm text-muted-foreground">{selected.size} sélectionné{selected.size > 1 ? "s" : ""}</span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Select value={bulkTarget} onValueChange={setBulkTarget}>
+              <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Réassigner à…" /></SelectTrigger>
+              <SelectContent>
+                {SYSTEM_LIST.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.emoji} {s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              disabled={!bulkTarget || selected.size === 0 || migrating}
+              onClick={applyMigration}
+            >
+              {migrating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              Appliquer
+            </Button>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -196,15 +271,25 @@ const LibraryTab = ({ kind }: { kind: Kind }) => {
           {filtered.map((row) => (
             <div
               key={row.id}
-              className="group flex flex-col gap-3 rounded-xl border border-border/60 bg-gradient-card p-4 shadow-card transition hover:border-primary/30"
+              className={`group flex flex-col gap-3 rounded-xl border bg-gradient-card p-4 shadow-card transition ${
+                selected.has(row.id) ? "border-primary/60 ring-1 ring-primary/30" : "border-border/60 hover:border-primary/30"
+              }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="truncate font-display text-base font-semibold text-foreground">{row.name}</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    <RowSummary kind={kind} row={row} />
-                  </p>
-                </div>
+                <label className="flex min-w-0 items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(row.id)}
+                    onChange={() => toggleOne(row.id)}
+                    className="mt-1 h-4 w-4 accent-primary"
+                  />
+                  <div className="min-w-0">
+                    <h3 className="truncate font-display text-base font-semibold text-foreground">{row.name}</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <RowSummary kind={kind} row={row} />
+                    </p>
+                  </div>
+                </label>
                 <meta.icon className="h-5 w-5 shrink-0 text-primary/70" />
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -212,6 +297,7 @@ const LibraryTab = ({ kind }: { kind: Kind }) => {
                 <ScopeBadge scope={row.scope} />
               </div>
               <div className="mt-auto flex justify-end">
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
