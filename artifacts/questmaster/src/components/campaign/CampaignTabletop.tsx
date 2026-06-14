@@ -494,6 +494,14 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
+  // Persistance de l'initiative (ordre, round, tour actif)
+  useEffect(() => {
+    if (user?.id) saveState({
+      initiative: initiative as unknown as unknown[],
+      initiative_round: initiativeRound,
+      initiative_active_idx: initiativeActiveIdx,
+    });
+  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
