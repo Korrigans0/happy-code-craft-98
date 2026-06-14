@@ -763,7 +763,14 @@ export default function GMPanel({
                         Bestiaire {campaignSystem}
                       </p>
                       {list.map((m: any) => (
-                        <div key={m.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                        <div key={m.id}
+                          draggable={isGM && !!onSpawnSystemMonster}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/x-aetheria-monster", m.id);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
+                          className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing">
+
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
                             <Skull className="h-3.5 w-3.5" />
                           </div>
