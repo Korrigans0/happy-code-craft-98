@@ -1,5 +1,23 @@
 # Refonte multi-systèmes — Fiches, Campagnes & Codex
 
+## 🔴 TÂCHE PRIORITAIRE — Refonte barre d'outils VTT
+
+Problèmes identifiés :
+- **Doublons murs / portes** : `wall`, `wallDoor`, `wallDelete` dans la barre principale **+** sélecteur de type (solid / door / window / terrain) dans `WallsToolbar`. Les deux concepts se chevauchent.
+- **Fenêtre inaccessible** : type `window` existe dans `WallsToolbar` mais n'est jamais activable directement depuis la barre principale → le MJ ne peut pas en placer simplement.
+- **Terrain** : même problème, type orphelin.
+
+Refonte à prévoir :
+1. Une **seule** entrée "Murs dynamiques" dans la barre principale (popover) avec **4 boutons types** : Mur solide / Porte / Fenêtre / Terrain — chacun sélectionne directement le bon outil + bon type.
+2. Bouton "Effacer mur" séparé, ou clic droit sur mur uniquement.
+3. Supprimer le sélecteur de type dupliqué dans `WallsToolbar` (ne garder que undo/redo, fluidité, contrôles portes globaux, compteur).
+4. Même logique à appliquer à **Lumières** (vérifier doublons).
+5. Raccourcis clavier : `W` mur, `D` porte, `F` fenêtre, `T` terrain.
+
+Fichiers : `CampaignTabletop.tsx` (tools array ~L2740), `WallsToolbar.tsx`.
+
+---
+
 Objectif : transformer Aetheria VTT en plateforme type Foundry/Roll20 où chaque système (Aetheria, D&D 5e, Pathfinder 2e, Worlds Awakening, Homebrew) possède sa **propre fiche, ses propres règles et son propre codex**, tout en partageant le tabletop.
 
 Vu l'ampleur (architecture + 5 fiches + codex cloisonné + restrictions), je propose une **livraison en 4 phases**. Vous validez/ajustez avant que je code.
