@@ -24,7 +24,7 @@ const CreateMonsterDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Cre
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [isPublic, setIsPublic] = useState(false);
+  const [scope, setScope] = useState<"custom_personal" | "custom_global">("custom_personal");
   const [form, setForm] = useState({
     name: "", size: "Moyen", type: "Humanoïde", alignment: "Neutre",
     armor_class: "10", hit_points: "10 (2d8+1)", speed: "9 m",
