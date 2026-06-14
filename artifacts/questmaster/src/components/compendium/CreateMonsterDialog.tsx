@@ -69,14 +69,15 @@ const CreateMonsterDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Cre
               <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
-            <div>
-              <Label className="text-sm">Partager avec la communauté</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isPublic ? "Visible par tous les joueurs Aetheria VTT." : "Visible uniquement par vous."}
-              </p>
-            </div>
-            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+          <div>
+            <Label>Visibilité</Label>
+            <Select value={scope} onValueChange={(v) => setScope(v as "custom_personal" | "custom_global")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="custom_personal">Personnel — visible uniquement par vous</SelectItem>
+                <SelectItem value="custom_global">Communauté — partagé avec tous les MJ</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><Label>Taille</Label>
