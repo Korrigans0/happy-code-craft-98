@@ -24,7 +24,7 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [isPublic, setIsPublic] = useState(false);
+  const [scope, setScope] = useState<"custom_personal" | "custom_global">("custom_personal");
   const [form, setForm] = useState({
     name: "", level: "0", school: "Évocation", casting_time: "1 action",
     range: "9 mètres", components: "V, S", duration: "Instantanée",
