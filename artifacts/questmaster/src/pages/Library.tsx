@@ -369,7 +369,7 @@ const Library = () => {
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as Kind)}>
-              <TabsList className="mb-6 flex gap-1 bg-muted/50 p-1">
+              <TabsList className="mb-6 flex flex-wrap gap-1 bg-muted/50 p-1">
                 <TabsTrigger value="monsters" className="flex items-center gap-1.5 text-xs sm:text-sm">
                   <Skull className="h-3.5 w-3.5" /> Créatures
                 </TabsTrigger>
@@ -379,10 +379,14 @@ const Library = () => {
                 <TabsTrigger value="items" className="flex items-center gap-1.5 text-xs sm:text-sm">
                   <Gem className="h-3.5 w-3.5" /> Objets
                 </TabsTrigger>
+                <TabsTrigger value="media" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                  <ImageIcon className="h-3.5 w-3.5" /> Médias
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="monsters"><LibraryTab kind="monsters" /></TabsContent>
               <TabsContent value="spells"><LibraryTab kind="spells" /></TabsContent>
               <TabsContent value="items"><LibraryTab kind="items" /></TabsContent>
+              <TabsContent value="media"><MediaLibrary /></TabsContent>
             </Tabs>
           )}
         </div>
