@@ -686,7 +686,13 @@ export default function GMPanel({
                   <>
                     <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Créatures WA</p>
                     {filteredCreatures.map(creature => (
-                      <div key={creature.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                      <div key={creature.id}
+                        draggable={isGM}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("application/x-aetheria-wa", creature.id);
+                          e.dataTransfer.effectAllowed = "copy";
+                        }}
+                        className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
                           <Skull className="h-3.5 w-3.5" />
                         </div>
@@ -702,6 +708,7 @@ export default function GMPanel({
                         )}
                       </div>
                     ))}
+
                   </>
                 )}
                 {campaignSystem === "Aetheria" && aetheriaCreatures.filter(c =>
@@ -716,7 +723,12 @@ export default function GMPanel({
                       .filter(c => c.name.toLowerCase().includes(bestiarySearch.toLowerCase()))
                       .map(creature => (
                         <div key={creature.id}
-                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors">
+                          draggable={isGM}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/x-aetheria-creature", creature.id);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
+                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors cursor-grab active:cursor-grabbing">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
                             <Skull className="h-3.5 w-3.5" />
                           </div>
@@ -736,6 +748,7 @@ export default function GMPanel({
                           )}
                         </div>
                       ))}
+
                   </>
                 )}
 
@@ -750,7 +763,14 @@ export default function GMPanel({
                         Bestiaire {campaignSystem}
                       </p>
                       {list.map((m: any) => (
-                        <div key={m.id} className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors">
+                        <div key={m.id}
+                          draggable={isGM && !!onSpawnSystemMonster}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/x-aetheria-monster", m.id);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
+                          className="group flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/30 hover:bg-muted/40 transition-colors cursor-grab active:cursor-grabbing">
+
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/20 text-destructive">
                             <Skull className="h-3.5 w-3.5" />
                           </div>

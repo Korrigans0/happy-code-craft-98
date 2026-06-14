@@ -718,12 +718,24 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     )]);
   };
 
-  const spawnWACreature = (creature: any) => {
+  const clientToWorld = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - panOffset.x) / zoom,
+      y: (clientY - rect.top - panOffset.y) / zoom,
+    };
+  };
+
+  const spawnWACreature = (creature: any, atX?: number, atY?: number) => {
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const su = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
     const size = GRID_SIZE * su;
-    const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
-    const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
+    const cx = atX ?? ((-panOffset.x / zoom) + 200);
+    const cy = atY ?? ((-panOffset.y / zoom) + 200);
+    const wx = snapValue(cx - size / 2);
+    const wy = snapValue(cy - size / 2);
     const free = findFreePosition(wx, wy, size);
     setTokens(prev => [...prev, {
       id: newId(), name: creature.name, x: free.x, y: free.y, size, sizeUnits: su,
@@ -734,10 +746,12 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     }]);
   };
 
-  const spawnAetheriaCreature = (creature: any) => {
+  const spawnAetheriaCreature = (creature: any, atX?: number, atY?: number) => {
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
-    const wx = snapValue((-panOffset.x / zoom) + 200 - GRID_SIZE / 2);
-    const wy = snapValue((-panOffset.y / zoom) + 200 - GRID_SIZE / 2);
+    const cx = atX ?? ((-panOffset.x / zoom) + 200);
+    const cy = atY ?? ((-panOffset.y / zoom) + 200);
+    const wx = snapValue(cx - GRID_SIZE / 2);
+    const wy = snapValue(cy - GRID_SIZE / 2);
     const free = findFreePosition(wx, wy, GRID_SIZE);
     setTokens(prev => [...prev, {
       id: newId(),
@@ -760,13 +774,15 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     } as TokenItem]);
   };
 
-  const spawnSystemMonster = (monster: any) => {
+  const spawnSystemMonster = (monster: any, atX?: number, atY?: number) => {
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const su = monster.size === "Huge" || monster.size === "Très grand" ? 3
             : monster.size === "Large" || monster.size === "Grand" ? 2 : 1;
     const size = GRID_SIZE * su;
-    const wx = snapValue((-panOffset.x / zoom) + 200 - size / 2);
-    const wy = snapValue((-panOffset.y / zoom) + 200 - size / 2);
+    const cx = atX ?? ((-panOffset.x / zoom) + 200);
+    const cy = atY ?? ((-panOffset.y / zoom) + 200);
+    const wx = snapValue(cx - size / 2);
+    const wy = snapValue(cy - size / 2);
     const free = findFreePosition(wx, wy, size);
     const hpVal = (() => {
       const m = String(monster.hit_points ?? "10").match(/^(\d+)/);
@@ -790,6 +806,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       conditions: [],
     } as TokenItem]);
   };
+
 
 
   const addToken = () => {
@@ -3391,21 +3408,48 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           }`}
           style={{ cursor: getCursor() }}
           onDragOver={(e) => {
-            if (e.dataTransfer.types.includes("application/x-aetheria-char")) {
+            const types = e.dataTransfer.types;
+            if (
+              types.includes("application/x-aetheria-char") ||
+              types.includes("application/x-aetheria-creature") ||
+              types.includes("application/x-aetheria-wa") ||
+              types.includes("application/x-aetheria-monster")
+            ) {
               e.preventDefault(); e.dataTransfer.dropEffect = "copy";
               if (!isDragOverCanvas) setIsDragOverCanvas(true);
             }
           }}
           onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragOverCanvas(false); }}
           onDrop={(e) => {
-            const charId = e.dataTransfer.getData("application/x-aetheria-char");
             setIsDragOverCanvas(false); setDraggingCharId(null);
-            if (!charId) return;
-            const char = userCharacters.find((c: any) => c.id === charId);
-            if (!char) return;
-            e.preventDefault();
-            spawnCharacterAt(char, e.clientX, e.clientY);
+            const charId = e.dataTransfer.getData("application/x-aetheria-char");
+            if (charId) {
+              const char = userCharacters.find((c: any) => c.id === charId);
+              if (char) { e.preventDefault(); spawnCharacterAt(char, e.clientX, e.clientY); }
+              return;
+            }
+            const world = clientToWorld(e.clientX, e.clientY);
+            if (!world) return;
+            const aetId = e.dataTransfer.getData("application/x-aetheria-creature");
+            if (aetId) {
+              const c = (aetheriaCreatures as any[]).find((x: any) => x.id === aetId);
+              if (c) { e.preventDefault(); spawnAetheriaCreature(c, world.x, world.y); }
+              return;
+            }
+            const waId = e.dataTransfer.getData("application/x-aetheria-wa");
+            if (waId) {
+              const c = (waCreatures as any[]).find((x: any) => x.id === waId);
+              if (c) { e.preventDefault(); spawnWACreature(c, world.x, world.y); }
+              return;
+            }
+            const monId = e.dataTransfer.getData("application/x-aetheria-monster");
+            if (monId) {
+              const m = (systemMonsters as any[]).find((x: any) => x.id === monId);
+              if (m) { e.preventDefault(); spawnSystemMonster(m, world.x, world.y); }
+              return;
+            }
           }}
+
         >
           <canvas
             ref={canvasRef}
