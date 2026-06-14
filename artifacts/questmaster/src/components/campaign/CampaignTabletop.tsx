@@ -2225,7 +2225,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (e.code === "Space") { e.preventDefault(); setIsSpacePressed(true); return; }
       if (e.key === "F" && !e.ctrlKey) { setFullscreen(f => !f); return; }
       // Wall undo/redo (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) — only when a wall tool is active
-      if ((e.ctrlKey || e.metaKey) && isGM && (tool === "wall" || tool === "wallDoor" || tool === "wallDelete")) {
+      if ((e.ctrlKey || e.metaKey) && isGM && (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain" || tool === "wallDelete")) {
         const k = e.key.toLowerCase();
         if (k === "z" && !e.shiftKey) { e.preventDefault(); wallsHook.undo(); return; }
         if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); wallsHook.redo(); return; }
