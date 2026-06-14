@@ -2245,6 +2245,8 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "c" || e.key === "C") setTool("cone");
         else if (e.key === "z" || e.key === "Z") setTool("zone");
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
+        else if (isGM && (e.key === "w" || e.key === "W")) setTool("wall");
+        else if (isGM && (e.key === "d" || e.key === "D")) setTool("wallDoor");
         else if (e.key === "Escape") {
           setContextMenu(null);
           if (fullscreen) setFullscreen(false);
