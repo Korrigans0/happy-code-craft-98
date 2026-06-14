@@ -40,8 +40,8 @@ const CreateMonsterDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Cre
         ...form,
         armor_class: parseInt(form.armor_class),
         system,
-        scope: "custom_personal",
-        is_public: isPublic,
+        scope,
+        is_public: scope === "custom_global",
       });
     }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
