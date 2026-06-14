@@ -742,10 +742,10 @@ export default function GMPanel({
                             </p>
                           </div>
                           {isGM && (
-                            <Button size="icon" variant="ghost"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-amber-400"
+                            <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                              className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-amber-400"
                               onClick={() => onSpawnAetheriaCreature(creature)}>
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
                             </Button>
                           )}
                         </div>
