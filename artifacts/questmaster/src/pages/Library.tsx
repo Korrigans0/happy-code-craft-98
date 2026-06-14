@@ -7,7 +7,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Library as LibraryIcon, Skull, Wand2, Gem, Loader2, Trash2, Lock, Globe2, BookOpen } from "lucide-react";
+import { Library as LibraryIcon, Skull, Wand2, Gem, Loader2, Trash2, Lock, Globe2, BookOpen, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { compendiumApi } from "@/lib/api";
 import { SYSTEM_LIST } from "@/lib/systems";
+import { MediaLibrary } from "@/components/media/MediaLibrary";
 
 type Kind = "monsters" | "spells" | "items";
 
