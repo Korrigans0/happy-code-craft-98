@@ -40,8 +40,8 @@ const CreateItemDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Create
         ...form,
         properties: form.properties || null,
         system,
-        scope: "custom_personal",
-        is_public: isPublic,
+        scope,
+        is_public: scope === "custom_global",
       });
     } catch (e: any) {
       setLoading(false);
