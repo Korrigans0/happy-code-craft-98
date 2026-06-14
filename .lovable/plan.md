@@ -1,12 +1,29 @@
 # Refonte multi-systèmes — Fiches, Campagnes & Codex
 
-## ✅ TÂCHE PRIORITAIRE — Refonte barre d'outils VTT (FAIT)
+## ✅ TÂCHES PRIORITAIRES RÉCENTES
 
-- 4 outils murs séparés dans la barre principale : **Mur solide / Porte / Fenêtre / Terrain difficile** + Effacer mur.
+### ✅ Refonte barre d'outils VTT (FAIT)
+- 4 outils murs séparés : **Mur solide / Porte / Fenêtre / Terrain difficile** + Effacer mur.
 - Type `Tool` étendu (`wallWindow`, `wallTerrain`).
-- Sélecteur de type dupliqué retiré de `WallsToolbar` (ne reste : aide, undo/redo, fluidité, contrôles portes globaux, compteur, effacer tous).
-- Raccourcis clavier MJ : `W` mur, `D` porte.
-- Aide popover mise à jour avec les 4 types.
+- Sélecteur dupliqué retiré de `WallsToolbar`.
+- Raccourcis MJ : `W` mur, `D` porte.
+
+### ✅ Sync fiches ↔ tokens (FAIT)
+- Clic token → ouverture fiche (MJ : toutes, PJ : la sienne).
+- HP/conditions synchronisés en temps réel.
+- Actions rapides PV (dégâts / soin / max) sur le panneau token MJ.
+
+### ✅ Page Guide (FAIT)
+- Route `/guide` avec hero vidéo, sommaire, 11 sections, raccourcis clavier.
+- Liens header + footer.
+
+### 🔜 PROCHAINES PRIORITÉS (à enchaîner)
+
+1. **Drag & Drop bestiaire → tabletop** : glisser une créature du codex sur la carte crée un token (MJ).
+2. **Filtre codex par système de campagne** : la recherche "Ajouter créature" ne montre que le système courant + Homebrew MJ.
+3. **Badge système sur CampaignCard** + sélecteur 5 systèmes à la création.
+4. **Toggle "Autoriser Homebrew"** dans paramètres campagne.
+5. **Réponses aux 4 questions Phase 2** (cf. bas du document) pour démarrer les fiches dédiées.
 
 ---
 
