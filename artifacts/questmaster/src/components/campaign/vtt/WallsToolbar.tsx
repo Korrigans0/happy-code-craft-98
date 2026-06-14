@@ -5,14 +5,14 @@
 
 import { useState } from "react";
 import {
-  Trash2, DoorOpen, DoorClosed, Eye, Layers, Square,
+  Trash2, DoorOpen, DoorClosed, Layers, Square,
   Undo2, Redo2, Gauge, HelpCircle,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { type WallType, WALL_COLORS, WALL_LABELS } from "./types";
+import { type WallType } from "./types";
 
 interface WallsToolbarProps {
   selectedWallType: WallType;
