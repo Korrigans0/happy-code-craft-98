@@ -70,15 +70,15 @@ export default function WallsToolbar({
         </PopoverTrigger>
         <PopoverContent side="right" align="start" className="w-72 p-3 space-y-2 text-xs">
           <p className="font-display text-sm font-semibold text-amber-400">
-            Murs & portes dynamiques
+            Murs dynamiques
           </p>
           <ul className="space-y-1.5 text-muted-foreground leading-snug">
-            <li>• <b>Outil Mur / Porte</b> : clic-glisser pour tracer.</li>
-            <li>• <b>Porte</b> : clic gauche dessus avec l'outil Porte = ouvrir/fermer.</li>
-            <li>• <b>Outil Déplacer</b> : clic sur une porte = ouvrir/fermer (MJ).</li>
-            <li>• <b>Clic droit</b> sur un mur = supprimer, sur une porte = bascule.</li>
-            <li>• <b>Suppr / Backspace</b> efface le mur sélectionné.</li>
-            <li>• Murs solides et portes fermées bloquent les jetons et la vision.</li>
+            <li>• <b>Mur solide</b> (W) : bloque mouvement et vision.</li>
+            <li>• <b>Porte</b> (D) : bloque si fermée ; clic = ouvrir/fermer.</li>
+            <li>• <b>Fenêtre</b> : bloque mouvement, laisse passer la vision.</li>
+            <li>• <b>Terrain difficile</b> : ralentit, ne bloque pas.</li>
+            <li>• <b>Clic-glisser</b> pour tracer ; <b>clic droit</b> ou Suppr pour effacer.</li>
+            <li>• Ctrl+Z / Ctrl+Shift+Z : annuler / rétablir.</li>
           </ul>
         </PopoverContent>
       </Popover>
