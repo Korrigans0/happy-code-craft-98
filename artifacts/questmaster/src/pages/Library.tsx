@@ -27,7 +27,7 @@ import { compendiumApi } from "@/lib/api";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { MediaLibrary } from "@/components/media/MediaLibrary";
 
-type Kind = "monsters" | "spells" | "items";
+type Kind = "monsters" | "spells" | "items" | "media";
 
 interface Row {
   id: string;
