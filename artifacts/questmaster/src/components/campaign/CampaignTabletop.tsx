@@ -3791,7 +3791,44 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                     />
                   </div>
                 )}
+                {/* Dégâts / Soin rapide */}
+                {canEdit && (
+                  <div className="mt-2 flex items-center gap-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Montant"
+                      className="h-8 flex-1 text-center"
+                      data-quick-hp-input
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const v = Number((e.target as HTMLInputElement).value) || 0;
+                          if (v > 0) adjustHp(-v);
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button" size="sm" variant="destructive"
+                      onClick={(e) => {
+                        const input = (e.currentTarget.parentElement?.querySelector("[data-quick-hp-input]") as HTMLInputElement | null);
+                        const v = Number(input?.value) || 0;
+                        if (v > 0) { adjustHp(-v); if (input) input.value = ""; }
+                      }}
+                    >Dégâts</Button>
+                    <Button
+                      type="button" size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                      onClick={(e) => {
+                        const input = (e.currentTarget.parentElement?.querySelector("[data-quick-hp-input]") as HTMLInputElement | null);
+                        const v = Number(input?.value) || 0;
+                        if (v > 0) { adjustHp(v); if (input) input.value = ""; }
+                      }}
+                    >Soin</Button>
+                  </div>
+                )}
               </div>
+
 
               {/* PE / Mana */}
               {(tok.pe !== undefined || isGM) && (
