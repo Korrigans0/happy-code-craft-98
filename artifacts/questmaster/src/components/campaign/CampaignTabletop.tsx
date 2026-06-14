@@ -2531,7 +2531,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
   };
 
   const handleMouseUp = (e?: React.MouseEvent<HTMLCanvasElement>) => {
-    if ((tool === "wall" || tool === "wallDoor") && wallsHook.drawingStart.current && e) {
+    if ((tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") && wallsHook.drawingStart.current && e) {
       const w = getCanvasCoords(e);
       wallsHook.finishWall(w.x, w.y);
       return;
