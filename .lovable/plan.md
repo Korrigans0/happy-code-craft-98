@@ -1,45 +1,110 @@
-# Refonte multi-systèmes — État au tour courant
+## Objectif
 
-## ✅ Phases livrées
+Refonte profonde du tabletop et ajout d'un vrai système de stockage MJ avec quotas par abonnement, sans casser les fonctionnalités existantes (murs, lumières, portes, brouillard, scènes, synchro).
 
-### Phase 1 — Architecture modulaire
-`src/lib/systems/` (Aetheria, WA, D&D 5e, PF2e, Cthulhu 7e, Personnalisé) + `getSystem()` + `sheetComponent`.
-
-### Phase 2 — Fiches dédiées
-`SheetRouter` → Aetheria / Dnd5e / PF2e / Cthulhu7e / Homebrew / Generic. Autosave 800 ms.
-
-### Phase 3 — Restrictions de campagne
-`system` + `allow_homebrew_characters` sur `campaigns`, `canUseCharacterInCampaign`, filtrage PJ.
-
-### Phase 4 — Codex cloisonné
-`system` / `scope` / `campaign_id` / `is_public` + RLS sur monsters/spells/magic_items.
-
-### A — Mobile bestiaire ✅
-Boutons "Ajouter" toujours visibles <640 px (32×32 px) sur les 4 sections du GMPanel.
-
-### C — Scope explicite à la création ✅
-`Select` "Personnel / Communauté" dans CreateMonster/Spell/ItemDialog (remplace l'ancien Switch).
-
-### D — Bibliothèque MJ ✅
-Page `/library` dédiée :
-- Onglets Créatures / Sorts / Objets, filtres système + visibilité + recherche.
-- Badges scope (Personnel / Communauté / Campagne / Officiel) + badge système.
-- Suppression avec confirmation.
-- Lien ajouté dans le `Header`.
-
-### B — SRD étoffé ✅
-- Pathfinder 2e : 55 monstres, 53 sorts, 50 objets.
-- Call of Cthulhu : 50 monstres, 50 sorts, 51 objets.
-- D&D 5e : 115 / 209 / 194 (déjà solide).
-
-### E — Migration de masse ✅
-Sélection multiple + sélecteur "Réassigner à…" sur chaque onglet de la Bibliothèque MJ : applique en masse un nouveau `system` aux entrées choisies (via `updateMonster/Spell/Item`).
+Vu la taille, je propose de livrer en **4 phases** validées séparément. Chaque phase est utilisable en l'état.
 
 ---
 
-## Idées d'itérations futures
+## Phase 1 — Stockage MJ & Bibliothèque média
 
-- Édition complète depuis la Bibliothèque (réutiliser les dialogs en mode "edit").
-- Export / import JSON pour partager des packs Homebrew.
-- Stats publiques par système (top créateurs communauté).
-- Génération IA d'un monstre à partir d'un prompt (déjà câblable via Lovable AI Gateway).
+**Backend (migration)**
+- Nouveau bucket Storage `gm-media` (privé, RLS).
+- Table `media_assets` :
+  - `owner_id`, `campaign_id` (nullable), `name`, `file_type` (`map|token|portrait|npc|creature|object|decor|document`), `storage_path`, `thumbnail_path`, `mime`, `size_bytes`, `width`, `height`, `checksum` (sha256, anti-doublon), `created_at`, `updated_at`.
+  - RLS : owner full, membres de campagne en lecture si `campaign_id` correspond.
+- Table `subscription_tiers` (lecture seule) + colonne `tier` sur `profiles` (`free|gm_premium|premium_plus`).
+- Vue / RPC `get_storage_usage(user_id)` qui retourne `used_bytes`, `quota_bytes`, `file_count`.
+- Quotas par défaut :
+  - Free : 200 Mo, max 50 fichiers, compression forcée
+  - GM Premium : 5 Go
+  - Premium+ : 25 Go
+
+**Frontend**
+- Page `/library` → ajouter un onglet **Médias** (à côté des onglets Monstres/Sorts/Objets existants).
+- Composant `MediaLibrary` : grille, filtres par type, recherche, rename, delete, barre de quota.
+- Composant `MediaPickerDialog` réutilisable (carte, token, portrait).
+- Hook `useMediaUpload` :
+  - vérifie le quota avant upload (toast clair + CTA upgrade si dépassé)
+  - compresse côté client (canvas → WebP, max 4096 px côté long pour cartes, 512 px pour tokens)
+  - génère une miniature 256 px
+  - calcule un sha256 → si déjà présent chez ce MJ, réutilise l'asset existant
+  - upload original optimisé + thumb dans Storage
+  - insert dans `media_assets`
+
+**Intégrations existantes**
+- VTT : bouton "Importer carte" et "Importer token" passent par `MediaPickerDialog` au lieu d'une URL brute. URL externe reste possible en mode avancé.
+- Avatars personnages : option "Choisir depuis ma bibliothèque".
+
+---
+
+## Phase 2 — Refonte des calques
+
+**Données**
+- Étendre `tabletop_state` avec un champ `layers` (jsonb) listant les 9 calques fixes :
+  ```
+  background, decor, objects, tokens, effects, lights, walls, fog, gm_ui
+  ```
+  Chacun : `{ visible, locked, pjVisible, opacity, order }`.
+- Chaque token / drawing / objet porte un champ `layer` (déjà partiellement présent dans `TokenItem.layer`).
+- Migration de données : les objets sans `layer` sont assignés en fonction de leur type (token → `tokens`, drawing → `objects`, etc.).
+
+**Frontend VTT**
+- Nouveau composant `LayersPanel` (côté MJ uniquement) :
+  - liste des 9 calques avec icônes
+  - toggle visible / verrouillé / visible PJ
+  - slider opacité
+  - clic = calque actif (les nouveaux objets se créent dedans)
+  - "isoler" (montre uniquement ce calque)
+- Le rendu canvas itère désormais sur les calques dans l'ordre.
+- Côté PJ : on filtre les calques où `pjVisible=false` ou `gm_ui`.
+- Clic / drag impossible sur un calque locked.
+
+---
+
+## Phase 3 — Objets de table & édition pro
+
+**Données**
+- Nouvelle table `tabletop_objects` (ou stockée dans `tabletop_state.objects` jsonb selon perf) :
+  - `id, scene_id, layer, name, image_asset_id, x, y, width, height, rotation, locked, gm_only, description, type` (`decor|chest|trap|secret_door|marker|interactive|note`).
+
+**Frontend**
+- Nouvel outil VTT "Objet" → ouvre `MediaPickerDialog` puis pose l'objet.
+- Sélection multiple (shift+clic, lasso).
+- Copier (Ctrl+C) / Coller (Ctrl+V) / Supprimer groupé.
+- Snap-to-grid togglable.
+- Poignées : redimensionner + rotation.
+- Boutons "avant/arrière" dans le menu contextuel.
+- Groupement (clé `groupId` partagée).
+- Panneau "Propriétés" pour l'objet sélectionné (nom, calque, verrou, visibilité PJ, description).
+
+---
+
+## Phase 4 — Performance & polish
+
+- Lazy-load des images via `loading="lazy"` + IntersectionObserver pour les médias hors écran du canvas.
+- Cache des miniatures (URL signée 1h).
+- Throttle de la synchro tabletop (debounce 200 ms sur les modifs continues : drag, resize).
+- Rendu : ne redessiner que les calques marqués dirty.
+- Mobile : `LayersPanel` masqué pour PJ, barre d'outils MJ repliable.
+
+---
+
+## Détails techniques
+
+- Compression : `canvas.toBlob('image/webp', 0.85)` avec fallback PNG si pas de support (rare).
+- Anti-doublon : sha256 du blob compressé (pas de l'original) → champ `checksum` unique par `(owner_id, checksum)`.
+- Quota : vérifié côté DB via trigger `BEFORE INSERT` sur `media_assets` qui lit `profiles.tier` et la somme `size_bytes` → exception si dépassement, traduite en toast côté client.
+- RLS storage : policy par préfixe `{owner_id}/...`.
+- Aucune suppression des champs / tables existants. `TokenItem.imageUrl` reste compatible (peut référencer l'URL signée d'un media_asset ou une URL externe).
+
+---
+
+## Ordre de livraison proposé
+
+1. **Phase 1** (stockage + bibliothèque + quotas)
+2. **Phase 2** (calques)
+3. **Phase 3** (objets de table & édition)
+4. **Phase 4** (perf & mobile)
+
+Confirme l'ordre (ou dis si tu veux regrouper) et je démarre Phase 1.

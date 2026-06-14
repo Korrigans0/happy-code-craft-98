@@ -7,7 +7,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Library as LibraryIcon, Skull, Wand2, Gem, Loader2, Trash2, Lock, Globe2, BookOpen } from "lucide-react";
+import { Library as LibraryIcon, Skull, Wand2, Gem, Loader2, Trash2, Lock, Globe2, BookOpen, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,8 +25,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { compendiumApi } from "@/lib/api";
 import { SYSTEM_LIST } from "@/lib/systems";
+import { MediaLibrary } from "@/components/media/MediaLibrary";
 
-type Kind = "monsters" | "spells" | "items";
+type Kind = "monsters" | "spells" | "items" | "media";
 
 interface Row {
   id: string;
@@ -368,7 +369,7 @@ const Library = () => {
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as Kind)}>
-              <TabsList className="mb-6 flex gap-1 bg-muted/50 p-1">
+              <TabsList className="mb-6 flex flex-wrap gap-1 bg-muted/50 p-1">
                 <TabsTrigger value="monsters" className="flex items-center gap-1.5 text-xs sm:text-sm">
                   <Skull className="h-3.5 w-3.5" /> Créatures
                 </TabsTrigger>
@@ -378,10 +379,14 @@ const Library = () => {
                 <TabsTrigger value="items" className="flex items-center gap-1.5 text-xs sm:text-sm">
                   <Gem className="h-3.5 w-3.5" /> Objets
                 </TabsTrigger>
+                <TabsTrigger value="media" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                  <ImageIcon className="h-3.5 w-3.5" /> Médias
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="monsters"><LibraryTab kind="monsters" /></TabsContent>
               <TabsContent value="spells"><LibraryTab kind="spells" /></TabsContent>
               <TabsContent value="items"><LibraryTab kind="items" /></TabsContent>
+              <TabsContent value="media"><MediaLibrary /></TabsContent>
             </Tabs>
           )}
         </div>
