@@ -1,6 +1,6 @@
 import {
   Menu, X, User, BookOpen,
-  Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown
+  Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -19,6 +19,7 @@ const navLinks = [
   { to: "/campaigns", label: "Campagnes", icon: Map },
   { to: "/characters", label: "Personnages", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
+  { to: "/guide", label: "Guide", icon: HelpCircle },
   { to: "/subscriptions", label: "Abonnements", icon: Crown },
   { to: "/partners", label: "Partenaires", icon: Handshake },
 ];
