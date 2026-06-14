@@ -2248,7 +2248,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
         else if (e.key === "Escape") {
           setContextMenu(null);
           if (fullscreen) setFullscreen(false);
-          if (tool === "wall" || tool === "wallDoor") wallsHook.cancelWall();
+          if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") wallsHook.cancelWall();
         }
       }
       if (selectedTokenId) {
