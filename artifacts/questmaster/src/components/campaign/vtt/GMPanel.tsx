@@ -672,9 +672,10 @@ export default function GMPanel({
                           <p className="text-xs font-medium truncate">{char.name}</p>
                           <p className="text-[10px] text-muted-foreground">Niv {char.level} • PV {char.hp}/{char.max_hp}</p>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                          className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                           onClick={() => onSpawnCharacter(char)}>
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
                         </Button>
                       </div>
                     ))}
@@ -701,9 +702,10 @@ export default function GMPanel({
                           <p className="text-[10px] text-muted-foreground truncate">{creature.power_level} • {creature.size}</p>
                         </div>
                         {isGM && (
-                          <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                            className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                             onClick={() => onSpawnCreature(creature)}>
-                            <Plus className="h-3 w-3" />
+                            <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
                           </Button>
                         )}
                       </div>
@@ -740,10 +742,10 @@ export default function GMPanel({
                             </p>
                           </div>
                           {isGM && (
-                            <Button size="icon" variant="ghost"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-amber-400"
+                            <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                              className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-amber-400"
                               onClick={() => onSpawnAetheriaCreature(creature)}>
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
                             </Button>
                           )}
                         </div>
@@ -781,9 +783,10 @@ export default function GMPanel({
                             </p>
                           </div>
                           {isGM && onSpawnSystemMonster && (
-                            <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                              className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                               onClick={() => onSpawnSystemMonster(m)}>
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
                             </Button>
                           )}
                         </div>
