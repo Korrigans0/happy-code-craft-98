@@ -41,8 +41,8 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
         level: parseInt(form.level),
         classes: form.classes.split(",").map(c => c.trim()).filter(Boolean),
         system,
-        scope: "custom_personal",
-        is_public: isPublic,
+        scope,
+        is_public: scope === "custom_global",
       });
     }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
