@@ -442,6 +442,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (typeof (state as any).night_mode === "boolean") {
         lightsHookRef.current?.receiveNightMode((state as any).night_mode);
       }
+      // ── Initiative (persistée) ──
+      const incomingInit = (state as any).initiative;
+      if (Array.isArray(incomingInit)) setInitiative(incomingInit as InitiativeEntry[]);
+      const incomingRound = (state as any).initiative_round;
+      if (typeof incomingRound === "number") setInitiativeRound(incomingRound);
+      const incomingActive = (state as any).initiative_active_idx;
+      if (typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
     },
     debounceMs: 250,
   });
