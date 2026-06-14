@@ -723,7 +723,12 @@ export default function GMPanel({
                       .filter(c => c.name.toLowerCase().includes(bestiarySearch.toLowerCase()))
                       .map(creature => (
                         <div key={creature.id}
-                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors">
+                          draggable={isGM}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/x-aetheria-creature", creature.id);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
+                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors cursor-grab active:cursor-grabbing">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
                             <Skull className="h-3.5 w-3.5" />
                           </div>
@@ -743,6 +748,7 @@ export default function GMPanel({
                           )}
                         </div>
                       ))}
+
                   </>
                 )}
 
