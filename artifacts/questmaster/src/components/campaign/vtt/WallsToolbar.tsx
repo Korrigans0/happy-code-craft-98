@@ -35,8 +35,6 @@ interface WallsToolbarProps {
 
 
 export default function WallsToolbar({
-  selectedWallType,
-  onSelectType,
   onClearAll,
   wallCount,
   activeTool,
