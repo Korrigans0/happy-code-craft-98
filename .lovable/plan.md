@@ -1,150 +1,48 @@
-# Refonte multi-systèmes — Fiches, Campagnes & Codex
+# Refonte multi-systèmes — État au tour courant
 
-## ✅ TÂCHES PRIORITAIRES RÉCENTES
-
-### ✅ Refonte barre d'outils VTT (FAIT)
-- 4 outils murs séparés : **Mur solide / Porte / Fenêtre / Terrain difficile** + Effacer mur.
-- Type `Tool` étendu (`wallWindow`, `wallTerrain`).
-- Sélecteur dupliqué retiré de `WallsToolbar`.
-- Raccourcis MJ : `W` mur, `D` porte.
-
-### ✅ Sync fiches ↔ tokens (FAIT)
-- Clic token → ouverture fiche (MJ : toutes, PJ : la sienne).
-- HP/conditions synchronisés en temps réel.
-- Actions rapides PV (dégâts / soin / max) sur le panneau token MJ.
-
-### ✅ Page Guide (FAIT)
-- Route `/guide` avec hero vidéo, sommaire, 11 sections, raccourcis clavier.
-- Liens header + footer.
-
-### 🔜 PROCHAINES PRIORITÉS (état au tour courant)
-
-1. ✅ **Drag & Drop bestiaire → tabletop** — déjà câblé (`GMPanel.tsx` 690/727/767 + drop handlers `CampaignTabletop.tsx` 3429+).
-2. ✅ **Filtre codex par système de campagne** — `GMPanel.tsx` n'affiche que les listes du `campaignSystem` courant.
-3. ✅ **Badge système sur CampaignCard + sélecteur 5 systèmes** — `Campaigns.tsx` (GAME_SYSTEMS, SYSTEM_COLORS).
-4. ✅ **Toggle "Autoriser Homebrew"** — `CampaignSettings.tsx` (`allow_homebrew_characters`) + `system-compatibility.ts`.
-
-### ⏭️ Prochains chantiers réels (non commencés)
-
-A. **Création MJ de contenu Codex avec portée** (`scope`: campagne / toutes mes campagnes / homebrew perso) + RLS.
-B. **Migration Codex** : colonne `system` sur `monsters`, `spells`, `magic_items` + filtres front cohérents.
-C. **Fiches dédiées par système** (Phase 2) — démarrer par D&D 5e + Homebrew (réponses aux 4 questions du bas requises).
-D. **Bestiaire Aetheria mobile** : drag long-press tactile + boutons "Ajouter" toujours visibles sur petit écran.
+## ✅ Réponses Phase 2 enregistrées
+1. Ordre : commencé par **D&D 5e**, on enchaîne le reste (PF2e, CoC, Homebrew, Aetheria/WA).
+2. **SRD libre de droits importé** par défaut.
+3. PJ incompatible → **bloqué**, le MJ doit régler la situation.
+4. **Ordre de livraison** confirmé : Phase 1 → 2 → 3 → 4.
 
 ---
 
-Objectif : transformer Aetheria VTT en plateforme type Foundry/Roll20 où chaque système (Aetheria, D&D 5e, Pathfinder 2e, Worlds Awakening, Homebrew) possède sa **propre fiche, ses propres règles et son propre codex**, tout en partageant le tabletop.
+## ✅ État réel des phases
 
-Vu l'ampleur (architecture + 5 fiches + codex cloisonné + restrictions), je propose une **livraison en 4 phases**. Vous validez/ajustez avant que je code.
+### Phase 1 — Architecture modulaire ✅
+- `src/lib/systems/` : `aetheria`, `dnd5e`, `pathfinder2e`, `cthulhu7e`, `worlds-awakening`, `custom` + `types.ts` + `index.ts`.
+- `getSystem()` + `sheetComponent` clé pour le routeur.
 
----
+### Phase 2 — Fiches dédiées ✅
+- `SheetRouter` → `AetheriaCharacterSheet`, `Dnd5eSheet`, `Pathfinder2eSheet`, `Cthulhu7eSheet`, `HomebrewSheet`, `GenericSystemSheet`.
+- Autosave 800 ms, sync token ↔ fiche.
 
-## Phase 1 — Architecture modulaire (fondations)
+### Phase 3 — Restrictions de campagne ✅
+- `system` + `allow_homebrew_characters` sur `campaigns`.
+- `canUseCharacterInCampaign` + `filterCompatibleCharacters` utilisés dans `CampaignMembers` (jointure et liste de sélection).
+- Sélecteur 5 systèmes + badge sur `CampaignCard`.
 
-Étendre `src/lib/systems/` pour qu'un système expose **tout** : stats, compétences, ressources, calculs, capacités UI.
+### Phase 4 — Codex cloisonné ✅
+- Colonnes `system` / `scope` / `campaign_id` / `is_public` sur `monsters`, `spells`, `magic_items`.
+- Indexes `idx_*_system`, `idx_*_scope`, `idx_*_public`.
+- RLS : `official` lisible par tous, `custom_personal` par owner, `custom_campaign` par membres.
+- `CreateMonsterDialog` / `CreateSpellDialog` / `CreateItemDialog` avec `scope` (par défaut `custom_personal`).
+- Filtrage Codex / GMPanel / TokenAddDialog par `campaign.system` ∪ Homebrew si autorisé.
 
-```text
-src/lib/systems/
-├── types.ts              # SystemDefinition étendu
-├── index.ts              # registre + getSystem()
-├── aetheria/
-│   ├── definition.ts     # SystemDefinition
-│   ├── calculations.ts   # HP, def PHY/MAG, mod, etc.
-│   ├── skills.ts
-│   └── data.ts           # races, classes, tenues
-├── dnd5e/
-│   ├── definition.ts     # 6 stats score-based, prof bonus
-│   ├── calculations.ts   # mod = (score-10)/2, prof, CA, DC sorts
-│   ├── skills.ts         # 18 skills SRD
-│   └── data.ts           # classes, races, backgrounds SRD
-├── pathfinder2e/
-│   ├── definition.ts     # 4 prof tiers, ability boosts
-│   ├── calculations.ts   # mod + prof + level
-│   └── ...
-├── worlds-awakening/     # déjà partiellement présent
-├── cthulhu7e/            # gardé (déjà présent)
-└── homebrew/
-    ├── definition.ts     # squelette générique
-    └── schema.ts         # champs custom JSON
-```
-
-Nouveaux champs `SystemDefinition` :
-- `skills: SkillDef[]` (avec stat liée)
-- `resources: ResourceDef[]` (HP, Mana, PE, Sanity, etc.)
-- `calculations: { hp, defenses, attackBonus, saveDC, initiative }` — fonctions pures
-- `inventorySchema`, `spellSchema`, `featureSchema`
-- `sheetComponent: string` (clé pour résoudre la fiche React)
-
-## Phase 2 — Fiches dédiées par système
-
-Composant routeur `CharacterSheet` qui résout vers :
-- `AetheriaSheet` (existant, à brancher sur `definition`)
-- `Dnd5eSheet` (nouveau) : 6 caracs score-based, jets de sauvegarde, 18 compétences, CA, slots de sorts par niveau, inventaire, traits/idéaux/liens/défauts
-- `Pathfinder2eSheet` (nouveau) : ability boosts, proficiency tiers (U/T/E/M/L), AC, saves, skills, feats
-- `WorldsAwakeningSheet` (existant Aetheria-like, à isoler)
-- `HomebrewSheet` (nouveau) : éditeur de champs (groupes de stats/ressources/compétences personnalisés stockés en `system_data` jsonb)
-
-Sections partagées : `<SheetHeader>`, `<SheetNotes>`, `<SheetInventory>`, `<SheetAvatar>`.
-
-Toutes les fiches :
-- autosave debounce 800 ms sur `characters` + `system_data`
-- responsive (tabs sur mobile, colonnes sur desktop)
-- synchronisation token ↔ fiche (HP/conditions déjà branchés)
-
-## Phase 3 — Restrictions de campagne
-
-Migration `campaigns` :
-- `system` text NOT NULL (déjà partiel) — devient source de vérité
-- `allow_homebrew_characters` boolean default false
-
-Règle d'invitation/jointure (front + RLS) :
-- Un PJ ne peut associer à une campagne qu'un personnage dont `character.system === campaign.system`
-- **Exception** : `character.system === 'Homebrew'` autorisé si `campaign.allow_homebrew_characters = true`
-- Sinon : toast d'erreur clair + filtre dans la liste de sélection
-
-UI `Campaigns.tsx` :
-- Sélecteur 5 systèmes lors de la création
-- Toggle "Autoriser les personnages Homebrew" (paramètres campagne)
-- Badge système sur chaque CampaignCard
-
-## Phase 4 — Codex cloisonné par système
-
-Migration : ajouter `system` text à `monsters`, `spells`, `magic_items` (+ `aetheria_creatures`/`wa_creatures` déjà tagués implicitement).
-
-Nouveau modèle :
-- Chaque entrée Codex a un `system` (ou "Homebrew")
-- Champ `scope` : `official` | `custom_campaign` | `custom_personal`
-- `owner_user_id`, `campaign_id` (nullable) pour le contenu MJ
-
-Page `Compendium.tsx` :
-- Onglet par système (Aetheria / D&D 5e / Pathfinder / WA / Homebrew / Personnalisé)
-- En contexte campagne : auto-filtré sur `campaign.system` + Homebrew du MJ
-- Recherche & sélecteurs (tabletop "Ajouter créature") ne montrent QUE le système courant + customs MJ
-
-Création MJ (créatures, PNJ, objets, sorts, classes, races) :
-- Bouton "Créer" partout dans le Codex
-- Choix de portée : **Cette campagne** / **Toutes mes campagnes** / **Codex Homebrew personnel**
-- RLS : MJ voit les siens + officiels du système courant
-
-Intégration tabletop : `TokenAddDialog` filtre les créatures par `campaign.system` ∪ customs MJ.
+### ✅ Seed SRD officiel chargé
+- D&D 5e : **115 monstres, 209 sorts, 194 objets**.
+- Pathfinder 2e : 20 monstres, 15 sorts, 15 objets.
+- Call of Cthulhu : 15 monstres, 12 sorts, 15 objets.
 
 ---
 
-## Détails techniques
+## ⏭️ Chantiers restants (à valider)
 
-- **Stockage spécifique** : champs hors schéma commun stockés dans `characters.system_data` (jsonb). Les colonnes existantes restent compatibles Aetheria/WA.
-- **Calculs** : fonctions pures par système, jamais d'`if (system === 'dnd5e')` dans les composants.
-- **Migration douce** : personnages existants → `system = 'Aetheria'` (déjà fait), aucune perte.
-- **Homebrew** : 100% configurable, sert de template pour systèmes communautaires futurs.
-- **RLS** : policies sur monsters/spells/magic_items étendues avec `scope` + `owner_user_id`.
+A. **Mobile bestiaire Aetheria** : drag long-press tactile sur token, boutons « Ajouter » toujours visibles sur écran <640 px.
+B. **Étoffer SRD PF2e + CoC** : passer chacun à ~50 entrées par catégorie (PF2e est sous-représenté).
+C. **UI scope MJ avancé** : ajouter un sélecteur visible « Cette campagne / Toutes mes campagnes / Personnel » dans les 3 dialogs de création (actuellement bloqué sur `custom_personal`).
+D. **Page Bibliothèque MJ** : vue dédiée pour gérer/éditer/supprimer le contenu créé par le MJ avec filtres scope.
+E. **Migration de masse** : outil MJ pour réassigner d'anciens monstres custom au bon `system`.
 
----
-
-## Questions avant de coder
-
-1. **Périmètre Phase 2** : je livre les **5 fiches en une fois** (gros) ou je commence par **D&D 5e + Homebrew** (les plus demandés) et j'enchaîne Pathfinder ensuite ?
-2. **Contenu officiel SRD** (sorts/monstres D&D 5e, Pathfinder) : j'importe un seed SRD libre de droits dès maintenant, ou je laisse le codex vide par défaut et le MJ remplit via Homebrew/import ?
-3. **Personnages existants en campagne** : si une campagne est marquée D&D 5e et contient des PJ Aetheria, je les **migre en Homebrew** automatiquement, je les **bloque** (le MJ doit régler), ou je **grandfather** (tolérés mais marqués "système incompatible") ?
-4. **Ordre de livraison** : OK pour Phase 1 → 2 → 3 → 4 (architecture d'abord, restrictions en dernier) ou vous voulez les restrictions de campagne (Phase 3) avant les nouvelles fiches ?
-
-Répondez à ces 4 points et j'attaque la Phase 1 dans la foulée.
+Dis-moi par lequel commencer (A à E) ou si tu veux que je file directement sur A + C qui sont les plus visibles côté UX.
