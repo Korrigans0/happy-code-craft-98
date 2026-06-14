@@ -44,6 +44,9 @@ interface TabletopState {
   walls?: unknown[];
   lights?: unknown[];
   night_mode?: boolean;
+  initiative?: unknown[];
+  initiative_round?: number;
+  initiative_active_idx?: number;
 }
 
 interface UseTabletopSyncOptions {
@@ -71,6 +74,13 @@ const normalize = (data: any): TabletopState => {
     walls: ((data as { walls?: unknown[] }).walls) || [],
     lights: ((data as { lights?: unknown[] }).lights) || [],
     night_mode: !!(data as { night_mode?: boolean }).night_mode,
+    initiative: ((data as { initiative?: unknown[] }).initiative) || [],
+    initiative_round: typeof (data as { initiative_round?: number }).initiative_round === "number"
+      ? (data as { initiative_round?: number }).initiative_round
+      : 1,
+    initiative_active_idx: typeof (data as { initiative_active_idx?: number }).initiative_active_idx === "number"
+      ? (data as { initiative_active_idx?: number }).initiative_active_idx
+      : -1,
   };
 };
 
