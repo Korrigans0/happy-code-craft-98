@@ -373,13 +373,39 @@ async function createInTable(table: string, data: Record<string, unknown>) {
   return unwrap(r);
 }
 
+async function listMyTable(table: string) {
+  const userId = await uid();
+  if (!userId) return [];
+  const r = await supabase.from(table).select("*").eq("created_by", userId).order("created_at", { ascending: false });
+  return unwrap(r) ?? [];
+}
+async function deleteFromTable(table: string, id: string) {
+  const r = await supabase.from(table).delete().eq("id", id);
+  if (r.error) throw new Error(r.error.message);
+  return { ok: true };
+}
+async function updateInTable(table: string, id: string, patch: Record<string, unknown>) {
+  const r = await supabase.from(table).update(patch).eq("id", id).select().single();
+  return unwrap(r);
+}
+
 export const compendiumApi = {
   getSpells: (system?: string) => listTableBySystem("spells", system),
   createSpell: (d: Record<string, unknown>) => createInTable("spells", d),
+  updateSpell: (id: string, d: Record<string, unknown>) => updateInTable("spells", id, d),
+  deleteSpell: (id: string) => deleteFromTable("spells", id),
   getMonsters: (system?: string) => listTableBySystem("monsters", system),
   createMonster: (d: Record<string, unknown>) => createInTable("monsters", d),
+  updateMonster: (id: string, d: Record<string, unknown>) => updateInTable("monsters", id, d),
+  deleteMonster: (id: string) => deleteFromTable("monsters", id),
   getItems: (system?: string) => listTableBySystem("magic_items", system),
   createItem: (d: Record<string, unknown>) => createInTable("magic_items", d),
+  updateItem: (id: string, d: Record<string, unknown>) => updateInTable("magic_items", id, d),
+  deleteItem: (id: string) => deleteFromTable("magic_items", id),
+  // Bibliothèque MJ : uniquement le contenu créé par l'utilisateur courant.
+  getMyMonsters: () => listMyTable("monsters"),
+  getMySpells: () => listMyTable("spells"),
+  getMyItems: () => listMyTable("magic_items"),
   getWaCreatures: () => listTable("wa_creatures"),
   createWaCreature: (d: Record<string, unknown>) => createInTable("wa_creatures", d),
   syncWaCreatures: async () => {
@@ -393,6 +419,7 @@ export const compendiumApi = {
     return { ok: true };
   },
 };
+
 
 // ============== ROLES ==============
 export const rolesApi = {
