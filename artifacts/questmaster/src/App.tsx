@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Campaigns from "./pages/Campaigns";
 import Characters from "./pages/Characters";
 import Compendium from "./pages/Compendium";
+import Library from "./pages/Library";
 
 import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
