@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +24,7 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [system, setSystem] = useState(defaultSystem);
-  const [isPublic, setIsPublic] = useState(false);
+  const [scope, setScope] = useState<"custom_personal" | "custom_global">("custom_personal");
   const [form, setForm] = useState({
     name: "", level: "0", school: "Évocation", casting_time: "1 action",
     range: "9 mètres", components: "V, S", duration: "Instantanée",
@@ -41,8 +41,8 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
         level: parseInt(form.level),
         classes: form.classes.split(",").map(c => c.trim()).filter(Boolean),
         system,
-        scope: "custom_personal",
-        is_public: isPublic,
+        scope,
+        is_public: scope === "custom_global",
       });
     }
     catch (e: any) { setLoading(false); toast.error("Erreur: " + e.message); return; }
@@ -70,14 +70,15 @@ const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: Creat
               <SelectContent>{SYSTEM_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
-            <div>
-              <Label className="text-sm">Partager avec la communauté</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isPublic ? "Visible par tous les joueurs Aetheria VTT." : "Visible uniquement par vous."}
-              </p>
-            </div>
-            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+          <div>
+            <Label>Visibilité</Label>
+            <Select value={scope} onValueChange={(v) => setScope(v as "custom_personal" | "custom_global")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="custom_personal">Personnel — visible uniquement par vous</SelectItem>
+                <SelectItem value="custom_global">Communauté — partagé avec tous les MJ</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div><Label>Nom</Label><Input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-4">
