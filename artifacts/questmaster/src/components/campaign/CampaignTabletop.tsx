@@ -3159,7 +3159,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
+        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-amber-500/20 bg-gradient-to-b from-card/90 via-card/80 to-card/90 shadow-[inset_-1px_0_0_rgba(217,164,65,0.08)] overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
 
           {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
@@ -3174,10 +3174,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   key={group.id}
                   onClick={() => setTool(t.id)}
                   title={t.key ? `${t.label} (${t.key})` : t.label}
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                     tool === t.id
-                      ? "bg-primary text-primary-foreground shadow-inner"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
+                      : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                   }`}
                 >
                   {t.icon}
@@ -3194,10 +3194,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={group.label}
-                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                       activeTool
-                        ? "bg-primary text-primary-foreground shadow-inner"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
+                        : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                     }`}
                   >
                     {activeTool ? activeTool.icon : group.icon}
@@ -3215,10 +3215,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                         key={t.id}
                         onClick={() => { setTool(t.id); setOpenGroup(null); }}
                         title={t.key ? `${t.label} (${t.key})` : t.label}
-                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                           tool === t.id
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50"
+                            : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                         }`}
                       >
                         {t.icon}
