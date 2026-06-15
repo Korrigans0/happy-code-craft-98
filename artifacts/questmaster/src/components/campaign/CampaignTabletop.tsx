@@ -19,6 +19,11 @@ import { computeVisibilityPolygon, type Segment } from "@/lib/visibility-polygon
 import WallsToolbar from "@/components/campaign/vtt/WallsToolbar";
 import { WALL_COLORS, LIGHT_PRESETS, LIGHT_PRESET_LABELS } from "@/components/campaign/vtt/types";
 import {
+  FIMove, FIPing, FIQuill, FIEraser, FIRect, FICircle, FIText,
+  FIMeasure, FICone, FIZone, FIHelm, FIEye, FIWall, FIDoor,
+  FIWindow, FIBriars, FIWallBreak, FITorch, FITorchOff,
+} from "@/components/campaign/vtt/FantasyToolIcons";
+import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import {
@@ -2749,34 +2754,34 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Tool definitions (rangés par catégorie) ──
   const TOOLS = useMemo<{ id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[]>(() => [
-    { id: "move",      icon: <Move className="h-4 w-4" />,          label: "Déplacer",     key: "V", group: "nav" },
-    { id: "ping",      icon: <MapPin className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
-    { id: "pencil",    icon: <Pencil className="h-4 w-4" />,        label: "Crayon",       key: "P", group: "draw" },
-    { id: "eraser",    icon: <Eraser className="h-4 w-4" />,        label: "Gomme",        key: "E", group: "draw" },
-    { id: "rect",      icon: <Square className="h-4 w-4" />,        label: "Rectangle",              group: "draw" },
-    { id: "circle",    icon: <Circle className="h-4 w-4" />,        label: "Cercle",                 group: "draw" },
-    { id: "text",      icon: <Type className="h-4 w-4" />,          label: "Texte",        key: "T", group: "draw" },
-    { id: "measure",   icon: <Ruler className="h-4 w-4" />,         label: "Mesure distance", key: "M", group: "measure" },
-    { id: "cone",      icon: <Triangle className="h-4 w-4" />,      label: "Cône AoE",    key: "C", group: "aoe" },
-    { id: "zone",      icon: <Wand2 className="h-4 w-4" />,         label: "Zone AoE",    key: "Z", group: "aoe" },
-    { id: "fogReveal", icon: <Eye className="h-4 w-4" />,           label: "Révéler brouillard", gmOnly: true, group: "gm" },
-    { id: "wall",        icon: <Square className="h-4 w-4" />,             label: "Mur solide",     key: "W", gmOnly: true, group: "gm" },
-    { id: "wallDoor",    icon: <DoorClosed className="h-4 w-4" />,         label: "Porte",          key: "D", gmOnly: true, group: "gm" },
-    { id: "wallWindow",  icon: <RectangleHorizontal className="h-4 w-4" />, label: "Fenêtre",        gmOnly: true, group: "gm" },
-    { id: "wallTerrain", icon: <Trees className="h-4 w-4" />,              label: "Terrain difficile", gmOnly: true, group: "gm" },
-    { id: "wallDelete",  icon: <Eraser className="h-4 w-4" />,             label: "Effacer mur",    gmOnly: true, group: "gm" },
-    { id: "light",       icon: <Lightbulb className="h-4 w-4" />,    label: "Lumière",      gmOnly: true, group: "light" },
-    { id: "lightDelete", icon: <Eraser className="h-4 w-4" />,       label: "Retirer lumière", gmOnly: true, group: "light" },
+    { id: "move",      icon: <FIMove className="h-4 w-4" />,        label: "Déplacer",     key: "V", group: "nav" },
+    { id: "ping",      icon: <FIPing className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
+    { id: "pencil",    icon: <FIQuill className="h-4 w-4" />,       label: "Crayon",       key: "P", group: "draw" },
+    { id: "eraser",    icon: <FIEraser className="h-4 w-4" />,      label: "Gomme",        key: "E", group: "draw" },
+    { id: "rect",      icon: <FIRect className="h-4 w-4" />,        label: "Rectangle",              group: "draw" },
+    { id: "circle",    icon: <FICircle className="h-4 w-4" />,      label: "Cercle",                 group: "draw" },
+    { id: "text",      icon: <FIText className="h-4 w-4" />,        label: "Texte",        key: "T", group: "draw" },
+    { id: "measure",   icon: <FIMeasure className="h-4 w-4" />,     label: "Mesure distance", key: "M", group: "measure" },
+    { id: "cone",      icon: <FICone className="h-4 w-4" />,        label: "Cône AoE",    key: "C", group: "aoe" },
+    { id: "zone",      icon: <FIZone className="h-4 w-4" />,        label: "Zone AoE",    key: "Z", group: "aoe" },
+    { id: "fogReveal", icon: <FIEye className="h-4 w-4" />,         label: "Révéler brouillard", gmOnly: true, group: "gm" },
+    { id: "wall",        icon: <FIWall className="h-4 w-4" />,             label: "Mur solide",     key: "W", gmOnly: true, group: "gm" },
+    { id: "wallDoor",    icon: <FIDoor className="h-4 w-4" />,             label: "Porte",          key: "D", gmOnly: true, group: "gm" },
+    { id: "wallWindow",  icon: <FIWindow className="h-4 w-4" />,           label: "Fenêtre",        gmOnly: true, group: "gm" },
+    { id: "wallTerrain", icon: <FIBriars className="h-4 w-4" />,           label: "Terrain difficile", gmOnly: true, group: "gm" },
+    { id: "wallDelete",  icon: <FIWallBreak className="h-4 w-4" />,        label: "Effacer mur",    gmOnly: true, group: "gm" },
+    { id: "light",       icon: <FITorch className="h-4 w-4" />,      label: "Lumière",      gmOnly: true, group: "light" },
+    { id: "lightDelete", icon: <FITorchOff className="h-4 w-4" />,   label: "Retirer lumière", gmOnly: true, group: "light" },
   ], []);
 
   // Catégories d'outils (dossiers dépliables)
   const TOOL_GROUPS = useMemo<{ id: string; label: string; icon: React.ReactNode; gmOnly?: boolean }[]>(() => [
-    { id: "nav",     label: "Navigation",    icon: <Move className="h-4 w-4" /> },
-    { id: "draw",    label: "Dessin",        icon: <Pencil className="h-4 w-4" /> },
-    { id: "measure", label: "Mesure",        icon: <Ruler className="h-4 w-4" /> },
-    { id: "aoe",     label: "Zones d'effet", icon: <Triangle className="h-4 w-4" /> },
-    { id: "gm",      label: "Outils MJ",     icon: <Shield className="h-4 w-4" />, gmOnly: true },
-    { id: "light",   label: "Lumières",      icon: <Lightbulb className="h-4 w-4" />, gmOnly: true },
+    { id: "nav",     label: "Navigation",    icon: <FIMove className="h-4 w-4" /> },
+    { id: "draw",    label: "Dessin",        icon: <FIQuill className="h-4 w-4" /> },
+    { id: "measure", label: "Mesure",        icon: <FIMeasure className="h-4 w-4" /> },
+    { id: "aoe",     label: "Zones d'effet", icon: <FIZone className="h-4 w-4" /> },
+    { id: "gm",      label: "Outils MJ",     icon: <FIHelm className="h-4 w-4" />, gmOnly: true },
+    { id: "light",   label: "Lumières",      icon: <FITorch className="h-4 w-4" />, gmOnly: true },
   ], []);
 
   const visibleTools = useMemo(() => {
@@ -3154,7 +3159,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-border bg-card/80 overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
+        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-amber-500/20 bg-gradient-to-b from-card/90 via-card/80 to-card/90 shadow-[inset_-1px_0_0_rgba(217,164,65,0.08)] overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
 
           {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
@@ -3169,10 +3174,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                   key={group.id}
                   onClick={() => setTool(t.id)}
                   title={t.key ? `${t.label} (${t.key})` : t.label}
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                     tool === t.id
-                      ? "bg-primary text-primary-foreground shadow-inner"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
+                      : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                   }`}
                 >
                   {t.icon}
@@ -3189,10 +3194,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                 <PopoverTrigger asChild>
                   <button
                     title={group.label}
-                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                       activeTool
-                        ? "bg-primary text-primary-foreground shadow-inner"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
+                        : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                     }`}
                   >
                     {activeTool ? activeTool.icon : group.icon}
@@ -3210,10 +3215,10 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
                         key={t.id}
                         onClick={() => { setTool(t.id); setOpenGroup(null); }}
                         title={t.key ? `${t.label} (${t.key})` : t.label}
-                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-colors ${
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
                           tool === t.id
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50"
+                            : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
                         }`}
                       >
                         {t.icon}
