@@ -251,7 +251,7 @@ function Field({ label, value, onChange, editable, placeholder, type = "text" }:
   );
 }
 
-function Block({ label, value, onChange, editable }: any) {
+function Block({ label, value, onChange, editable }: { label: string; value: any; onChange: (v: any) => void; editable?: boolean }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
@@ -283,7 +283,7 @@ function Combat({ icon, label, cur, max, onCur, onMax, editable, hasMax }: { ico
             <>
               <span className="text-xs">/</span>
               <Input type="number" value={max ?? 0}
-                onChange={(e) => onMax(Number(e.target.value) || 0)}
+                onChange={(e) => onMax?.(Number(e.target.value) || 0)}
                 className="h-7 w-14 text-center text-base font-bold" />
             </>
           )}
