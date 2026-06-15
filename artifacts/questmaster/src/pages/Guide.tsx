@@ -41,7 +41,7 @@ const Section = ({ id, icon, title, children }: SectionProps) => (
   </section>
 );
 
-const Step = ({ n, title, children }: { n: number | string; title: string; children: React.ReactNode }) => (
+const Step = ({ n, title, children }: { n: React.ReactNode; title: string; children: React.ReactNode }) => (
   <div className="flex gap-3">
     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/10 font-display text-sm font-bold text-amber-400">
       {n}
