@@ -44,7 +44,8 @@ interface Row {
   rarity?: string;
 }
 
-const KIND_META: Record<Kind, { label: string; icon: typeof Skull; fetch: () => Promise<Row[]>; remove: (id: string) => Promise<unknown>; emptyHint: string }> = {
+type CompendiumKind = Exclude<Kind, "media">;
+const KIND_META: Record<CompendiumKind, { label: string; icon: typeof Skull; fetch: () => Promise<Row[]>; remove: (id: string) => Promise<unknown>; emptyHint: string }> = {
   monsters: {
     label: "Créatures",
     icon: Skull,
