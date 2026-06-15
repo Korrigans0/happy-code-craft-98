@@ -44,7 +44,8 @@ interface Row {
   rarity?: string;
 }
 
-const KIND_META: Record<Kind, { label: string; icon: typeof Skull; fetch: () => Promise<Row[]>; remove: (id: string) => Promise<unknown>; emptyHint: string }> = {
+type CompendiumKind = Exclude<Kind, "media">;
+const KIND_META: Record<CompendiumKind, { label: string; icon: typeof Skull; fetch: () => Promise<Row[]>; remove: (id: string) => Promise<unknown>; emptyHint: string }> = {
   monsters: {
     label: "Créatures",
     icon: Skull,
@@ -97,19 +98,19 @@ const SystemBadge = ({ system }: { system?: string | null }) => {
   );
 };
 
-const RowSummary = ({ kind, row }: { kind: Kind; row: Row }) => {
+const RowSummary = ({ kind, row }: { kind: CompendiumKind; row: Row }) => {
   if (kind === "monsters") return <>{row.type ?? "—"} • FP {row.challenge_rating ?? "?"}</>;
   if (kind === "spells") return <>{row.school ?? "—"} • Niveau {row.level ?? 0}</>;
   return <>{row.type ?? "—"} • {row.rarity ?? "Commun"}</>;
 };
 
-const updateFor = (kind: Kind) => (id: string, patch: Record<string, unknown>) => {
+const updateFor = (kind: CompendiumKind) => (id: string, patch: Record<string, unknown>) => {
   if (kind === "monsters") return compendiumApi.updateMonster(id, patch);
   if (kind === "spells") return compendiumApi.updateSpell(id, patch);
   return compendiumApi.updateItem(id, patch);
 };
 
-const LibraryTab = ({ kind }: { kind: Kind }) => {
+const LibraryTab = ({ kind }: { kind: CompendiumKind }) => {
   const meta = KIND_META[kind];
   const update = updateFor(kind);
   const { toast } = useToast();
