@@ -36,7 +36,7 @@ const plans: Plan[] = [
       "3 campagnes actives",
       "3 personnages actifs",
       "Jusqu'à 5 joueurs par campagne",
-      "1 To de stockage",
+      "1 Go de stockage",
       "Brouillard de guerre",
       "Vision des tokens",
       "Lumières de base",
