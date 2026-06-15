@@ -73,7 +73,7 @@ const plans: Plan[] = [
     features: [
       "20 campagnes actives",
       "Jusqu'à 10 joueurs par campagne",
-      "5 To de stockage",
+      "5 Go de stockage",
       "Lumières dynamiques avancées",
       "Murs dynamiques avancés",
       "Sauvegardes automatiques",
@@ -94,7 +94,7 @@ const plans: Plan[] = [
       "50 campagnes actives",
       "50 personnages actifs",
       "Jusqu'à 10 joueurs par campagne",
-      "10 To de stockage",
+      "10 Go de stockage",
       "Toutes les fonctionnalités Premium MJ",
       "Toutes les fonctionnalités Premium PJ",
       "Badge Fondateur",
