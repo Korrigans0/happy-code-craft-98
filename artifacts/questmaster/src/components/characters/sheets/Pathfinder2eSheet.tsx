@@ -236,7 +236,7 @@ function ProfPicker({ tier, onChange, disabled }: { tier: string; onChange: (t: 
   );
 }
 
-function Field({ label, value, onChange, editable, placeholder, type = "text" }: any) {
+function Field({ label, value, onChange, editable, placeholder, type = "text" }: { label: string; value: any; onChange: (v: any) => void; editable?: boolean; placeholder?: string; type?: string }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
@@ -251,7 +251,7 @@ function Field({ label, value, onChange, editable, placeholder, type = "text" }:
   );
 }
 
-function Block({ label, value, onChange, editable }: any) {
+function Block({ label, value, onChange, editable }: { label: string; value: any; onChange: (v: any) => void; editable?: boolean }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
@@ -270,7 +270,7 @@ function Block({ label, value, onChange, editable }: any) {
   );
 }
 
-function Combat({ icon, label, cur, max, onCur, onMax, editable, hasMax }: any) {
+function Combat({ icon, label, cur, max, onCur, onMax, editable, hasMax }: { icon: React.ReactNode; label: string; cur: number; max?: number; onCur: (v: number) => void; onMax?: (v: number) => void; editable?: boolean; hasMax?: boolean }) {
   return (
     <div className="flex flex-col items-center rounded-lg border border-border bg-card p-2">
       {icon}
@@ -283,7 +283,7 @@ function Combat({ icon, label, cur, max, onCur, onMax, editable, hasMax }: any) 
             <>
               <span className="text-xs">/</span>
               <Input type="number" value={max ?? 0}
-                onChange={(e) => onMax(Number(e.target.value) || 0)}
+                onChange={(e) => onMax?.(Number(e.target.value) || 0)}
                 className="h-7 w-14 text-center text-base font-bold" />
             </>
           )}
