@@ -19,7 +19,13 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 }
 
 function randomInviteCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(36).padStart(2, "0"))
+    .join("")
+    .toUpperCase()
+    .slice(0, 8);
 }
 
 // ============== PROFILES ==============
