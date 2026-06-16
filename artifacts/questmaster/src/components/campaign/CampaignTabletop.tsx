@@ -454,6 +454,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (typeof incomingRound === "number") setInitiativeRound(incomingRound);
       const incomingActive = (state as any).initiative_active_idx;
       if (typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
+      // ── Scènes (persistées) ──
+      const incomingScenes = (state as any).scenes;
+      if (Array.isArray(incomingScenes)) setScenes(incomingScenes as VTTScene[]);
+      const incomingActiveScene = (state as any).active_scene_id;
+      if (typeof incomingActiveScene === "string" || incomingActiveScene === null) {
+        setActiveSceneId(incomingActiveScene ?? null);
+      }
     },
     debounceMs: 250,
   });
