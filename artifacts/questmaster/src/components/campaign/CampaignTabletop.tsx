@@ -514,6 +514,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       initiative_active_idx: initiativeActiveIdx,
     });
   }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
+  // Persistance des scènes (MJ uniquement — RLS/trigger côté serveur)
+  useEffect(() => {
+    if (user?.id && isGM) saveState({
+      scenes: scenes as unknown as unknown[],
+      active_scene_id: activeSceneId,
+    } as any);
+  }, [scenes, activeSceneId, saveState, user?.id, isGM]);
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
