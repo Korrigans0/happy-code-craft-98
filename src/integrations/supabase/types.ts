@@ -1124,6 +1124,7 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
+      generate_invite_code: { Args: never; Returns: string }
       get_storage_quota: {
         Args: { _tier: Database["public"]["Enums"]["subscription_tier"] }
         Returns: number
