@@ -2692,6 +2692,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       img.onload = () => { mapImageRef.current = img; };
       img.src = scene.mapImageUrl;
     }
+    // Synchronise immédiatement la carte côté serveur pour que les autres
+    // utilisateurs (et le rechargement) voient la même scène.
+    saveState({ map_image_url: scene.mapImageUrl ?? null }, { immediate: true });
     setPanOffset({ x: 0, y: 0 });
     setZoom(1);
     setSelectedTokenId(null);
