@@ -47,6 +47,8 @@ interface TabletopState {
   initiative?: unknown[];
   initiative_round?: number;
   initiative_active_idx?: number;
+  scenes?: unknown[];
+  active_scene_id?: string | null;
 }
 
 interface UseTabletopSyncOptions {
@@ -81,6 +83,8 @@ const normalize = (data: any): TabletopState => {
     initiative_active_idx: typeof (data as { initiative_active_idx?: number }).initiative_active_idx === "number"
       ? (data as { initiative_active_idx?: number }).initiative_active_idx
       : -1,
+    scenes: ((data as { scenes?: unknown[] }).scenes) || [],
+    active_scene_id: (data as { active_scene_id?: string | null }).active_scene_id ?? null,
   };
 };
 

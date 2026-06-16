@@ -941,6 +941,7 @@ export type Database = {
       }
       tabletop_state: {
         Row: {
+          active_scene_id: string | null
           campaign_id: string
           drawings: Json
           fog_visible: boolean
@@ -952,6 +953,7 @@ export type Database = {
           map_image_url: string | null
           night_mode: boolean
           pan_offset: Json
+          scenes: Json
           tokens: Json
           updated_at: string
           updated_by: string | null
@@ -959,6 +961,7 @@ export type Database = {
           zoom: number
         }
         Insert: {
+          active_scene_id?: string | null
           campaign_id: string
           drawings?: Json
           fog_visible?: boolean
@@ -970,6 +973,7 @@ export type Database = {
           map_image_url?: string | null
           night_mode?: boolean
           pan_offset?: Json
+          scenes?: Json
           tokens?: Json
           updated_at?: string
           updated_by?: string | null
@@ -977,6 +981,7 @@ export type Database = {
           zoom?: number
         }
         Update: {
+          active_scene_id?: string | null
           campaign_id?: string
           drawings?: Json
           fog_visible?: boolean
@@ -988,6 +993,7 @@ export type Database = {
           map_image_url?: string | null
           night_mode?: boolean
           pan_offset?: Json
+          scenes?: Json
           tokens?: Json
           updated_at?: string
           updated_by?: string | null

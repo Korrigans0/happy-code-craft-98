@@ -454,6 +454,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       if (typeof incomingRound === "number") setInitiativeRound(incomingRound);
       const incomingActive = (state as any).initiative_active_idx;
       if (typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
+      // ── Scènes (persistées) ──
+      const incomingScenes = (state as any).scenes;
+      if (Array.isArray(incomingScenes)) setScenes(incomingScenes as VTTScene[]);
+      const incomingActiveScene = (state as any).active_scene_id;
+      if (typeof incomingActiveScene === "string" || incomingActiveScene === null) {
+        setActiveSceneId(incomingActiveScene ?? null);
+      }
     },
     debounceMs: 250,
   });
@@ -507,6 +514,13 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       initiative_active_idx: initiativeActiveIdx,
     });
   }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
+  // Persistance des scènes (MJ uniquement — RLS/trigger côté serveur)
+  useEffect(() => {
+    if (user?.id && isGM) saveState({
+      scenes: scenes as unknown as unknown[],
+      active_scene_id: activeSceneId,
+    } as any);
+  }, [scenes, activeSceneId, saveState, user?.id, isGM]);
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
@@ -2678,6 +2692,9 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
       img.onload = () => { mapImageRef.current = img; };
       img.src = scene.mapImageUrl;
     }
+    // Synchronise immédiatement la carte côté serveur pour que les autres
+    // utilisateurs (et le rechargement) voient la même scène.
+    saveState({ map_image_url: scene.mapImageUrl ?? null }, { immediate: true });
     setPanOffset({ x: 0, y: 0 });
     setZoom(1);
     setSelectedTokenId(null);
