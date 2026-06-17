@@ -323,8 +323,16 @@ export type Database = {
           image_url: string | null
           invite_code: string | null
           is_active: boolean | null
+          level_max: number | null
+          level_min: number | null
+          max_players: number | null
+          planned_sessions: number | null
+          schedule: string | null
+          summary: string | null
           system: string
+          tags: string[]
           title: string
+          tone: string | null
           updated_at: string
           user_id: string
         }
@@ -337,8 +345,16 @@ export type Database = {
           image_url?: string | null
           invite_code?: string | null
           is_active?: boolean | null
+          level_max?: number | null
+          level_min?: number | null
+          max_players?: number | null
+          planned_sessions?: number | null
+          schedule?: string | null
+          summary?: string | null
           system?: string
+          tags?: string[]
           title: string
+          tone?: string | null
           updated_at?: string
           user_id: string
         }
@@ -351,8 +367,16 @@ export type Database = {
           image_url?: string | null
           invite_code?: string | null
           is_active?: boolean | null
+          level_max?: number | null
+          level_min?: number | null
+          max_players?: number | null
+          planned_sessions?: number | null
+          schedule?: string | null
+          summary?: string | null
           system?: string
+          tags?: string[]
           title?: string
+          tone?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -67,7 +67,7 @@ export const campaignsApi = {
   },
   create: async (data: Record<string, unknown>) => {
     const userId = await uid();
-    const payload = {
+    const payload: Record<string, unknown> = {
       title: (data.title as string) ?? "Nouvelle campagne",
       description: (data.description as string) ?? null,
       system: (data.system as string) ?? "aetheria",
@@ -75,9 +75,17 @@ export const campaignsApi = {
       is_active: data.is_active !== false,
       invite_code: (data.invite_code as string) ?? randomInviteCode(),
       discord_link: (data.discord_link as string) ?? null,
+      summary: (data.summary as string) ?? null,
+      planned_sessions: (data.planned_sessions as number) ?? null,
+      level_min: (data.level_min as number) ?? null,
+      level_max: (data.level_max as number) ?? null,
+      max_players: (data.max_players as number) ?? null,
+      schedule: (data.schedule as string) ?? null,
+      tone: (data.tone as string) ?? null,
+      tags: (data.tags as string[]) ?? [],
       user_id: userId,
     };
-    const r = await supabase.from("campaigns").insert(payload).select().single();
+    const r = await supabase.from("campaigns").insert(payload as never).select().single();
     return unwrap(r);
   },
   get: async (id: string) => {
