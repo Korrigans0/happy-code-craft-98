@@ -82,8 +82,24 @@ const Campaigns = () => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newSummary, setNewSummary] = useState("");
   const [newSystem, setNewSystem] = useState("Aetheria");
   const [newIsActive, setNewIsActive] = useState(true);
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [newPlannedSessions, setNewPlannedSessions] = useState<string>("");
+  const [newLevelMin, setNewLevelMin] = useState<string>("");
+  const [newLevelMax, setNewLevelMax] = useState<string>("");
+  const [newMaxPlayers, setNewMaxPlayers] = useState<string>("5");
+  const [newSchedule, setNewSchedule] = useState("");
+  const [newTone, setNewTone] = useState("");
+  const [newTags, setNewTags] = useState("");
+
+  const resetCreateForm = () => {
+    setNewTitle(""); setNewDescription(""); setNewSummary("");
+    setNewSystem("Aetheria"); setNewIsActive(true); setNewImageUrl("");
+    setNewPlannedSessions(""); setNewLevelMin(""); setNewLevelMax("");
+    setNewMaxPlayers("5"); setNewSchedule(""); setNewTone(""); setNewTags("");
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/sign-in");
@@ -99,7 +115,7 @@ const Campaigns = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (c: { title: string; description: string; system: string; is_active: boolean }) => {
+    mutationFn: async (c: Record<string, unknown>) => {
       if (!user) throw new Error("Non authentifié");
       return campaignsApi.create(c);
     },
@@ -107,7 +123,7 @@ const Campaigns = () => {
       queryClient.invalidateQueries({ queryKey: ["campaigns", user?.id] });
       toast({ title: "Campagne créée !", description: "Votre campagne est prête." });
       setIsCreateOpen(false);
-      setNewTitle(""); setNewDescription(""); setNewSystem("Aetheria"); setNewIsActive(true);
+      resetCreateForm();
     },
     onError: () => toast({ title: "Impossible de créer la campagne", variant: "destructive" }),
   });
