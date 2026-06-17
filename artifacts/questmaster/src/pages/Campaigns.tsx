@@ -212,14 +212,33 @@ const Campaigns = () => {
                     Nouvelle Campagne
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Créer une campagne</DialogTitle>
                     <DialogDescription>
                       Définissez les paramètres de départ. Vous pourrez tout modifier ensuite.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-2">
+                  <div className="space-y-5 py-2">
+                    {/* Bannière */}
+                    <div className="space-y-2">
+                      <Label htmlFor="new-banner">Bannière (URL d'image)</Label>
+                      {newImageUrl && (
+                        <div className="relative h-32 w-full overflow-hidden rounded-lg border border-border/60">
+                          <img src={newImageUrl} alt="" className="h-full w-full object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                        </div>
+                      )}
+                      <Input
+                        id="new-banner"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="https://exemple.com/banniere.jpg"
+                      />
+                      <p className="text-xs text-muted-foreground">Image affichée en haut de la fiche campagne et sur la carte.</p>
+                    </div>
+
+                    {/* Titre */}
                     <div className="space-y-2">
                       <Label htmlFor="new-title">Titre *</Label>
                       <Input
@@ -230,16 +249,33 @@ const Campaigns = () => {
                         autoFocus
                       />
                     </div>
+
+                    {/* Résumé court */}
                     <div className="space-y-2">
-                      <Label htmlFor="new-desc">Description</Label>
+                      <Label htmlFor="new-summary">Résumé court (info)</Label>
+                      <Input
+                        id="new-summary"
+                        value={newSummary}
+                        onChange={(e) => setNewSummary(e.target.value.slice(0, 140))}
+                        placeholder="Horreur gothique en Barovie — 4 à 6 joueurs"
+                        maxLength={140}
+                      />
+                      <p className="text-xs text-muted-foreground">{newSummary.length}/140 — Une phrase d'accroche pour vos joueurs.</p>
+                    </div>
+
+                    {/* Description longue */}
+                    <div className="space-y-2">
+                      <Label htmlFor="new-desc">Description complète</Label>
                       <Textarea
                         id="new-desc"
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}
-                        placeholder="Une aventure sombre dans les terres de Barovie..."
-                        rows={3}
+                        placeholder="Une aventure sombre dans les terres de Barovie…"
+                        rows={4}
                       />
                     </div>
+
+                    {/* Système */}
                     <div className="space-y-2">
                       <Label>Système de jeu</Label>
                       <Select value={newSystem} onValueChange={setNewSystem}>
@@ -253,7 +289,7 @@ const Campaigns = () => {
                       {newSystem === "Personnalisé" ? (
                         <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1.5">
                           <p className="font-medium text-primary">✨ Mode Personnalisé — règles libres</p>
-                          <p>Mélangez librement <strong>Worlds Awakening</strong>, <strong>Aetheria</strong> et vos propres créations dans la même campagne : fiches, bestiaire, combat et VTT cohabitent sans restriction.</p>
+                          <p>Mélangez librement <strong>Worlds Awakening</strong>, <strong>Aetheria</strong> et vos propres créations.</p>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
@@ -261,6 +297,64 @@ const Campaigns = () => {
                         </p>
                       )}
                     </div>
+
+                    {/* Niveaux + joueurs */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-lvl-min">Niveau min</Label>
+                        <Input id="new-lvl-min" type="number" min={1} value={newLevelMin}
+                          onChange={(e) => setNewLevelMin(e.target.value)} placeholder="1" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-lvl-max">Niveau max</Label>
+                        <Input id="new-lvl-max" type="number" min={1} value={newLevelMax}
+                          onChange={(e) => setNewLevelMax(e.target.value)} placeholder="10" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-max-players">Joueurs max</Label>
+                        <Input id="new-max-players" type="number" min={1} max={20} value={newMaxPlayers}
+                          onChange={(e) => setNewMaxPlayers(e.target.value)} placeholder="5" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-sessions">Sessions prévues</Label>
+                        <Input id="new-sessions" type="number" min={1} value={newPlannedSessions}
+                          onChange={(e) => setNewPlannedSessions(e.target.value)} placeholder="12" />
+                      </div>
+                    </div>
+
+                    {/* Rythme + tonalité */}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-schedule">Rythme / planning</Label>
+                        <Input id="new-schedule" value={newSchedule}
+                          onChange={(e) => setNewSchedule(e.target.value)}
+                          placeholder="Tous les vendredis 20h" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tonalité</Label>
+                        <Select value={newTone || "non-defini"} onValueChange={(v) => setNewTone(v === "non-defini" ? "" : v)}>
+                          <SelectTrigger><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="non-defini">Non défini</SelectItem>
+                            <SelectItem value="serieux">Sérieux / immersif</SelectItem>
+                            <SelectItem value="heroique">Héroïque</SelectItem>
+                            <SelectItem value="sombre">Sombre / horreur</SelectItem>
+                            <SelectItem value="leger">Léger / humoristique</SelectItem>
+                            <SelectItem value="mixte">Mixte</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="space-y-2">
+                      <Label htmlFor="new-tags">Étiquettes (séparées par des virgules)</Label>
+                      <Input id="new-tags" value={newTags}
+                        onChange={(e) => setNewTags(e.target.value)}
+                        placeholder="dark fantasy, enquête, politique" />
+                    </div>
+
+                    {/* Active */}
                     <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
                       <div>
                         <p className="text-sm font-medium">Campagne active</p>
@@ -277,7 +371,26 @@ const Campaigns = () => {
                         if (!newTitle.trim()) {
                           toast({ title: "Le titre est requis", variant: "destructive" }); return;
                         }
-                        createMutation.mutate({ title: newTitle, description: newDescription, system: newSystem, is_active: newIsActive });
+                        const lmin = newLevelMin ? Number(newLevelMin) : null;
+                        const lmax = newLevelMax ? Number(newLevelMax) : null;
+                        if (lmin && lmax && lmin > lmax) {
+                          toast({ title: "Le niveau min doit être ≤ niveau max", variant: "destructive" }); return;
+                        }
+                        createMutation.mutate({
+                          title: newTitle,
+                          description: newDescription,
+                          summary: newSummary || null,
+                          system: newSystem,
+                          is_active: newIsActive,
+                          image_url: newImageUrl || null,
+                          planned_sessions: newPlannedSessions ? Number(newPlannedSessions) : null,
+                          level_min: lmin,
+                          level_max: lmax,
+                          max_players: newMaxPlayers ? Number(newMaxPlayers) : null,
+                          schedule: newSchedule || null,
+                          tone: newTone || null,
+                          tags: newTags.split(",").map(t => t.trim()).filter(Boolean),
+                        });
                       }}
                       disabled={createMutation.isPending}
                     >
