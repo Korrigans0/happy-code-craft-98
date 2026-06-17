@@ -31,6 +31,14 @@ interface Campaign {
   discord_link?: string | null;
   image_url?: string | null;
   allow_homebrew_characters?: boolean | null;
+  summary?: string | null;
+  planned_sessions?: number | null;
+  level_min?: number | null;
+  level_max?: number | null;
+  max_players?: number | null;
+  schedule?: string | null;
+  tone?: string | null;
+  tags?: string[] | null;
 }
 
 interface CampaignSettingsProps {
@@ -54,6 +62,24 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const [imageUrl, setImageUrl] = useState(campaign.image_url || "");
   const [imagePreviewError, setImagePreviewError] = useState(false);
 
+  // Détails campagne
+  const [summary, setSummary] = useState(campaign.summary || "");
+  const [plannedSessions, setPlannedSessions] = useState<string>(
+    campaign.planned_sessions != null ? String(campaign.planned_sessions) : ""
+  );
+  const [levelMin, setLevelMin] = useState<string>(
+    campaign.level_min != null ? String(campaign.level_min) : ""
+  );
+  const [levelMax, setLevelMax] = useState<string>(
+    campaign.level_max != null ? String(campaign.level_max) : ""
+  );
+  const [maxPlayers, setMaxPlayers] = useState<string>(
+    campaign.max_players != null ? String(campaign.max_players) : ""
+  );
+  const [schedule, setSchedule] = useState(campaign.schedule || "");
+  const [tone, setTone] = useState(campaign.tone || "");
+  const [tagsStr, setTagsStr] = useState((campaign.tags ?? []).join(", "));
+
   // Invite code
   const [inviteCode, setInviteCode] = useState(campaign.invite_code || "");
   const [codeEdited, setCodeEdited] = useState(false);
@@ -68,18 +94,32 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
 
   // ── Mise à jour générale ─────────────────────────────────────────────────
   const updateMutation = useMutation({
-    mutationFn: async () =>
-      campaignsApi.update(campaign.id, {
+    mutationFn: async () => {
+      const lmin = levelMin ? Number(levelMin) : null;
+      const lmax = levelMax ? Number(levelMax) : null;
+      if (lmin && lmax && lmin > lmax) {
+        throw new Error("Le niveau min doit être ≤ niveau max");
+      }
+      return campaignsApi.update(campaign.id, {
         title,
         description: description || null,
+        summary: summary || null,
         system,
         is_active: isActive,
         image_url: imageUrl || null,
         discord_link: discordLink || null,
         allow_homebrew_characters: allowHomebrew,
-      } as any),
+        planned_sessions: plannedSessions ? Number(plannedSessions) : null,
+        level_min: lmin,
+        level_max: lmax,
+        max_players: maxPlayers ? Number(maxPlayers) : null,
+        schedule: schedule || null,
+        tone: tone || null,
+        tags: tagsStr.split(",").map((t) => t.trim()).filter(Boolean),
+      } as never);
+    },
     onSuccess: () => { invalidate(); toast({ title: "Campagne mise à jour ✓" }); },
-    onError: () => toast({ title: "Erreur lors de la sauvegarde", variant: "destructive" }),
+    onError: (err: Error) => toast({ title: err.message || "Erreur lors de la sauvegarde", variant: "destructive" }),
   });
 
   // ── Sauvegarder le code d'invitation ─────────────────────────────────────
