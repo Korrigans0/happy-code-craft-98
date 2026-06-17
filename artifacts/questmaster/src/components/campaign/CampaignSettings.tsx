@@ -342,6 +342,95 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
         </CardContent>
       </Card>
 
+      {/* ══ DÉTAILS DE LA CAMPAGNE ════════════════════════════════════════════ */}
+      <Card className="bg-gradient-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-primary" />
+            Détails de la campagne
+          </CardTitle>
+          <CardDescription>
+            Résumé, niveaux, sessions, rythme — ces infos aident vos joueurs à se projeter.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="summary">Résumé court (info)</Label>
+            <Input
+              id="summary"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value.slice(0, 140))}
+              maxLength={140}
+              placeholder="Horreur gothique en Barovie — 4 à 6 joueurs"
+            />
+            <p className="text-xs text-muted-foreground">{summary.length}/140</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="lvl-min">Niveau min</Label>
+              <Input id="lvl-min" type="number" min={1} value={levelMin}
+                onChange={(e) => setLevelMin(e.target.value)} placeholder="1" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lvl-max">Niveau max</Label>
+              <Input id="lvl-max" type="number" min={1} value={levelMax}
+                onChange={(e) => setLevelMax(e.target.value)} placeholder="10" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="max-players">Joueurs max</Label>
+              <Input id="max-players" type="number" min={1} max={20} value={maxPlayers}
+                onChange={(e) => setMaxPlayers(e.target.value)} placeholder="5" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="planned-sessions">Sessions prévues</Label>
+              <Input id="planned-sessions" type="number" min={1} value={plannedSessions}
+                onChange={(e) => setPlannedSessions(e.target.value)} placeholder="12" />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="schedule">Rythme / planning</Label>
+              <Input id="schedule" value={schedule}
+                onChange={(e) => setSchedule(e.target.value)}
+                placeholder="Tous les vendredis 20h" />
+            </div>
+            <div className="space-y-2">
+              <Label>Tonalité</Label>
+              <Select value={tone || "non-defini"} onValueChange={(v) => setTone(v === "non-defini" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="non-defini">Non défini</SelectItem>
+                  <SelectItem value="serieux">Sérieux / immersif</SelectItem>
+                  <SelectItem value="heroique">Héroïque</SelectItem>
+                  <SelectItem value="sombre">Sombre / horreur</SelectItem>
+                  <SelectItem value="leger">Léger / humoristique</SelectItem>
+                  <SelectItem value="mixte">Mixte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Étiquettes (séparées par des virgules)</Label>
+            <Input id="tags" value={tagsStr}
+              onChange={(e) => setTagsStr(e.target.value)}
+              placeholder="dark fantasy, enquête, politique" />
+          </div>
+
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+            variant="gold"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Sauvegarder les détails
+          </Button>
+        </CardContent>
+      </Card>
+
+
       {/* ══ CODE & LIEN D'INVITATION ══════════════════════════════════════════ */}
       <Card className="bg-gradient-card border-border">
         <CardHeader>
