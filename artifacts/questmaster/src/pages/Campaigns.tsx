@@ -222,19 +222,8 @@ const Campaigns = () => {
                   <div className="space-y-5 py-2">
                     {/* Bannière */}
                     <div className="space-y-2">
-                      <Label htmlFor="new-banner">Bannière (URL d'image)</Label>
-                      {newImageUrl && (
-                        <div className="relative h-32 w-full overflow-hidden rounded-lg border border-border/60">
-                          <img src={newImageUrl} alt="" className="h-full w-full object-cover"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                        </div>
-                      )}
-                      <Input
-                        id="new-banner"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        placeholder="https://exemple.com/banniere.jpg"
-                      />
+                      <Label>Bannière de campagne</Label>
+                      <BannerUpload value={newImageUrl} onChange={setNewImageUrl} />
                       <p className="text-xs text-muted-foreground">Image affichée en haut de la fiche campagne et sur la carte.</p>
                     </div>
 
