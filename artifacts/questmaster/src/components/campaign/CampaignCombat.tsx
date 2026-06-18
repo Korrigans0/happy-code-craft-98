@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { campaignsApi } from "@/lib/api";
+import { campaignsApi, compendiumApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -242,10 +242,7 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
 
   const { data: monstersData = [] } = useQuery({
     queryKey: ["compendiumMonsters"],
-    queryFn: async () => {
-      const { compendiumApi } = await import("@/lib/api");
-      return compendiumApi.getMonsters();
-    },
+    queryFn: async () => compendiumApi.getMonsters(),
   });
   const monsters: Monster[] = useMemo(
     () => (monstersData as any[]).map((m: any) => ({

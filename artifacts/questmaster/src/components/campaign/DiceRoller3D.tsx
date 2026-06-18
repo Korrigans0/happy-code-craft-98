@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Dices, X, Plus, Minus, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { campaignsApi } from "@/lib/api";
 import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
 
 /* ============================================================
@@ -711,13 +712,11 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
           const critTxt = crit === "success" ? " ✦ Critique !" : crit === "fail" ? " ✗ Échec critique" : "";
           const content = `🎲 ${author} lance ${formula} → [${detailsStr}]${critTxt}`;
           // Chat persistence (best-effort)
-          import("@/lib/api").then(({ campaignsApi }) => {
-            campaignsApi.postMessage(campaignId, {
-              content,
-              message_type: "dice_roll",
-              metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
-            }).catch(() => { /* ignore */ });
-          });
+          campaignsApi.postMessage(campaignId, {
+            content,
+            message_type: "dice_roll",
+            metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
+          }).catch(() => { /* ignore */ });
           // Realtime broadcast for floating overlay
           const ch: any = (supabase as any).channel(`vtt-dice-${campaignId}`);
           ch.subscribe?.((status: string) => {
