@@ -292,55 +292,29 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
             Image de couverture
           </CardTitle>
           <CardDescription>
-            Donnez une identité visuelle à votre campagne (URL d'image)
+            Importez une image depuis votre appareil pour donner une identité visuelle à votre campagne.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Aperçu */}
-          {imageUrl && isValidImageUrl(imageUrl) && !imagePreviewError && (
-            <div className="relative overflow-hidden rounded-lg border border-border/60 aspect-video bg-muted">
-              <img
-                src={imageUrl}
-                alt="Aperçu"
-                className="h-full w-full object-cover"
-                onError={() => setImagePreviewError(true)}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-              <Badge className="absolute bottom-2 left-2 text-xs bg-background/80">
-                Aperçu
-              </Badge>
-            </div>
-          )}
-          {imagePreviewError && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              Impossible de charger cette image. Vérifiez l'URL.
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="image-url">URL de l'image</Label>
-            <Input
-              id="image-url"
-              value={imageUrl}
-              onChange={(e) => { setImageUrl(e.target.value); setImagePreviewError(false); }}
-              placeholder="https://exemple.com/image-de-campagne.jpg"
-            />
-            <p className="text-xs text-muted-foreground">
-              Formats recommandés : JPG, PNG, WebP. Ratio 16:9 conseillé.
-            </p>
-          </div>
+          <BannerUpload
+            value={imageUrl}
+            onChange={(url) => { setImageUrl(url); setImagePreviewError(false); }}
+          />
+          <p className="text-xs text-muted-foreground">
+            Formats recommandés : JPG, PNG, WebP. Ratio 16:9 conseillé.
+          </p>
 
           <Button
             variant="outline"
             onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending || (!!imageUrl && !isValidImageUrl(imageUrl))}
+            disabled={updateMutation.isPending}
           >
             <Save className="mr-2 h-4 w-4" />
             Sauvegarder l'image
           </Button>
         </CardContent>
       </Card>
+
 
       {/* ══ DÉTAILS DE LA CAMPAGNE ════════════════════════════════════════════ */}
       <Card className="bg-gradient-card border-border">
