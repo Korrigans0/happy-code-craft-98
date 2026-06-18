@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import { BannerUpload } from "@/components/campaign/BannerUpload";
 import { toast } from "@/hooks/use-toast";
 
 interface Campaign {
