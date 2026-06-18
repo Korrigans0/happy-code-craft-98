@@ -19,7 +19,7 @@ run = "pnpm --filter @workspace/questmaster run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/questmaster", "run", "build" ]
-publicDir = "artifacts/questmaster/dist/public"
+publicDir = "artifacts/questmaster/dist"
 serve = "static"
 
 [[services.production.rewrites]]
