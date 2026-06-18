@@ -42,7 +42,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { campaignsApi, charactersApi } from "@/lib/api";
+import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -591,7 +591,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     queryKey: ["vtt-wa-creatures", campaignSystem],
     enabled: campaignSystem === "Worlds Awakening",
     queryFn: async () => {
-      try { return await (await import("@/lib/api")).compendiumApi.getWaCreatures(); }
+      try { return await compendiumApi.getWaCreatures(); }
       catch { return []; }
     },
   });
@@ -628,7 +628,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
     queryKey: ["vtt-user-characters", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      try { return await (await import("@/lib/api")).charactersApi.list(); }
+      try { return await charactersApi.list(); }
       catch { return []; }
     },
   });
