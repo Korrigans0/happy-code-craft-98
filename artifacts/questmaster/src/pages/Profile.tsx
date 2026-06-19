@@ -325,8 +325,5 @@ const Profile = () => {
 };
 
 export default Profile;
-    </div>
-  );
-};
 
 export default Profile;
