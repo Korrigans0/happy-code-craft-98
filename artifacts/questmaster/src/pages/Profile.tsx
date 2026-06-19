@@ -319,6 +319,12 @@ const Profile = () => {
         onConfirm={confirmCrop}
         isUploading={isUploadingAvatar}
       />
+      {replayTour && <OnboardingTour force onClose={() => setReplayTour(false)} />}
+    </div>
+  );
+};
+
+export default Profile;
     </div>
   );
 };
