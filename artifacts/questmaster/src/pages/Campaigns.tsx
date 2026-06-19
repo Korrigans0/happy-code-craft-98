@@ -657,6 +657,7 @@ const Campaigns = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <OnboardingTour />
     </div>
   );
 };
