@@ -12,8 +12,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles } from 'lucide-react';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
+import { OnboardingTour, resetOnboarding } from '@/components/onboarding/OnboardingTour';
 
 
 interface ProfileData {
@@ -35,6 +36,7 @@ const Profile = () => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
+  const [replayTour, setReplayTour] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -296,6 +298,14 @@ const Profile = () => {
                 <Button onClick={handleSave} className="w-full bg-gradient-gold hover:opacity-90" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Enregistrer
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { resetOnboarding(); setReplayTour(true); }}
+                  className="w-full"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Revoir le tutoriel de bienvenue
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -309,6 +319,7 @@ const Profile = () => {
         onConfirm={confirmCrop}
         isUploading={isUploadingAvatar}
       />
+      {replayTour && <OnboardingTour force onClose={() => setReplayTour(false)} />}
     </div>
   );
 };

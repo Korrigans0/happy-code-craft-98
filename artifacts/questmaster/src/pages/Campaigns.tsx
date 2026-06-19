@@ -21,6 +21,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { toast } from "@/hooks/use-toast";
 
 interface Campaign {
@@ -656,6 +657,7 @@ const Campaigns = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <OnboardingTour />
     </div>
   );
 };
