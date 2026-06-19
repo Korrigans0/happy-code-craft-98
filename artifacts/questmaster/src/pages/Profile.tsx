@@ -36,6 +36,7 @@ const Profile = () => {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
+  const [replayTour, setReplayTour] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
