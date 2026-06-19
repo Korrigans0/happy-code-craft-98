@@ -298,6 +298,14 @@ const Profile = () => {
                 <Button onClick={handleSave} className="w-full bg-gradient-gold hover:opacity-90" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Enregistrer
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { resetOnboarding(); setReplayTour(true); }}
+                  className="w-full"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Revoir le tutoriel de bienvenue
+                </Button>
               </CardContent>
             </Card>
           </div>
