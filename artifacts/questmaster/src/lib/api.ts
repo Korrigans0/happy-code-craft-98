@@ -109,7 +109,11 @@ export const campaignsApi = {
     const { data, error } = await supabase.rpc("join_campaign_by_invite_code", {
       _code: invite_code.trim(),
     });
-    if (error) throw new Error("Code d'invitation invalide");
+    if (error) {
+      const friendly = formatPlanError(error.message);
+      if (friendly) throw new Error(friendly);
+      throw new Error("Code d'invitation invalide");
+    }
     if (!data) throw new Error("Code d'invitation invalide");
     return { campaign_id: data as string };
   },
