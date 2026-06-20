@@ -320,6 +320,15 @@ const Characters = () => {
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">
 
+          {plan && (
+            <PlanLimitBanner
+              tier={plan.tier}
+              used={plan.charactersUsed}
+              limit={plan.limits.characters}
+              label="Personnages créés"
+            />
+          )}
+
           {/* Header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
