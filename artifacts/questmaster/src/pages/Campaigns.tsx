@@ -22,6 +22,8 @@ import Footer from "@/components/Footer";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import PlanLimitBanner from "@/components/PlanLimitBanner";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { toast } from "@/hooks/use-toast";
 
 interface Campaign {

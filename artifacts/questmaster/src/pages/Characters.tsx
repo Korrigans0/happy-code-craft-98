@@ -16,6 +16,8 @@ import CharacterForm from "@/components/characters/CharacterForm";
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import PlanLimitBanner from "@/components/PlanLimitBanner";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 interface Character {
   id: string;
