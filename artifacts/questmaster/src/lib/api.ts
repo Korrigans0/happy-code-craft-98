@@ -3,6 +3,7 @@
 // callsites (campaignsApi.list(), charactersApi.create(), …) keep working.
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatPlanError } from "@/lib/plan-limits";
 
 // Kept for backward compatibility with App.tsx wiring; no longer used.
 export function setTokenGetter(_fn: () => Promise<string | null>) {}
@@ -14,7 +15,10 @@ async function uid(): Promise<string> {
 }
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
-  if (res.error) throw new Error(res.error.message);
+  if (res.error) {
+    const friendly = formatPlanError(res.error.message);
+    throw new Error(friendly ?? res.error.message);
+  }
   return res.data as T;
 }
 
