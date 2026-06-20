@@ -185,6 +185,15 @@ const Campaigns = () => {
       <main className="flex-1 py-10">
         <div className="container mx-auto px-4 md:px-6">
 
+          {plan && (
+            <PlanLimitBanner
+              tier={plan.tier}
+              used={plan.campaignsUsed}
+              limit={plan.limits.campaigns}
+              label="Campagnes créées"
+            />
+          )}
+
           {/* ── En-tête ── */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -210,7 +219,20 @@ const Campaigns = () => {
                 <KeyRound className="mr-2 h-4 w-4" />
                 Rejoindre
               </Button>
-              <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <Dialog
+                open={isCreateOpen}
+                onOpenChange={(open) => {
+                  if (open && plan && !plan.canCreateCampaign) {
+                    toast({
+                      title: "Limite atteinte",
+                      description: "Le plan gratuit est limité à 3 campagnes. Passez Premium pour en créer plus.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  setIsCreateOpen(open);
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button variant="gold">
                     <Plus className="mr-2 h-4 w-4" />
