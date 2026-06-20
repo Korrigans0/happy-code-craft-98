@@ -16,6 +16,8 @@ import CharacterForm from "@/components/characters/CharacterForm";
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterSheet";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import PlanLimitBanner from "@/components/PlanLimitBanner";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 interface Character {
   id: string;
@@ -122,6 +124,7 @@ const Characters = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const plan = usePlanLimits();
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
 
@@ -217,9 +220,17 @@ const Characters = () => {
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
 
   const handleNewCharacter = useCallback(() => {
+    if (plan && !plan.canCreateCharacter) {
+      toast({
+        title: "Limite atteinte",
+        description: "Le plan gratuit est limité à 3 personnages. Passez Premium pour en créer plus.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, []);
+  }, [plan]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
@@ -308,6 +319,15 @@ const Characters = () => {
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto px-4 md:px-6">
+
+          {plan && (
+            <PlanLimitBanner
+              tier={plan.tier}
+              used={plan.charactersUsed}
+              limit={plan.limits.characters}
+              label="Personnages créés"
+            />
+          )}
 
           {/* Header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

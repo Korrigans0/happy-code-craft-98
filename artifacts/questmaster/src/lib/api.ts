@@ -3,6 +3,7 @@
 // callsites (campaignsApi.list(), charactersApi.create(), …) keep working.
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatPlanError } from "@/lib/plan-limits";
 
 // Kept for backward compatibility with App.tsx wiring; no longer used.
 export function setTokenGetter(_fn: () => Promise<string | null>) {}
@@ -14,7 +15,10 @@ async function uid(): Promise<string> {
 }
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
-  if (res.error) throw new Error(res.error.message);
+  if (res.error) {
+    const friendly = formatPlanError(res.error.message);
+    throw new Error(friendly ?? res.error.message);
+  }
   return res.data as T;
 }
 
@@ -105,7 +109,11 @@ export const campaignsApi = {
     const { data, error } = await supabase.rpc("join_campaign_by_invite_code", {
       _code: invite_code.trim(),
     });
-    if (error) throw new Error("Code d'invitation invalide");
+    if (error) {
+      const friendly = formatPlanError(error.message);
+      if (friendly) throw new Error(friendly);
+      throw new Error("Code d'invitation invalide");
+    }
     if (!data) throw new Error("Code d'invitation invalide");
     return { campaign_id: data as string };
   },
