@@ -220,9 +220,17 @@ const Characters = () => {
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
 
   const handleNewCharacter = useCallback(() => {
+    if (plan && !plan.canCreateCharacter) {
+      toast({
+        title: "Limite atteinte",
+        description: "Le plan gratuit est limité à 3 personnages. Passez Premium pour en créer plus.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, []);
+  }, [plan]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
