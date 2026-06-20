@@ -124,6 +124,7 @@ const Characters = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const plan = usePlanLimits();
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
 
