@@ -167,7 +167,7 @@ export const campaignsApi = {
     const { data, error } = await supabase.functions.invoke("clear-campaign-messages", {
       body: { campaign_id: id, scope },
     });
-    if (error) throw new Error(error.message);
+    if (error) fail(error);
     return data ?? { ok: true };
   },
   getAuditLog: async (id: string) => {
