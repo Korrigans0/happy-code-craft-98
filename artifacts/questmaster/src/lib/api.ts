@@ -39,7 +39,7 @@ export const profilesApi = {
   getMe: async () => {
     const userId = await uid();
     const r = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     if (r.data) return r.data;
     // Auto-create if missing
     const ins = await supabase.from("profiles").insert({ user_id: userId }).select().single();
@@ -61,7 +61,7 @@ export const campaignsApi = {
       .from("campaign_members")
       .select("campaign_id")
       .eq("user_id", userId);
-    if (memberships.error) throw new Error(memberships.error.message);
+    if (memberships.error) fail(memberships.error);
     const ids = (memberships.data ?? []).map((m: { campaign_id: string }) => m.campaign_id);
     if (ids.length === 0) return [];
     const r = await supabase
@@ -104,7 +104,7 @@ export const campaignsApi = {
   },
   delete: async (id: string) => {
     const r = await supabase.from("campaigns").delete().eq("id", id);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
   join: async (invite_code: string) => {
@@ -125,7 +125,7 @@ export const campaignsApi = {
   },
   removeMember: async (id: string, memberId: string) => {
     const r = await supabase.from("campaign_members").delete().eq("id", memberId).eq("campaign_id", id);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
   assignCharacter: async (id: string, memberId: string, characterId: string | null) => {
@@ -207,7 +207,7 @@ export const campaignsApi = {
   },
   deleteNote: async (_id: string, noteId: string) => {
     const r = await supabase.from("campaign_notes").delete().eq("id", noteId);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
   getCampaignCharacters: async (id: string) => {
@@ -216,7 +216,7 @@ export const campaignsApi = {
       .select("character_id")
       .eq("campaign_id", id)
       .not("character_id", "is", null);
-    if (members.error) throw new Error(members.error.message);
+    if (members.error) fail(members.error);
     const ids = (members.data ?? []).map((m: { character_id: string }) => m.character_id).filter(Boolean);
     if (!ids.length) return [];
     const r = await supabase.from("characters").select("*").in("id", ids);
@@ -251,12 +251,12 @@ export const campaignsApi = {
     campaignsApi.updateSession(id, sessionId, { mark_complete: true }),
   deleteSession: async (_id: string, sessionId: string) => {
     const r = await supabase.from("campaign_sessions").delete().eq("id", sessionId);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
   getTabletop: async (id: string) => {
     const r = await supabase.from("tabletop_state").select("*").eq("campaign_id", id).maybeSingle();
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return r.data ?? { campaign_id: id, tokens: [], drawings: [], pan_offset: { x: 0, y: 0 }, zoom: 1, fog_visible: false };
   },
   saveTabletop: async (id: string, data: Record<string, unknown>) => {
@@ -281,14 +281,14 @@ export const campaignsApi = {
       .eq("campaign_id", id)
       .eq("is_active", true)
       .maybeSingle();
-    if (enc.error) throw new Error(enc.error.message);
+    if (enc.error) fail(enc.error);
     if (!enc.data) return null;
     const parts = await supabase
       .from("combat_participants")
       .select("*")
       .eq("encounter_id", enc.data.id)
       .order("turn_order", { ascending: true });
-    if (parts.error) throw new Error(parts.error.message);
+    if (parts.error) fail(parts.error);
     return { ...enc.data, participants: parts.data ?? [] };
   },
   createCombat: async (id: string, name: string) => {
@@ -315,7 +315,7 @@ export const campaignsApi = {
       .update({ is_active: false })
       .eq("campaign_id", id)
       .eq("is_active", true);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
   addCombatParticipant: async (id: string, data: Record<string, unknown>) => {
@@ -325,7 +325,7 @@ export const campaignsApi = {
       .eq("campaign_id", id)
       .eq("is_active", true)
       .single();
-    if (enc.error) throw new Error(enc.error.message);
+    if (enc.error) fail(enc.error);
     const r = await supabase
       .from("combat_participants")
       .insert({ ...data, encounter_id: enc.data.id })
@@ -339,7 +339,7 @@ export const campaignsApi = {
   },
   removeCombatParticipant: async (_id: string, pid: string) => {
     const r = await supabase.from("combat_participants").delete().eq("id", pid);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
 };
@@ -374,7 +374,7 @@ export const charactersApi = {
   },
   delete: async (id: string) => {
     const r = await supabase.from("characters").delete().eq("id", id);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
 };
@@ -405,7 +405,7 @@ async function listMyTable(table: string) {
 }
 async function deleteFromTable(table: string, id: string) {
   const r = await supabase.from(table).delete().eq("id", id);
-  if (r.error) throw new Error(r.error.message);
+  if (r.error) fail(r.error);
   return { ok: true };
 }
 async function updateInTable(table: string, id: string, patch: Record<string, unknown>) {
@@ -439,7 +439,7 @@ export const compendiumApi = {
   createAetheriaCreature: (d: Record<string, unknown>) => createInTable("aetheria_creatures", d),
   deleteAetheriaCreature: async (id: string) => {
     const r = await supabase.from("aetheria_creatures").delete().eq("id", id);
-    if (r.error) throw new Error(r.error.message);
+    if (r.error) fail(r.error);
     return { ok: true };
   },
 };
