@@ -3171,6 +3171,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           onClick={() => setFullscreen(f => !f)} title={fullscreen ? "Quitter plein écran (F)" : "Plein écran (F)"}>
           {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </Button>
+
+        {/* Connection / sync status — discret en bout de toolbar */}
+        <div className="ml-auto flex items-center pr-1">
+          <ConnectionStatus
+            status={connectionStatus}
+            isSaving={isSaving}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+          />
+        </div>
       </div>
 
       {/* ── MAIN AREA ──────────────────────────────────────── */}
