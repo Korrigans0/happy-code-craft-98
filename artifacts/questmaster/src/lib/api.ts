@@ -3,22 +3,24 @@
 // callsites (campaignsApi.list(), charactersApi.create(), …) keep working.
 
 import { supabase } from "@/integrations/supabase/client";
-import { formatPlanError } from "@/lib/plan-limits";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 // Kept for backward compatibility with App.tsx wiring; no longer used.
 export function setTokenGetter(_fn: () => Promise<string | null>) {}
 
+/** Lance une erreur déjà traduite en français lisible par l'utilisateur. */
+function fail(err: unknown): never {
+  throw new Error(toFriendlyMessage(err));
+}
+
 async function uid(): Promise<string> {
   const { data } = await supabase.auth.getUser();
-  if (!data.user) throw new Error("Non authentifié");
+  if (!data.user) throw new Error("Vous devez être connecté pour effectuer cette action.");
   return data.user.id;
 }
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
-  if (res.error) {
-    const friendly = formatPlanError(res.error.message);
-    throw new Error(friendly ?? res.error.message);
-  }
+  if (res.error) fail(res.error);
   return res.data as T;
 }
 
