@@ -44,6 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
