@@ -44,6 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -404,7 +405,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
-  const { saveState } = useTabletopSync({
+  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
@@ -3170,6 +3171,16 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
           onClick={() => setFullscreen(f => !f)} title={fullscreen ? "Quitter plein écran (F)" : "Plein écran (F)"}>
           {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </Button>
+
+        {/* Connection / sync status — discret en bout de toolbar */}
+        <div className="ml-auto flex items-center pr-1">
+          <ConnectionStatus
+            status={connectionStatus}
+            isSaving={isSaving}
+            isDirty={isDirty}
+            lastSavedAt={lastSavedAt}
+          />
+        </div>
       </div>
 
       {/* ── MAIN AREA ──────────────────────────────────────── */}

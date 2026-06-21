@@ -115,10 +115,15 @@ export function useTabletopSync({
   const lastUpdatedAtRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
   const dirtyRef = useRef(false);
+  const consecutiveErrorsRef = useRef(0);
+  const saveErrorsRef = useRef(0);
 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<"online" | "offline" | "reconnecting">(
+    typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "online"
+  );
 
   const markDirty = useCallback((value: boolean) => {
     if (dirtyRef.current === value) return;
@@ -145,11 +150,22 @@ export function useTabletopSync({
       }));
     try {
       await writeQueueRef.current;
+      saveErrorsRef.current = 0;
+      setConnectionStatus((s) => (s === "offline" ? s : "online"));
       setLastSavedAt(new Date());
     } catch (e) {
       console.error("[Tabletop] Erreur sauvegarde:", e);
+      saveErrorsRef.current = Math.min(saveErrorsRef.current + 1, 6);
       // Re-merge failed payload so next save retries it
       pendingStateRef.current = { ...payload, ...pendingStateRef.current };
+      // Schedule a backoff retry if no new edit comes in soon (1s, 2s, 4s, …, max 30s)
+      const backoff = Math.min(1000 * 2 ** (saveErrorsRef.current - 1), 30_000);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        saveTimeoutRef.current = null;
+        void flush();
+      }, backoff);
+      setConnectionStatus((s) => (s === "offline" ? s : "reconnecting"));
     } finally {
       setIsSaving(false);
       if (Object.keys(pendingStateRef.current).length === 0) markDirty(false);
@@ -204,18 +220,43 @@ export function useTabletopSync({
 
   useEffect(() => {
     let cancelled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
     lastUpdatedAtRef.current = null;
+    consecutiveErrorsRef.current = 0;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      // Exponential backoff on consecutive errors: 3s → 6s → 12s → 24s → 30s max
+      const errs = consecutiveErrorsRef.current;
+      const delay = errs === 0 ? pollMs : Math.min(pollMs * 2 ** errs, 30_000);
+      pollTimer = setTimeout(() => void pull(false), delay);
+    };
 
     const pull = async (initial = false) => {
-      if (cancelled || inFlightRef.current) return;
-      // Skip polling when tab is hidden — saves CPU & bandwidth
-      if (!initial && typeof document !== "undefined" && document.hidden) return;
+      if (cancelled || inFlightRef.current) {
+        if (!initial) scheduleNext();
+        return;
+      }
+      // Skip polling when tab is hidden or browser reports offline
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      if (!initial && ((typeof document !== "undefined" && document.hidden) || offline)) {
+        scheduleNext();
+        return;
+      }
       // Don't overwrite local pending changes with remote echo
-      if (!initial && dirtyRef.current) return;
+      if (!initial && dirtyRef.current) {
+        scheduleNext();
+        return;
+      }
       inFlightRef.current = true;
       try {
         const data = await campaignsApi.getTabletop(campaignId);
-        if (cancelled || !data) return;
+        if (cancelled) return;
+        if (!data) {
+          consecutiveErrorsRef.current = 0;
+          setConnectionStatus((s) => (s === "offline" ? s : "online"));
+          return;
+        }
 
         const updatedAt = (data as { updated_at?: string }).updated_at ?? null;
         const isOwnEcho = !initial && data.updated_by === userId;
@@ -227,22 +268,45 @@ export function useTabletopSync({
           lastSavedRef.current = normalized;
           onStateReceivedRef.current(normalized);
         }
+        consecutiveErrorsRef.current = 0;
+        setConnectionStatus((s) => (s === "offline" ? s : "online"));
       } catch (e) {
+        consecutiveErrorsRef.current = Math.min(consecutiveErrorsRef.current + 1, 6);
         if (initial) console.error("[Tabletop] Erreur chargement:", e);
+        else console.warn("[Tabletop] Pull échoué (retry avec backoff):", e);
+        setConnectionStatus((s) => (s === "offline" ? s : "reconnecting"));
       } finally {
         inFlightRef.current = false;
         if (initial) initializedRef.current = true;
+        if (!cancelled) scheduleNext();
       }
     };
 
     pull(true);
-    const pollInterval = setInterval(() => void pull(false), pollMs);
 
-    // Flush pending state when tab becomes hidden
+    // Flush pending state when tab becomes hidden; resume polling immediately when visible.
     const onVisibility = () => {
-      if (document.hidden && dirtyRef.current) void flush();
+      if (document.hidden) {
+        if (dirtyRef.current) void flush();
+      } else {
+        if (pollTimer) clearTimeout(pollTimer);
+        void pull(false);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
+
+    // Network online/offline: instant reaction
+    const onOnline = () => {
+      consecutiveErrorsRef.current = 0;
+      setConnectionStatus("reconnecting");
+      if (pollTimer) clearTimeout(pollTimer);
+      void pull(false);
+      // Retry any pending save right away
+      if (dirtyRef.current) void flush();
+    };
+    const onOffline = () => setConnectionStatus("offline");
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
 
     // Warn on unload if there are unsaved changes
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -255,8 +319,10 @@ export function useTabletopSync({
 
     return () => {
       cancelled = true;
-      clearInterval(pollInterval);
+      if (pollTimer) clearTimeout(pollTimer);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
       window.removeEventListener("beforeunload", onBeforeUnload);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -266,5 +332,5 @@ export function useTabletopSync({
     };
   }, [campaignId, userId, pollMs, flush, warnOnUnload]);
 
-  return { saveState, flushNow, isDirty, isSaving, lastSavedAt };
+  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus };
 }
