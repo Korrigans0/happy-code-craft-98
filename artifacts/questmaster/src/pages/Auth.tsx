@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -63,8 +64,7 @@ const Auth = () => {
         toast.success("Connexion réussie");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erreur inconnue";
-      toast.error(message);
+      toast.error(toFriendlyMessage(err));
     } finally {
       setBusy(false);
     }
@@ -75,7 +75,7 @@ const Auth = () => {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error(result.error instanceof Error ? result.error.message : String(result.error));
+      toast.error(toFriendlyMessage(result.error));
       return;
     }
     if (result.redirected) return;
@@ -145,7 +145,7 @@ const Auth = () => {
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${window.location.origin}/reset-password`,
                 });
-                if (error) toast.error(error.message);
+                if (error) toast.error(toFriendlyMessage(error));
                 else toast.success("Email de réinitialisation envoyé");
               }}
             >

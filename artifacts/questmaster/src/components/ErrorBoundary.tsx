@@ -47,9 +47,14 @@ class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
             {this.state.error && (
-              <pre className="rounded-lg bg-muted p-3 text-left text-xs text-muted-foreground overflow-auto max-h-32">
-                {this.state.error.message}
-              </pre>
+              <details className="text-left">
+                <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                  Détails techniques
+                </summary>
+                <pre className="mt-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground overflow-auto max-h-32">
+                  {this.state.error.message}
+                </pre>
+              </details>
             )}
             <div className="flex gap-3 justify-center">
               <Button variant="outline" onClick={this.handleGoHome}>
