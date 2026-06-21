@@ -115,10 +115,15 @@ export function useTabletopSync({
   const lastUpdatedAtRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
   const dirtyRef = useRef(false);
+  const consecutiveErrorsRef = useRef(0);
+  const saveErrorsRef = useRef(0);
 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<"online" | "offline" | "reconnecting">(
+    typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "online"
+  );
 
   const markDirty = useCallback((value: boolean) => {
     if (dirtyRef.current === value) return;
