@@ -64,8 +64,7 @@ const Auth = () => {
         toast.success("Connexion réussie");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erreur inconnue";
-      toast.error(message);
+      toast.error(toFriendlyMessage(err));
     } finally {
       setBusy(false);
     }
