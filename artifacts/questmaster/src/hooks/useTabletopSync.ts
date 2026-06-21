@@ -332,5 +332,5 @@ export function useTabletopSync({
     };
   }, [campaignId, userId, pollMs, flush, warnOnUnload]);
 
-  return { saveState, flushNow, isDirty, isSaving, lastSavedAt };
+  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus };
 }
