@@ -112,11 +112,12 @@ export const campaignsApi = {
       _code: invite_code.trim(),
     });
     if (error) {
-      const friendly = formatPlanError(error.message);
-      if (friendly) throw new Error(friendly);
-      throw new Error("Code d'invitation invalide");
+      const friendly = toFriendlyMessage(error);
+      // Si le message n'a pas été reconnu (ex: code RPC vague), retombe sur un message métier clair.
+      if (/erreur est survenue/i.test(friendly)) throw new Error("Code d'invitation invalide ou expiré.");
+      throw new Error(friendly);
     }
-    if (!data) throw new Error("Code d'invitation invalide");
+    if (!data) throw new Error("Code d'invitation invalide ou expiré.");
     return { campaign_id: data as string };
   },
   getMembers: async (id: string) => {
