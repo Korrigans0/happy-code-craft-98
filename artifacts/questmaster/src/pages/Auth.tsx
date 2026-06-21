@@ -75,7 +75,7 @@ const Auth = () => {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error(result.error instanceof Error ? result.error.message : String(result.error));
+      toast.error(toFriendlyMessage(result.error));
       return;
     }
     if (result.redirected) return;
