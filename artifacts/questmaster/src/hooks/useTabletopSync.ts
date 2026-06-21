@@ -150,11 +150,22 @@ export function useTabletopSync({
       }));
     try {
       await writeQueueRef.current;
+      saveErrorsRef.current = 0;
+      setConnectionStatus((s) => (s === "offline" ? s : "online"));
       setLastSavedAt(new Date());
     } catch (e) {
       console.error("[Tabletop] Erreur sauvegarde:", e);
+      saveErrorsRef.current = Math.min(saveErrorsRef.current + 1, 6);
       // Re-merge failed payload so next save retries it
       pendingStateRef.current = { ...payload, ...pendingStateRef.current };
+      // Schedule a backoff retry if no new edit comes in soon (1s, 2s, 4s, …, max 30s)
+      const backoff = Math.min(1000 * 2 ** (saveErrorsRef.current - 1), 30_000);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        saveTimeoutRef.current = null;
+        void flush();
+      }, backoff);
+      setConnectionStatus((s) => (s === "offline" ? s : "reconnecting"));
     } finally {
       setIsSaving(false);
       if (Object.keys(pendingStateRef.current).length === 0) markDirty(false);
