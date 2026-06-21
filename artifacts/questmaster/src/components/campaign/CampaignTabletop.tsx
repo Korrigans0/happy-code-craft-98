@@ -404,7 +404,7 @@ const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
-  const { saveState } = useTabletopSync({
+  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state) => {
