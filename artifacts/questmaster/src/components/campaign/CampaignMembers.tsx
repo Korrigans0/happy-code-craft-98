@@ -361,7 +361,17 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
+        {isGM && (
+          <Button size="sm" variant="outline" onClick={() => setInviteEmailOpen(true)} className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
+            <Mail className="h-3.5 w-3.5 mr-1.5" />
+            Inviter par email
+          </Button>
+        )}
+      </div>
+
+
 
       {isGM && pendingProposals.length > 0 && (
         <div className="space-y-2">
