@@ -23,6 +23,7 @@ import JoinCampaign from "./pages/JoinCampaign";
 import Partners from "./pages/Partners";
 import Subscriptions from "./pages/Subscriptions";
 import Guide from "./pages/Guide";
+import Unsubscribe from "./pages/Unsubscribe";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ const AppRoutes = () => (
         <Route path="/partners" element={<Partners />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/guide" element={<Guide />} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <MobileBottomNav />

@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send } from "lucide-react";
+import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send, Mail } from "lucide-react";
 import { filterCompatibleCharacters } from "@/lib/system-compatibility";
 import { getSystem } from "@/lib/systems";
 
@@ -175,6 +177,8 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
+  const [inviteEmailOpen, setInviteEmailOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const { data: campaign } = useQuery({
     queryKey: ["campaign", campaignId],
@@ -302,6 +306,37 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     },
   });
 
+  const sendInviteEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const c: any = campaign;
+      if (!c?.invite_code) throw new Error("Aucun code d'invitation disponible pour cette campagne.");
+      const joinUrl = `${window.location.origin}/join/${c.invite_code}`;
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "campaign-invitation",
+          recipientEmail: email.trim(),
+          idempotencyKey: `campaign-invite-${campaignId}-${email.trim().toLowerCase()}`,
+          templateData: {
+            inviterName: (user as any)?.user_metadata?.display_name || (user?.email?.split("@")[0]) || "Un MJ",
+            campaignName: c?.name ?? "une campagne",
+            inviteCode: c.invite_code,
+            joinUrl,
+          },
+        },
+      });
+      if (error) throw new Error(error.message || "Envoi impossible");
+    },
+    onSuccess: () => {
+      toast({ title: "Invitation envoyée", description: "L'aventurier a reçu son parchemin." });
+      setInviteEmailOpen(false);
+      setInviteEmail("");
+    },
+    onError: (err: Error) => {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    },
+  });
+
   const getInitials = (member: any) => {
     if (member.display_name) {
       return member.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -326,7 +361,17 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="text-lg font-semibold text-foreground">Membres de la campagne</h3>
+        {isGM && (
+          <Button size="sm" variant="outline" onClick={() => setInviteEmailOpen(true)} className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
+            <Mail className="h-3.5 w-3.5 mr-1.5" />
+            Inviter par email
+          </Button>
+        )}
+      </div>
+
+
 
       {isGM && pendingProposals.length > 0 && (
         <div className="space-y-2">
@@ -477,6 +522,36 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
             >
               <Send className="h-4 w-4 mr-2" />
               Envoyer la proposition
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteEmailOpen} onOpenChange={setInviteEmailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inviter un joueur par email</DialogTitle>
+            <DialogDescription>
+              Un parchemin sera envoyé avec le lien et le code d'invitation de la campagne.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Email de l'aventurier</Label>
+            <Input
+              type="email"
+              placeholder="ami@exemple.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteEmailOpen(false)}>Annuler</Button>
+            <Button
+              onClick={() => sendInviteEmailMutation.mutate(inviteEmail)}
+              disabled={!inviteEmail.includes("@") || sendInviteEmailMutation.isPending}
+            >
+              <Mail className="h-4 w-4 mr-1.5" />
+              {sendInviteEmailMutation.isPending ? "Envoi…" : "Envoyer l'invitation"}
             </Button>
           </DialogFooter>
         </DialogContent>
