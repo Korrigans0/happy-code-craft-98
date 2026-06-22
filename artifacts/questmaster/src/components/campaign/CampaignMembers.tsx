@@ -175,6 +175,8 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
   const [proposeDialogOpen, setProposeDialogOpen] = useState(false);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
+  const [inviteEmailOpen, setInviteEmailOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
 
   const { data: campaign } = useQuery({
     queryKey: ["campaign", campaignId],
