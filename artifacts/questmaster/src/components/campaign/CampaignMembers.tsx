@@ -526,6 +526,36 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={inviteEmailOpen} onOpenChange={setInviteEmailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inviter un joueur par email</DialogTitle>
+            <DialogDescription>
+              Un parchemin sera envoyé avec le lien et le code d'invitation de la campagne.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Email de l'aventurier</Label>
+            <Input
+              type="email"
+              placeholder="ami@exemple.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteEmailOpen(false)}>Annuler</Button>
+            <Button
+              onClick={() => sendInviteEmailMutation.mutate(inviteEmail)}
+              disabled={!inviteEmail.includes("@") || sendInviteEmailMutation.isPending}
+            >
+              <Mail className="h-4 w-4 mr-1.5" />
+              {sendInviteEmailMutation.isPending ? "Envoi…" : "Envoyer l'invitation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
