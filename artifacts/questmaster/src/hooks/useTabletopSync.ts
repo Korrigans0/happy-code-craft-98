@@ -49,6 +49,7 @@ interface TabletopState {
   initiative_active_idx?: number;
   scenes?: unknown[];
   active_scene_id?: string | null;
+  layers?: Record<string, unknown>;
 }
 
 interface UseTabletopSyncOptions {
