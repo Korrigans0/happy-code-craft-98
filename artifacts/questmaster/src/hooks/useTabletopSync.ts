@@ -49,6 +49,7 @@ interface TabletopState {
   initiative_active_idx?: number;
   scenes?: unknown[];
   active_scene_id?: string | null;
+  layers?: Record<string, unknown>;
 }
 
 interface UseTabletopSyncOptions {
@@ -85,6 +86,7 @@ const normalize = (data: any): TabletopState => {
       : -1,
     scenes: ((data as { scenes?: unknown[] }).scenes) || [],
     active_scene_id: (data as { active_scene_id?: string | null }).active_scene_id ?? null,
+    layers: ((data as { layers?: Record<string, unknown> }).layers) ?? undefined,
   };
 };
 
