@@ -1084,6 +1084,7 @@ export type Database = {
           initiative: Json
           initiative_active_idx: number
           initiative_round: number
+          layers: Json
           lights: Json
           map_image_url: string | null
           night_mode: boolean
@@ -1104,6 +1105,7 @@ export type Database = {
           initiative?: Json
           initiative_active_idx?: number
           initiative_round?: number
+          layers?: Json
           lights?: Json
           map_image_url?: string | null
           night_mode?: boolean
@@ -1124,6 +1126,7 @@ export type Database = {
           initiative?: Json
           initiative_active_idx?: number
           initiative_round?: number
+          layers?: Json
           lights?: Json
           map_image_url?: string | null
           night_mode?: boolean
