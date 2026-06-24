@@ -42,6 +42,7 @@ const CampaignPlay = () => {
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("tabletop");
   const [chatOpen, setChatOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
