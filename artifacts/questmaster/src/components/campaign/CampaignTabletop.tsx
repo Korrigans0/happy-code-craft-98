@@ -3070,7 +3070,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
-              <Map className="h-3.5 w-3.5" />
+              <MapIcon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Carte</span>
             </Button>
           </PopoverTrigger>
