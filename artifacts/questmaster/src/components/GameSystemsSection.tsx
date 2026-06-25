@@ -1,4 +1,5 @@
-import { ExternalLink, Star, Handshake, Swords, MessageCircle } from "lucide-react";
+import { ExternalLink, Star, Handshake, Swords, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
 import waLogo from "@/assets/wa-logo.png";
 
@@ -11,11 +12,11 @@ const GameSystemsSection = () => {
             Système de jeu et partenaires
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Le système natif de l'univers Aetheria et nos partenaires officiels
+            Le système natif de l'univers Aetheria, le système Glyphes et nos partenaires officiels
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Aetheria — système principal */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
             <div className="absolute top-3 right-3">
