@@ -245,25 +245,20 @@ const CampaignPlay = () => {
                 <div className="flex gap-2 h-full relative">
                   {/* Plateau — prend toute la place disponible */}
                   <div className="flex-1 min-w-0">
-                    <CampaignTabletop campaignId={id!} isGM={isGM} />
+                    <CampaignTabletop
+                      campaignId={id!}
+                      isGM={isGM}
+                      onToggleLayers={isGM ? () => setLayersOpen((v) => !v) : undefined}
+                      layersOpen={layersOpen}
+                    />
                   </div>
 
-                  {isGM && (
-                    <button
-                      type="button"
-                      onClick={() => setLayersOpen((v) => !v)}
-                      className="absolute right-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-card/80 px-2.5 py-1.5 text-xs font-medium text-foreground/90 shadow-md backdrop-blur hover:border-primary hover:text-primary"
-                      title="Gérer les calques"
-                      aria-pressed={layersOpen}
-                    >
-                      <LayersIcon className="h-3.5 w-3.5" />
-                      Calques
-                    </button>
-                  )}
-
+                  {/* Panneau Calques flottant — ancré sous la toolbar */}
                   {isGM && layersOpen && (
                     <LayersPanel campaignId={id!} onClose={() => setLayersOpen(false)} />
                   )}
+
+
 
 
                   {/* Bouton toggle chat — visible sur desktop */}
