@@ -71,6 +71,8 @@ const TOKEN_COLORS = [
 interface CampaignTabletopProps {
   campaignId: string;
   isGM: boolean;
+  onToggleLayers?: () => void;
+  layersOpen?: boolean;
 }
 
 // Helper : hex (#rrggbb) → rgba(r,g,b,a)
