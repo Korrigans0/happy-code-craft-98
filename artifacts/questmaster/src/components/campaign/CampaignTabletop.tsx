@@ -10,7 +10,7 @@ import {
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
-  Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees,
+  Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
