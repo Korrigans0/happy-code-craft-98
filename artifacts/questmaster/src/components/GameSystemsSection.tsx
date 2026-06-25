@@ -46,6 +46,36 @@ const GameSystemsSection = () => {
             </div>
           </div>
 
+          {/* Glyphes — système modulaire */}
+          <Link
+            to="/systems/glyphes"
+            className="group relative block overflow-hidden rounded-xl border-2 border-amber-500/60 bg-gradient-to-b from-amber-500/10 to-card p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold"
+          >
+            <div className="absolute top-3 right-3">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+              <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+                Nouveau système
+              </span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-foreground">Glyphes</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Dark fantasy modulaire en trois époques : Nouvel Empire (médiéval), Présent et Futur. Magie des glyphes, Brume, factions.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["3 époques", "Dark fantasy", "Modulaire"].map((tag) => (
+                <span key={tag} className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 group-hover:underline">
+              Découvrir <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+
           {/* Worlds Awakening — partenaire */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold hover:-translate-y-0.5">
             <div className="absolute top-3 right-3">
