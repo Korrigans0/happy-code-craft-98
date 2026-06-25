@@ -3050,45 +3050,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           </Popover>
         )}
 
-        {/* Calques */}
-        {!isMobilePlayer && (
-        <Popover open={showLayersPanel} onOpenChange={setShowLayersPanel}>
+        {/* Calques — ouvre le panneau flottant LayersPanel (nouveau système) */}
+        {!isMobilePlayer && onToggleLayers && (
+          <Button
+            variant={layersOpen ? "default" : "outline"}
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={onToggleLayers}
+            title="Calques"
+            aria-pressed={!!layersOpen}
+          >
+            <Layers className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Calques</span>
+          </Button>
+        )}
 
+        {/* Carte & jetons */}
+        {!isMobilePlayer && (
+        <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
-              <Layers className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Calques</span>
+              <Map className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Carte</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-3" side="bottom" align="start" style={{ zIndex: 9999 }}>
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Calques</h3>
-              {layers.map(layer => (
-                <div key={layer.id} className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleLayerVisibility(layer.id)}>
-                      {layer.visible ? <Eye className="h-4 w-4 text-primary" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-                    </button>
-                    <span className="flex-1 text-sm">{layer.name}</span>
-                    <Slider value={[layer.opacity]} onValueChange={([v]) => updateLayerOpacity(layer.id, v)} min={0} max={100} step={5} className="w-20" />
-                    <span className="w-8 text-right text-xs text-muted-foreground">{layer.opacity}%</span>
-                  </div>
-                  {layer.id === "fog" && layer.visible && (
-                    <div className="flex items-center gap-2 px-2 pb-1">
-                      <span className="text-[10px] text-muted-foreground">Opacité fog</span>
-                      <Slider
-                        value={[layer.opacity]}
-                        onValueChange={([v]) => updateLayerOpacity("fog", v)}
-                        min={20}
-                        max={100}
-                        step={5}
-                        className="flex-1"
-                      />
-                      <span className="text-[10px] text-muted-foreground w-7">{layer.opacity}%</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+
               {isGM && (
                 <>
                   <Separator />
