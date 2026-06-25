@@ -154,7 +154,7 @@ function renderZone(
 // ══════════════════════════════════════════════════════════
 // COMPONENT
 // ══════════════════════════════════════════════════════════
-const CampaignTabletop = ({ campaignId, isGM }: CampaignTabletopProps) => {
+const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: CampaignTabletopProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapImageRef = useRef<HTMLImageElement | null>(null);
