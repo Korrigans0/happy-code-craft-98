@@ -230,7 +230,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
-  const [showLayersPanel, setShowLayersPanel] = useState(false);
+  // (showLayersPanel retiré — la gestion des calques se fait via le panneau flottant LayersPanel monté par CampaignPlay)
   const [gridColor, setGridColor] = useState("rgba(255,255,255,0.12)");
   const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
   const [plateauMode, setPlateauMode] = useState<"dark" | "sky">("dark");
