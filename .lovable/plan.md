@@ -1,110 +1,73 @@
-## Objectif
+# Ajout du système "Glyphes" à Aetheria VTT
 
-Refonte profonde du tabletop et ajout d'un vrai système de stockage MJ avec quotas par abonnement, sans casser les fonctionnalités existantes (murs, lumières, portes, brouillard, scènes, synchro).
+## Vue d'ensemble
 
-Vu la taille, je propose de livrer en **4 phases** validées séparément. Chaque phase est utilisable en l'état.
+Glyphes est un nouveau système modulaire avec 3 époques (Nouvelle Empire, Présent, Futur). Seul "Nouvelle Empire" a du contenu, les 2 autres sont des placeholders.
 
----
+Important : avant de coder, je dois **parser les 7 PDFs fournis** pour extraire le contenu exact des règles (Module Cœur + Nouvel Empire + bestiaires + fiche). Sans ça, je vais inventer des règles fausses.
 
-## Phase 1 — Stockage MJ & Bibliothèque média
+## Architecture
 
-**Backend (migration)**
-- Nouveau bucket Storage `gm-media` (privé, RLS).
-- Table `media_assets` :
-  - `owner_id`, `campaign_id` (nullable), `name`, `file_type` (`map|token|portrait|npc|creature|object|decor|document`), `storage_path`, `thumbnail_path`, `mime`, `size_bytes`, `width`, `height`, `checksum` (sha256, anti-doublon), `created_at`, `updated_at`.
-  - RLS : owner full, membres de campagne en lecture si `campaign_id` correspond.
-- Table `subscription_tiers` (lecture seule) + colonne `tier` sur `profiles` (`free|gm_premium|premium_plus`).
-- Vue / RPC `get_storage_usage(user_id)` qui retourne `used_bytes`, `quota_bytes`, `file_count`.
-- Quotas par défaut :
-  - Free : 200 Mo, max 50 fichiers, compression forcée
-  - GM Premium : 5 Go
-  - Premium+ : 25 Go
+### 1. Registre système (intégration multi-système)
+- Nouveau fichier `src/lib/systems/glyphes.ts` — SystemDefinition pour Glyphes Nouvelle Empire (caractéristiques PUI/SOU/CON/FOI/ESP/SOC, races, etc.)
+- Enregistrer dans `src/lib/systems/index.ts` aux côtés d'Aetheria, D&D, etc.
+- Cela ajoute automatiquement Glyphes au sélecteur de système lors de la création de campagne.
 
-**Frontend**
-- Page `/library` → ajouter un onglet **Médias** (à côté des onglets Monstres/Sorts/Objets existants).
-- Composant `MediaLibrary` : grille, filtres par type, recherche, rename, delete, barre de quota.
-- Composant `MediaPickerDialog` réutilisable (carte, token, portrait).
-- Hook `useMediaUpload` :
-  - vérifie le quota avant upload (toast clair + CTA upgrade si dépassé)
-  - compresse côté client (canvas → WebP, max 4096 px côté long pour cartes, 512 px pour tokens)
-  - génère une miniature 256 px
-  - calcule un sha256 → si déjà présent chez ce MJ, réutilise l'asset existant
-  - upload original optimisé + thumb dans Storage
-  - insert dans `media_assets`
+### 2. Pages publiques (hub + contenu)
+Le site a déjà une page `/partners` et `/guide`. Je ne vois pas de page "Systèmes" dédiée à parcourir. Je vais créer :
 
-**Intégrations existantes**
-- VTT : bouton "Importer carte" et "Importer token" passent par `MediaPickerDialog` au lieu d'une URL brute. URL externe reste possible en mode avancé.
-- Avatars personnages : option "Choisir depuis ma bibliothèque".
+```
+/systems                → liste tous les systèmes (Aetheria, WA, D&D5e, PF2e, CoC, Glyphes, Custom)
+/systems/glyphes        → hub Glyphes avec 3 tuiles d'époques
+/systems/glyphes/nouvel-empire   → contenu complet (sections 1-23)
+/systems/glyphes/present         → placeholder "en développement"
+/systems/glyphes/futur           → placeholder "en développement"
+```
 
----
+Routes ajoutées dans `App.tsx`.
 
-## Phase 2 — Refonte des calques
+### 3. Page "Nouvelle Empire" — structure
 
-**Données**
-- Étendre `tabletop_state` avec un champ `layers` (jsonb) listant les 9 calques fixes :
-  ```
-  background, decor, objects, tokens, effects, lights, walls, fog, gm_ui
-  ```
-  Chacun : `{ visible, locked, pjVisible, opacity, order }`.
-- Chaque token / drawing / objet porte un champ `layer` (déjà partiellement présent dans `TokenItem.layer`).
-- Migration de données : les objets sans `layer` sont assignés en fonction de leur type (token → `tokens`, drawing → `objects`, etc.).
+Sidebar fixe (desktop) / accordéon mobile avec les 23 sections demandées. Composants :
 
-**Frontend VTT**
-- Nouveau composant `LayersPanel` (côté MJ uniquement) :
-  - liste des 9 calques avec icônes
-  - toggle visible / verrouillé / visible PJ
-  - slider opacité
-  - clic = calque actif (les nouveaux objets se créent dedans)
-  - "isoler" (montre uniquement ce calque)
-- Le rendu canvas itère désormais sur les calques dans l'ordre.
-- Côté PJ : on filtre les calques où `pjVisible=false` ou `gm_ui`.
-- Clic / drag impossible sur un calque locked.
+- `src/pages/systems/glyphes/NouvelEmpire.tsx` — layout + sommaire
+- `src/components/systems/glyphes/sections/` — un fichier par section (23 fichiers)
+- `src/lib/systems/glyphes/data.ts` — toutes les données structurées extraites des PDFs (difficultés, magnitudes, états, dons, races, aptitudes, équipement, factions, atlas)
 
----
-
-## Phase 3 — Objets de table & édition pro
-
-**Données**
-- Nouvelle table `tabletop_objects` (ou stockée dans `tabletop_state.objects` jsonb selon perf) :
-  - `id, scene_id, layer, name, image_asset_id, x, y, width, height, rotation, locked, gm_only, description, type` (`decor|chest|trap|secret_door|marker|interactive|note`).
-
-**Frontend**
-- Nouvel outil VTT "Objet" → ouvre `MediaPickerDialog` puis pose l'objet.
-- Sélection multiple (shift+clic, lasso).
-- Copier (Ctrl+C) / Coller (Ctrl+V) / Supprimer groupé.
-- Snap-to-grid togglable.
-- Poignées : redimensionner + rotation.
-- Boutons "avant/arrière" dans le menu contextuel.
-- Groupement (clé `groupId` partagée).
-- Panneau "Propriétés" pour l'objet sélectionné (nom, calque, verrou, visibilité PJ, description).
-
----
-
-## Phase 4 — Performance & polish
-
-- Lazy-load des images via `loading="lazy"` + IntersectionObserver pour les médias hors écran du canvas.
-- Cache des miniatures (URL signée 1h).
-- Throttle de la synchro tabletop (debounce 200 ms sur les modifs continues : drag, resize).
-- Rendu : ne redessiner que les calques marqués dirty.
-- Mobile : `LayersPanel` masqué pour PJ, barre d'outils MJ repliable.
-
----
+Style dark fantasy cohérent avec le reste du site (Cinzel/Lora, palette bleu-noir/or). Tableaux shadcn pour les données, Accordion pour dons/races/aptitudes, Cards pour factions/régions.
 
 ## Détails techniques
 
-- Compression : `canvas.toBlob('image/webp', 0.85)` avec fallback PNG si pas de support (rare).
-- Anti-doublon : sha256 du blob compressé (pas de l'original) → champ `checksum` unique par `(owner_id, checksum)`.
-- Quota : vérifié côté DB via trigger `BEFORE INSERT` sur `media_assets` qui lit `profiles.tier` et la somme `size_bytes` → exception si dépassement, traduite en toast côté client.
-- RLS storage : policy par préfixe `{owner_id}/...`.
-- Aucune suppression des champs / tables existants. `TokenItem.imageUrl` reste compatible (peut référencer l'URL signée d'un media_asset ou une URL externe).
+- **Parser PDFs** via `document--parse_document` sur les 7 fichiers user-uploads avant d'écrire le code.
+- **Réutiliser composants UI existants** : `Card`, `Table`, `Accordion`, `Tabs`, `Badge` de shadcn.
+- **Pas de duplication** : créer un composant `<RulesSection>` réutilisable (titre + contenu).
+- **i18n FR** : tout le contenu en français (cohérent avec le projet).
+- **Mobile** : sidebar → Sheet (drawer) sur < md.
+- **SEO** : title + meta sur chaque page (`/systems/glyphes` etc.).
 
----
+## Ce qui n'est PAS inclus dans ce premier livrable
 
-## Ordre de livraison proposé
+- Fiche de personnage Glyphes jouable dans le VTT (formulaire + sheet) — Étape 2 séparée, gros chantier (intégration `CharacterForm`, calculs, sheet component).
+- Import du bestiaire Glyphes dans le compendium.
+- Compendium dédié Glyphes.
 
-1. **Phase 1** (stockage + bibliothèque + quotas)
-2. **Phase 2** (calques)
-3. **Phase 3** (objets de table & édition)
-4. **Phase 4** (perf & mobile)
+Je livre d'abord les pages de présentation + l'enregistrement du système dans le registre. Une fois validé, on enchaînera fiche jouable + bestiaire dans des passes séparées.
 
-Confirme l'ordre (ou dis si tu veux regrouper) et je démarre Phase 1.
+## Plan d'exécution
+
+1. Parser les 7 PDFs → extraction du contenu réel
+2. Créer `data.ts` avec toutes les données structurées
+3. Créer le SystemDefinition `glyphes.ts` + l'enregistrer
+4. Créer les 3 routes + page hub `/systems/glyphes`
+5. Créer la page Nouvelle Empire avec sidebar + 23 sections
+6. Créer les 2 placeholders Présent/Futur
+7. Lien depuis la home / nav si pertinent
+8. Build + typecheck
+
+Estimation : très gros volume de contenu (les PDFs font probablement 50+ pages combinées). Le code reste raisonnable car presque tout est du contenu déclaratif dans `data.ts` + sections de rendu.
+
+## Question avant de commencer
+
+Confirmez-vous :
+- (a) Je livre **uniquement les pages de présentation/règles** dans ce passage, et on traite la **fiche jouable + bestiaire VTT** dans un passage suivant ? Ou vous voulez que je tente tout d'un coup (risque : superficiel partout) ?
+- (b) Le lien "Systèmes" doit-il apparaître dans la nav principale, ou seulement accessible depuis le Guide / l'accueil ?
