@@ -1,4 +1,5 @@
-import { ExternalLink, Star, Handshake, Swords, MessageCircle } from "lucide-react";
+import { ExternalLink, Star, Handshake, Swords, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
 import waLogo from "@/assets/wa-logo.png";
 
@@ -11,11 +12,11 @@ const GameSystemsSection = () => {
             Système de jeu et partenaires
           </h2>
           <p className="mt-2 text-muted-foreground">
-            Le système natif de l'univers Aetheria et nos partenaires officiels
+            Le système natif de l'univers Aetheria, le système Glyphes et nos partenaires officiels
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Aetheria — système principal */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold">
             <div className="absolute top-3 right-3">
@@ -44,6 +45,36 @@ const GameSystemsSection = () => {
               ))}
             </div>
           </div>
+
+          {/* Glyphes — système modulaire */}
+          <Link
+            to="/systems/glyphes"
+            className="group relative block overflow-hidden rounded-xl border-2 border-amber-500/60 bg-gradient-to-b from-amber-500/10 to-card p-6 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-gold"
+          >
+            <div className="absolute top-3 right-3">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+              <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+                Nouveau système
+              </span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-foreground">Glyphes</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Dark fantasy modulaire en trois époques : Nouvel Empire (médiéval), Présent et Futur. Magie des glyphes, Brume, factions.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["3 époques", "Dark fantasy", "Modulaire"].map((tag) => (
+                <span key={tag} className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 group-hover:underline">
+              Découvrir <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
 
           {/* Worlds Awakening — partenaire */}
           <div className="group relative overflow-hidden rounded-xl border-2 border-primary/60 bg-gradient-to-b from-primary/10 to-card p-6 shadow-card transition-all duration-300 hover:shadow-gold hover:-translate-y-0.5">

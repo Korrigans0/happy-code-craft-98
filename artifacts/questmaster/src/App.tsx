@@ -24,6 +24,9 @@ import Partners from "./pages/Partners";
 import Subscriptions from "./pages/Subscriptions";
 import Guide from "./pages/Guide";
 import Unsubscribe from "./pages/Unsubscribe";
+import GlyphesHub from "./pages/systems/glyphes/Hub";
+import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
+import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +75,10 @@ const AppRoutes = () => (
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="/systems/glyphes" element={<GlyphesHub />} />
+        <Route path="/systems/glyphes/nouvel-empire" element={<GlyphesNouvelEmpire />} />
+        <Route path="/systems/glyphes/present" element={<GlyphesComingSoon era="present" />} />
+        <Route path="/systems/glyphes/futur" element={<GlyphesComingSoon era="futur" />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <MobileBottomNav />
