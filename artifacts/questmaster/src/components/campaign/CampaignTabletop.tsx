@@ -2983,6 +2983,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <span className="hidden sm:inline">Dés</span>
         </Button>
 
+        {/* Documents PDF — partage en pop-up */}
+        {isGM && (
+          <MediaPickerDialog
+            fileType="document"
+            campaignId={campaignId}
+            title="Partager un document PDF"
+            onSelect={(asset) => {
+              if (asset.mime !== "application/pdf") {
+                toast({ title: "Format non supporté", description: "Seuls les PDF peuvent être ouverts en fenêtre pop-up.", variant: "destructive" });
+                return;
+              }
+              shareDocument({ id: asset.id, name: asset.name, storage_path: asset.storage_path });
+            }}
+            trigger={
+              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" title="Partager un PDF en fenêtre pop-up">
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">PDF</span>
+                {sharedDocs.length > 0 && (
+                  <span className="ml-0.5 rounded-full bg-amber-500/40 px-1 text-[9px] font-bold">{sharedDocs.length}</span>
+                )}
+              </Button>
+            }
+          />
+        )}
+
+
+
         {/* Scènes */}
         {isGM && (
           <Popover open={showScenesPanel} onOpenChange={setShowScenesPanel}>
