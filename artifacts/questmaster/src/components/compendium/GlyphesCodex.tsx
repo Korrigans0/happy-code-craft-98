@@ -261,4 +261,37 @@ const NouvelEmpireCodex = () => (
   </div>
 );
 
+const GlyphesCodex = () => (
+  <Tabs defaultValue="nouvel-empire" className="w-full">
+    <TabsList className="mx-auto mb-6 flex w-full max-w-2xl gap-1 bg-muted/50 p-1">
+      <TabsTrigger value="nouvel-empire" className="flex-1 text-xs sm:text-sm">
+        <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Nouvel Empire
+      </TabsTrigger>
+      <TabsTrigger value="present" className="flex-1 text-xs sm:text-sm">
+        <Hourglass className="mr-1.5 h-3.5 w-3.5" /> Présent
+      </TabsTrigger>
+      <TabsTrigger value="futur" className="flex-1 text-xs sm:text-sm">
+        <Rocket className="mr-1.5 h-3.5 w-3.5" /> Futur
+      </TabsTrigger>
+    </TabsList>
+    <TabsContent value="nouvel-empire"><NouvelEmpireCodex /></TabsContent>
+    <TabsContent value="present">
+      <ComingSoonEra
+        icon={Hourglass}
+        title="Présent"
+        subtitle="Ère contemporaine"
+        desc="Le monde post-brisure aujourd'hui. Sociétés bouleversées par la brume, factions modernes, héritage des glyphes anciens."
+      />
+    </TabsContent>
+    <TabsContent value="futur">
+      <ComingSoonEra
+        icon={Rocket}
+        title="Futur"
+        subtitle="Anticipation"
+        desc="Demain, quand la technologie tente de domestiquer le flux. Affrontement entre science et glyphes antiques."
+      />
+    </TabsContent>
+  </Tabs>
+);
+
 export default GlyphesCodex;
