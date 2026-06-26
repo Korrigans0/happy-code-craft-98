@@ -26,6 +26,7 @@ import ItemsList from "@/components/compendium/ItemsList";
 import CreateMonsterDialog from "@/components/compendium/CreateMonsterDialog";
 import CreateSpellDialog from "@/components/compendium/CreateSpellDialog";
 import CreateItemDialog from "@/components/compendium/CreateItemDialog";
+import GlyphesCodex from "@/components/compendium/GlyphesCodex";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 import { SYSTEM_LIST } from "@/lib/systems";
