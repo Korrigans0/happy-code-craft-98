@@ -50,7 +50,9 @@ interface TabletopState {
   scenes?: unknown[];
   active_scene_id?: string | null;
   layers?: Record<string, unknown>;
+  shared_documents?: unknown[];
 }
+
 
 interface UseTabletopSyncOptions {
   campaignId: string;
