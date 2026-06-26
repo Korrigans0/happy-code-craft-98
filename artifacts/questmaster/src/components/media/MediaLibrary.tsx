@@ -8,8 +8,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Image as ImageIcon, Loader2, Search, Trash2, Pencil, UploadCloud,
-  AlertTriangle, CheckSquare, Square,
+  AlertTriangle, CheckSquare, Square, FileText,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
