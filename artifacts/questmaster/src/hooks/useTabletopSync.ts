@@ -50,7 +50,9 @@ interface TabletopState {
   scenes?: unknown[];
   active_scene_id?: string | null;
   layers?: Record<string, unknown>;
+  shared_documents?: unknown[];
 }
+
 
 interface UseTabletopSyncOptions {
   campaignId: string;
@@ -87,7 +89,9 @@ const normalize = (data: any): TabletopState => {
     scenes: ((data as { scenes?: unknown[] }).scenes) || [],
     active_scene_id: (data as { active_scene_id?: string | null }).active_scene_id ?? null,
     layers: ((data as { layers?: Record<string, unknown> }).layers) ?? undefined,
+    shared_documents: ((data as { shared_documents?: unknown[] }).shared_documents) || [],
   };
+
 };
 
 // Shallow-stable JSON comparison — avoids enqueuing saves when value didn't actually change.

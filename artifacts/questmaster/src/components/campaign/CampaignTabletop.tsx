@@ -45,6 +45,10 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
+import { SharedPdfPopups, type SharedDocument } from "@/components/campaign/vtt/SharedPdfPopups";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import { FileText } from "lucide-react";
+
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -253,6 +257,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [scenes, setScenes] = useState<VTTScene[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [showScenesPanel, setShowScenesPanel] = useState(false);
+
+  // ── Shared documents (PDF popups) ──
+  const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
+
 
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -464,6 +472,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       if (typeof incomingActiveScene === "string" || incomingActiveScene === null) {
         setActiveSceneId(incomingActiveScene ?? null);
       }
+      // ── Documents partagés (PDF pop-up) ──
+      const incomingDocs = (state as any).shared_documents;
+      if (Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
+
     },
     debounceMs: 250,
   });
@@ -524,6 +536,26 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       active_scene_id: activeSceneId,
     } as any);
   }, [scenes, activeSceneId, saveState, user?.id, isGM]);
+  // Persistance des documents partagés (MJ uniquement)
+  useEffect(() => {
+    if (user?.id && isGM) saveState({ shared_documents: sharedDocs as unknown as unknown[] } as any);
+  }, [sharedDocs, saveState, user?.id, isGM]);
+
+  const shareDocument = useCallback((asset: { id: string; name: string; storage_path: string }) => {
+    if (!isGM || !user?.id) return;
+    setSharedDocs(prev => {
+      if (prev.some(d => d.id === asset.id)) return prev;
+      return [...prev, { id: asset.id, name: asset.name, storage_path: asset.storage_path, added_at: Date.now(), added_by: user.id }];
+    });
+    toast({ title: "Document partagé", description: `« ${asset.name} » est visible par tous les joueurs.` });
+  }, [isGM, user?.id, toast]);
+
+  const unshareDocument = useCallback((id: string) => {
+    if (!isGM) return;
+    setSharedDocs(prev => prev.filter(d => d.id !== id));
+  }, [isGM]);
+
+
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
@@ -2951,6 +2983,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <span className="hidden sm:inline">Dés</span>
         </Button>
 
+        {/* Documents PDF — partage en pop-up */}
+        {isGM && (
+          <MediaPickerDialog
+            fileType="document"
+            campaignId={campaignId}
+            title="Partager un document PDF"
+            onSelect={(asset) => {
+              if (asset.mime !== "application/pdf") {
+                toast({ title: "Format non supporté", description: "Seuls les PDF peuvent être ouverts en fenêtre pop-up.", variant: "destructive" });
+                return;
+              }
+              shareDocument({ id: asset.id, name: asset.name, storage_path: asset.storage_path });
+            }}
+            trigger={
+              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" title="Partager un PDF en fenêtre pop-up">
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">PDF</span>
+                {sharedDocs.length > 0 && (
+                  <span className="ml-0.5 rounded-full bg-amber-500/40 px-1 text-[9px] font-bold">{sharedDocs.length}</span>
+                )}
+              </Button>
+            }
+          />
+        )}
+
+
+
         {/* Scènes */}
         {isGM && (
           <Popover open={showScenesPanel} onOpenChange={setShowScenesPanel}>
@@ -4069,7 +4128,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pop-ups PDF partagés (rendus via portail) */}
+      <SharedPdfPopups documents={sharedDocs} isGM={isGM} onUnshare={unshareDocument} />
     </div>
+
   );
 };
 

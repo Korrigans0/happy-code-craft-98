@@ -1,0 +1,1 @@
+ALTER TABLE public.tabletop_state ADD COLUMN IF NOT EXISTS shared_documents jsonb NOT NULL DEFAULT '[]'::jsonb;
