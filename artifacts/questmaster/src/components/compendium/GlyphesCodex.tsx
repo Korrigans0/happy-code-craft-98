@@ -42,7 +42,24 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="mb-3 font-display text-lg font-semibold text-amber-300">{children}</h3>
 );
 
-const GlyphesCodex = () => (
+const ComingSoonEra = ({
+  icon: Icon, title, subtitle, desc,
+}: { icon: typeof Hourglass; title: string; subtitle: string; desc: string }) => (
+  <div className="mx-auto max-w-2xl rounded-2xl border border-amber-500/20 bg-gradient-to-b from-[hsl(215,60%,12%)] to-[hsl(215,68%,8%)] p-8 text-center">
+    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10">
+      <Icon className="h-8 w-8 text-amber-400" />
+    </div>
+    <div className="text-xs font-semibold uppercase tracking-widest text-amber-400/70">{subtitle}</div>
+    <h3 className="mt-2 font-display text-2xl font-bold text-gradient-gold">{title}</h3>
+    <p className="mt-4 text-sm leading-relaxed text-slate-300">{desc}</p>
+    <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-500/40 bg-slate-500/10 px-4 py-2 text-xs font-semibold text-slate-300">
+      <Hourglass className="h-3.5 w-3.5 animate-pulse" />
+      En développement — disponible prochainement.
+    </div>
+  </div>
+);
+
+const NouvelEmpireCodex = () => (
   <div className="space-y-6">
     <div className="flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
