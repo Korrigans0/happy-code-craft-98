@@ -1090,6 +1090,7 @@ export type Database = {
           night_mode: boolean
           pan_offset: Json
           scenes: Json
+          shared_documents: Json
           tokens: Json
           updated_at: string
           updated_by: string | null
@@ -1111,6 +1112,7 @@ export type Database = {
           night_mode?: boolean
           pan_offset?: Json
           scenes?: Json
+          shared_documents?: Json
           tokens?: Json
           updated_at?: string
           updated_by?: string | null
@@ -1132,6 +1134,7 @@ export type Database = {
           night_mode?: boolean
           pan_offset?: Json
           scenes?: Json
+          shared_documents?: Json
           tokens?: Json
           updated_at?: string
           updated_by?: string | null
