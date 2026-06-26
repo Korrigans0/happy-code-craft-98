@@ -160,14 +160,37 @@ export function useMediaLibrary() {
     opts: { fileType: MediaFileType; campaignId?: string | null; name?: string }
   ): Promise<MediaAsset> => {
     if (!user) throw new Error("Non authentifié");
-    if (!file.type.startsWith("image/")) throw new Error("Seules les images sont supportées pour le moment.");
+
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isImage = file.type.startsWith("image/");
+    if (!isImage && !isPdf) throw new Error("Formats acceptés : images et PDF.");
 
     setUploading(true);
     try {
-      const img = await loadImage(file);
-      const main = await resizeToBlob(img, MAX_DIM[opts.fileType] ?? 2048, 0.85);
-      const thumb = await resizeToBlob(img, THUMB_DIM, 0.8);
-      const checksum = await sha256(main.blob);
+      let mainBlob: Blob;
+      let thumbBlob: Blob | null = null;
+      let mainMime: string;
+      let mainExt: string;
+      let width: number | null = null;
+      let height: number | null = null;
+
+      if (isImage) {
+        const img = await loadImage(file);
+        const main = await resizeToBlob(img, MAX_DIM[opts.fileType] ?? 2048, 0.85);
+        const thumb = await resizeToBlob(img, THUMB_DIM, 0.8);
+        mainBlob = main.blob;
+        thumbBlob = thumb.blob;
+        mainMime = "image/webp";
+        mainExt = "webp";
+        width = main.w;
+        height = main.h;
+      } else {
+        // PDF : stocké tel quel, pas de miniature image.
+        mainBlob = file;
+        mainMime = "application/pdf";
+        mainExt = "pdf";
+      }
+      const checksum = await sha256(mainBlob);
 
       // Anti-doublon : si on a déjà ce checksum, on retourne l'asset existant.
       const dup = await supabase
@@ -184,33 +207,36 @@ export function useMediaLibrary() {
       const stamp = Date.now();
       const safeName = (opts.name ?? file.name).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
       const base = `${user.id}/${opts.fileType}/${stamp}-${safeName}`;
-      const mainPath = `${base}.webp`;
-      const thumbPath = `${base}.thumb.webp`;
+      const mainPath = `${base}.${mainExt}`;
+      const thumbPath = thumbBlob ? `${base}.thumb.webp` : null;
 
-      const up1 = await supabase.storage.from(BUCKET).upload(mainPath, main.blob, { contentType: "image/webp", upsert: false });
+      const up1 = await supabase.storage.from(BUCKET).upload(mainPath, mainBlob, { contentType: mainMime, upsert: false });
       if (up1.error) throw up1.error;
-      const up2 = await supabase.storage.from(BUCKET).upload(thumbPath, thumb.blob, { contentType: "image/webp", upsert: false });
-      if (up2.error) {
-        await supabase.storage.from(BUCKET).remove([mainPath]);
-        throw up2.error;
+      if (thumbBlob && thumbPath) {
+        const up2 = await supabase.storage.from(BUCKET).upload(thumbPath, thumbBlob, { contentType: "image/webp", upsert: false });
+        if (up2.error) {
+          await supabase.storage.from(BUCKET).remove([mainPath]);
+          throw up2.error;
+        }
       }
 
       const ins = await supabase.from("media_assets").insert({
         owner_id: user.id,
         campaign_id: opts.campaignId ?? null,
         name: opts.name ?? file.name,
-        file_type: opts.fileType,
+        file_type: isPdf ? "document" : opts.fileType,
         storage_path: mainPath,
         thumbnail_path: thumbPath,
-        mime: "image/webp",
-        size_bytes: main.blob.size,
-        width: main.w,
-        height: main.h,
+        mime: mainMime,
+        size_bytes: mainBlob.size,
+        width,
+        height,
         checksum,
       }).select().single();
 
       if (ins.error) {
-        await supabase.storage.from(BUCKET).remove([mainPath, thumbPath]);
+        const paths = [mainPath, thumbPath].filter(Boolean) as string[];
+        await supabase.storage.from(BUCKET).remove(paths);
         if (ins.error.message?.includes("STORAGE_QUOTA_EXCEEDED")) {
           throw new Error("Quota de stockage dépassé. Supprimez des fichiers ou passez à une offre supérieure.");
         }
@@ -225,6 +251,7 @@ export function useMediaLibrary() {
       setUploading(false);
     }
   }, [user, refresh, enrich]);
+
 
   const remove = useCallback(async (asset: MediaAsset) => {
     const paths = [asset.storage_path, asset.thumbnail_path].filter(Boolean) as string[];
