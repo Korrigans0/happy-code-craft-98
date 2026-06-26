@@ -536,6 +536,26 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       active_scene_id: activeSceneId,
     } as any);
   }, [scenes, activeSceneId, saveState, user?.id, isGM]);
+  // Persistance des documents partagés (MJ uniquement)
+  useEffect(() => {
+    if (user?.id && isGM) saveState({ shared_documents: sharedDocs as unknown as unknown[] } as any);
+  }, [sharedDocs, saveState, user?.id, isGM]);
+
+  const shareDocument = useCallback((asset: { id: string; name: string; storage_path: string }) => {
+    if (!isGM || !user?.id) return;
+    setSharedDocs(prev => {
+      if (prev.some(d => d.id === asset.id)) return prev;
+      return [...prev, { id: asset.id, name: asset.name, storage_path: asset.storage_path, added_at: Date.now(), added_by: user.id }];
+    });
+    toast({ title: "Document partagé", description: `« ${asset.name} » est visible par tous les joueurs.` });
+  }, [isGM, user?.id, toast]);
+
+  const unshareDocument = useCallback((id: string) => {
+    if (!isGM) return;
+    setSharedDocs(prev => prev.filter(d => d.id !== id));
+  }, [isGM]);
+
+
 
   // ── Detect token position changes and start a slide tween ──
   useEffect(() => {
