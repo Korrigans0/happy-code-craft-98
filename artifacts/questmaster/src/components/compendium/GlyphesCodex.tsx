@@ -1,10 +1,10 @@
-// Codex Glyphes — vue compacte du système Glyphes pour la page Compendium.
-// Présente les données du Nouvel Empire (caracs, races, dons, aptitudes,
-// actions héroïques, magie, équipement, factions, atlas) sous forme d'onglets.
-// Système isolé : ne mélange jamais avec un autre univers.
+// Présente les 3 époques (Nouvel Empire, Présent, Futur) en onglets de
+// premier niveau. Seul "Nouvel Empire" est rempli ; les autres affichent un
+// placeholder "en développement". Système isolé : ne mélange jamais avec un
+// autre univers.
 
 import { Link } from "react-router-dom";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles, Hourglass, Rocket } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RICHESSES, SENS,
