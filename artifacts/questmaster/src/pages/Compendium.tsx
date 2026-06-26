@@ -218,6 +218,7 @@ const Compendium = () => {
                   {s.featured && <span className="ml-1 text-[10px] text-primary">PHARE</span>}
                   {s.partner && <span className="ml-1 text-[10px] text-blue-400">PARTENAIRE</span>}
                   {s.custom && <span className="ml-1 text-[10px] text-amber-400">LIBRE</span>}
+                  {s.nouveau && <span className="ml-1 text-[10px] text-emerald-400">NOUVEAU</span>}
                 </button>
               );
             })}
