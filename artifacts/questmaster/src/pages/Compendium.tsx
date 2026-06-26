@@ -269,6 +269,8 @@ const Compendium = () => {
             <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
 
+          {system === "Glyphes" && <GlyphesCodex />}
+
           {system === "Personnalisé" && (
             <div className="space-y-4">
               <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 flex items-start gap-4">
