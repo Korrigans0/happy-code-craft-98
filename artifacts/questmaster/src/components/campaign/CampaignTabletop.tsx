@@ -45,6 +45,10 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
+import { SharedPdfPopups, type SharedDocument } from "@/components/campaign/vtt/SharedPdfPopups";
+import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
+import { FileText } from "lucide-react";
+
 import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
