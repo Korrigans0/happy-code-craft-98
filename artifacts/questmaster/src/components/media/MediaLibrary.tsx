@@ -313,11 +313,17 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
                         decoding="async"
                         className="h-full w-full object-cover transition group-hover:scale-105"
                       />
+                    ) : a.mime === "application/pdf" ? (
+                      <div className="flex h-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-amber-900/20 to-amber-700/10">
+                        <FileText className="h-10 w-10 text-amber-500" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-400">PDF</span>
+                      </div>
                     ) : (
                       <div className="flex h-full items-center justify-center">
                         <ImageIcon className="h-8 w-8 text-muted-foreground" />
                       </div>
                     )}
+
                   </button>
                   <Badge className="absolute left-1 top-1 bg-background/70 text-[10px]">{a.file_type}</Badge>
                 </div>
