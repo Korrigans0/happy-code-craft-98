@@ -185,7 +185,7 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf,.pdf"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
@@ -195,8 +195,9 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           Importer
         </Button>
         <span className="text-xs text-muted-foreground">
-          WebP automatique · doublons détectés · glisser-déposer accepté
+          Images (WebP auto) & PDF · doublons détectés · glisser-déposer accepté
         </span>
+
       </div>
 
       {/* Filtres */}
