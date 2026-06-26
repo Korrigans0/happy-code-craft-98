@@ -4128,7 +4128,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pop-ups PDF partagés (rendus via portail) */}
+      <SharedPdfPopups documents={sharedDocs} isGM={isGM} onUnshare={unshareDocument} />
     </div>
+
   );
 };
 
