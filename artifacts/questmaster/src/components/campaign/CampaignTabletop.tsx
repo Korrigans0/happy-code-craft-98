@@ -258,6 +258,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [showScenesPanel, setShowScenesPanel] = useState(false);
 
+  // ── Shared documents (PDF popups) ──
+  const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
+
+
   // ── Context menu ──
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
