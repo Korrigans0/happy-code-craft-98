@@ -472,6 +472,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       if (typeof incomingActiveScene === "string" || incomingActiveScene === null) {
         setActiveSceneId(incomingActiveScene ?? null);
       }
+      // ── Documents partagés (PDF pop-up) ──
+      const incomingDocs = (state as any).shared_documents;
+      if (Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
+
     },
     debounceMs: 250,
   });
