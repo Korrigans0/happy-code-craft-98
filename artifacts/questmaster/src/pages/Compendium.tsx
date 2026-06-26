@@ -26,6 +26,7 @@ import ItemsList from "@/components/compendium/ItemsList";
 import CreateMonsterDialog from "@/components/compendium/CreateMonsterDialog";
 import CreateSpellDialog from "@/components/compendium/CreateSpellDialog";
 import CreateItemDialog from "@/components/compendium/CreateItemDialog";
+import GlyphesCodex from "@/components/compendium/GlyphesCodex";
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 import { SYSTEM_LIST } from "@/lib/systems";
@@ -167,8 +168,12 @@ const Compendium = () => {
   const [waTab, setWaTab] = useState("wa-bestiary");
   const [refreshKey] = useState(0);
 
-  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Homebrew).
-  const visibleSystems = SYSTEM_LIST;
+  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
+  // Glyphes est rendu via un composant dédié, ajouté ici en plus du registre.
+  const visibleSystems = [
+    ...SYSTEM_LIST,
+    { id: "Glyphes", label: "Glyphes", emoji: "✨", featured: false, partner: false, custom: false, nouveau: true } as any,
+  ];
 
   return (
     <div className="relative flex min-h-screen flex-col">
@@ -213,6 +218,7 @@ const Compendium = () => {
                   {s.featured && <span className="ml-1 text-[10px] text-primary">PHARE</span>}
                   {s.partner && <span className="ml-1 text-[10px] text-blue-400">PARTENAIRE</span>}
                   {s.custom && <span className="ml-1 text-[10px] text-amber-400">LIBRE</span>}
+                  {s.nouveau && <span className="ml-1 text-[10px] text-emerald-400">NOUVEAU</span>}
                 </button>
               );
             })}
@@ -262,6 +268,8 @@ const Compendium = () => {
           {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "Call of Cthulhu") && (
             <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
+
+          {system === "Glyphes" && <GlyphesCodex />}
 
           {system === "Personnalisé" && (
             <div className="space-y-4">
