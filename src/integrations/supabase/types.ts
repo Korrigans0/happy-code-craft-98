@@ -775,6 +775,45 @@ export type Database = {
         }
         Relationships: []
       }
+      glyphes_content: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: Json
+          description: string
+          id: string
+          image_url: string | null
+          is_public: boolean
+          kind: Database["public"]["Enums"]["glyphes_content_kind"]
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          data?: Json
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          kind: Database["public"]["Enums"]["glyphes_content_kind"]
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          kind?: Database["public"]["Enums"]["glyphes_content_kind"]
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       magic_items: {
         Row: {
           attunement: boolean
@@ -1330,6 +1369,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       campaign_role: "gm" | "player"
+      glyphes_content_kind: "creature" | "object" | "map"
       subscription_tier: "free" | "gm_premium" | "premium_plus"
     }
     CompositeTypes: {
@@ -1460,6 +1500,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       campaign_role: ["gm", "player"],
+      glyphes_content_kind: ["creature", "object", "map"],
       subscription_tier: ["free", "gm_premium", "premium_plus"],
     },
   },
