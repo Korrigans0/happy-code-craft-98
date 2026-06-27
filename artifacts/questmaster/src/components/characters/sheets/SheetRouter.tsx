@@ -10,6 +10,7 @@ import HomebrewSheet from "./HomebrewSheet";
 import GenericSystemSheet from "./GenericSystemSheet";
 import Pathfinder2eSheet from "./Pathfinder2eSheet";
 import Cthulhu7eSheet from "./Cthulhu7eSheet";
+import GlyphesSheet from "./GlyphesSheet";
 
 interface SheetRouterProps {
   character: any;
@@ -68,6 +69,16 @@ const SheetRouter = ({ character, editable, onSave, onClose, onEdit }: SheetRout
     case "cthulhu7e":
       return (
         <Cthulhu7eSheet
+          character={character}
+          editable={editable}
+          onSave={onSave}
+          onClose={onClose}
+          onEdit={onEdit}
+        />
+      );
+    case "glyphes":
+      return (
+        <GlyphesSheet
           character={character}
           editable={editable}
           onSave={onSave}

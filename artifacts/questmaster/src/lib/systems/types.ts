@@ -94,6 +94,7 @@ export type SheetComponentKey =
   | "dnd5e"
   | "pathfinder2e"
   | "cthulhu7e"
+  | "glyphes"
   | "homebrew";
 
 export interface SystemDefinition {
