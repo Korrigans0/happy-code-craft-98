@@ -4,8 +4,9 @@
 // autre univers.
 
 import { Link } from "react-router-dom";
-import { ExternalLink, Sparkles, Hourglass, Rocket } from "lucide-react";
+import { ExternalLink, Sparkles, Hourglass, Rocket, Skull, Package, Map as MapIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import GlyphesUserContent from "./GlyphesUserContent";
 import {
   CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RICHESSES, SENS,
   DONS, RACES, ACTIONS_HEROIQUES, APTITUDES, ETATS,
@@ -91,6 +92,9 @@ const NouvelEmpireCodex = () => (
         <TabsTrigger value="magie" className="text-xs">Magie</TabsTrigger>
         <TabsTrigger value="equipement" className="text-xs">Équipement</TabsTrigger>
         <TabsTrigger value="monde" className="text-xs">Monde</TabsTrigger>
+        <TabsTrigger value="bestiaire" className="text-xs"><Skull className="mr-1 h-3 w-3" />Bestiaire</TabsTrigger>
+        <TabsTrigger value="objets" className="text-xs"><Package className="mr-1 h-3 w-3" />Objets</TabsTrigger>
+        <TabsTrigger value="maps" className="text-xs"><MapIcon className="mr-1 h-3 w-3" />Maps</TabsTrigger>
       </TabsList>
 
       {/* BASES */}
@@ -257,6 +261,11 @@ const NouvelEmpireCodex = () => (
           </div>
         </div>
       </TabsContent>
+
+      {/* CONTENU COMMUNAUTAIRE */}
+      <TabsContent value="bestiaire" className="mt-4"><GlyphesUserContent kind="creature" /></TabsContent>
+      <TabsContent value="objets" className="mt-4"><GlyphesUserContent kind="object" /></TabsContent>
+      <TabsContent value="maps" className="mt-4"><GlyphesUserContent kind="map" /></TabsContent>
     </Tabs>
   </div>
 );
