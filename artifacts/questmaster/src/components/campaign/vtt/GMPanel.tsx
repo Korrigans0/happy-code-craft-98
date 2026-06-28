@@ -818,7 +818,194 @@ export default function GMPanel({
             />
           </div>
         )}
+
+        {/* ── PDF ──────────────────────────────────────────── */}
+        {activeTab === "pdf" && isGM && (
+          <PdfTab campaignId={campaignId} currentUserId={currentUserId} />
+        )}
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// PDF TAB — Upload, list & view PDFs scoped to the campaign.
+// ============================================================
+interface CampaignPdf {
+  id: string;
+  campaign_id: string;
+  name: string;
+  file_path: string;
+  size_bytes: number | null;
+  uploaded_by: string;
+  created_at: string;
+}
+
+function PdfTab({ campaignId, currentUserId }: { campaignId: string; currentUserId: string }) {
+  const [pdfs, setPdfs] = useState<CampaignPdf[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerName, setViewerName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("campaign_pdfs" as never)
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("[PdfTab] load", error);
+      toast({ title: "Erreur", description: "Impossible de charger les PDF.", variant: "destructive" });
+    } else {
+      setPdfs((data as unknown as CampaignPdf[]) || []);
+    }
+    setLoading(false);
+  }, [campaignId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Format invalide", description: "Seuls les fichiers PDF sont acceptés.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "Fichier trop volumineux", description: "Limite de 50 Mo par PDF.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const path = `${campaignId}/${crypto.randomUUID()}.pdf`;
+      const up = await supabase.storage.from("campaign-pdfs").upload(path, file, {
+        contentType: "application/pdf",
+        upsert: false,
+      });
+      if (up.error) throw up.error;
+      const ins = await supabase.from("campaign_pdfs" as never).insert({
+        campaign_id: campaignId,
+        name: file.name,
+        file_path: path,
+        size_bytes: file.size,
+        uploaded_by: currentUserId,
+      } as never);
+      if (ins.error) throw ins.error;
+      toast({ title: "PDF ajouté", description: file.name });
+      await load();
+    } catch (err) {
+      console.error("[PdfTab] upload", err);
+      toast({ title: "Erreur d'upload", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openPdf = async (pdf: CampaignPdf) => {
+    const { data, error } = await supabase.storage
+      .from("campaign-pdfs")
+      .createSignedUrl(pdf.file_path, 3600);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Erreur", description: "Lien indisponible.", variant: "destructive" });
+      return;
+    }
+    setViewerUrl(data.signedUrl);
+    setViewerName(pdf.name);
+  };
+
+  const deletePdf = async (pdf: CampaignPdf) => {
+    if (!confirm(`Supprimer "${pdf.name}" ?`)) return;
+    const { error: sErr } = await supabase.storage.from("campaign-pdfs").remove([pdf.file_path]);
+    if (sErr) console.warn("[PdfTab] storage remove", sErr);
+    const { error } = await supabase.from("campaign_pdfs" as never).delete().eq("id", pdf.id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setPdfs(prev => prev.filter(p => p.id !== pdf.id));
+    }
+  };
+
+  return (
+    <>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="border-b border-border p-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <Button
+            size="sm"
+            className="w-full gap-2"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {uploading ? "Envoi en cours…" : "Ajouter un PDF"}
+          </Button>
+          <p className="mt-1.5 text-[10px] text-muted-foreground">Visible uniquement par les membres de la campagne. Max 50 Mo.</p>
+        </div>
+
+        <ScrollArea className="flex-1">
+          <div className="space-y-1 p-2">
+            {loading && (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+            {!loading && pdfs.length === 0 && (
+              <p className="py-8 text-center text-xs text-muted-foreground">
+                Aucun PDF pour cette campagne.
+              </p>
+            )}
+            {pdfs.map(pdf => (
+              <div
+                key={pdf.id}
+                className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-2 hover:border-primary/40 transition-colors"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-500/10 text-red-400">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-xs font-medium">{pdf.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {pdf.size_bytes ? `${(pdf.size_bytes / 1024 / 1024).toFixed(2)} Mo` : "—"}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => openPdf(pdf)}>
+                  Ouvrir
+                </Button>
+                <button
+                  onClick={() => deletePdf(pdf)}
+                  className="rounded p-1 text-muted-foreground hover:text-destructive transition-colors"
+                  title="Supprimer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      <Dialog open={!!viewerUrl} onOpenChange={(o) => { if (!o) setViewerUrl(null); }}>
+        <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden">
+          <DialogTitle className="sr-only">{viewerName || "Document PDF"}</DialogTitle>
+          {viewerUrl && (
+            <iframe
+              src={viewerUrl}
+              className="w-full h-full rounded-lg"
+              title={viewerName || "Document PDF"}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
