@@ -69,14 +69,15 @@ interface GMPanelProps {
   onClose: () => void;
 }
 
-type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes";
+type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf";
 
-const TAB_ITEMS: { id: Tab; icon: React.ReactNode; label: string }[] = [
+const TAB_ITEMS: { id: Tab; icon: React.ReactNode; label: string; gmOnly?: boolean }[] = [
   { id: "chat",       icon: <MessageSquare className="h-4 w-4" />, label: "Chat" },
   { id: "initiative", icon: <Swords className="h-4 w-4" />,        label: "Initiative" },
   { id: "tokens",     icon: <Users className="h-4 w-4" />,         label: "Jetons" },
   { id: "bestiary",   icon: <Skull className="h-4 w-4" />,         label: "Bestiaire" },
   { id: "notes",      icon: <BookOpen className="h-4 w-4" />,      label: "Notes" },
+  { id: "pdf",        icon: <FileText className="h-4 w-4" />,      label: "PDF" },
 ];
 
 function parseRollCommand(input: string): { formula: string; label?: string } | null {
