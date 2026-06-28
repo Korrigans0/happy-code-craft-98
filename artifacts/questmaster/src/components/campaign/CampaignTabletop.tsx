@@ -1282,7 +1282,15 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (mapLayer?.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
       ctx.save();
       ctx.globalAlpha = mapLayer.opacity / 100;
-      try { ctx.drawImage(mapImageRef.current, 0, 0); } catch { /* image pas prête */ }
+      const mScale = mapLayer.scale ?? 1;
+      try {
+        ctx.drawImage(
+          mapImageRef.current,
+          0, 0,
+          mapImageRef.current.naturalWidth * mScale,
+          mapImageRef.current.naturalHeight * mScale,
+        );
+      } catch { /* image pas prête */ }
       ctx.restore();
     }
 
