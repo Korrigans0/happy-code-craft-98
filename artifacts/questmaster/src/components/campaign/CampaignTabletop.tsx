@@ -218,7 +218,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Layer state ──
   const [layers, setLayers] = useState<MapLayer[]>([
-    { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100 },
+    { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100, scale: 1 },
     { id: "tokens", name: "Jetons", type: "tokens", visible: true, locked: false, opacity: 100 },
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
