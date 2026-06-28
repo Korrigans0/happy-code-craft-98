@@ -211,7 +211,7 @@ export default function GMPanel({
 
       {/* Tab bar */}
       <div className="flex border-b border-border">
-        {TAB_ITEMS.map(tab => (
+        {TAB_ITEMS.filter(t => t.id !== "pdf" || isGM).map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
