@@ -3156,13 +3156,39 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
                   </label>
                   {layers.find(l => l.id === "map")?.imageUrl && (
-                    <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => {
-                      mapImageRef.current = null;
-                      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
-                      saveState({ map_image_url: null });
-                    }}>
-                      <X className="mr-1 h-3 w-3" /> Retirer la carte
-                    </Button>
+                    <>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Taille de la carte</span>
+                          <span className="font-mono text-primary">
+                            {Math.round(((layers.find(l => l.id === "map")?.scale ?? 1) * 100))}%
+                          </span>
+                        </div>
+                        <Slider
+                          value={[Math.round(((layers.find(l => l.id === "map")?.scale ?? 1) * 100))]}
+                          min={10}
+                          max={400}
+                          step={5}
+                          onValueChange={(v) => {
+                            const next = (v[0] ?? 100) / 100;
+                            setLayers(prev => prev.map(l => l.id === "map" ? { ...l, scale: next } : l));
+                          }}
+                        />
+                        <div className="flex justify-between gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 flex-1 text-[10px]"
+                            onClick={() => setLayers(prev => prev.map(l => l.id === "map" ? { ...l, scale: 1 } : l))}>
+                            Réinitialiser
+                          </Button>
+                        </div>
+                      </div>
+                      <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => {
+                        mapImageRef.current = null;
+                        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined, scale: 1 } : l));
+                        saveState({ map_image_url: null });
+                      }}>
+                        <X className="mr-1 h-3 w-3" /> Retirer la carte
+                      </Button>
+                    </>
                   )}
                   <Separator />
                   <h3 className="text-sm font-semibold">Couleur de grille</h3>
