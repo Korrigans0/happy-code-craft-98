@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -6,15 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   MessageSquare, Swords, Users, Skull, BookOpen,
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
   RotateCcw, PanelRight, MousePointerClick, ListPlus,
-  ArrowUp, ArrowDown,
+  ArrowUp, ArrowDown, FileText, Upload, Loader2,
 } from "lucide-react";
 import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
