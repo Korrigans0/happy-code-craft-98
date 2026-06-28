@@ -61,6 +61,8 @@ export interface MapLayer {
   locked: boolean;
   opacity: number;
   imageUrl?: string;
+  /** Facteur d'échelle libre appliqué à l'image de fond (map uniquement). 1 = taille native. */
+  scale?: number;
 }
 
 export interface InitiativeEntry {
