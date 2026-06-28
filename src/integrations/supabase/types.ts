@@ -266,6 +266,44 @@ export type Database = {
           },
         ]
       }
+      campaign_pdfs: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          file_path: string
+          id: string
+          name: string
+          size_bytes: number | null
+          uploaded_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          file_path: string
+          id?: string
+          name: string
+          size_bytes?: number | null
+          uploaded_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          file_path?: string
+          id?: string
+          name?: string
+          size_bytes?: number | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_pdfs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_sessions: {
         Row: {
           campaign_id: string
