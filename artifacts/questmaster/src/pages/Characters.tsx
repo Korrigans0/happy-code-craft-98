@@ -234,7 +234,7 @@ const Characters = () => {
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
-    () => new Set(["Aetheria", "D&D 5e", "Pathfinder 2e", "Call of Cthulhu"]),
+    () => new Set(["Aetheria", "D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Glyphes"]),
     [],
   );
 
