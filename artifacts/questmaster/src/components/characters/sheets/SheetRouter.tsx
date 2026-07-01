@@ -10,7 +10,7 @@ import HomebrewSheet from "./HomebrewSheet";
 import GenericSystemSheet from "./GenericSystemSheet";
 import Pathfinder2eSheet from "./Pathfinder2eSheet";
 import Cthulhu7eSheet from "./Cthulhu7eSheet";
-import GlyphesSheet from "./GlyphesSheet";
+import GlyphesPdfSheet from "./GlyphesPdfSheet";
 
 interface SheetRouterProps {
   character: any;
