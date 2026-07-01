@@ -236,9 +236,10 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
         <div className="min-w-0 flex-1">
           <SheetHeader
             character={character}
+            system={getSystem(character?.system)}
             editable={editable}
-            onSave={onSave}
             onEdit={onEdit}
+            onChange={(k, v) => onSave?.({ [k]: v })}
           />
         </div>
         <div className="flex items-center gap-2 shrink-0">
