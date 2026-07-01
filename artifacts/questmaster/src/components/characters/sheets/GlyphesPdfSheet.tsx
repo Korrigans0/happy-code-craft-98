@@ -5,6 +5,7 @@
 // et permet l'export du PDF rempli via pdf-lib.
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown } from "pdf-lib";
