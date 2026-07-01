@@ -421,11 +421,9 @@ const PageOverlay = ({
   );
 };
 
-/** Tiny portal helper (avoid extra createPortal import juggling). */
+/** Tiny portal helper. */
 const FieldPortal = ({ host, children }: { host: HTMLElement; children: React.ReactNode }) => {
-  // Use React DOM portal
-  const ReactDOM = require("react-dom");
-  return ReactDOM.createPortal(children, host);
+  return createPortal(children, host);
 };
 
 export default GlyphesPdfSheet;
