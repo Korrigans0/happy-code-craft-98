@@ -83,7 +83,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     (async () => {
       setLoading(true);
       try {
-        const loadingTask = pdfjsLib.getDocument(PDF_URL);
+        const loadingTask = pdfjsLib.getDocument({ url: PDF_URL });
         const pdf = await loadingTask.promise;
         if (cancelled) return;
 
