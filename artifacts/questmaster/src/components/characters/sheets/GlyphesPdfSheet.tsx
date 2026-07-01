@@ -125,7 +125,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
             if (a.subtype !== "Widget" || !a.fieldName) continue;
             const [x1, y1, x2, y2] = a.rect;
             // Convert to viewport-space rect
-            const [vx1, vy1, vx2, vy2] = viewport.convertToViewportRectangle([x1, y1, x2, y2]);
+            const [vx1, vy1, vx2, vy2] = (viewport as any).convertToViewportRectangle([x1, y1, x2, y2]);
             const left = Math.min(vx1, vx2);
             const top = Math.min(vy1, vy2);
             const width = Math.abs(vx2 - vx1);
