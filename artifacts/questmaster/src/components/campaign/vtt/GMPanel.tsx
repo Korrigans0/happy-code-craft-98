@@ -880,6 +880,7 @@ function PdfTab({ campaignId, currentUserId }: { campaignId: string; currentUser
       return;
     }
     setUploading(true);
+    let uploadedPath: string | null = null;
     try {
       const path = `${campaignId}/${crypto.randomUUID()}.pdf`;
       const up = await supabase.storage.from("campaign-pdfs").upload(path, file, {
@@ -887,18 +888,42 @@ function PdfTab({ campaignId, currentUserId }: { campaignId: string; currentUser
         upsert: false,
       });
       if (up.error) throw up.error;
-      const ins = await supabase.from("campaign_pdfs" as never).insert({
+      uploadedPath = path;
+
+      const payload = {
         campaign_id: campaignId,
         name: file.name,
         file_path: path,
-        size_bytes: file.size,
+        size_bytes: Number.isSafeInteger(file.size) ? file.size : null,
         uploaded_by: currentUserId,
+      };
+
+      const ins = await supabase.from("campaign_pdfs" as never).insert({
+        ...payload,
       } as never);
-      if (ins.error) throw ins.error;
+
+      if (ins.error) {
+        const message = ins.error.message ?? "";
+        if (/integer out of range/i.test(message)) {
+          const retry = await supabase.from("campaign_pdfs" as never).insert({
+            campaign_id: payload.campaign_id,
+            name: payload.name,
+            file_path: payload.file_path,
+            size_bytes: null,
+            uploaded_by: payload.uploaded_by,
+          } as never);
+          if (retry.error) throw retry.error;
+        } else {
+          throw ins.error;
+        }
+      }
       toast({ title: "PDF ajouté", description: file.name });
       await load();
     } catch (err) {
       console.error("[PdfTab] upload", err);
+      if (uploadedPath) {
+        await supabase.storage.from("campaign-pdfs").remove([uploadedPath]);
+      }
       toast({ title: "Erreur d'upload", description: (err as Error).message, variant: "destructive" });
     } finally {
       setUploading(false);
