@@ -228,7 +228,7 @@ export function useMediaLibrary() {
         storage_path: mainPath,
         thumbnail_path: thumbPath,
         mime: mainMime,
-        size_bytes: mainBlob.size,
+        size_bytes: Number.isSafeInteger(mainBlob.size) ? mainBlob.size : 0,
         width,
         height,
         checksum,
