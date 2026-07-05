@@ -24,6 +24,7 @@ import Partners from "./pages/Partners";
 import Subscriptions from "./pages/Subscriptions";
 import Guide from "./pages/Guide";
 import Unsubscribe from "./pages/Unsubscribe";
+import SystemsIndex from "./pages/systems/Index";
 import GlyphesHub from "./pages/systems/glyphes/Hub";
 import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
