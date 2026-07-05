@@ -76,6 +76,7 @@ const AppRoutes = () => (
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
         <Route path="/systems/glyphes/nouvel-empire" element={<GlyphesNouvelEmpire />} />
         <Route path="/systems/glyphes/present" element={<GlyphesComingSoon era="present" />} />
