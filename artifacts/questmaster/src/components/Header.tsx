@@ -21,6 +21,7 @@ const navLinks = [
   { to: "/characters", label: "Personnages", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
   { to: "/library", label: "Bibliothèque", icon: LibraryIcon },
+  { to: "/systems", label: "Systèmes", icon: Sparkles },
   { to: "/guide", label: "Guide", icon: HelpCircle },
   { to: "/subscriptions", label: "Abonnements", icon: Crown },
   { to: "/partners", label: "Partenaires", icon: Handshake },
