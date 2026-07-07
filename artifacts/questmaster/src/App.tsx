@@ -80,6 +80,7 @@ const AppRoutes = () => (
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
         <Route path="/systems/glyphes/nouvel-empire" element={<GlyphesNouvelEmpire />} />
+        <Route path="/systems/glyphes/compendium" element={<GlyphesCompendium />} />
         <Route path="/systems/glyphes/present" element={<GlyphesComingSoon era="present" />} />
         <Route path="/systems/glyphes/futur" element={<GlyphesComingSoon era="futur" />} />
         <Route path="*" element={<NotFound />} />
