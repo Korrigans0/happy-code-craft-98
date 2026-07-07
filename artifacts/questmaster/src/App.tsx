@@ -27,6 +27,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import SystemsIndex from "./pages/systems/Index";
 import GlyphesHub from "./pages/systems/glyphes/Hub";
 import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
+import GlyphesCompendium from "./pages/systems/glyphes/Compendium";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
@@ -79,6 +80,7 @@ const AppRoutes = () => (
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
         <Route path="/systems/glyphes/nouvel-empire" element={<GlyphesNouvelEmpire />} />
+        <Route path="/systems/glyphes/compendium" element={<GlyphesCompendium />} />
         <Route path="/systems/glyphes/present" element={<GlyphesComingSoon era="present" />} />
         <Route path="/systems/glyphes/futur" element={<GlyphesComingSoon era="futur" />} />
         <Route path="*" element={<NotFound />} />

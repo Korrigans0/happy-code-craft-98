@@ -1,6 +1,7 @@
 import {
   Menu, X, User, BookOpen,
-  Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle, Library as LibraryIcon
+  Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle, Library as LibraryIcon,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -20,6 +21,7 @@ const navLinks = [
   { to: "/characters", label: "Personnages", icon: User },
   { to: "/compendium", label: "Codex", icon: BookOpen },
   { to: "/library", label: "Bibliothèque", icon: LibraryIcon },
+  { to: "/systems", label: "Systèmes", icon: Sparkles },
   { to: "/guide", label: "Guide", icon: HelpCircle },
   { to: "/subscriptions", label: "Abonnements", icon: Crown },
   { to: "/partners", label: "Partenaires", icon: Handshake },
