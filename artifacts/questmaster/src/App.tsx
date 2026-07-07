@@ -27,6 +27,7 @@ import Unsubscribe from "./pages/Unsubscribe";
 import SystemsIndex from "./pages/systems/Index";
 import GlyphesHub from "./pages/systems/glyphes/Hub";
 import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
+import GlyphesCompendium from "./pages/systems/glyphes/Compendium";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
