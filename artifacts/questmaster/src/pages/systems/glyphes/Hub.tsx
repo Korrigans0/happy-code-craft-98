@@ -113,6 +113,17 @@ export default function GlyphesHub() {
               );
             })}
           </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              to="/systems/glyphes/compendium"
+              className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-5 py-3 text-sm font-semibold text-amber-300 transition-all hover:bg-amber-500/20"
+            >
+              <BookOpen className="h-4 w-4" />
+              Compendium Glyphes — Races, Origines, Archétypes
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </section>
       </main>
       <Footer />
