@@ -263,8 +263,17 @@ const NouvelEmpireCodex = () => (
         </div>
       </TabsContent>
 
-      {/* CONTENU COMMUNAUTAIRE */}
-      <TabsContent value="bestiaire" className="mt-4"><GlyphesUserContent kind="creature" /></TabsContent>
+      {/* BESTIAIRE : officiel + communauté */}
+      <TabsContent value="bestiaire" className="mt-4">
+        <Tabs defaultValue="officiel" className="w-full">
+          <TabsList className="mb-4 bg-muted/50">
+            <TabsTrigger value="officiel" className="text-xs">Officiel</TabsTrigger>
+            <TabsTrigger value="communaute" className="text-xs">Communauté</TabsTrigger>
+          </TabsList>
+          <TabsContent value="officiel"><GlyphesOfficialBestiary /></TabsContent>
+          <TabsContent value="communaute"><GlyphesUserContent kind="creature" /></TabsContent>
+        </Tabs>
+      </TabsContent>
       <TabsContent value="objets" className="mt-4"><GlyphesUserContent kind="object" /></TabsContent>
       <TabsContent value="maps" className="mt-4"><GlyphesUserContent kind="map" /></TabsContent>
     </Tabs>
