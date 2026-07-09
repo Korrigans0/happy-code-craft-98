@@ -217,6 +217,8 @@ export default function GlyphesCompendium() {
               </p>
             </div>
           )}
+
+          {tab === "bestiaire" && <GlyphesOfficialBestiary />}
         </section>
       </main>
       <Footer />
