@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { ExternalLink, Sparkles, Hourglass, Rocket, Skull, Package, Map as MapIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import GlyphesUserContent from "./GlyphesUserContent";
+import GlyphesOfficialBestiary from "./GlyphesOfficialBestiary";
 import {
   CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RICHESSES, SENS,
   DONS, RACES, ACTIONS_HEROIQUES, APTITUDES, ETATS,
