@@ -81,7 +81,7 @@ const ARCHETYPES = [
 ];
 
 export default function GlyphesCompendium() {
-  const [tab, setTab] = useState<TabId>("races");
+  const [tab, setTab] = useState<TabId>("regles");
 
   return (
     <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
