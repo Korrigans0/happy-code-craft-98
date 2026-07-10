@@ -3,17 +3,23 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull } from "lucide-react";
-import { RACES, FACTIONS, ATLAS, DONS, APTITUDES } from "./data";
+import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull, Shield, Sparkles } from "lucide-react";
+import {
+  RACES, FACTIONS, ATLAS, DONS, APTITUDES,
+  ARMES_CATEGORIES, ARMURES_CATEGORIES, OBJETS_QUALITE,
+  GLYPHES_CONNUS, FABRICATION_TABLE, MAGNITUDE_DEGATS, TEMPETE_PAR_ND,
+} from "./data";
 import GlyphesOfficialBestiary from "@/components/compendium/GlyphesOfficialBestiary";
 
-type TabId = "races" | "origines" | "classes" | "bestiaire";
+type TabId = "races" | "origines" | "classes" | "bestiaire" | "equipement" | "magie";
 
 const TABS: { id: TabId; label: string; icon: typeof Users }[] = [
   { id: "races", label: "Races", icon: Users },
   { id: "origines", label: "Origines", icon: Compass },
   { id: "classes", label: "Archétypes", icon: Swords },
   { id: "bestiaire", label: "Bestiaire", icon: Skull },
+  { id: "equipement", label: "Équipement", icon: Shield },
+  { id: "magie", label: "Magie", icon: Sparkles },
 ];
 
 // Archétypes construits à partir des dons + aptitudes emblématiques.
