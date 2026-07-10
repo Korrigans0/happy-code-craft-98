@@ -3,20 +3,24 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull, Shield, Sparkles, Scroll, Star } from "lucide-react";
 import {
   RACES, FACTIONS, ATLAS, DONS, APTITUDES,
   ARMES_CATEGORIES, ARMURES_CATEGORIES, OBJETS_QUALITE,
   GLYPHES_CONNUS, FABRICATION_TABLE, MAGNITUDE_DEGATS, TEMPETE_PAR_ND,
+  CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RANGS, RICHESSES, SENS,
+  ACTIONS_HEROIQUES, ETATS, IMMERSION_TABLE,
 } from "./data";
 import GlyphesOfficialBestiary from "@/components/compendium/GlyphesOfficialBestiary";
 
-type TabId = "races" | "origines" | "classes" | "bestiaire" | "equipement" | "magie";
+type TabId = "regles" | "races" | "origines" | "classes" | "dons" | "bestiaire" | "equipement" | "magie";
 
 const TABS: { id: TabId; label: string; icon: typeof Users }[] = [
+  { id: "regles", label: "Règles", icon: Scroll },
   { id: "races", label: "Races", icon: Users },
   { id: "origines", label: "Origines", icon: Compass },
   { id: "classes", label: "Archétypes", icon: Swords },
+  { id: "dons", label: "Dons & Aptitudes", icon: Star },
   { id: "bestiaire", label: "Bestiaire", icon: Skull },
   { id: "equipement", label: "Équipement", icon: Shield },
   { id: "magie", label: "Magie", icon: Sparkles },
@@ -77,7 +81,7 @@ const ARCHETYPES = [
 ];
 
 export default function GlyphesCompendium() {
-  const [tab, setTab] = useState<TabId>("races");
+  const [tab, setTab] = useState<TabId>("regles");
 
   return (
     <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
@@ -127,6 +131,140 @@ export default function GlyphesCompendium() {
               );
             })}
           </div>
+
+          {tab === "regles" && (
+            <div className="space-y-10">
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Caractéristiques</h2>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {CARACTERISTIQUES.map((c) => (
+                    <article key={c.key} className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-mono text-amber-400 text-lg">{c.key}</span>
+                        <h3 className="font-display text-lg text-amber-200">{c.label}</h3>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-400">{c.desc}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Sens</h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {SENS.map((s) => (
+                    <article key={s.sens} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                      <h3 className="text-sm font-semibold text-amber-200">{s.sens}</h3>
+                      <p className="mt-1 text-xs text-slate-400 font-mono">{s.formule}</p>
+                    </article>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-slate-500">Niveaux de dés : {NIVEAUX_DES.join(" · ")}</p>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Difficultés</h2>
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-amber-500/10 text-amber-300">
+                      <tr>
+                        <th className="px-4 py-2 text-left">TD</th>
+                        <th className="px-4 py-2 text-center">Valeur</th>
+                        <th className="px-4 py-2 text-left">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {DIFFICULTES.map((d) => (
+                        <tr key={d.td} className="border-t border-white/5 text-slate-300">
+                          <td className="px-4 py-2 font-semibold text-amber-200">{d.td}</td>
+                          <td className="px-4 py-2 text-center font-mono">{d.valeur}</td>
+                          <td className="px-4 py-2 text-slate-400">{d.desc}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <h2 className="font-display text-xl text-amber-300 mb-3">Rangs</h2>
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-4 space-y-2">
+                    {RANGS.map((r) => (
+                      <div key={r.rang} className="text-sm text-slate-300">
+                        <span className="font-mono text-amber-200 mr-2">Rang {r.rang}</span>
+                        <span className="text-slate-400">{r.ajout}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h2 className="font-display text-xl text-amber-300 mb-3">Richesses</h2>
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-4 space-y-2">
+                    {RICHESSES.map((r) => (
+                      <div key={r.piece} className="text-sm text-slate-300 flex justify-between gap-3">
+                        <span className="font-semibold text-amber-200">{r.piece}</span>
+                        <span className="text-slate-400 font-mono text-xs">{r.taux}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Actions héroïques</h2>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {ACTIONS_HEROIQUES.map((a) => (
+                    <article key={a.nom} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h3 className="text-sm font-semibold text-amber-200">{a.nom}</h3>
+                        <span className="shrink-0 text-xs font-mono text-amber-400/80">{a.cout} pt</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">{a.desc}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">États</h2>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {ETATS.map((e) => (
+                    <div key={e.etat} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-3">
+                      <h3 className="text-sm font-semibold text-amber-200">{e.etat}</h3>
+                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">{e.effet}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Table d'immersion</h2>
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-amber-500/10 text-amber-300">
+                      <tr>
+                        <th className="px-4 py-2 text-center">Coût</th>
+                        <th className="px-4 py-2 text-left">Portée</th>
+                        <th className="px-4 py-2 text-left">Magnitude</th>
+                        <th className="px-4 py-2 text-left">Zone</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {IMMERSION_TABLE.map((i) => (
+                        <tr key={i.cout} className="border-t border-white/5 text-slate-300">
+                          <td className="px-4 py-2 text-center font-mono text-amber-200">{i.cout}</td>
+                          <td className="px-4 py-2 font-mono">{i.portee}</td>
+                          <td className="px-4 py-2">{i.magnitude}</td>
+                          <td className="px-4 py-2">{i.zone}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           {tab === "races" && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -221,6 +359,67 @@ export default function GlyphesCompendium() {
                 </Link>
                 .
               </p>
+            </div>
+          )}
+
+          {tab === "dons" && (
+            <div className="space-y-10">
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Dons</h2>
+                <p className="text-sm text-slate-400 mb-4 max-w-2xl">
+                  Un don est un talent unique qui modifie une règle du jeu ou débloque une capacité spéciale.
+                </p>
+                <div className="space-y-6">
+                  {DONS.map((cat) => (
+                    <div key={cat.cat}>
+                      <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {cat.items.map((it) => (
+                          <article key={it.nom} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                            <h4 className="text-sm font-semibold text-amber-200">{it.nom}</h4>
+                            <p className="mt-1 text-xs text-slate-400 leading-relaxed">{it.desc}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Aptitudes</h2>
+                <p className="text-sm text-slate-400 mb-4 max-w-2xl">
+                  Les aptitudes définissent ce que votre personnage sait faire. Chaque niveau ajoute un dé aux
+                  épreuves associées.
+                </p>
+                <div className="space-y-6">
+                  {APTITUDES.map((cat) => (
+                    <div key={cat.cat}>
+                      <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
+                      <div className="overflow-x-auto rounded-lg border border-white/10 bg-[hsl(215,68%,9%)]">
+                        <table className="w-full text-sm">
+                          <thead className="bg-amber-500/5 text-amber-300/80">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Aptitude</th>
+                              <th className="px-3 py-2 text-left">Caractéristique</th>
+                              <th className="px-3 py-2 text-left">Effet</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cat.items.map((it) => (
+                              <tr key={it.nom} className="border-t border-white/5 text-slate-300">
+                                <td className="px-3 py-2 font-semibold text-amber-200 whitespace-nowrap">{it.nom}</td>
+                                <td className="px-3 py-2 font-mono text-xs text-amber-300/80 whitespace-nowrap">{it.carac}</td>
+                                <td className="px-3 py-2 text-slate-400 text-xs">{it.desc}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
