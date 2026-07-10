@@ -362,10 +362,10 @@ export default function GlyphesCompendium() {
                         </tr>
                       </thead>
                       <tbody>
-                        {TEMPETE_PAR_ND.map((t, i) => (
-                          <tr key={i} className="border-t border-white/5 text-slate-300">
-                            <td className="px-4 py-2 text-center">{(t as any).nd ?? (t as any).difficulte ?? "—"}</td>
-                            <td className="px-4 py-2 text-center font-mono text-amber-200">{(t as any).points ?? (t as any).tempete ?? "—"}</td>
+                        {TEMPETE_PAR_ND.map((t) => (
+                          <tr key={t.nd} className="border-t border-white/5 text-slate-300">
+                            <td className="px-4 py-2 text-center">{t.nd}</td>
+                            <td className="px-4 py-2 text-center font-mono text-amber-200">{t.tempete}</td>
                           </tr>
                         ))}
                       </tbody>
