@@ -225,6 +225,156 @@ export default function GlyphesCompendium() {
           )}
 
           {tab === "bestiaire" && <GlyphesOfficialBestiary />}
+
+          {tab === "equipement" && (
+            <div className="space-y-10">
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Armes</h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {ARMES_CATEGORIES.map((a) => (
+                    <article key={a.cat} className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5">
+                      <h3 className="font-display text-lg text-amber-200">{a.cat}</h3>
+                      <p className="mt-1 text-sm text-slate-400">{a.desc}</p>
+                      <p className="mt-2 text-xs text-slate-500"><span className="text-amber-400/70">Exemples :</span> {a.exemples}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Armures</h2>
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-amber-500/10 text-amber-300">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Catégorie</th>
+                        <th className="px-4 py-2 text-center">Protection</th>
+                        <th className="px-4 py-2 text-center">Esquive</th>
+                        <th className="px-4 py-2 text-left">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ARMURES_CATEGORIES.map((a) => (
+                        <tr key={a.cat} className="border-t border-white/5 text-slate-300">
+                          <td className="px-4 py-2 font-semibold text-amber-200">{a.cat}</td>
+                          <td className="px-4 py-2 text-center font-mono">{a.protection}</td>
+                          <td className="px-4 py-2 text-center font-mono">{a.bonus}</td>
+                          <td className="px-4 py-2 text-slate-400">{a.desc}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Objets de qualité</h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {OBJETS_QUALITE.map((o) => (
+                    <article key={o.type} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-amber-200">{o.type}</h3>
+                        <span className="shrink-0 text-xs font-mono text-amber-400/80">{o.prix}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{o.effet}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === "magie" && (
+            <div className="space-y-10">
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Glyphes connus</h2>
+                <p className="text-sm text-slate-400 mb-4 max-w-2xl">
+                  Seuls trois glyphes sont documentés dans le Nouvel Empire. Chaque évocateur en découvre
+                  d'autres au fil de son voyage — la magie reste rare et instable.
+                </p>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {GLYPHES_CONNUS.map((g) => (
+                    <article key={g.nom} className="rounded-xl border border-purple-500/25 bg-purple-500/5 p-5">
+                      <h3 className="font-display text-xl text-purple-200">{g.nom}</h3>
+                      <p className="mt-2 text-sm text-slate-400 leading-relaxed">{g.desc}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Fabrication d'un sort</h2>
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-amber-500/10 text-amber-300">
+                      <tr>
+                        <th className="px-4 py-2 text-center">Coût</th>
+                        <th className="px-4 py-2 text-left">Zone</th>
+                        <th className="px-4 py-2 text-left">Durée</th>
+                        <th className="px-4 py-2 text-left">Temps de fabrication</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {FABRICATION_TABLE.map((f, i) => (
+                        <tr key={i} className="border-t border-white/5 text-slate-300">
+                          <td className="px-4 py-2 text-center font-mono text-amber-200">{f.cout}</td>
+                          <td className="px-4 py-2">{f.zone}</td>
+                          <td className="px-4 py-2">{f.duree}</td>
+                          <td className="px-4 py-2 text-slate-400">{f.temps}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <h2 className="font-display text-xl text-amber-300 mb-3">Magnitude des dégâts</h2>
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-amber-500/10 text-amber-300">
+                        <tr>
+                          <th className="px-4 py-2 text-center">Résilience visée</th>
+                          <th className="px-4 py-2 text-center">Coût en âme</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {MAGNITUDE_DEGATS.map((m) => (
+                          <tr key={m.resilience} className="border-t border-white/5 text-slate-300">
+                            <td className="px-4 py-2 text-center font-mono">{m.resilience}</td>
+                            <td className="px-4 py-2 text-center font-mono text-amber-200">{m.cout}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="font-display text-xl text-amber-300 mb-3">Tempête spirituelle</h2>
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-amber-500/10 text-amber-300">
+                        <tr>
+                          <th className="px-4 py-2 text-center">Niveau de difficulté</th>
+                          <th className="px-4 py-2 text-center">Points de tempête</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {TEMPETE_PAR_ND.map((t, i) => (
+                          <tr key={i} className="border-t border-white/5 text-slate-300">
+                            <td className="px-4 py-2 text-center">{(t as any).nd ?? (t as any).difficulte ?? "—"}</td>
+                            <td className="px-4 py-2 text-center font-mono text-amber-200">{(t as any).points ?? (t as any).tempete ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </main>
       <Footer />
