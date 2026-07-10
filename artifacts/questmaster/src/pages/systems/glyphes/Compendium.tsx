@@ -362,6 +362,67 @@ export default function GlyphesCompendium() {
             </div>
           )}
 
+          {tab === "dons" && (
+            <div className="space-y-10">
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Dons</h2>
+                <p className="text-sm text-slate-400 mb-4 max-w-2xl">
+                  Un don est un talent unique qui modifie une règle du jeu ou débloque une capacité spéciale.
+                </p>
+                <div className="space-y-6">
+                  {DONS.map((cat) => (
+                    <div key={cat.cat}>
+                      <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {cat.items.map((it) => (
+                          <article key={it.nom} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                            <h4 className="text-sm font-semibold text-amber-200">{it.nom}</h4>
+                            <p className="mt-1 text-xs text-slate-400 leading-relaxed">{it.desc}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl text-amber-300 mb-4">Aptitudes</h2>
+                <p className="text-sm text-slate-400 mb-4 max-w-2xl">
+                  Les aptitudes définissent ce que votre personnage sait faire. Chaque niveau ajoute un dé aux
+                  épreuves associées.
+                </p>
+                <div className="space-y-6">
+                  {APTITUDES.map((cat) => (
+                    <div key={cat.cat}>
+                      <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
+                      <div className="overflow-x-auto rounded-lg border border-white/10 bg-[hsl(215,68%,9%)]">
+                        <table className="w-full text-sm">
+                          <thead className="bg-amber-500/5 text-amber-300/80">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Aptitude</th>
+                              <th className="px-3 py-2 text-left">Caractéristique</th>
+                              <th className="px-3 py-2 text-left">Effet</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cat.items.map((it) => (
+                              <tr key={it.nom} className="border-t border-white/5 text-slate-300">
+                                <td className="px-3 py-2 font-semibold text-amber-200 whitespace-nowrap">{it.nom}</td>
+                                <td className="px-3 py-2 font-mono text-xs text-amber-300/80 whitespace-nowrap">{it.carac}</td>
+                                <td className="px-3 py-2 text-slate-400 text-xs">{it.desc}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === "bestiaire" && <GlyphesOfficialBestiary />}
 
           {tab === "equipement" && (
