@@ -3,20 +3,24 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull, Shield, Sparkles } from "lucide-react";
+import { ArrowLeft, Users, Compass, Swords, BookOpen, Skull, Shield, Sparkles, Scroll, Star } from "lucide-react";
 import {
   RACES, FACTIONS, ATLAS, DONS, APTITUDES,
   ARMES_CATEGORIES, ARMURES_CATEGORIES, OBJETS_QUALITE,
   GLYPHES_CONNUS, FABRICATION_TABLE, MAGNITUDE_DEGATS, TEMPETE_PAR_ND,
+  CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RANGS, RICHESSES, SENS,
+  ACTIONS_HEROIQUES, ETATS, IMMERSION_TABLE,
 } from "./data";
 import GlyphesOfficialBestiary from "@/components/compendium/GlyphesOfficialBestiary";
 
-type TabId = "races" | "origines" | "classes" | "bestiaire" | "equipement" | "magie";
+type TabId = "regles" | "races" | "origines" | "classes" | "dons" | "bestiaire" | "equipement" | "magie";
 
 const TABS: { id: TabId; label: string; icon: typeof Users }[] = [
+  { id: "regles", label: "Règles", icon: Scroll },
   { id: "races", label: "Races", icon: Users },
   { id: "origines", label: "Origines", icon: Compass },
   { id: "classes", label: "Archétypes", icon: Swords },
+  { id: "dons", label: "Dons & Aptitudes", icon: Star },
   { id: "bestiaire", label: "Bestiaire", icon: Skull },
   { id: "equipement", label: "Équipement", icon: Shield },
   { id: "magie", label: "Magie", icon: Sparkles },
