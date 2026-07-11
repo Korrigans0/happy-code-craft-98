@@ -33,6 +33,7 @@ interface TurnOrderBarProps {
   round: number;
   isActive: boolean;
   isGM: boolean;
+  campaignSystem?: string;
   onNextTurn: () => void;
   onPrevTurn?: () => void;
   onEndCombat?: () => void;
@@ -65,11 +66,13 @@ const ParticipantChip = ({
   isActive,
   isCurrent,
   index,
+  initShort,
 }: {
   participant: Participant;
   isActive: boolean;
   isCurrent: boolean;
   index: number;
+  initShort: string;
 }) => {
   const isDead = participant.current_hp <= 0;
   const hpPct = Math.max(0, Math.min(100, (participant.current_hp / participant.max_hp) * 100));
@@ -133,9 +136,9 @@ const ParticipantChip = ({
         {participant.name}
       </span>
 
-      {/* Initiative */}
+      {/* Initiative / Épreuve */}
       <span className="text-[10px] text-muted-foreground">
-        Init: <strong>{participant.initiative}</strong>
+        {initShort}: <strong>{participant.initiative}</strong>
       </span>
 
       {/* Barre HP */}
@@ -181,7 +184,9 @@ export default function TurnOrderBar({
   onNextTurn,
   onPrevTurn,
   onEndCombat,
+  campaignSystem = "Aetheria",
 }: TurnOrderBarProps) {
+  const initShort = campaignSystem === "Glyphes" ? "Épr" : "Init";
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -339,6 +344,7 @@ export default function TurnOrderBar({
                 isActive={isActive}
                 isCurrent={i === currentTurn}
                 index={i}
+                initShort={initShort}
               />
             ))}
           </div>

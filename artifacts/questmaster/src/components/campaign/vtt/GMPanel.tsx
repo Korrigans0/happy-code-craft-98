@@ -71,9 +71,11 @@ interface GMPanelProps {
 
 type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf";
 
-const TAB_ITEMS: { id: Tab; icon: React.ReactNode; label: string; gmOnly?: boolean }[] = [
+// Glyphes system utilise "Épreuve d'initiative" (jet de SOU) au lieu du concept classique.
+// On adapte uniquement le vocabulaire côté UI ; l'ordre de tour reste basé sur la valeur numérique.
+const buildTabItems = (isGlyphes: boolean): { id: Tab; icon: React.ReactNode; label: string; gmOnly?: boolean }[] => [
   { id: "chat",       icon: <MessageSquare className="h-4 w-4" />, label: "Chat" },
-  { id: "initiative", icon: <Swords className="h-4 w-4" />,        label: "Initiative" },
+  { id: "initiative", icon: <Swords className="h-4 w-4" />,        label: isGlyphes ? "Épreuve" : "Initiative" },
   { id: "tokens",     icon: <Users className="h-4 w-4" />,         label: "Jetons" },
   { id: "bestiary",   icon: <Skull className="h-4 w-4" />,         label: "Bestiaire" },
   { id: "notes",      icon: <BookOpen className="h-4 w-4" />,      label: "Notes" },
@@ -98,6 +100,10 @@ export default function GMPanel({
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
   onNextTurn, onResetInitiative, onClose,
 }: GMPanelProps) {
+  const isGlyphes = campaignSystem === "Glyphes";
+  const initTerm = isGlyphes ? "Épreuve" : "Initiative";
+  const initShort = isGlyphes ? "Épr" : "Init";
+  const TAB_ITEMS = buildTabItems(isGlyphes);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [chatInput, setChatInput] = useState("");
   const [isSecret, setIsSecret] = useState(false);
@@ -329,7 +335,7 @@ export default function GMPanel({
                     className="h-7 gap-1 text-xs"
                     onClick={onAddSelectedTokenToInitiative}
                     disabled={!selectedTokenId}
-                    title={selectedTokenId ? "Ajouter le jeton sélectionné à l'initiative" : "Aucun jeton sélectionné"}
+                    title={selectedTokenId ? `Ajouter le jeton sélectionné à l'${initTerm.toLowerCase()}` : "Aucun jeton sélectionné"}
                   >
                     <MousePointerClick className="h-3 w-3" />
                     Sélection
@@ -355,10 +361,10 @@ export default function GMPanel({
                     className="h-7 gap-1 text-xs"
                     onClick={onAutoRollAllInitiative}
                     disabled={initiative.length === 0}
-                    title="Relancer l'initiative pour tous les combattants"
+                    title={isGlyphes ? "Relancer l'épreuve d'initiative (SOU) pour tous" : "Relancer l'initiative pour tous les combattants"}
                   >
                     <Dices className="h-3 w-3" />
-                    Init auto
+                    {isGlyphes ? "Épreuve auto" : "Init auto"}
                   </Button>
                 )}
               </div>
@@ -432,7 +438,7 @@ export default function GMPanel({
                             className={`h-7 w-10 shrink-0 rounded-full border border-border bg-background text-center text-xs font-bold tabular-nums ${
                               isActive ? "ring-2 ring-primary" : ""
                             }`}
-                            title="Modifier l'initiative"
+                            title={`Modifier l'${initTerm.toLowerCase()}`}
                           />
                         ) : (
                           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -473,7 +479,7 @@ export default function GMPanel({
                         </div>
                         <button onClick={() => onRemoveFromInitiative(entry.id)}
                           className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Retirer de l'initiative">
+                          title={`Retirer de l'${initTerm.toLowerCase()}`}>
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -520,7 +526,7 @@ export default function GMPanel({
                   className="h-7 flex-1 text-xs"
                 />
                 <Input
-                  placeholder="Init"
+                  placeholder={initShort}
                   value={addingToInit.roll}
                   onChange={e => setAddingToInit(p => ({ ...p, roll: e.target.value }))}
                   className="h-7 w-14 text-xs"
