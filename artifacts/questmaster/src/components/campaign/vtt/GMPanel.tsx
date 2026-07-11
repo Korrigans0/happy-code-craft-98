@@ -100,6 +100,10 @@ export default function GMPanel({
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
   onNextTurn, onResetInitiative, onClose,
 }: GMPanelProps) {
+  const isGlyphes = campaignSystem === "Glyphes";
+  const initTerm = isGlyphes ? "Épreuve" : "Initiative";
+  const initShort = isGlyphes ? "Épr" : "Init";
+  const TAB_ITEMS = buildTabItems(isGlyphes);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [chatInput, setChatInput] = useState("");
   const [isSecret, setIsSecret] = useState(false);
