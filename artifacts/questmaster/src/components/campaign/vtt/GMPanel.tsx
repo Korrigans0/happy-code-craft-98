@@ -479,7 +479,7 @@ export default function GMPanel({
                         </div>
                         <button onClick={() => onRemoveFromInitiative(entry.id)}
                           className="ml-1 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Retirer de l'initiative">
+                          title={`Retirer de l'${initTerm.toLowerCase()}`}>
                           <X className="h-3 w-3" />
                         </button>
                       </div>
