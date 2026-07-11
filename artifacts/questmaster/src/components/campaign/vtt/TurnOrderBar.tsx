@@ -66,11 +66,13 @@ const ParticipantChip = ({
   isActive,
   isCurrent,
   index,
+  initShort,
 }: {
   participant: Participant;
   isActive: boolean;
   isCurrent: boolean;
   index: number;
+  initShort: string;
 }) => {
   const isDead = participant.current_hp <= 0;
   const hpPct = Math.max(0, Math.min(100, (participant.current_hp / participant.max_hp) * 100));
