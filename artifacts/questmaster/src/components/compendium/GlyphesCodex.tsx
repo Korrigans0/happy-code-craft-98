@@ -298,16 +298,16 @@ const GlyphesCodex = () => (
       <ComingSoonEra
         icon={Hourglass}
         title="Expédition"
-        subtitle="Ère contemporaine"
-        desc="Le monde post-brisure aujourd'hui. Sociétés bouleversées par la brume, factions modernes, héritage des glyphes anciens."
+        subtitle="Steampunk — Post-révolution industrielle"
+        desc="Vapeur, rouages et glyphes gravés dans l'acier. Les nations émergent de la première révolution industrielle et lancent leurs expéditions dans les brumes."
       />
     </TabsContent>
     <TabsContent value="futur">
       <ComingSoonEra
         icon={Rocket}
         title="Odyssée"
-        subtitle="Anticipation"
-        desc="Demain, quand la technologie tente de domestiquer le flux. Affrontement entre science et glyphes antiques."
+        subtitle="Deuxième révolution industrielle"
+        desc="Électricité, moteurs modernes et industrialisation des glyphes. Une nouvelle ère de puissance — et de démesure — s'ouvre sur le Flux."
       />
     </TabsContent>
   </Tabs>
