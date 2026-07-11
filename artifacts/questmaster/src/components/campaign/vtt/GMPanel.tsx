@@ -335,7 +335,7 @@ export default function GMPanel({
                     className="h-7 gap-1 text-xs"
                     onClick={onAddSelectedTokenToInitiative}
                     disabled={!selectedTokenId}
-                    title={selectedTokenId ? "Ajouter le jeton sélectionné à l'initiative" : "Aucun jeton sélectionné"}
+                    title={selectedTokenId ? `Ajouter le jeton sélectionné à l'${initTerm.toLowerCase()}` : "Aucun jeton sélectionné"}
                   >
                     <MousePointerClick className="h-3 w-3" />
                     Sélection
