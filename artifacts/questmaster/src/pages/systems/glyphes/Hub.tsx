@@ -8,7 +8,7 @@ const ERAS = [
   {
     id: "nouvel-empire",
     title: "Nouvel Empire",
-    subtitle: "Médiéval Fantastique",
+    subtitle: "Post-chute de l'Empire",
     desc: "1527 AE. Les Territoires Libres se relèvent des cendres de l'Empire. Évocateurs traqués, brumes envahissantes, factions à l'affût.",
     icon: Sword,
     status: "Disponible",
@@ -18,8 +18,8 @@ const ERAS = [
   {
     id: "present",
     title: "Expédition",
-    subtitle: "Ère contemporaine",
-    desc: "Le monde post-brisure aujourd'hui. Modulé sur les conflits modernes, les sociétés bouleversées par la brume.",
+    subtitle: "Steampunk — Post-révolution industrielle",
+    desc: "Vapeur, rouages et glyphes gravés dans l'acier. Les nations émergent de la première révolution industrielle et lancent leurs expéditions dans les brumes.",
     icon: Hourglass,
     status: "En développement",
     available: false,
@@ -28,8 +28,8 @@ const ERAS = [
   {
     id: "futur",
     title: "Odyssée",
-    subtitle: "Anticipation",
-    desc: "Demain, quand la technologie tente de domestiquer le flux. Conflit entre science et glyphes antiques.",
+    subtitle: "Deuxième révolution industrielle",
+    desc: "Électricité, moteurs modernes et industrialisation des glyphes. Une nouvelle ère de puissance — et de démesure — s'ouvre sur le Flux.",
     icon: Rocket,
     status: "En développement",
     available: false,
