@@ -136,9 +136,9 @@ const ParticipantChip = ({
         {participant.name}
       </span>
 
-      {/* Initiative */}
+      {/* Initiative / Épreuve */}
       <span className="text-[10px] text-muted-foreground">
-        Init: <strong>{participant.initiative}</strong>
+        {initShort}: <strong>{participant.initiative}</strong>
       </span>
 
       {/* Barre HP */}
