@@ -11,15 +11,15 @@ interface Props {
 const META = {
   present: {
     title: "Expédition",
-    subtitle: "Ère contemporaine",
+    subtitle: "Steampunk — Post-révolution industrielle",
     icon: Hourglass,
-    desc: "Le monde post-brisure aujourd'hui. Sociétés bouleversées par la brume, factions modernes, héritage des glyphes anciens.",
+    desc: "Vapeur, rouages et glyphes gravés dans l'acier. Les nations émergent de la première révolution industrielle et lancent leurs expéditions dans les brumes.",
   },
   futur: {
     title: "Odyssée",
-    subtitle: "Anticipation",
+    subtitle: "Deuxième révolution industrielle",
     icon: Rocket,
-    desc: "Demain, quand la technologie tente de domestiquer le flux. Affrontement entre science et glyphes antiques.",
+    desc: "Électricité, moteurs modernes et industrialisation des glyphes. Une nouvelle ère de puissance — et de démesure — s'ouvre sur le Flux.",
   },
 } as const;
 
