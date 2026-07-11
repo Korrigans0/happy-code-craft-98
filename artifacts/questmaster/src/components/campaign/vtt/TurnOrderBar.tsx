@@ -33,6 +33,7 @@ interface TurnOrderBarProps {
   round: number;
   isActive: boolean;
   isGM: boolean;
+  campaignSystem?: string;
   onNextTurn: () => void;
   onPrevTurn?: () => void;
   onEndCombat?: () => void;
