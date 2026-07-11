@@ -7,6 +7,7 @@ interface PlayerPanelProps {
   initiative: InitiativeEntry[];
   initiativeRound: number;
   initiativeActiveIdx: number;
+  campaignSystem?: string;
   onClose: () => void;
 }
 
@@ -15,21 +16,24 @@ export default function PlayerPanel({
   initiative,
   initiativeRound,
   initiativeActiveIdx,
+  campaignSystem = "Aetheria",
   onClose,
 }: PlayerPanelProps) {
+  const isGlyphes = campaignSystem === "Glyphes";
+  const initTerm = isGlyphes ? "Épreuve" : "Initiative";
   const sortedInit = [...initiative].sort((a, b) => b.initiative - a.initiative);
 
   return (
     <aside
       className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-card"
-      aria-label="Suivi d'initiative"
+      aria-label={`Suivi d'${initTerm.toLowerCase()}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <div className="flex items-center gap-2">
           <Swords className="h-4 w-4 text-primary" />
           <span className="font-display text-sm font-semibold text-foreground">
-            Initiative
+            {initTerm}
           </span>
         </div>
         <button
