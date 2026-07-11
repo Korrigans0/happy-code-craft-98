@@ -526,7 +526,7 @@ export default function GMPanel({
                   className="h-7 flex-1 text-xs"
                 />
                 <Input
-                  placeholder="Init"
+                  placeholder={initShort}
                   value={addingToInit.roll}
                   onChange={e => setAddingToInit(p => ({ ...p, roll: e.target.value }))}
                   className="h-7 w-14 text-xs"
