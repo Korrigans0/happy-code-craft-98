@@ -71,9 +71,11 @@ interface GMPanelProps {
 
 type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf";
 
-const TAB_ITEMS: { id: Tab; icon: React.ReactNode; label: string; gmOnly?: boolean }[] = [
+// Glyphes system utilise "Épreuve d'initiative" (jet de SOU) au lieu du concept classique.
+// On adapte uniquement le vocabulaire côté UI ; l'ordre de tour reste basé sur la valeur numérique.
+const buildTabItems = (isGlyphes: boolean): { id: Tab; icon: React.ReactNode; label: string; gmOnly?: boolean }[] => [
   { id: "chat",       icon: <MessageSquare className="h-4 w-4" />, label: "Chat" },
-  { id: "initiative", icon: <Swords className="h-4 w-4" />,        label: "Initiative" },
+  { id: "initiative", icon: <Swords className="h-4 w-4" />,        label: isGlyphes ? "Épreuve" : "Initiative" },
   { id: "tokens",     icon: <Users className="h-4 w-4" />,         label: "Jetons" },
   { id: "bestiary",   icon: <Skull className="h-4 w-4" />,         label: "Bestiaire" },
   { id: "notes",      icon: <BookOpen className="h-4 w-4" />,      label: "Notes" },
