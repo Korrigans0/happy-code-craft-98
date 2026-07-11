@@ -1,4 +1,4 @@
-// Présente les 3 époques (Nouvel Empire, Présent, Futur) en onglets de
+// Présente les 3 époques (Nouvel Empire, Expédition, Odyssée) en onglets de
 // premier niveau. Seul "Nouvel Empire" est rempli ; les autres affichent un
 // placeholder "en développement". Système isolé : ne mélange jamais avec un
 // autre univers.
