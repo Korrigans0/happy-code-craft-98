@@ -17,7 +17,7 @@ const ERAS = [
   },
   {
     id: "present",
-    title: "Présent",
+    title: "Expédition",
     subtitle: "Ère contemporaine",
     desc: "Le monde post-brisure aujourd'hui. Modulé sur les conflits modernes, les sociétés bouleversées par la brume.",
     icon: Hourglass,
@@ -27,7 +27,7 @@ const ERAS = [
   },
   {
     id: "futur",
-    title: "Futur",
+    title: "Odyssée",
     subtitle: "Anticipation",
     desc: "Demain, quand la technologie tente de domestiquer le flux. Conflit entre science et glyphes antiques.",
     icon: Rocket,
