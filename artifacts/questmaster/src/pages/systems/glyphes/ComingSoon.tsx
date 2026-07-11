@@ -10,13 +10,13 @@ interface Props {
 
 const META = {
   present: {
-    title: "Présent",
+    title: "Expédition",
     subtitle: "Ère contemporaine",
     icon: Hourglass,
     desc: "Le monde post-brisure aujourd'hui. Sociétés bouleversées par la brume, factions modernes, héritage des glyphes anciens.",
   },
   futur: {
-    title: "Futur",
+    title: "Odyssée",
     subtitle: "Anticipation",
     icon: Rocket,
     desc: "Demain, quand la technologie tente de domestiquer le flux. Affrontement entre science et glyphes antiques.",

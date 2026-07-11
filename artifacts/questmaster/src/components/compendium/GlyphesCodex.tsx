@@ -1,4 +1,4 @@
-// Présente les 3 époques (Nouvel Empire, Présent, Futur) en onglets de
+// Présente les 3 époques (Nouvel Empire, Expédition, Odyssée) en onglets de
 // premier niveau. Seul "Nouvel Empire" est rempli ; les autres affichent un
 // placeholder "en développement". Système isolé : ne mélange jamais avec un
 // autre univers.
@@ -287,17 +287,17 @@ const GlyphesCodex = () => (
         <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Nouvel Empire
       </TabsTrigger>
       <TabsTrigger value="present" className="flex-1 text-xs sm:text-sm">
-        <Hourglass className="mr-1.5 h-3.5 w-3.5" /> Présent
+        <Hourglass className="mr-1.5 h-3.5 w-3.5" /> Expédition
       </TabsTrigger>
       <TabsTrigger value="futur" className="flex-1 text-xs sm:text-sm">
-        <Rocket className="mr-1.5 h-3.5 w-3.5" /> Futur
+        <Rocket className="mr-1.5 h-3.5 w-3.5" /> Odyssée
       </TabsTrigger>
     </TabsList>
     <TabsContent value="nouvel-empire"><NouvelEmpireCodex /></TabsContent>
     <TabsContent value="present">
       <ComingSoonEra
         icon={Hourglass}
-        title="Présent"
+        title="Expédition"
         subtitle="Ère contemporaine"
         desc="Le monde post-brisure aujourd'hui. Sociétés bouleversées par la brume, factions modernes, héritage des glyphes anciens."
       />
@@ -305,7 +305,7 @@ const GlyphesCodex = () => (
     <TabsContent value="futur">
       <ComingSoonEra
         icon={Rocket}
-        title="Futur"
+        title="Odyssée"
         subtitle="Anticipation"
         desc="Demain, quand la technologie tente de domestiquer le flux. Affrontement entre science et glyphes antiques."
       />

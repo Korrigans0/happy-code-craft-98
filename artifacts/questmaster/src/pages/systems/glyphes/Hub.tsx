@@ -17,7 +17,7 @@ const ERAS = [
   },
   {
     id: "present",
-    title: "Présent",
+    title: "Expédition",
     subtitle: "Ère contemporaine",
     desc: "Le monde post-brisure aujourd'hui. Modulé sur les conflits modernes, les sociétés bouleversées par la brume.",
     icon: Hourglass,
@@ -27,7 +27,7 @@ const ERAS = [
   },
   {
     id: "futur",
-    title: "Futur",
+    title: "Odyssée",
     subtitle: "Anticipation",
     desc: "Demain, quand la technologie tente de domestiquer le flux. Conflit entre science et glyphes antiques.",
     icon: Rocket,
@@ -42,7 +42,7 @@ export default function GlyphesHub() {
     <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
       <SEO
         title="Glyphes — Système JDR | Aetheria VTT"
-        description="Glyphes : système modulaire dark fantasy en trois époques. Nouvel Empire (médiéval), Présent et Futur."
+        description="Glyphes : système modulaire dark fantasy en trois époques. Nouvel Empire (médiéval), Expédition et Odyssée."
         path="/systems/glyphes"
       />
       <Header />
