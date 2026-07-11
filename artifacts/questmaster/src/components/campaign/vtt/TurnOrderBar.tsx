@@ -344,6 +344,7 @@ export default function TurnOrderBar({
                 isActive={isActive}
                 isCurrent={i === currentTurn}
                 index={i}
+                initShort={initShort}
               />
             ))}
           </div>
