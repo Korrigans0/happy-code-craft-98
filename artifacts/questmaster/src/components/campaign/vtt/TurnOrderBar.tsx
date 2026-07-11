@@ -184,7 +184,9 @@ export default function TurnOrderBar({
   onNextTurn,
   onPrevTurn,
   onEndCombat,
+  campaignSystem = "Aetheria",
 }: TurnOrderBarProps) {
+  const initShort = campaignSystem === "Glyphes" ? "Épr" : "Init";
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
