@@ -3840,6 +3840,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             initiative={initiative}
             initiativeRound={initiativeRound}
             initiativeActiveIdx={initiativeActiveIdx}
+            campaignSystem={campaignSystem}
             onClose={() => setGmPanelOpen(false)}
           />
         )}
