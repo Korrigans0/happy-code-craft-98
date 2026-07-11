@@ -438,7 +438,7 @@ export default function GMPanel({
                             className={`h-7 w-10 shrink-0 rounded-full border border-border bg-background text-center text-xs font-bold tabular-nums ${
                               isActive ? "ring-2 ring-primary" : ""
                             }`}
-                            title="Modifier l'initiative"
+                            title={`Modifier l'${initTerm.toLowerCase()}`}
                           />
                         ) : (
                           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
