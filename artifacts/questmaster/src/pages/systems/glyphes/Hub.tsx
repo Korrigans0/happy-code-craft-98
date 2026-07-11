@@ -42,7 +42,7 @@ export default function GlyphesHub() {
     <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
       <SEO
         title="Glyphes — Système JDR | Aetheria VTT"
-        description="Glyphes : système modulaire dark fantasy en trois époques. Nouvel Empire (médiéval), Présent et Futur."
+        description="Glyphes : système modulaire dark fantasy en trois époques. Nouvel Empire (médiéval), Expédition et Odyssée."
         path="/systems/glyphes"
       />
       <Header />
