@@ -361,10 +361,10 @@ export default function GMPanel({
                     className="h-7 gap-1 text-xs"
                     onClick={onAutoRollAllInitiative}
                     disabled={initiative.length === 0}
-                    title="Relancer l'initiative pour tous les combattants"
+                    title={isGlyphes ? "Relancer l'épreuve d'initiative (SOU) pour tous" : "Relancer l'initiative pour tous les combattants"}
                   >
                     <Dices className="h-3 w-3" />
-                    Init auto
+                    {isGlyphes ? "Épreuve auto" : "Init auto"}
                   </Button>
                 )}
               </div>
