@@ -1115,8 +1115,25 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setInitiativeActiveIdx(-1);
   };
 
+  // Glyphes : "épreuve d'initiative" = jet du pool de dés de Souplesse (SOU).
+  // Règle : N dés (N = niveau d'aptitude, 2 par défaut). Taille = niveau du dé lié à SOU.
+  // On mappe le "modifier" existant sur le niveau SOU (0..5). Sortie = somme des 2 dés,
+  // qui sert d'ordre de passage (l'esprit de la règle est conservé : plus SOU est élevé,
+  // plus la valeur monte). Pour les autres systèmes, on garde le classique 1d20 + mod.
+  const rollInitiativeForSystem = (modifier = 0): number => {
+    if (campaignSystem === "Glyphes") {
+      const sizes = [4, 6, 8, 10, 12];
+      const sou = Math.max(0, Math.min(4, modifier || 0));
+      const size = sizes[sou];
+      const d1 = Math.floor(Math.random() * size) + 1;
+      const d2 = Math.floor(Math.random() * size) + 1;
+      return d1 + d2;
+    }
+    return Math.floor(Math.random() * 20) + 1 + (modifier || 0);
+  };
+
   const addTokenToInitiative = (token: TokenItem) => {
-    const rollResult = Math.floor(Math.random() * 20) + 1;
+    const rollResult = rollInitiativeForSystem(0);
     addToInitiative({
       name: token.name,
       initiative: rollResult,
@@ -1151,7 +1168,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ...toAdd.map(token => ({
         id: newId(),
         name: token.name,
-        initiative: Math.floor(Math.random() * 20) + 1,
+        initiative: rollInitiativeForSystem(0),
         modifier: 0,
         hp: token.hp ?? 10,
         maxHp: token.maxHp ?? 10,
@@ -1164,12 +1181,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     ]);
   };
 
-  // Relance l'initiative pour tous les combattants (1d20 + modifier)
+  // Relance l'initiative / épreuve pour tous les combattants
   const autoRollAllInitiative = () => {
     setInitiative(prev =>
       prev.map(e => ({
         ...e,
-        initiative: Math.floor(Math.random() * 20) + 1 + (e.modifier || 0),
+        initiative: rollInitiativeForSystem(e.modifier || 0),
       }))
     );
     setInitiativeActiveIdx(-1);
