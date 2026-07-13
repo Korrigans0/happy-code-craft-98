@@ -3362,7 +3362,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               <div key={`${group.id}-sep`} className="my-0.5 h-px w-6 bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
             ) : null;
 
-            return <>{node}{sep}</>;
+            return <React.Fragment key={group.id}>{node}{sep}</React.Fragment>;
           })}
 
           {/* Panneau Lumières — visible si outil light/lightDelete actif */}
