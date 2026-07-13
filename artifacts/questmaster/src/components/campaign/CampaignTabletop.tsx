@@ -231,6 +231,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [diceOpen, setDiceOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
