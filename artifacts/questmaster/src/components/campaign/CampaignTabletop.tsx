@@ -3683,6 +3683,75 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             />
           )}
 
+          {/* Raccourcis clavier — modal */}
+          {shortcutsHelpOpen && (
+            <div
+              className="absolute inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setShortcutsHelpOpen(false)}
+            >
+              <div
+                className="max-h-[85vh] w-[min(560px,92vw)] overflow-y-auto rounded-lg border border-primary/30 bg-card p-5 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between border-b border-border pb-2">
+                  <div className="flex items-center gap-2">
+                    <Keyboard className="h-4 w-4 text-primary" />
+                    <h3 className="font-display text-lg font-semibold">Raccourcis clavier</h3>
+                  </div>
+                  <button onClick={() => setShortcutsHelpOpen(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                  <section>
+                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outils</h4>
+                    <ul className="space-y-1">
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">V</kbd> Déplacer</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">P</kbd> Crayon</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">E</kbd> Gomme</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">M</kbd> Mesure</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">T</kbd> Texte</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">C</kbd> Cône · <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Z</kbd> Zone</li>
+                      {isGM && <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">W</kbd> Mur · <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">D</kbd> Porte</li>}
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vue</h4>
+                    <ul className="space-y-1">
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">+</kbd> / <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">-</kbd> Zoom</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">0</kbd> Réinitialiser la vue</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Espace</kbd> Maintenir pour panner</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">F</kbd> Plein écran</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">G</kbd> Magnétisme grille</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Jeton sélectionné</h4>
+                    <ul className="space-y-1">
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">← ↑ → ↓</kbd> Déplacer d'une case</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Shift</kbd> + flèche = 5 cases</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">r</kbd>/<kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">R</kbd> Rotation ±15°</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">F</kbd> Centrer la vue</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Suppr</kbd> Supprimer</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Édition</h4>
+                    <ul className="space-y-1">
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Ctrl</kbd>+<kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Z</kbd> Annuler</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Ctrl</kbd>+<kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Y</kbd> Rétablir</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Ctrl</kbd>+<kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">C</kbd> Copier · <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">V</kbd> Coller</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Ctrl</kbd>+<kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">D</kbd> Dupliquer</li>
+                      <li><kbd className="rounded bg-muted px-1.5 py-0.5 text-xs">Échap</kbd> Fermer / annuler</li>
+                    </ul>
+                  </section>
+                </div>
+                <p className="mt-4 text-center text-xs text-muted-foreground">Appuyez sur <kbd className="rounded bg-muted px-1.5 py-0.5">?</kbd> à tout moment pour rouvrir</p>
+              </div>
+            </div>
+          )}
+
+
           {/* Selected token panel (floating bottom) */}
           {selectedToken && !gmPanelOpen && (
             <div className="absolute bottom-12 left-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
