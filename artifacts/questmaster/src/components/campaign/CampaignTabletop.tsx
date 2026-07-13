@@ -3297,33 +3297,32 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
-        <div className="flex w-10 sm:w-11 shrink-0 flex-col items-center gap-0.5 border-r border-amber-500/20 bg-gradient-to-b from-card/90 via-card/80 to-card/90 shadow-[inset_-1px_0_0_rgba(217,164,65,0.08)] overflow-y-auto overflow-x-hidden py-1 sm:py-1.5 max-h-full" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}>
+        <div
+          className="flex w-11 sm:w-12 shrink-0 flex-col items-center gap-1 border-r border-amber-500/25 bg-[radial-gradient(120%_60%_at_50%_0%,rgba(217,164,65,0.10),transparent_60%),linear-gradient(to_bottom,rgba(20,16,12,0.92),rgba(14,11,8,0.92))] shadow-[inset_-1px_0_0_rgba(217,164,65,0.12),inset_1px_0_0_rgba(0,0,0,0.35)] overflow-y-auto overflow-x-hidden py-2 max-h-full"
+          style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "thin" }}
+        >
 
-          {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map(group => {
+          {TOOL_GROUPS.filter(g => !g.gmOnly || isGM).map((group, idx, arr) => {
             const groupTools = visibleTools.filter(t => t.group === group.id);
             if (groupTools.length === 0) return null;
             const activeTool = groupTools.find(t => t.id === tool);
+            const activeCls =
+              "bg-gradient-to-b from-amber-400/35 via-amber-500/25 to-amber-700/20 text-amber-200 ring-1 ring-amber-300/60 shadow-[0_0_12px_rgba(217,164,65,0.45),inset_0_1px_0_rgba(255,220,150,0.35)]";
+            const idleCls =
+              "text-amber-100/55 hover:bg-amber-400/10 hover:text-amber-100 hover:ring-1 hover:ring-amber-400/25";
+            const btnBase =
+              "flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-[7px] transition-all duration-150";
 
-            // Catégorie à un seul outil → sélection directe (pas de popover)
-            if (groupTools.length === 1) {
-              const t = groupTools[0];
-              return (
-                <button
-                  key={group.id}
-                  onClick={() => setTool(t.id)}
-                  title={t.key ? `${t.label} (${t.key})` : t.label}
-                  className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
-                    tool === t.id
-                      ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
-                      : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
-                  }`}
-                >
-                  {t.icon}
-                </button>
-              );
-            }
-
-            return (
+            const node = groupTools.length === 1 ? (
+              <button
+                key={group.id}
+                onClick={() => setTool(groupTools[0].id)}
+                title={groupTools[0].key ? `${groupTools[0].label} (${groupTools[0].key})` : groupTools[0].label}
+                className={`${btnBase} ${tool === groupTools[0].id ? activeCls : idleCls}`}
+              >
+                {groupTools[0].icon}
+              </button>
+            ) : (
               <Popover
                 key={group.id}
                 open={openGroup === group.id}
@@ -3332,19 +3331,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 <PopoverTrigger asChild>
                   <button
                     title={group.label}
-                    className={`relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
-                      activeTool
-                        ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50 shadow-[0_0_10px_rgba(217,164,65,0.35)]"
-                        : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
-                    }`}
+                    className={`relative ${btnBase} ${activeTool ? activeCls : idleCls}`}
                   >
                     {activeTool ? activeTool.icon : group.icon}
-                    {/* petit indicateur "dossier" */}
-                    <span className="absolute bottom-0.5 right-0.5 h-1 w-1 rounded-full bg-current opacity-50" />
+                    <span className="absolute bottom-1 right-1 h-1 w-1 rounded-full bg-amber-300/70 shadow-[0_0_3px_rgba(255,200,120,0.7)]" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent side="right" align="start" className="w-auto p-1.5" style={{ zIndex: 9999 }}>
-                  <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <PopoverContent side="right" align="start" className="w-auto border border-amber-500/30 bg-[linear-gradient(to_bottom,rgba(24,19,14,0.98),rgba(16,12,9,0.98))] p-2 shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_0_1px_rgba(217,164,65,0.15)]" style={{ zIndex: 9999 }}>
+                  <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-amber-300/80" style={{ fontFamily: "'Cinzel', serif" }}>
                     {group.label}
                   </div>
                   <div className="flex gap-1">
@@ -3353,11 +3347,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                         key={t.id}
                         onClick={() => { setTool(t.id); setOpenGroup(null); }}
                         title={t.key ? `${t.label} (${t.key})` : t.label}
-                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md transition-all ${
-                          tool === t.id
-                            ? "bg-gradient-to-b from-amber-500/30 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/50"
-                            : "text-muted-foreground hover:bg-amber-500/5 hover:text-amber-200"
-                        }`}
+                        className={`${btnBase} ${tool === t.id ? activeCls : idleCls}`}
                       >
                         {t.icon}
                       </button>
@@ -3366,6 +3356,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 </PopoverContent>
               </Popover>
             );
+
+            // Séparateur runique entre groupes
+            const sep = idx < arr.length - 1 ? (
+              <div key={`${group.id}-sep`} className="my-0.5 h-px w-6 bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+            ) : null;
+
+            return <>{node}{sep}</>;
           })}
 
           {/* Panneau Lumières — visible si outil light/lightDelete actif */}
