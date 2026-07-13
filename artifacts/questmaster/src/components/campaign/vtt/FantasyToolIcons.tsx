@@ -1,95 +1,110 @@
 // ============================================================
-// FANTASY TOOL ICONS — Aetheria VTT
-// Icônes SVG sur-mesure en style dark fantasy pour la barre d'outils.
-// Toutes utilisent `currentColor` pour rester compatibles avec les
-// états actifs / hover existants (bg-primary text-primary-foreground).
+// FANTASY TOOL ICONS — Aetheria VTT (v2, dual-tone)
+// SVG sur-mesure, style dark fantasy gravé.
+// Toutes les icônes utilisent `currentColor` (stroke) + un accent
+// rempli à 0.22 opacité pour donner de la profondeur. Elles restent
+// compatibles avec les états actifs/hover de la toolbar (or/ambre).
 // ============================================================
 
 import { SVGProps } from "react";
 
 type Props = SVGProps<SVGSVGElement> & { className?: string };
 
-const base = (extra?: string) =>
-  `h-4 w-4 ${extra ?? ""}`.trim();
-
 const Svg = ({ className, children, ...rest }: Props) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.5}
+    strokeWidth={1.6}
     strokeLinecap="round"
     strokeLinejoin="round"
-    className={className ?? base()}
+    className={className ?? "h-4 w-4"}
     {...rest}
   >
     {children}
   </svg>
 );
 
+// Petit helper pour le "remplissage tonal"
+const F = "currentColor";
+const fillAcc = { fill: F, fillOpacity: 0.18, stroke: F } as const;
+const fillSoft = { fill: F, fillOpacity: 0.28, stroke: "none" } as const;
+
 /* ── Navigation ────────────────────────────────────────────── */
 
-// Boussole / curseur arcanique
+// Rose des vents arcanique
 export const FIMove = (p: Props) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="8.5" />
-    <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3" />
-    <path d="M12 7l2.5 7L12 12 9.5 14z" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="5" opacity="0.35" />
+    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" />
+    <path d="M12 5.5l2.2 6.5L12 10.4 9.8 12z" {...fillAcc} />
+    <path d="M12 18.5l-2.2-6.5L12 13.6l2.2-1.6z" {...fillAcc} />
+    <circle cx="12" cy="12" r="1" {...fillSoft} />
   </Svg>
 );
 
-// Phare / balise
+// Balise / phare lumineux
 export const FIPing = (p: Props) => (
   <Svg {...p}>
-    <path d="M12 3l2.2 5 5.3.5-4 3.7 1.2 5.3L12 14.8 7.3 17.5l1.2-5.3-4-3.7L9.8 8z" />
-    <circle cx="12" cy="11" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M12 2.5l2.4 5.6 6 .5-4.6 4 1.4 5.9L12 15.6 6.8 18.5l1.4-5.9-4.6-4 6-.5z" {...fillAcc} />
+    <circle cx="12" cy="11.5" r="1.4" {...fillSoft} />
+    <path d="M12 21v-2.4" opacity="0.5" />
   </Svg>
 );
 
 /* ── Dessin ────────────────────────────────────────────────── */
 
-// Plume d'oie
+// Plume d'oie encrée
 export const FIQuill = (p: Props) => (
   <Svg {...p}>
-    <path d="M20 4c-3 .5-6 2-9 5s-4.5 6-5 9" />
-    <path d="M20 4l-2 8-5 5-7 1 1-3 4-1 4-4z" />
-    <path d="M6 18l-2 2" />
+    <path d="M20 3.5c-3.2.4-6.2 1.9-9 4.7s-4.7 6-5.3 9.1l6.7-.7 4.2-4.2 3.4-4.2z" {...fillAcc} />
+    <path d="M20 3.5c-3.2.4-6.2 1.9-9 4.7s-4.7 6-5.3 9.1" />
+    <path d="M9 12l3.5 3.5" opacity="0.6" />
+    <path d="M6 18l-2.2 2.2" />
+    <circle cx="3.4" cy="20.6" r="0.9" {...fillSoft} />
   </Svg>
 );
 
-// Chiffon / gomme à enluminure
+// Gomme parchemin
 export const FIEraser = (p: Props) => (
   <Svg {...p}>
-    <path d="M4 14l8-8 6 6-8 8z" />
-    <path d="M9 9l6 6" />
-    <path d="M4 14l4 4h8" />
+    <path d="M13.5 3.5l7 7-9 9-7-7z" {...fillAcc} />
+    <path d="M13.5 3.5l7 7-9 9-7-7z" />
+    <path d="M8.5 8.5l7 7" opacity="0.55" />
+    <path d="M4.5 12.5H15" opacity="0.4" />
   </Svg>
 );
 
 // Pierre runique carrée
 export const FIRect = (p: Props) => (
   <Svg {...p}>
-    <rect x="4.5" y="4.5" width="15" height="15" rx="1.5" />
-    <path d="M8 8l8 8M8 16l8-8" opacity="0.45" />
+    <rect x="4" y="4" width="16" height="16" rx="2" {...fillAcc} />
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M7.5 7.5l9 9M7.5 16.5l9-9" opacity="0.45" />
+    <circle cx="12" cy="12" r="1" {...fillSoft} />
   </Svg>
 );
 
 // Cercle runique
 export const FICircle = (p: Props) => (
   <Svg {...p}>
-    <circle cx="12" cy="12" r="7.5" />
-    <circle cx="12" cy="12" r="4" opacity="0.5" />
-    <path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2" opacity="0.6" />
+    <circle cx="12" cy="12" r="8" {...fillAcc} />
+    <circle cx="12" cy="12" r="8" />
+    <circle cx="12" cy="12" r="4.2" opacity="0.55" />
+    <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2" opacity="0.6" />
+    <circle cx="12" cy="12" r="1" {...fillSoft} />
   </Svg>
 );
 
-// Lettrine / parchemin
+// Lettrine gravée
 export const FIText = (p: Props) => (
   <Svg {...p}>
+    <path d="M4 5l1-1.5h14L20 5" opacity="0.6" />
     <path d="M5.5 4.5h13" />
     <path d="M12 4.5v15" />
     <path d="M9 19.5h6" />
-    <path d="M5.5 4.5l-1 3M18.5 4.5l1 3" opacity="0.6" />
+    <path d="M10 8l2-2.5L14 8" opacity="0.5" />
   </Svg>
 );
 
@@ -98,10 +113,11 @@ export const FIText = (p: Props) => (
 // Chaîne d'arpenteur
 export const FIMeasure = (p: Props) => (
   <Svg {...p}>
-    <path d="M4 16l12-12 4 4-12 12z" />
-    <path d="M7 13l1.5 1.5M10 10l1.5 1.5M13 7l1.5 1.5" />
-    <circle cx="5" cy="17" r="1.2" />
-    <circle cx="19" cy="3" r="1.2" />
+    <path d="M3.5 16.5L16.5 3.5l4 4-13 13z" {...fillAcc} />
+    <path d="M3.5 16.5L16.5 3.5l4 4-13 13z" />
+    <path d="M7 13l1.5 1.5M10 10l1.5 1.5M13 7l1.5 1.5" opacity="0.65" />
+    <circle cx="4.5" cy="17.5" r="1.3" {...fillSoft} />
+    <circle cx="19.5" cy="2.5" r="1.3" {...fillSoft} />
   </Svg>
 );
 
@@ -110,108 +126,127 @@ export const FIMeasure = (p: Props) => (
 // Cône de sort
 export const FICone = (p: Props) => (
   <Svg {...p}>
-    <path d="M12 3l8 17H4z" />
-    <path d="M8 14h8M10 17h4" opacity="0.6" />
-    <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
+    <path d="M12 2.5l8.5 18H3.5z" {...fillAcc} />
+    <path d="M12 2.5l8.5 18H3.5z" />
+    <path d="M7.5 14h9M9.5 17.5h5" opacity="0.55" />
+    <circle cx="12" cy="2.8" r="1.1" {...fillSoft} />
   </Svg>
 );
 
 // Sceau magique / zone
 export const FIZone = (p: Props) => (
   <Svg {...p}>
-    <circle cx="12" cy="12" r="8" />
-    <path d="M12 4l-3 8 3 8 3-8z" opacity="0.5" />
-    <path d="M4 12l8-3 8 3-8 3z" opacity="0.5" />
-    <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="8.5" {...fillAcc} />
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5l-3.2 8.5L12 20.5l3.2-8.5z" opacity="0.55" />
+    <path d="M3.5 12l8.5-3.2L20.5 12 12 15.2z" opacity="0.55" />
+    <circle cx="12" cy="12" r="1.5" {...fillSoft} />
   </Svg>
 );
 
 /* ── Outils MJ ─────────────────────────────────────────────── */
 
-// Heaume (groupe MJ)
+// Grand heaume
 export const FIHelm = (p: Props) => (
   <Svg {...p}>
-    <path d="M4.5 11c0-4 3.5-7 7.5-7s7.5 3 7.5 7v5l-2 1.5h-11L4.5 16z" />
-    <path d="M9 11v3M15 11v3" />
-    <path d="M4.5 13h15" opacity="0.5" />
+    <path d="M4 11.5C4 7 7.6 3.5 12 3.5S20 7 20 11.5V16l-2 1.8H6L4 16z" {...fillAcc} />
+    <path d="M4 11.5C4 7 7.6 3.5 12 3.5S20 7 20 11.5V16l-2 1.8H6L4 16z" />
+    <path d="M4 13h16" opacity="0.55" />
+    <path d="M9 13.2v3M15 13.2v3" />
+    <path d="M12 3.5V13" opacity="0.5" />
+    <path d="M6 17.8l1.5 2M18 17.8l-1.5 2" opacity="0.5" />
   </Svg>
 );
 
-// Œil omniscient (révéler brouillard)
+// Œil omniscient
 export const FIEye = (p: Props) => (
   <Svg {...p}>
-    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12z" />
-    <circle cx="12" cy="12" r="2.8" />
-    <path d="M12 6V4M12 20v-2" opacity="0.5" />
+    <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" {...fillAcc} />
+    <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+    <circle cx="12" cy="12" r="3.2" />
+    <circle cx="12" cy="12" r="1.3" {...fillSoft} />
+    <path d="M12 3.5v1.6M12 20v-1.6M4 5l1.2 1.2M20 5l-1.2 1.2" opacity="0.55" />
   </Svg>
 );
 
-// Mur de pierre
+// Mur de pierre appareillé
 export const FIWall = (p: Props) => (
   <Svg {...p}>
-    <rect x="3.5" y="5" width="17" height="14" rx="0.8" />
-    <path d="M3.5 9.5h17M3.5 14.5h17" />
-    <path d="M9 5v4.5M15 9.5V14.5M9 14.5V19M15 5v4.5" />
+    <rect x="3" y="4.5" width="18" height="15" rx="1" {...fillAcc} />
+    <rect x="3" y="4.5" width="18" height="15" rx="1" />
+    <path d="M3 9.5h18M3 14.5h18" />
+    <path d="M8 4.5v5M16 4.5v5M11 9.5v5M6 14.5v5M14 14.5v5" />
   </Svg>
 );
 
-// Porte cintrée
+// Porte cintrée avec heurtoir
 export const FIDoor = (p: Props) => (
   <Svg {...p}>
-    <path d="M5 20V9a7 7 0 0114 0v11" />
-    <path d="M5 20h14" />
-    <circle cx="15.5" cy="13" r="0.8" fill="currentColor" stroke="none" />
-    <path d="M12 4v16" opacity="0.4" />
+    <path d="M5 20V9.5A7 7 0 0112 2.5 7 7 0 0119 9.5V20z" {...fillAcc} />
+    <path d="M5 20V9.5A7 7 0 0112 2.5 7 7 0 0119 9.5V20" />
+    <path d="M4 20h16" />
+    <circle cx="15.5" cy="13" r="1" {...fillSoft} />
+    <path d="M12 2.5V20" opacity="0.45" />
+    <path d="M8 8.5l4-3 4 3" opacity="0.5" />
   </Svg>
 );
 
-// Vitrail / fenêtre
+// Vitrail à losange
 export const FIWindow = (p: Props) => (
   <Svg {...p}>
-    <path d="M5 20V9a7 7 0 0114 0v11z" />
-    <path d="M5 14h14M12 4v16" opacity="0.7" />
+    <path d="M5 20V9.5A7 7 0 0112 2.5 7 7 0 0119 9.5V20z" {...fillAcc} />
+    <path d="M5 20V9.5A7 7 0 0112 2.5 7 7 0 0119 9.5V20z" />
+    <path d="M12 3v17M5 11.5h14" opacity="0.75" />
+    <path d="M12 5l4 6-4 6-4-6z" opacity="0.4" />
   </Svg>
 );
 
-// Ronces / terrain difficile
+// Ronces
 export const FIBriars = (p: Props) => (
   <Svg {...p}>
-    <path d="M3 20c3-1 4-4 4-7s-1-5-3-7" />
-    <path d="M21 20c-3-1-4-4-4-7s1-5 3-7" />
-    <path d="M12 20V8" />
-    <path d="M9 12l-2-1M9 16l-2-1M15 12l2-1M15 16l2-1M12 9l-2-2M12 9l2-2" />
+    <path d="M12 21V4" />
+    <path d="M3.5 20c3-.7 4.5-3.5 4.5-7s-1.2-5.5-3-7" />
+    <path d="M20.5 20c-3-.7-4.5-3.5-4.5-7s1.2-5.5 3-7" />
+    <path d="M9 11l-2.2-.8M9 15l-2.2-.8M15 11l2.2-.8M15 15l2.2-.8" />
+    <path d="M12 8l-2.2-2M12 8l2.2-2" />
+    <circle cx="12" cy="4" r="1" {...fillSoft} />
   </Svg>
 );
 
-// Mur brisé (effacer mur)
+// Mur brisé
 export const FIWallBreak = (p: Props) => (
   <Svg {...p}>
-    <path d="M3.5 19V5h17v14" />
-    <path d="M3.5 11l4 2-2 3 4 1-1 3" />
-    <path d="M20.5 11l-4 2 2 3-4 1 1 3" />
-    <path d="M12 5v6" />
+    <path d="M3 5h18v14H3z" {...fillAcc} />
+    <path d="M3 5h18v14" />
+    <path d="M3 19V5" opacity="0.3" />
+    <path d="M3 10.5l4 2-1.8 3 3.5 1-1 3.5" />
+    <path d="M21 10.5l-4 2 1.8 3-3.5 1 1 3.5" />
+    <path d="M12 5v6" opacity="0.7" />
   </Svg>
 );
 
 /* ── Lumières ──────────────────────────────────────────────── */
 
-// Torche allumée
+// Torche flamboyante
 export const FITorch = (p: Props) => (
   <Svg {...p}>
-    <path d="M12 3c-2 3 2 4 0 7-3-1-3-5 0-7z" />
-    <path d="M10 10c-1 1.5-1 3 0 4h4c1-1 1-2.5 0-4" />
-    <path d="M11 14v7M13 14v7" />
-    <path d="M9 21h6" />
+    <path d="M12 2.5c-2.4 2.8 2.2 4-.2 7.2-3-1-3.2-5.4.2-7.2z" {...fillAcc} />
+    <path d="M12 2.5c-2.4 2.8 2.2 4-.2 7.2-3-1-3.2-5.4.2-7.2z" />
+    <path d="M9.5 9.5c-1.2 1.6-1.2 3.2 0 4.5h5c1.2-1.3 1.2-2.9 0-4.5" />
+    <path d="M10.5 14v7M13.5 14v7" />
+    <path d="M8.5 21h7" />
+    <path d="M11 6.5c-.6 1.2.3 2 0 3" opacity="0.55" />
   </Svg>
 );
 
 // Torche éteinte
 export const FITorchOff = (p: Props) => (
   <Svg {...p}>
-    <path d="M10 10c-1 1.5-1 3 0 4h4c1-1 1-2.5 0-4" />
-    <path d="M11 14v7M13 14v7" />
-    <path d="M9 21h6" />
-    <path d="M5 4l14 14" />
-    <path d="M12 6c-1 1.5 0 2.5-.5 4" opacity="0.6" />
+    <path d="M9.5 9.5c-1.2 1.6-1.2 3.2 0 4.5h5c1.2-1.3 1.2-2.9 0-4.5" {...fillAcc} />
+    <path d="M9.5 9.5c-1.2 1.6-1.2 3.2 0 4.5h5c1.2-1.3 1.2-2.9 0-4.5" />
+    <path d="M10.5 14v7M13.5 14v7" />
+    <path d="M8.5 21h7" />
+    <path d="M4 3.5l16 17" />
+    <path d="M12 5c-.6 1.2.3 2 0 3" opacity="0.5" />
   </Svg>
 );
