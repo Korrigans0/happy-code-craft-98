@@ -2326,8 +2326,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         else if (e.key === "g" || e.key === "G") setSnapToGrid(s => !s);
         else if (isGM && (e.key === "w" || e.key === "W")) setTool("wall");
         else if (isGM && (e.key === "d" || e.key === "D")) setTool("wallDoor");
+        // Zoom raccourcis clavier : +, -, 0 (reset)
+        else if (e.key === "+" || e.key === "=") { e.preventDefault(); setZoom(prev => Math.min(MAX_ZOOM, prev + 0.15)); }
+        else if (e.key === "-" || e.key === "_") { e.preventDefault(); setZoom(prev => Math.max(MIN_ZOOM, prev - 0.15)); }
+        else if (e.key === "0") { e.preventDefault(); setZoom(1); setPanOffset({ x: 0, y: 0 }); }
+        else if (e.key === "?" || (e.shiftKey && e.key === "/")) { e.preventDefault(); setShortcutsHelpOpen(v => !v); }
         else if (e.key === "Escape") {
           setContextMenu(null);
+          setShortcutsHelpOpen(false);
           if (fullscreen) setFullscreen(false);
           if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") wallsHook.cancelWall();
         }
