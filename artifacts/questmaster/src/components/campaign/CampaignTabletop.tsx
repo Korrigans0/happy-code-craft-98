@@ -2927,8 +2927,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           title="Réinitialiser la vue">
           {Math.round(zoom * 100)}%
         </button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} title="Zoomer">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} title="Zoomer (+)">
           <ZoomIn className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShortcutsHelpOpen(true)} title="Raccourcis clavier (?)">
+          <Keyboard className="h-3.5 w-3.5" />
         </Button>
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
