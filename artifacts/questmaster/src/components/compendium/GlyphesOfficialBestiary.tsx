@@ -1,8 +1,8 @@
 // Bestiaire officiel Glyphes — Nouvel Empire.
 // Composant réutilisable dans le compendium (Codex) et la page publique.
 
-import { useState } from "react";
-import { Skull, Shield, Swords } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Skull, Shield, Swords, Search, X } from "lucide-react";
 import { GLYPHES_BESTIARY, BESTIARY_CATEGORIES, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
 
 const WoundRow = ({ count, icon }: { count: number; icon: "wound" | "shield" }) => (
