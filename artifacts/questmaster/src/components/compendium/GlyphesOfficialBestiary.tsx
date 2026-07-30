@@ -148,7 +148,12 @@ export default function GlyphesOfficialBestiary() {
       );
     }
 
-    const danger = (c: GlyphesCreature) => c.attaque.melee + c.attaque.distance + c.aptitudes.length;
+    const dicePower = (v: string) => {
+      const m = /^(\d+)\s*[Dd]\s*(\d+)/.exec(v ?? "");
+      return m ? Number(m[1]) * Number(m[2]) : 0;
+    };
+    const danger = (c: GlyphesCreature) =>
+      dicePower(c.attaque.melee) + dicePower(c.attaque.distance) + c.aptitudes.length;
     out.sort((a, b) => {
       if (sort === "nom") return a.nom.localeCompare(b.nom, "fr");
       if (sort === "resistance") return (b.blessure + b.protection) - (a.blessure + a.protection);
