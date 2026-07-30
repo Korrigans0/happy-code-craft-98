@@ -1,8 +1,8 @@
 // Bestiaire officiel Glyphes — Nouvel Empire.
 // Composant réutilisable dans le compendium (Codex) et la page publique.
 
-import { useState } from "react";
-import { Skull, Shield, Swords } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Skull, Shield, Swords, Search, X } from "lucide-react";
 import { GLYPHES_BESTIARY, BESTIARY_CATEGORIES, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
 
 const WoundRow = ({ count, icon }: { count: number; icon: "wound" | "shield" }) => (
@@ -115,9 +115,52 @@ const CreatureCard = ({ c }: { c: GlyphesCreature }) => (
   </article>
 );
 
+type SortKey = "nom" | "danger" | "resistance";
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "nom", label: "A → Z" },
+  { key: "danger", label: "Danger" },
+  { key: "resistance", label: "Résistance" },
+];
+
+const norm = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 export default function GlyphesOfficialBestiary() {
   const [filter, setFilter] = useState<string>("all");
-  const list = filter === "all" ? GLYPHES_BESTIARY : GLYPHES_BESTIARY.filter((c) => c.categorie === filter);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("nom");
+
+  const list = useMemo(() => {
+    const q = norm(query.trim());
+    let out = filter === "all" ? [...GLYPHES_BESTIARY] : GLYPHES_BESTIARY.filter((c) => c.categorie === filter);
+
+    if (q) {
+      out = out.filter((c) =>
+        [
+          c.nom,
+          c.categorie,
+          c.description,
+          ...(c.tags ?? []),
+          ...c.aptitudes.map((a) => a.nom),
+          ...(c.capacites ?? []).map((cap) => `${cap.nom} ${cap.desc}`),
+        ].some((field) => norm(String(field)).includes(q))
+      );
+    }
+
+    const dicePower = (v: string) => {
+      const m = /^(\d+)\s*[Dd]\s*(\d+)/.exec(v ?? "");
+      return m ? Number(m[1]) * Number(m[2]) : 0;
+    };
+    const danger = (c: GlyphesCreature) =>
+      dicePower(c.attaque.melee) + dicePower(c.attaque.distance) + c.aptitudes.length;
+    out.sort((a, b) => {
+      if (sort === "nom") return a.nom.localeCompare(b.nom, "fr");
+      if (sort === "resistance") return (b.blessure + b.protection) - (a.blessure + a.protection);
+      return danger(b) - danger(a);
+    });
+    return out;
+  }, [filter, query, sort]);
 
   return (
     <div className="space-y-5">
@@ -131,6 +174,44 @@ export default function GlyphesOfficialBestiary() {
               mycoïdes et gardiens de fer-argent.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Recherche + tri */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher une créature, une aptitude, un trait…"
+            aria-label="Rechercher dans le bestiaire Glyphes"
+            className="w-full rounded-lg border border-white/10 bg-black/30 py-2 pl-9 pr-9 text-sm text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-amber-500/50"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Effacer la recherche"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 transition hover:text-slate-200"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1.5">
+          {SORTS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSort(s.key)}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                sort === s.key
+                  ? "border-amber-500/60 bg-amber-500/20 text-amber-300"
+                  : "border-white/10 bg-white/5 text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -164,9 +245,20 @@ export default function GlyphesOfficialBestiary() {
         })}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {list.map((c) => <CreatureCard key={c.nom} c={c} />)}
-      </div>
+      <p className="text-xs text-slate-500">
+        {list.length} créature{list.length > 1 ? "s" : ""} affichée{list.length > 1 ? "s" : ""}
+      </p>
+
+      {list.length === 0 ? (
+        <div className="rounded-xl border border-white/10 bg-black/20 p-8 text-center">
+          <Skull className="mx-auto mb-2 h-8 w-8 text-slate-600" />
+          <p className="text-sm text-slate-400">Aucune créature ne correspond à cette recherche.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {list.map((c) => <CreatureCard key={c.nom} c={c} />)}
+        </div>
+      )}
     </div>
   );
 }
