@@ -3,8 +3,9 @@
 // Fichier : src/hooks/useTabletopSync.ts
 // ============================================================
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { campaignsApi } from "@/lib/api";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 
 interface TokenItem {
   id: string;
@@ -54,10 +55,18 @@ interface TabletopState {
 }
 
 
+/** Clés de l'état du plateau réellement modifiées par l'évènement reçu. */
+export type TabletopStateKey = keyof TabletopState;
+
 interface UseTabletopSyncOptions {
   campaignId: string;
   userId: string;
-  onStateReceived: (state: TabletopState) => void;
+  /**
+   * `changedKeys` est fourni pour les mises à jour temps réel : le consommateur
+   * peut n'appliquer que les sections concernées et éviter des re-renders inutiles.
+   * Il est `undefined` lors du chargement initial (état complet).
+   */
+  onStateReceived: (state: TabletopState, changedKeys?: Set<TabletopStateKey>) => void;
   debounceMs?: number;
   pollMs?: number;
   /** Show browser confirmation when navigating away with unsaved changes */
@@ -123,6 +132,7 @@ export function useTabletopSync({
   const dirtyRef = useRef(false);
   const consecutiveErrorsRef = useRef(0);
   const saveErrorsRef = useRef(0);
+  const realtimeOkRef = useRef(false);
 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -232,9 +242,12 @@ export function useTabletopSync({
 
     const scheduleNext = () => {
       if (cancelled) return;
-      // Exponential backoff on consecutive errors: 3s → 6s → 12s → 24s → 30s max
+      // Exponential backoff on consecutive errors: 3s → 6s → 12s → 24s → 30s max.
+      // Quand le websocket temps réel est actif, le polling devient un simple
+      // filet de sécurité (30s) au lieu d'une boucle serrée.
       const errs = consecutiveErrorsRef.current;
-      const delay = errs === 0 ? pollMs : Math.min(pollMs * 2 ** errs, 30_000);
+      const base = realtimeOkRef.current ? Math.max(pollMs, 30_000) : pollMs;
+      const delay = errs === 0 ? base : Math.min(base * 2 ** errs, 60_000);
       pollTimer = setTimeout(() => void pull(false), delay);
     };
 
@@ -338,5 +351,54 @@ export function useTabletopSync({
     };
   }, [campaignId, userId, pollMs, flush, warnOnUnload]);
 
-  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus };
+  // ── TEMPS RÉEL (websocket) ────────────────────────────────
+  // On écoute la ligne `tabletop_state` de CETTE campagne uniquement.
+  // Le payload contient la ligne complète (REPLICA IDENTITY FULL), donc
+  // aucun re-fetch n'est nécessaire : on applique directement les champs
+  // qui ont changé.
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: "tabletop_state",
+        event: "*" as const,
+        filter: `campaign_id=eq.${campaignId}`,
+        onChange: (payload: { new?: Record<string, unknown> | null }) => {
+          const row = payload.new;
+          if (!row || !initializedRef.current) return;
+          // Écho de nos propres écritures : déjà appliqué localement.
+          if (row.updated_by === userId) return;
+          // Des modifications locales non sauvegardées sont en attente :
+          // on laisse le flush suivant primer pour ne pas les écraser.
+          if (dirtyRef.current) return;
+
+          const updatedAt = (row.updated_at as string | undefined) ?? null;
+          if (updatedAt && updatedAt === lastUpdatedAtRef.current) return;
+          lastUpdatedAtRef.current = updatedAt;
+
+          const normalized = normalize(row);
+          // Ne remonter que les sections réellement modifiées.
+          const changed = new Set<TabletopStateKey>();
+          for (const key of Object.keys(normalized) as TabletopStateKey[]) {
+            if (!isEqual(normalized[key], lastSavedRef.current[key])) changed.add(key);
+          }
+          lastSavedRef.current = normalized;
+          if (changed.size === 0) return;
+          onStateReceivedRef.current(normalized, changed);
+        },
+      },
+    ],
+    [campaignId, userId]
+  );
+
+  const realtimeStatus = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:tabletop`,
+    subscriptions,
+    enabled: !!campaignId,
+  });
+
+  useEffect(() => {
+    realtimeOkRef.current = realtimeStatus === "connected";
+  }, [realtimeStatus]);
+
+  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus };
 }

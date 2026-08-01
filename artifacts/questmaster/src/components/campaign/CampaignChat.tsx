@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { campaignsApi } from "@/lib/api";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -222,10 +223,30 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const [imageUrl, setImageUrl] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Temps réel : les nouveaux messages / jets arrivent par websocket.
+  // Le polling ne sert plus que de filet de sécurité si le socket tombe.
+  const chatRealtime = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:chat`,
+    enabled: !!campaignId,
+    subscriptions: useMemo(
+      () => [
+        {
+          table: "campaign_messages",
+          event: "*" as const,
+          filter: `campaign_id=eq.${campaignId}`,
+          onChange: () => {
+            queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
+          },
+        },
+      ],
+      [campaignId, queryClient]
+    ),
+  });
+
   const { data: messages = [] } = useQuery({
     queryKey: ["campaignMessages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    refetchInterval: 1200,
+    refetchInterval: chatRealtime === "connected" ? 30000 : 1200,
     refetchOnWindowFocus: true,
   });
 
