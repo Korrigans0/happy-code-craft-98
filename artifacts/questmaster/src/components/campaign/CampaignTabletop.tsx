@@ -265,10 +265,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" }
   ), [plateauMode]);
 
+  // ── Grille (par scène) ──────────────────────────────────────
+  const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
+  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  /** Config effective : le raccourci « G » peut désactiver globalement le snap. */
+  const grid = useMemo<GridConfig>(
+    () => ({ ...gridConfig, snapEnabled: gridConfig.snapEnabled && snapToGrid }),
+    [gridConfig, snapToGrid],
+  );
+  const cellPx = useMemo(() => cellPixels(grid), [grid]);
+
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [showScenesPanel, setShowScenesPanel] = useState(false);
+
 
   // ── Shared documents (PDF popups) ──
   const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
