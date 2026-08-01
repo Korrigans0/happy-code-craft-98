@@ -1,11 +1,14 @@
 import { Wifi, WifiOff, RefreshCw, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { RealtimeStatus } from "@/hooks/useRealtimeChannel";
 
 interface Props {
   status: "online" | "offline" | "reconnecting";
   isSaving?: boolean;
   isDirty?: boolean;
   lastSavedAt?: Date | null;
+  /** État du websocket temps réel (point vert / orange / rouge). */
+  realtimeStatus?: RealtimeStatus;
   className?: string;
 }
 
