@@ -3,8 +3,9 @@
 // Fichier : src/hooks/useTabletopSync.ts
 // ============================================================
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { campaignsApi } from "@/lib/api";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 
 interface TokenItem {
   id: string;
