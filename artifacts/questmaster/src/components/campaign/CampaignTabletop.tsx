@@ -416,66 +416,79 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
-  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus } = useTabletopSync({
+  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
-    onStateReceived: (state) => {
-      const incomingTokens = (state.tokens as TokenItem[]).filter(
-        t => !deletedTokenIdsRef.current.has(t.id)
-      );
-      setTokens(incomingTokens);
-      const incomingDrawings = state.drawings as DrawAction[];
-      const seen = new Set<string>();
-      const dedup: DrawAction[] = [];
-      for (const d of incomingDrawings) {
-        const id = d.id || newId();
-        if (seen.has(id)) continue;
-        seen.add(id);
-        dedup.push({ ...d, id });
+    onStateReceived: (state, changedKeys) => {
+      // `changedKeys` n'est fourni que par les évènements temps réel :
+      // on n'applique alors que les sections réellement modifiées afin
+      // d'éviter des re-renders inutiles du plateau entier.
+      const has = (k: string) => !changedKeys || changedKeys.has(k as never);
+
+      if (has("tokens")) {
+        const incomingTokens = (state.tokens as TokenItem[]).filter(
+          t => !deletedTokenIdsRef.current.has(t.id)
+        );
+        setTokens(incomingTokens);
       }
-      setActions(dedup);
-      const currentMapUrl = layers.find(l => l.id === "map")?.imageUrl;
-      if (state.map_image_url && state.map_image_url !== currentMapUrl) {
-        const img = new window.Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          mapImageRef.current = img;
-          setLayers(prev => prev.map(l =>
-            l.id === "map" ? { ...l, imageUrl: state.map_image_url! } : l
-          ));
-        };
-        img.src = state.map_image_url;
-      } else if (!state.map_image_url && currentMapUrl) {
-        mapImageRef.current = null;
-        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+      if (has("drawings")) {
+        const incomingDrawings = state.drawings as DrawAction[];
+        const seen = new Set<string>();
+        const dedup: DrawAction[] = [];
+        for (const d of incomingDrawings) {
+          const id = d.id || newId();
+          if (seen.has(id)) continue;
+          seen.add(id);
+          dedup.push({ ...d, id });
+        }
+        setActions(dedup);
       }
-      setLayers(prev => prev.map(l =>
-        l.id === "fog" ? { ...l, visible: state.fog_visible } : l
-      ));
+      if (has("map_image_url")) {
+        const currentMapUrl = layers.find(l => l.id === "map")?.imageUrl;
+        if (state.map_image_url && state.map_image_url !== currentMapUrl) {
+          const img = new window.Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            mapImageRef.current = img;
+            setLayers(prev => prev.map(l =>
+              l.id === "map" ? { ...l, imageUrl: state.map_image_url! } : l
+            ));
+          };
+          img.src = state.map_image_url;
+        } else if (!state.map_image_url && currentMapUrl) {
+          mapImageRef.current = null;
+          setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: undefined } : l));
+        }
+      }
+      if (has("fog_visible")) {
+        setLayers(prev => prev.map(l =>
+          l.id === "fog" ? { ...l, visible: state.fog_visible } : l
+        ));
+      }
       const incomingWalls = (state as any).walls;
-      if (incomingWalls) wallsHookRef.current?.receiveWalls(incomingWalls);
+      if (has("walls") && incomingWalls) wallsHookRef.current?.receiveWalls(incomingWalls);
       const incomingLights = (state as any).lights;
-      if (incomingLights) lightsHookRef.current?.receiveLights(incomingLights);
-      if (typeof (state as any).night_mode === "boolean") {
+      if (has("lights") && incomingLights) lightsHookRef.current?.receiveLights(incomingLights);
+      if (has("night_mode") && typeof (state as any).night_mode === "boolean") {
         lightsHookRef.current?.receiveNightMode((state as any).night_mode);
       }
       // ── Initiative (persistée) ──
       const incomingInit = (state as any).initiative;
-      if (Array.isArray(incomingInit)) setInitiative(incomingInit as InitiativeEntry[]);
+      if (has("initiative") && Array.isArray(incomingInit)) setInitiative(incomingInit as InitiativeEntry[]);
       const incomingRound = (state as any).initiative_round;
-      if (typeof incomingRound === "number") setInitiativeRound(incomingRound);
+      if (has("initiative_round") && typeof incomingRound === "number") setInitiativeRound(incomingRound);
       const incomingActive = (state as any).initiative_active_idx;
-      if (typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
+      if (has("initiative_active_idx") && typeof incomingActive === "number") setInitiativeActiveIdx(incomingActive);
       // ── Scènes (persistées) ──
       const incomingScenes = (state as any).scenes;
-      if (Array.isArray(incomingScenes)) setScenes(incomingScenes as VTTScene[]);
+      if (has("scenes") && Array.isArray(incomingScenes)) setScenes(incomingScenes as VTTScene[]);
       const incomingActiveScene = (state as any).active_scene_id;
-      if (typeof incomingActiveScene === "string" || incomingActiveScene === null) {
+      if (has("active_scene_id") && (typeof incomingActiveScene === "string" || incomingActiveScene === null)) {
         setActiveSceneId(incomingActiveScene ?? null);
       }
       // ── Documents partagés (PDF pop-up) ──
       const incomingDocs = (state as any).shared_documents;
-      if (Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
+      if (has("shared_documents") && Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
 
     },
     debounceMs: 250,
