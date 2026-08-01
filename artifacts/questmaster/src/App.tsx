@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import MobileBanner from "@/components/MobileBanner";
+import SiteAmbientMusic from "@/components/SiteAmbientMusic";
 import CookieBanner from "@/components/CookieBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
