@@ -2258,9 +2258,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const t = e.touches[0];
         const w = toWorld(t.clientX, t.clientY);
         const rawX = w.x - tokenOffset.x, rawY = w.y - tokenOffset.y;
-        const { x: sx, y: sy } = snapPosRef.current(rawX, rawY, tokenSizeRef.current);
         setTokens(prev => prev.map(tok => {
           if (tok.id !== activeTokenId) return tok;
+          const { x: sx, y: sy } = snapPos(rawX, rawY, tok.size);
           if (collisionEnabled && prev.some(o => o.id !== activeTokenId && o.visible && tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size }))) return tok;
           return { ...tok, x: sx, y: sy };
         }));
