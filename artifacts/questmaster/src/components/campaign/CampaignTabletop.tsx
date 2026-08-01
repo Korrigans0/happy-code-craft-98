@@ -227,6 +227,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Layer state ──
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100, scale: 1 },
+    // Calque dédié à la grille : verrouillé, jamais ciblé par les outils de
+    // dessin / gomme / brouillard. Seuls les réglages de scène le modifient.
+    { id: "grid", name: "Grille", type: "grid", visible: true, locked: true, opacity: 100 },
     { id: "tokens", name: "Jetons", type: "tokens", visible: true, locked: false, opacity: 100 },
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
