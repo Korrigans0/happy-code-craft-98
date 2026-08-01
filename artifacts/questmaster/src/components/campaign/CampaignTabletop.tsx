@@ -55,6 +55,12 @@ import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
+import {
+  GridConfig, DEFAULT_GRID_CONFIG, normalizeGridConfig, cellPixels,
+  snapTopLeft, drawGrid, distanceInCells, distanceInUnits, unitsToPixels,
+  strokeHexAt, hexesInRadius, formatDistance,
+} from "@/lib/vtt/grid";
+import GridSettingsPanel from "./vtt/GridSettingsPanel";
 
 // ── Constants ──────────────────────────────────────────────
 const GRID_SIZE = 40;
@@ -91,13 +97,12 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// ── Helper: draw a cone ────────────────────────────────────
+// ── Helper: draw a cone (adapté aux 3 modes de grille) ─────
 function renderCone(
   ctx: CanvasRenderingContext2D,
   action: DrawAction,
   zoom: number,
-  GRID: number,
-  MPQ: number,
+  grid: GridConfig,
 ) {
   if (action.points.length < 2) return;
   const start = action.points[0];
@@ -118,11 +123,20 @@ function renderCone(
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  // Distance label
-  const squares = Math.round(length / GRID);
+  // Surbrillance des hexagones couverts (mode hexagonal uniquement)
+  if (grid.type === "hex") {
+    ctx.strokeStyle = action.color + "88";
+    ctx.lineWidth = 1 / zoom;
+    for (const c of hexesInRadius(grid, start, length)) {
+      const a = Math.atan2(c.y - start.y, c.x - start.x);
+      let diff = Math.abs(a - angle);
+      if (diff > Math.PI) diff = 2 * Math.PI - diff;
+      if (diff <= spread / 2) strokeHexAt(ctx, grid, c.x, c.y);
+    }
+  }
   ctx.fillStyle = action.color;
   ctx.font = `bold ${11 / zoom}px sans-serif`;
-  ctx.fillText(`${squares * MPQ}m`, end.x + 6 / zoom, end.y);
+  ctx.fillText(formatDistance(grid, length), end.x + 6 / zoom, end.y);
   ctx.restore();
 }
 
@@ -130,8 +144,7 @@ function renderZone(
   ctx: CanvasRenderingContext2D,
   action: DrawAction,
   zoom: number,
-  GRID: number,
-  MPQ: number,
+  grid: GridConfig,
 ) {
   if (action.points.length < 2) return;
   const [center, edge] = action.points;
@@ -148,11 +161,15 @@ function renderZone(
   ctx.fill();
   ctx.stroke();
   ctx.setLineDash([]);
-  const squares = Math.round(radius / GRID);
+  if (grid.type === "hex") {
+    ctx.strokeStyle = action.color + "88";
+    ctx.lineWidth = 1 / zoom;
+    for (const c of hexesInRadius(grid, center, radius)) strokeHexAt(ctx, grid, c.x, c.y);
+  }
   ctx.fillStyle = action.color;
   ctx.font = `bold ${11 / zoom}px sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(`r=${squares * MPQ}m`, center.x, center.y - 4 / zoom);
+  ctx.fillText(`r=${formatDistance(grid, radius)}`, center.x, center.y - 4 / zoom);
   ctx.textAlign = "start";
   ctx.restore();
 }
@@ -196,16 +213,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setMeasureUnitState(u);
     try { localStorage.setItem(`vtt-measure-unit-${campaignId}`, u); } catch {}
   };
-  const formatMeasure = useCallback((squares: number): string => {
-    const cases = `${squares.toFixed(1)} case${squares >= 2 ? "s" : ""}`;
-    switch (measureUnit) {
-      case "ft":    return `${(squares * 5).toFixed(0)} ft (${cases})`;
-      case "cases": return cases;
-      case "km":    return `${((squares * M_PER_SQUARE) / 1000).toFixed(3)} km (${cases})`;
-      case "m":
-      default:      return `${(squares * M_PER_SQUARE).toFixed(1)} m (${cases})`;
-    }
-  }, [measureUnit]);
+  // formatMeasure est défini plus bas (dépend de la configuration de grille).
 
   // ── Token state ──
   const [tokens, setTokens] = useState<TokenItem[]>([]);
@@ -221,6 +229,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Layer state ──
   const [layers, setLayers] = useState<MapLayer[]>([
     { id: "map", name: "Carte", type: "map", visible: true, locked: false, opacity: 100, scale: 1 },
+    // Calque dédié à la grille : verrouillé, jamais ciblé par les outils de
+    // dessin / gomme / brouillard. Seuls les réglages de scène le modifient.
+    { id: "grid", name: "Grille", type: "grid", visible: true, locked: true, opacity: 100 },
     { id: "tokens", name: "Jetons", type: "tokens", visible: true, locked: false, opacity: 100 },
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
@@ -256,10 +267,55 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       : { background: "#8c97a2", gridMinor: "rgba(55,78,100,0.45)", gridMajor: "rgba(35,55,80,0.75)" }
   ), [plateauMode]);
 
+  // ── Grille (par scène) ──────────────────────────────────────
+  const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
+  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  // Restaure la grille locale des campagnes sans scène enregistrée.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`vtt-grid-${campaignId}`);
+      if (raw) setGridConfig(normalizeGridConfig(JSON.parse(raw)));
+    } catch { /* ignore */ }
+  }, [campaignId]);
+  /** Config effective : le raccourci « G » peut désactiver globalement le snap. */
+  const grid = useMemo<GridConfig>(
+    () => ({ ...gridConfig, snapEnabled: gridConfig.snapEnabled && snapToGrid }),
+    [gridConfig, snapToGrid],
+  );
+  const cellPx = useMemo(() => cellPixels(grid), [grid]);
+
+  /** Libellé d'une distance exprimée en cases / hexagones, selon l'unité choisie. */
+  const formatMeasure = useCallback((cells: number): string => {
+    const cellWord = grid.type === "hex"
+      ? `${Math.round(cells)} hex`
+      : `${cells.toFixed(1)} case${cells >= 2 ? "s" : ""}`;
+    const units = cells * grid.unitsPerCell;
+    if (grid.type === "none") {
+      // Mode libre : la valeur reçue est déjà convertie en unités réelles.
+      return `${cells.toFixed(1)} ${grid.unitLabel}`;
+    }
+    switch (measureUnit) {
+      case "ft":    return `${(units / 0.3048).toFixed(0)} ft (${cellWord})`;
+      case "cases": return cellWord;
+      case "km":    return `${(units / 1000).toFixed(3)} km (${cellWord})`;
+      case "m":
+      default:      return `${units.toFixed(1)} ${grid.unitLabel} (${cellWord})`;
+    }
+  }, [measureUnit, grid]);
+
+  /** Distance affichable entre deux points du monde (gère les 3 modes). */
+  const measureBetween = useCallback((a: { x: number; y: number }, b: { x: number; y: number }): string => {
+    if (grid.type === "none") return `${distanceInUnits(grid, a, b).toFixed(1)} ${grid.unitLabel}`;
+    return formatMeasure(distanceInCells(grid, a, b));
+  }, [grid, formatMeasure]);
+
+
+
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [showScenesPanel, setShowScenesPanel] = useState(false);
+
 
   // ── Shared documents (PDF popups) ──
   const [sharedDocs, setSharedDocs] = useState<SharedDocument[]>([]);
@@ -503,8 +559,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     campaignId,
     isGM,
     saveStateDebounced: saveState,
-    gridSize: GRID_SIZE,
-    metersPerSquare: M_PER_SQUARE,
+    gridSize: cellPx,
+    metersPerSquare: grid.unitsPerCell,
   });
   wallsHookRef.current = wallsHook;
 
@@ -733,9 +789,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   }, [campaignId]);
 
   // ── Helpers ──
-  const snapValue = useCallback(
-    (v: number) => snapToGrid ? Math.round(v / GRID_SIZE) * GRID_SIZE : v,
-    [snapToGrid]
+  // Accrochage du coin haut-gauche d'un jeton — délègue au module de grille
+  // (carrée, hexagonale ou aucune) : un seul chemin de code pour les 3 modes.
+  const snapPos = useCallback(
+    (x: number, y: number, size: number = cellPx) => snapTopLeft(grid, x, y, size),
+    [grid, cellPx]
   );
 
   const tokensOverlap = (
@@ -752,7 +810,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         for (let dy = -r; dy <= r; dy++) {
           for (let dx = -r; dx <= r; dx++) {
             if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
-            const nx = x + dx * GRID_SIZE, ny = y + dy * GRID_SIZE;
+            const nx = x + dx * cellPx, ny = y + dy * cellPx;
             if (!others.some(o => tokensOverlap({ x: nx, y: ny, size }, { x: o.x, y: o.y, size: o.size }))) return { x: nx, y: ny };
           }
         }
@@ -764,11 +822,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Token builders ──
   const buildCharacterToken = (char: any, worldX: number, worldY: number): TokenItem => {
-    const tx = snapValue(worldX - GRID_SIZE / 2);
-    const ty = snapValue(worldY - GRID_SIZE / 2);
-    const free = findFreePosition(tx, ty, GRID_SIZE);
+    const { x: tx, y: ty } = snapPos(worldX - cellPx / 2, worldY - cellPx / 2);
+    const free = findFreePosition(tx, ty, cellPx);
     return {
-      id: newId(), name: char.name, x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      id: newId(), name: char.name, x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
       rotation: 0, color: "#f59e0b", label: char.name.substring(0, 2).toUpperCase(),
       layer: "tokens", visible: true, creatureId: char.id, creatureType: "character",
       hp: char.hp ?? char.max_hp ?? 10, maxHp: char.max_hp ?? 10,
@@ -804,11 +861,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const spawnWACreature = (creature: any, atX?: number, atY?: number) => {
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const su = creature.size === "Très grand" ? 3 : creature.size === "Grand" ? 2 : 1;
-    const size = GRID_SIZE * su;
+    const size = cellPx * su;
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - size / 2);
-    const wy = snapValue(cy - size / 2);
+    const { x: wx, y: wy } = snapPos(cx - size / 2, cy - size / 2, size);
     const free = findFreePosition(wx, wy, size);
     setTokens(prev => [...prev, {
       id: newId(), name: creature.name, x: free.x, y: free.y, size, sizeUnits: su,
@@ -823,15 +879,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - GRID_SIZE / 2);
-    const wy = snapValue(cy - GRID_SIZE / 2);
-    const free = findFreePosition(wx, wy, GRID_SIZE);
+    const { x: wx, y: wy } = snapPos(cx - cellPx / 2, cy - cellPx / 2);
+    const free = findFreePosition(wx, wy, cellPx);
     setTokens(prev => [...prev, {
       id: newId(),
       name: creature.name,
       x: free.x,
       y: free.y,
-      size: GRID_SIZE,
+      size: cellPx,
       sizeUnits: 1,
       rotation: 0,
       color: "#ef4444",
@@ -851,11 +906,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const su = monster.size === "Huge" || monster.size === "Très grand" ? 3
             : monster.size === "Large" || monster.size === "Grand" ? 2 : 1;
-    const size = GRID_SIZE * su;
+    const size = cellPx * su;
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - size / 2);
-    const wy = snapValue(cy - size / 2);
+    const { x: wx, y: wy } = snapPos(cx - size / 2, cy - size / 2, size);
     const free = findFreePosition(wx, wy, size);
     const hpVal = (() => {
       const m = String(monster.hit_points ?? "10").match(/^(\d+)/);
@@ -885,11 +939,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const addToken = () => {
     if (!newTokenName.trim()) return;
     if (!perms.canAddToken) { denied(); return; }
-    const wx = snapValue((-panOffset.x / zoom) + 200);
-    const wy = snapValue((-panOffset.y / zoom) + 200);
-    const free = findFreePosition(wx, wy, GRID_SIZE);
+    const { x: wx, y: wy } = snapPos((-panOffset.x / zoom) + 200, (-panOffset.y / zoom) + 200);
+    const free = findFreePosition(wx, wy, cellPx);
     setTokens(prev => [...prev, {
-      id: newId(), name: newTokenName.trim(), x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      id: newId(), name: newTokenName.trim(), x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
       rotation: 0, color: newTokenColor, label: newTokenName.substring(0, 2).toUpperCase(),
       layer: "tokens", visible: true, conditions: [],
     }]);
@@ -899,11 +952,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const addTokenAt = (wx: number, wy: number) => {
     if (!perms.canAddToken) { denied(); return; }
     const name = prompt("Nom du jeton :"); if (!name?.trim()) return;
-    const sx = snapValue(wx - GRID_SIZE / 2);
-    const sy = snapValue(wy - GRID_SIZE / 2);
-    const free = findFreePosition(sx, sy, GRID_SIZE);
+    const { x: sx, y: sy } = snapPos(wx - cellPx / 2, wy - cellPx / 2);
+    const free = findFreePosition(sx, sy, cellPx);
     setTokens(prev => [...prev, {
-      id: newId(), name: name.trim(), x: free.x, y: free.y, size: GRID_SIZE, sizeUnits: 1,
+      id: newId(), name: name.trim(), x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
       rotation: 0, color: "#3b82f6", label: name.substring(0, 2).toUpperCase(),
       layer: "tokens", visible: true, conditions: [],
     }]);
@@ -940,14 +992,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const resizeToken = (tokenId: string, sizeUnits: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
-      return { ...t, sizeUnits, size: GRID_SIZE * sizeUnits };
+      return { ...t, sizeUnits, size: cellPx * sizeUnits };
     }));
   };
 
   const duplicateToken = (tokenId: string) => {
     const src = tokens.find(t => t.id === tokenId); if (!src) return;
     if (!perms.canAddToken) { denied("Seul le MJ peut dupliquer un jeton"); return; }
-    const free = findFreePosition(src.x + GRID_SIZE, src.y, src.size);
+    const free = findFreePosition(src.x + cellPx, src.y, src.size);
     const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
     setTokens(prev => [...prev, copy]);
     setSelectedTokenId(copy.id);
@@ -965,9 +1017,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const src = tokenClipboardRef.current;
     if (!src) { toast({ title: "Presse-papiers vide", variant: "destructive" }); return; }
     if (!perms.canAddToken) { denied("Seul le MJ peut coller un jeton"); return; }
-    const baseX = wx !== undefined ? wx - src.size / 2 : src.x + GRID_SIZE;
+    const baseX = wx !== undefined ? wx - src.size / 2 : src.x + cellPx;
     const baseY = wy !== undefined ? wy - src.size / 2 : src.y;
-    const free = findFreePosition(snapValue(baseX), snapValue(baseY), src.size);
+    const snapped = snapPos(baseX, baseY, src.size);
+    const free = findFreePosition(snapped.x, snapped.y, src.size);
     const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
     setTokens(prev => [...prev, copy]);
     setSelectedTokenId(copy.id);
@@ -1280,37 +1333,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
 
-    // ── Grid ─────────────────────────────────────────────────
-    const gridLayer = layers.find(l => l.id === "drawings");
+    // ── Grille (calque dédié « grid », verrouillé) ────────────
+    // Rendue avant la carte et les dessins : jamais affectée par la gomme,
+    // le dessin libre ou le brouillard, qui vivent sur d'autres calques.
+    const gridLayer = layers.find(l => l.id === "grid");
     if (gridLayer?.visible !== false) {
-      const startX = Math.floor(viewLeft / GRID_SIZE) * GRID_SIZE;
-      const startY = Math.floor(viewTop / GRID_SIZE) * GRID_SIZE;
-      ctx.lineWidth = 0.5 / zoom;
-
-      // Minor grid lines
-      ctx.strokeStyle = plateauColors.gridMinor;
-      ctx.beginPath();
-      for (let x = startX; x <= viewRight; x += GRID_SIZE) {
-        const isMajor = Math.round(x / GRID_SIZE) % 5 === 0;
-        if (!isMajor) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
-      }
-      for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
-        const isMajor = Math.round(y / GRID_SIZE) % 5 === 0;
-        if (!isMajor) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
-      }
-      ctx.stroke();
-
-      // Major grid lines
-      ctx.strokeStyle = plateauColors.gridMajor;
-      ctx.lineWidth = 1 / zoom;
-      ctx.beginPath();
-      for (let x = startX; x <= viewRight; x += GRID_SIZE) {
-        if (Math.round(x / GRID_SIZE) % 5 === 0) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
-      }
-      for (let y = startY; y <= viewBottom; y += GRID_SIZE) {
-        if (Math.round(y / GRID_SIZE) % 5 === 0) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
-      }
-      ctx.stroke();
+      drawGrid(
+        ctx,
+        grid,
+        { left: viewLeft, top: viewTop, right: viewRight, bottom: viewBottom },
+        { minor: plateauColors.gridMinor, major: plateauColors.gridMajor },
+        zoom,
+      );
     }
 
     // ── Map layer ─────────────────────────────────────────────
@@ -1383,10 +1417,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 const p1 = action.points[0], p2 = action.points[action.points.length - 1];
                 const dx = p2.x - p1.x, dy = p2.y - p1.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                const sq = Math.round(dist / GRID_SIZE);
-                if (sq > 0) {
+                if (dist > 1) {
                   octx.font = `${10 / zoom}px sans-serif`;
-                  octx.fillText(`${sq * M_PER_SQUARE}m`, (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
+                  octx.fillText(measureBetween(p1, p2), (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
                 }
               }
               break;
@@ -1410,10 +1443,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               }
               break;
             case "cone":
-              renderCone(octx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+              renderCone(octx, action, zoom, grid);
               break;
             case "zone":
-              renderZone(octx, action, zoom, GRID_SIZE, M_PER_SQUARE);
+              renderZone(octx, action, zoom, grid);
               break;
             default:
               break;
@@ -1462,8 +1495,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               if (currentAction.points.length >= 2) {
                 const mp0 = currentAction.points[0];
                 const mp1 = currentAction.points[currentAction.points.length - 1];
-                const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
-                const mSquares = mDist / GRID_SIZE;
+                const mLabel = measureBetween(mp0, mp1);
                 octx.save();
                 octx.strokeStyle = "#f59e0b";
                 octx.lineWidth = 2 / zoom;
@@ -1482,7 +1514,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 octx.fill();
                 const midX = (mp0.x + mp1.x) / 2;
                 const midY = (mp0.y + mp1.y) / 2;
-                const label = formatMeasure(mSquares);
+                const label = mLabel;
                 octx.font = `bold ${13 / zoom}px 'Lora', serif`;
                 const tw = octx.measureText(label).width;
                 octx.fillStyle = "rgba(0,0,0,0.7)";
@@ -1510,10 +1542,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               }
               break;
             case "cone":
-              renderCone(octx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+              renderCone(octx, currentAction, zoom, grid);
               break;
             case "zone":
-              renderZone(octx, currentAction, zoom, GRID_SIZE, M_PER_SQUARE);
+              renderZone(octx, currentAction, zoom, grid);
               break;
             default:
               break;
@@ -1567,7 +1599,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
         // Aura
         if (token.auraSize && token.auraSize > 0 && token.auraColor) {
-          const auraRadius = (token.auraSize * GRID_SIZE + halfSize) * 0.9;
+          const auraRadius = (token.auraSize * cellPx + halfSize) * 0.9;
           ctx.save();
           ctx.globalAlpha = 0.28;
           ctx.fillStyle = token.auraColor;
@@ -1764,17 +1796,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         if (isDragged && dragStart) {
           const sx = dragStart.x + halfSize, sy = dragStart.y + halfSize;
           const dist = Math.sqrt((cx - sx) ** 2 + (cy - sy) ** 2);
-          const squares = Math.round(dist / GRID_SIZE);
+          const trailLabel = measureBetween({ x: sx, y: sy }, { x: cx, y: cy });
           ctx.save();
           ctx.strokeStyle = "#f59e0b";
           ctx.lineWidth = 2 / zoom;
           ctx.setLineDash([5 / zoom, 4 / zoom]);
           ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(cx, cy); ctx.stroke();
           ctx.setLineDash([]);
-          if (squares > 0) {
+          if (dist > 1) {
             ctx.fillStyle = "#f59e0b";
             ctx.font = `bold ${12 / zoom}px 'Lora', serif`;
-            ctx.fillText(`${squares * M_PER_SQUARE}m (${squares})`, cx + 12 / zoom, cy - 8 / zoom);
+            ctx.fillText(trailLabel, cx + 12 / zoom, cy - 8 / zoom);
           }
           ctx.restore();
         }
@@ -1789,7 +1821,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const elapsed = now - ping.t;
       if (elapsed > 3000) continue;
       const progress = elapsed / 3000;
-      const maxRadius = GRID_SIZE * 2.5;
+      const maxRadius = cellPx * 2.5;
       const r1 = maxRadius * progress;
       const r2 = maxRadius * Math.max(0, progress - 0.3);
       ctx.save();
@@ -1915,7 +1947,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       lCtx.globalCompositeOperation = lightsHook.nightMode ? "destination-out" : "lighter";
 
       for (const { light, wx, wy } of resolved) {
-        const totalR = Math.max(light.brightRadius, light.dimRadius) * GRID_SIZE / M_PER_SQUARE;
+        const totalR = unitsToPixels(grid, Math.max(light.brightRadius, light.dimRadius));
         if (totalR <= 0) continue;
 
         // Polygone de visibilité en coords monde
@@ -1927,7 +1959,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const sx = wx * zoom + panOffset.x;
         const sy = wy * zoom + panOffset.y;
         const sR = totalR * zoom;
-        const sBright = light.brightRadius * GRID_SIZE / M_PER_SQUARE * zoom;
+        const sBright = unitsToPixels(grid, light.brightRadius) * zoom;
 
         lCtx.save();
         // Clip sur le polygone si on a des murs, sinon cercle plein
@@ -1974,7 +2006,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         for (const tk of tokens) {
           const vr = tk.visionRadius ?? 0;
           if (!tk.visible || vr <= 0) continue;
-          const totalR = vr * GRID_SIZE / M_PER_SQUARE;
+          const totalR = unitsToPixels(grid, vr);
           const poly = blockers.length > 0
             ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
             : [];
@@ -2223,9 +2255,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const t = e.touches[0];
         const w = toWorld(t.clientX, t.clientY);
         const rawX = w.x - tokenOffset.x, rawY = w.y - tokenOffset.y;
-        const sx = snapValue(rawX), sy = snapValue(rawY);
         setTokens(prev => prev.map(tok => {
           if (tok.id !== activeTokenId) return tok;
+          const { x: sx, y: sy } = snapPos(rawX, rawY, tok.size);
           if (collisionEnabled && prev.some(o => o.id !== activeTokenId && o.visible && tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size }))) return tok;
           return { ...tok, x: sx, y: sy };
         }));
@@ -2310,7 +2342,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid, zoom, wallsHook, broadcastPing]);
+  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapPos, zoom, wallsHook, broadcastPing]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -2358,7 +2390,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
       }
       if (selectedTokenId) {
-        const step = e.shiftKey ? GRID_SIZE * 5 : GRID_SIZE;
+        const step = e.shiftKey ? cellPx * 5 : cellPx;
         if (e.key === "ArrowUp") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, -step); }
         else if (e.key === "ArrowDown") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, step); }
         else if (e.key === "ArrowLeft") { e.preventDefault(); moveTokenBy(selectedTokenId, -step, 0); }
@@ -2677,7 +2709,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setTokens(prev => {
         const t = prev.find(x => x.id === id);
         if (!t) return prev;
-        const sx = snapValue(t.x), sy = snapValue(t.y);
+        const { x: sx, y: sy } = snapPos(t.x, t.y, t.size);
         let nx = sx, ny = sy;
         // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
         if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
@@ -2755,17 +2787,57 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   };
 
   // ── Scene management ──────────────────────────────────────
+  // Applique une nouvelle configuration de grille : ré-accroche les jetons si
+  // nécessaire, met à jour la scène active et persiste l'état.
+  // Hydrate la grille depuis la scène active reçue via la synchro temps réel.
+  const hydratedGridSceneRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeSceneId || hydratedGridSceneRef.current === activeSceneId) return;
+    const scene = scenes.find(s => s.id === activeSceneId);
+    if (!scene) return;
+    hydratedGridSceneRef.current = activeSceneId;
+    setGridConfig(normalizeGridConfig(scene.grid));
+  }, [activeSceneId, scenes]);
+
+  const applyGridConfig = (next: GridConfig) => {
+    if (!isGM) { denied(); return; }
+    const typeChanged = next.type !== gridConfig.type
+      || next.orientation !== gridConfig.orientation
+      || next.scale !== gridConfig.scale;
+    setGridConfig(next);
+    let nextTokens = tokens;
+    if (typeChanged && next.type !== "none" && next.snapEnabled) {
+      nextTokens = tokens.map(t => {
+        const p = snapTopLeft(next, t.x, t.y, t.sizeUnits || 1);
+        return { ...t, x: p.x, y: p.y };
+      });
+      setTokens(nextTokens);
+    }
+    if (activeSceneId) {
+      setScenes(prev => {
+        const updated = prev.map(s => s.id === activeSceneId ? { ...s, grid: next, tokens: nextTokens } : s);
+        saveState({ scenes: updated, tokens: nextTokens });
+        return updated;
+      });
+    } else {
+      saveState({ tokens: nextTokens });
+      try { localStorage.setItem(`vtt-grid-${campaignId}`, JSON.stringify(next)); } catch { /* ignore */ }
+    }
+  };
+
   const saveCurrentScene = (): VTTScene => ({
     id: activeSceneId || newId(),
     name: scenes.find(s => s.id === activeSceneId)?.name || "Scène sans nom",
     mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
     tokens: [...tokens],
     drawings: [...actions],
+    grid: gridConfig,
     createdAt: Date.now(),
   });
 
   const loadScene = (scene: VTTScene) => {
     setActiveSceneId(scene.id);
+    setGridConfig(normalizeGridConfig(scene.grid));
     setTokens(scene.tokens);
     setActions(scene.drawings);
     setUndoneActions([]);
@@ -2796,7 +2868,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       : [...scenes];
     const newScene: VTTScene = {
       id: newId(), name: name.trim(),
-      tokens: [], drawings: [], createdAt: Date.now(),
+      tokens: [], drawings: [], grid: gridConfig, createdAt: Date.now(),
     };
     setScenes([...updatedScenes, newScene]);
     loadScene(newScene);
@@ -2807,7 +2879,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // Save current scene state
     if (activeSceneId) {
       setScenes(prev => prev.map(s =>
-        s.id === activeSceneId ? { ...s, tokens, drawings: actions, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
+        s.id === activeSceneId ? { ...s, tokens, drawings: actions, grid: gridConfig, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
       ));
     }
     loadScene(scene);
@@ -3139,6 +3211,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     </div>
                   </div>
                 ))}
+                <Separator />
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setGridSettingsOpen(v => !v)}
+                    className="flex w-full items-center justify-between text-sm font-semibold"
+                  >
+                    <span>Grille de la scène</span>
+                    <span className="text-[10px] uppercase text-muted-foreground">
+                      {gridConfig.type === "square" ? "Carrée" : gridConfig.type === "hex" ? "Hexagonale" : "Libre"}
+                    </span>
+                  </button>
+                  {gridSettingsOpen && (
+                    <GridSettingsPanel
+                      config={gridConfig}
+                      onChange={applyGridConfig}
+                      onTypeChange={applyGridConfig}
+                      disabled={!isGM}
+                    />
+                  )}
+                </div>
                 {activeSceneId && (
                   <>
                     <Separator />
@@ -3688,7 +3781,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 const revealAction: DrawAction = {
                   id: newId(), type: "fogReveal",
                   points: [{ x: contextMenu.worldX, y: contextMenu.worldY }],
-                  color: "black", size: GRID_SIZE * 1.5, layer: "fog",
+                  color: "black", size: cellPx * 1.5, layer: "fog",
                 };
                 setActions(prev => [...prev, revealAction]);
               }}

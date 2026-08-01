@@ -56,7 +56,7 @@ export interface TokenItem {
 export interface MapLayer {
   id: string;
   name: string;
-  type: "map" | "tokens" | "drawings" | "fog";
+  type: "map" | "grid" | "tokens" | "drawings" | "fog";
   visible: boolean;
   locked: boolean;
   opacity: number;
@@ -91,6 +91,8 @@ export interface ContextMenuState {
 export interface VTTScene {
   id: string;
   name: string;
+  /** Configuration de grille propre à la scène (absente = grille carrée). */
+  grid?: import("@/lib/vtt/grid").GridConfig;
   mapImageUrl?: string;
   tokens: TokenItem[];
   drawings: DrawAction[];
