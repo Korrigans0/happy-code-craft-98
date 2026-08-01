@@ -202,16 +202,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setMeasureUnitState(u);
     try { localStorage.setItem(`vtt-measure-unit-${campaignId}`, u); } catch {}
   };
-  const formatMeasure = useCallback((squares: number): string => {
-    const cases = `${squares.toFixed(1)} case${squares >= 2 ? "s" : ""}`;
-    switch (measureUnit) {
-      case "ft":    return `${(squares * 5).toFixed(0)} ft (${cases})`;
-      case "cases": return cases;
-      case "km":    return `${((squares * M_PER_SQUARE) / 1000).toFixed(3)} km (${cases})`;
-      case "m":
-      default:      return `${(squares * M_PER_SQUARE).toFixed(1)} m (${cases})`;
-    }
-  }, [measureUnit]);
+  // formatMeasure est défini plus bas (dépend de la configuration de grille).
 
   // ── Token state ──
   const [tokens, setTokens] = useState<TokenItem[]>([]);
