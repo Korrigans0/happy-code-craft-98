@@ -54,10 +54,18 @@ interface TabletopState {
 }
 
 
+/** Clés de l'état du plateau réellement modifiées par l'évènement reçu. */
+export type TabletopStateKey = keyof TabletopState;
+
 interface UseTabletopSyncOptions {
   campaignId: string;
   userId: string;
-  onStateReceived: (state: TabletopState) => void;
+  /**
+   * `changedKeys` est fourni pour les mises à jour temps réel : le consommateur
+   * peut n'appliquer que les sections concernées et éviter des re-renders inutiles.
+   * Il est `undefined` lors du chargement initial (état complet).
+   */
+  onStateReceived: (state: TabletopState, changedKeys?: Set<TabletopStateKey>) => void;
   debounceMs?: number;
   pollMs?: number;
   /** Show browser confirmation when navigating away with unsaved changes */
