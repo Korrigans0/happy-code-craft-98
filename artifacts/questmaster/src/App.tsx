@@ -89,6 +89,8 @@ const AppRoutes = () => (
       <MobileBottomNav />
       <CookieBanner />
       <MobileBanner />
+      <SiteAmbientMusic />
+
     </TooltipProvider>
   </BrowserRouter>
 );
