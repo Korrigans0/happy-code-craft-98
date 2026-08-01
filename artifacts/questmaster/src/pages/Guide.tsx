@@ -68,6 +68,11 @@ const TOC_ITEMS: { id: string; label: string; icon: React.ReactNode }[] = [
   { id: "vtt",       label: "Tabletop & tokens",  icon: <Crosshair className="h-4 w-4" /> },
   { id: "murs",      label: "Murs & vision",      icon: <Shield className="h-4 w-4" /> },
   { id: "combat",    label: "Combat & dés",       icon: <Swords className="h-4 w-4" /> },
+  { id: "grille",    label: "Grilles & mesures",  icon: <RectangleHorizontal className="h-4 w-4" /> },
+  { id: "audio",     label: "Audio & ambiances",  icon: <MessageCircle className="h-4 w-4" /> },
+  { id: "pdf",       label: "PDF partagés",       icon: <BookOpen className="h-4 w-4" /> },
+  { id: "macros",    label: "Macros",             icon: <Wand2 className="h-4 w-4" /> },
+
   { id: "mj",        label: "Astuces MJ",         icon: <Crown className="h-4 w-4" /> },
   { id: "mobile",    label: "Mobile",             icon: <Smartphone className="h-4 w-4" /> },
   { id: "faq",       label: "FAQ",                icon: <HelpCircle className="h-4 w-4" /> },
