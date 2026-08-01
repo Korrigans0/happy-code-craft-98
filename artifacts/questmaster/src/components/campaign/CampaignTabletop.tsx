@@ -2780,17 +2780,47 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   };
 
   // ── Scene management ──────────────────────────────────────
+  // Applique une nouvelle configuration de grille : ré-accroche les jetons si
+  // nécessaire, met à jour la scène active et persiste l'état.
+  const applyGridConfig = (next: GridConfig) => {
+    if (!isGM) { denied(); return; }
+    const typeChanged = next.type !== gridConfig.type
+      || next.orientation !== gridConfig.orientation
+      || next.scale !== gridConfig.scale;
+    setGridConfig(next);
+    let nextTokens = tokens;
+    if (typeChanged && next.type !== "none" && next.snapEnabled) {
+      nextTokens = tokens.map(t => {
+        const p = snapTopLeft(next, t.x, t.y, t.sizeUnits || 1);
+        return { ...t, x: p.x, y: p.y };
+      });
+      setTokens(nextTokens);
+    }
+    if (activeSceneId) {
+      setScenes(prev => {
+        const updated = prev.map(s => s.id === activeSceneId ? { ...s, grid: next, tokens: nextTokens } : s);
+        saveState({ scenes: updated, tokens: nextTokens });
+        return updated;
+      });
+    } else {
+      saveState({ tokens: nextTokens });
+      try { localStorage.setItem(`vtt-grid-${campaignId}`, JSON.stringify(next)); } catch { /* ignore */ }
+    }
+  };
+
   const saveCurrentScene = (): VTTScene => ({
     id: activeSceneId || newId(),
     name: scenes.find(s => s.id === activeSceneId)?.name || "Scène sans nom",
     mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
     tokens: [...tokens],
     drawings: [...actions],
+    grid: gridConfig,
     createdAt: Date.now(),
   });
 
   const loadScene = (scene: VTTScene) => {
     setActiveSceneId(scene.id);
+    setGridConfig(normalizeGridConfig(scene.grid));
     setTokens(scene.tokens);
     setActions(scene.drawings);
     setUndoneActions([]);
@@ -2821,7 +2851,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       : [...scenes];
     const newScene: VTTScene = {
       id: newId(), name: name.trim(),
-      tokens: [], drawings: [], createdAt: Date.now(),
+      tokens: [], drawings: [], grid: gridConfig, createdAt: Date.now(),
     };
     setScenes([...updatedScenes, newScene]);
     loadScene(newScene);
@@ -2832,7 +2862,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // Save current scene state
     if (activeSceneId) {
       setScenes(prev => prev.map(s =>
-        s.id === activeSceneId ? { ...s, tokens, drawings: actions, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
+        s.id === activeSceneId ? { ...s, tokens, drawings: actions, grid: gridConfig, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
       ));
     }
     loadScene(scene);
