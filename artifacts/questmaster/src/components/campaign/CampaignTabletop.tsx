@@ -1315,37 +1315,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
 
-    // ── Grid ─────────────────────────────────────────────────
-    const gridLayer = layers.find(l => l.id === "drawings");
+    // ── Grille (calque dédié « grid », verrouillé) ────────────
+    // Rendue avant la carte et les dessins : jamais affectée par la gomme,
+    // le dessin libre ou le brouillard, qui vivent sur d'autres calques.
+    const gridLayer = layers.find(l => l.id === "grid");
     if (gridLayer?.visible !== false) {
-      const startX = Math.floor(viewLeft / cellPx) * cellPx;
-      const startY = Math.floor(viewTop / cellPx) * cellPx;
-      ctx.lineWidth = 0.5 / zoom;
-
-      // Minor grid lines
-      ctx.strokeStyle = plateauColors.gridMinor;
-      ctx.beginPath();
-      for (let x = startX; x <= viewRight; x += cellPx) {
-        const isMajor = Math.round(x / cellPx) % 5 === 0;
-        if (!isMajor) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
-      }
-      for (let y = startY; y <= viewBottom; y += cellPx) {
-        const isMajor = Math.round(y / cellPx) % 5 === 0;
-        if (!isMajor) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
-      }
-      ctx.stroke();
-
-      // Major grid lines
-      ctx.strokeStyle = plateauColors.gridMajor;
-      ctx.lineWidth = 1 / zoom;
-      ctx.beginPath();
-      for (let x = startX; x <= viewRight; x += cellPx) {
-        if (Math.round(x / cellPx) % 5 === 0) { ctx.moveTo(x, viewTop); ctx.lineTo(x, viewBottom); }
-      }
-      for (let y = startY; y <= viewBottom; y += cellPx) {
-        if (Math.round(y / cellPx) % 5 === 0) { ctx.moveTo(viewLeft, y); ctx.lineTo(viewRight, y); }
-      }
-      ctx.stroke();
+      drawGrid(
+        ctx,
+        grid,
+        { left: viewLeft, top: viewTop, right: viewRight, bottom: viewBottom },
+        { minor: plateauColors.gridMinor, major: plateauColors.gridMajor },
+        zoom,
+      );
     }
 
     // ── Map layer ─────────────────────────────────────────────
@@ -1418,10 +1399,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 const p1 = action.points[0], p2 = action.points[action.points.length - 1];
                 const dx = p2.x - p1.x, dy = p2.y - p1.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                const sq = Math.round(dist / cellPx);
-                if (sq > 0) {
+                if (dist > 1) {
                   octx.font = `${10 / zoom}px sans-serif`;
-                  octx.fillText(`${sq * grid.unitsPerCell}m`, (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
+                  octx.fillText(measureBetween(p1, p2), (p1.x + p2.x) / 2 + 4, (p1.y + p2.y) / 2 - 4);
                 }
               }
               break;
@@ -1445,10 +1425,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               }
               break;
             case "cone":
-              renderCone(octx, action, zoom, cellPx, grid.unitsPerCell);
+              renderCone(octx, action, zoom, grid);
               break;
             case "zone":
-              renderZone(octx, action, zoom, cellPx, grid.unitsPerCell);
+              renderZone(octx, action, zoom, grid);
               break;
             default:
               break;
@@ -1497,8 +1477,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               if (currentAction.points.length >= 2) {
                 const mp0 = currentAction.points[0];
                 const mp1 = currentAction.points[currentAction.points.length - 1];
-                const mDist = Math.sqrt((mp1.x - mp0.x) ** 2 + (mp1.y - mp0.y) ** 2);
-                const mSquares = mDist / cellPx;
+                const mLabel = measureBetween(mp0, mp1);
                 octx.save();
                 octx.strokeStyle = "#f59e0b";
                 octx.lineWidth = 2 / zoom;
@@ -1517,7 +1496,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 octx.fill();
                 const midX = (mp0.x + mp1.x) / 2;
                 const midY = (mp0.y + mp1.y) / 2;
-                const label = formatMeasure(mSquares);
+                const label = mLabel;
                 octx.font = `bold ${13 / zoom}px 'Lora', serif`;
                 const tw = octx.measureText(label).width;
                 octx.fillStyle = "rgba(0,0,0,0.7)";
@@ -1545,10 +1524,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               }
               break;
             case "cone":
-              renderCone(octx, currentAction, zoom, cellPx, grid.unitsPerCell);
+              renderCone(octx, currentAction, zoom, grid);
               break;
             case "zone":
-              renderZone(octx, currentAction, zoom, cellPx, grid.unitsPerCell);
+              renderZone(octx, currentAction, zoom, grid);
               break;
             default:
               break;
@@ -1799,17 +1778,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         if (isDragged && dragStart) {
           const sx = dragStart.x + halfSize, sy = dragStart.y + halfSize;
           const dist = Math.sqrt((cx - sx) ** 2 + (cy - sy) ** 2);
-          const squares = Math.round(dist / cellPx);
+          const trailLabel = measureBetween({ x: sx, y: sy }, { x: cx, y: cy });
           ctx.save();
           ctx.strokeStyle = "#f59e0b";
           ctx.lineWidth = 2 / zoom;
           ctx.setLineDash([5 / zoom, 4 / zoom]);
           ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(cx, cy); ctx.stroke();
           ctx.setLineDash([]);
-          if (squares > 0) {
+          if (dist > 1) {
             ctx.fillStyle = "#f59e0b";
             ctx.font = `bold ${12 / zoom}px 'Lora', serif`;
-            ctx.fillText(`${squares * grid.unitsPerCell}m (${squares})`, cx + 12 / zoom, cy - 8 / zoom);
+            ctx.fillText(trailLabel, cx + 12 / zoom, cy - 8 / zoom);
           }
           ctx.restore();
         }
@@ -1950,7 +1929,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       lCtx.globalCompositeOperation = lightsHook.nightMode ? "destination-out" : "lighter";
 
       for (const { light, wx, wy } of resolved) {
-        const totalR = Math.max(light.brightRadius, light.dimRadius) * cellPx / grid.unitsPerCell;
+        const totalR = unitsToPixels(grid, Math.max(light.brightRadius, light.dimRadius));
         if (totalR <= 0) continue;
 
         // Polygone de visibilité en coords monde
@@ -1962,7 +1941,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const sx = wx * zoom + panOffset.x;
         const sy = wy * zoom + panOffset.y;
         const sR = totalR * zoom;
-        const sBright = light.brightRadius * cellPx / grid.unitsPerCell * zoom;
+        const sBright = unitsToPixels(grid, light.brightRadius) * zoom;
 
         lCtx.save();
         // Clip sur le polygone si on a des murs, sinon cercle plein
@@ -2009,7 +1988,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         for (const tk of tokens) {
           const vr = tk.visionRadius ?? 0;
           if (!tk.visible || vr <= 0) continue;
-          const totalR = vr * cellPx / grid.unitsPerCell;
+          const totalR = unitsToPixels(grid, vr);
           const poly = blockers.length > 0
             ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
             : [];
@@ -2345,7 +2324,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       canvas.removeEventListener("touchend", onTouchEnd);
       canvas.removeEventListener("touchcancel", onTouchEnd);
     };
-  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapToGrid, zoom, wallsHook, broadcastPing]);
+  }, [tool, layers, collisionEnabled, color, brushSize, activeDrawLayer, snapPos, zoom, wallsHook, broadcastPing]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
