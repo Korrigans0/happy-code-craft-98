@@ -132,6 +132,7 @@ export function useTabletopSync({
   const dirtyRef = useRef(false);
   const consecutiveErrorsRef = useRef(0);
   const saveErrorsRef = useRef(0);
+  const realtimeOkRef = useRef(false);
 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
