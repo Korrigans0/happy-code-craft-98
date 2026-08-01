@@ -17,7 +17,7 @@ interface Props {
  * Aide les MJ et joueurs à comprendre instantanément si leurs actions
  * sont bien envoyées au serveur (vs perte réseau silencieuse).
  */
-export function ConnectionStatus({ status, isSaving, isDirty, lastSavedAt, className }: Props) {
+export function ConnectionStatus({ status, isSaving, isDirty, lastSavedAt, realtimeStatus, className }: Props) {
   let icon = <Wifi className="h-3.5 w-3.5" />;
   let label = "Connecté";
   let tone = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
@@ -43,22 +43,46 @@ export function ConnectionStatus({ status, isSaving, isDirty, lastSavedAt, class
     label = "À jour";
   }
 
+  const rtTone =
+    realtimeStatus === "connected"
+      ? "bg-emerald-400 shadow-[0_0_6px] shadow-emerald-400/70"
+      : realtimeStatus === "connecting"
+        ? "bg-amber-400 animate-pulse"
+        : "bg-destructive";
+  const rtLabel =
+    realtimeStatus === "connected"
+      ? "Temps réel actif"
+      : realtimeStatus === "connecting"
+        ? "Temps réel : connexion…"
+        : "Temps réel indisponible — synchronisation de secours";
+
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-        tone,
-        className
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      {realtimeStatus && (
+        <span
+          className="inline-flex items-center"
+          title={rtLabel}
+          aria-label={rtLabel}
+          role="status"
+        >
+          <span className={cn("h-2 w-2 rounded-full", rtTone)} />
+        </span>
       )}
-      title={
-        lastSavedAt
-          ? `Dernière sauvegarde : ${lastSavedAt.toLocaleTimeString("fr-BE")}`
-          : "Pas encore sauvegardé"
-      }
-      aria-live="polite"
-    >
-      {icon}
-      <span>{label}</span>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+          tone
+        )}
+        title={
+          lastSavedAt
+            ? `Dernière sauvegarde : ${lastSavedAt.toLocaleTimeString("fr-BE")}`
+            : "Pas encore sauvegardé"
+        }
+        aria-live="polite"
+      >
+        {icon}
+        <span>{label}</span>
+      </span>
     </span>
   );
 }
