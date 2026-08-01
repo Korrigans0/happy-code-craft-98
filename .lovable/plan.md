@@ -1,73 +1,77 @@
-# Ajout du système "Glyphes" à Aetheria VTT
+# Grille multi-modes : carrée, hexagonale, sans grille
 
-## Vue d'ensemble
+Objectif : permettre au MJ de choisir, scène par scène, entre grille carrée, grille hexagonale (pointy-top / flat-top) et mode libre, sans casser l'existant.
 
-Glyphes est un nouveau système modulaire avec 3 époques (Nouvelle Empire, Présent, Futur). Seul "Nouvelle Empire" a du contenu, les 2 autres sont des placeholders.
+## Constat sur le code actuel
 
-Important : avant de coder, je dois **parser les 7 PDFs fournis** pour extraire le contenu exact des règles (Module Cœur + Nouvel Empire + bestiaires + fiche). Sans ça, je vais inventer des règles fausses.
+- Une seule constante `GRID_SIZE = 40` et `M_PER_SQUARE = 1.5` pilotent tout : snap (`snapValue`), placement des tokens, mesures, gabarits (cône/zone), rayons de lumière et de vision.
+- La grille est dessinée **dans le calque `drawings`** (elle disparaît si ce calque est masqué, et elle partage la couche des dessins/gomme). C'est le bug à corriger : la grille doit avoir sa propre couche non éditable.
+- Les scènes (`VTTScene`) stockent tokens, dessins, murs, carte — mais aucune configuration de grille.
 
-## Architecture
+## Architecture proposée
 
-### 1. Registre système (intégration multi-système)
-- Nouveau fichier `src/lib/systems/glyphes.ts` — SystemDefinition pour Glyphes Nouvelle Empire (caractéristiques PUI/SOU/CON/FOI/ESP/SOC, races, etc.)
-- Enregistrer dans `src/lib/systems/index.ts` aux côtés d'Aetheria, D&D, etc.
-- Cela ajoute automatiquement Glyphes au sélecteur de système lors de la création de campagne.
+### 1. Un module unique de géométrie : `src/lib/vtt/grid.ts`
 
-### 2. Pages publiques (hub + contenu)
-Le site a déjà une page `/partners` et `/guide`. Je ne vois pas de page "Systèmes" dédiée à parcourir. Je vais créer :
+Toute la logique de coordonnées y est centralisée, aucune duplication dans les composants.
 
+```text
+GridConfig {
+  type: "square" | "hex" | "none"
+  orientation: "pointy" | "flat"   // hex seulement
+  size: number                      // px (carré = côté, hex = rayon)
+  scale: number                     // échelle libre 10–400 % déjà existante
+  unitsPerCell: number              // 1.5 par défaut
+  unitLabel: "m" | "ft"
+  pixelsPerUnit: number             // mode libre uniquement
+  showLines: boolean                // masquer les lignes sans désactiver le snap
+  snapEnabled: boolean
+}
 ```
-/systems                → liste tous les systèmes (Aetheria, WA, D&D5e, PF2e, CoC, Glyphes, Custom)
-/systems/glyphes        → hub Glyphes avec 3 tuiles d'époques
-/systems/glyphes/nouvel-empire   → contenu complet (sections 1-23)
-/systems/glyphes/present         → placeholder "en développement"
-/systems/glyphes/futur           → placeholder "en développement"
-```
 
-Routes ajoutées dans `App.tsx`.
+API exposée (mêmes signatures pour les 3 modes, le composant appelant ignore le type) :
 
-### 3. Page "Nouvelle Empire" — structure
+- `snapPoint(config, x, y)` → position accrochée (centre de case / centre d'hexagone / identité en mode libre)
+- `cellCenter(config, x, y)` et `cellAt(config, x, y)`
+- `distance(config, a, b)` → en unités de jeu : carré = règle actuelle, hex = conversion pixel → axial → **cubique** puis `(|dq|+|dr|+|ds|)/2`, libre = distance euclidienne / `pixelsPerUnit`
+- `formatDistance(config, pixels)` → libellé (`« 7,5 m (5 cases) »`, `« 4 hex »`, `« 12,3 m »`)
+- `radiusToPixels` / `pixelsToUnits` pour lumières, vision, auras et gabarits
+- `iterateVisibleCells(config, viewport)` → générateur utilisé par le rendu (aucune allocation superflue)
 
-Sidebar fixe (desktop) / accordéon mobile avec les 23 sections demandées. Composants :
+Conversions hexagonales : formules standard axiales (Red Blob Games) avec arrondi cubique (`hexRound`), gérant les deux orientations via une matrice d'orientation unique — un seul chemin de code, pas de branche `if (pointy)` disséminée.
 
-- `src/pages/systems/glyphes/NouvelEmpire.tsx` — layout + sommaire
-- `src/components/systems/glyphes/sections/` — un fichier par section (23 fichiers)
-- `src/lib/systems/glyphes/data.ts` — toutes les données structurées extraites des PDFs (difficultés, magnitudes, états, dons, races, aptitudes, équipement, factions, atlas)
+### 2. Couche de rendu dédiée : `GridLayer`
 
-Style dark fantasy cohérent avec le reste du site (Cinzel/Lora, palette bleu-noir/or). Tableaux shadcn pour les données, Accordion pour dons/races/aptitudes, Cards pour factions/régions.
+- Extraction du bloc de dessin actuel dans une fonction pure `drawGrid(ctx, config, viewport, colors)` gérant les 3 types (le mode `none` ne dessine rien).
+- Ajout d'un calque `grid` dans `layers.ts`, **verrouillé** : non listé comme cible de dessin, ignoré par la gomme et le fog, non supprimable. Le rendu de la grille n'est plus conditionné par la visibilité du calque `drawings`.
+- Ordre de rendu : carte → **grille** → décor/objets → jetons → effets → lumières → murs → brouillard → UI MJ.
+- `showLines: false` masque uniquement le tracé, le snap reste actif.
+
+### 3. Réglages de scène
+
+- `VTTScene` reçoit `grid?: GridConfig` (absent = grille carrée par défaut → rétro-compatibilité totale des scènes existantes).
+- Nouveau panneau « Grille » dans les paramètres de scène du `GMPanel` : type, orientation hex, taille/échelle, unité (m/ft), unités par case, pixels par unité (mode libre), affichage des lignes, snap.
+- Sauvegarde via le flux `scenes` / `tabletop_state` déjà en place (aucune migration nécessaire, le JSONB `scenes` accueille le champ).
+
+### 4. Migration entre modes
+
+À chaque changement de type sur une scène : les tokens sont repositionnés via `snapPoint` du nouveau mode (carré/hex), ou conservés tels quels en passant en mode libre. Traitement en une passe sur le tableau de tokens, avec avertissement au MJ avant application.
+
+### 5. Branchements existants à réviser
+
+- `snapValue`, ajout/duplication/déplacement de tokens, déplacement clavier (flèches)
+- Mesure du combat et de l'outil règle → `distance(config, …)`
+- Gabarits `renderCone` / `renderZone` / cercle → rayons calculés en unités via le module, avec surlignage des hexagones couverts en mode hex
+- Rayons de lumière, vision, auras → `radiusToPixels`
 
 ## Détails techniques
 
-- **Parser PDFs** via `document--parse_document` sur les 7 fichiers user-uploads avant d'écrire le code.
-- **Réutiliser composants UI existants** : `Card`, `Table`, `Accordion`, `Tabs`, `Badge` de shadcn.
-- **Pas de duplication** : créer un composant `<RulesSection>` réutilisable (titre + contenu).
-- **i18n FR** : tout le contenu en français (cohérent avec le projet).
-- **Mobile** : sidebar → Sheet (drawer) sur < md.
-- **SEO** : title + meta sur chaque page (`/systems/glyphes` etc.).
+- Les hexagones sont dessinés par colonnes/rangées visibles seulement (culling identique à l'existant), tracé en un seul `Path2D` par niveau de trait pour éviter les surcoûts.
+- Aucune dépendance ajoutée ; tout en TypeScript pur et testable (fonctions pures dans `grid.ts`).
+- Les valeurs par défaut reproduisent exactement le comportement actuel (`square`, 40 px, 1,5 m/case), donc aucune campagne existante ne change de rendu.
 
-## Ce qui n'est PAS inclus dans ce premier livrable
+## Étapes de livraison
 
-- Fiche de personnage Glyphes jouable dans le VTT (formulaire + sheet) — Étape 2 séparée, gros chantier (intégration `CharacterForm`, calculs, sheet component).
-- Import du bestiaire Glyphes dans le compendium.
-- Compendium dédié Glyphes.
-
-Je livre d'abord les pages de présentation + l'enregistrement du système dans le registre. Une fois validé, on enchaînera fiche jouable + bestiaire dans des passes séparées.
-
-## Plan d'exécution
-
-1. Parser les 7 PDFs → extraction du contenu réel
-2. Créer `data.ts` avec toutes les données structurées
-3. Créer le SystemDefinition `glyphes.ts` + l'enregistrer
-4. Créer les 3 routes + page hub `/systems/glyphes`
-5. Créer la page Nouvelle Empire avec sidebar + 23 sections
-6. Créer les 2 placeholders Présent/Futur
-7. Lien depuis la home / nav si pertinent
-8. Build + typecheck
-
-Estimation : très gros volume de contenu (les PDFs font probablement 50+ pages combinées). Le code reste raisonnable car presque tout est du contenu déclaratif dans `data.ts` + sections de rendu.
-
-## Question avant de commencer
-
-Confirmez-vous :
-- (a) Je livre **uniquement les pages de présentation/règles** dans ce passage, et on traite la **fiche jouable + bestiaire VTT** dans un passage suivant ? Ou vous voulez que je tente tout d'un coup (risque : superficiel partout) ?
-- (b) Le lien "Systèmes" doit-il apparaître dans la nav principale, ou seulement accessible depuis le Guide / l'accueil ?
+1. `src/lib/vtt/grid.ts` + types `GridConfig` dans `vtt/types.ts`
+2. Calque `grid` verrouillé + `drawGrid` (3 modes) et retrait de la dépendance au calque `drawings`
+3. Panneau de réglages de grille par scène + persistance + migration des tokens
+4. Bascule de tous les appels de snap / mesure / gabarits / lumières sur le module
