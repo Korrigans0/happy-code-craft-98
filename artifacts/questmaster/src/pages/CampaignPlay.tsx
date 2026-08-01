@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import MacroBar from "@/components/campaign/macros/MacroBar";
+
 import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
@@ -299,7 +301,11 @@ const CampaignPlay = () => {
                     </div>
                   )}
                 </div>
+                <div className="px-2 pb-2">
+                  <MacroBar campaignId={id!} isGM={isGM} system={campaign.system} />
+                </div>
               </TabsContent>
+
               <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} isGM={isGM} />
               </TabsContent>
