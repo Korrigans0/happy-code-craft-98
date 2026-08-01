@@ -300,6 +300,65 @@ const Guide = () => {
             </Step>
           </Section>
 
+          <Section id="grille" icon={<RectangleHorizontal className="h-5 w-5" />} title="Grilles : carrée, hexagonale ou libre">
+            <Step n="1" title="Choisir le mode (MJ)">
+              Panneau <em>Grille</em> du tabletop : <strong>Carrée</strong>, <strong>Hexagonale</strong> ou <strong>Sans grille</strong>. Le réglage est enregistré <strong>scène par scène</strong>.
+            </Step>
+            <Step n="2" title="Hexagones">
+              Deux orientations : <strong>pointe en haut</strong> ou <strong>plat en haut</strong>. Le magnétisme aligne les tokens au centre des hexagones et les distances se comptent en hexagones parcourus.
+            </Step>
+            <Step n="3" title="Sans grille">
+              Mode libre : aucun magnétisme, les distances utilisent l'échelle définie en mètres/pieds par pixel. Idéal pour les plans d'ambiance et les scènes narratives.
+            </Step>
+            <Step n="4" title="Mesures & zones">
+              Les cônes, zones et règles s'adaptent automatiquement au mode actif et surlignent les cases ou hexagones réellement affectés.
+            </Step>
+          </Section>
+
+          <Section id="audio" icon={<MessageCircle className="h-5 w-5" />} title="Audio : ambiances & effets sonores">
+            <Step n="1" title="Bibliothèque (MJ)">
+              Onglet <em>Audio</em> des outils MJ : importe des fichiers <strong>MP3/OGG</strong> depuis ton appareil (50 Mo max par piste) ou ajoute une <strong>URL externe</strong>, y compris YouTube.
+            </Step>
+            <Step n="2" title="Diffusion synchronisée">
+              Lecture, pause, boucle et volume maître sont pilotés par le MJ et <strong>synchronisés en temps réel</strong> chez tous les joueurs.
+            </Step>
+            <Step n="3" title="Volume par joueur">
+              Chaque joueur règle son propre volume local depuis le bouton audio de la barre d'outils, sans affecter les autres.
+            </Step>
+            <Step n="4" title="Effets ponctuels">
+              Les pistes marquées <strong>SFX</strong> se déclenchent en une fois par-dessus l'ambiance en cours.
+            </Step>
+          </Section>
+
+          <Section id="pdf" icon={<BookOpen className="h-5 w-5" />} title="Documents PDF partagés">
+            <p>
+              Le MJ importe des PDF (plans, handouts, lettres) dans l'onglet <em>PDF</em> du tabletop et les ouvre en <strong>fenêtres flottantes</strong>, déplaçables et redimensionnables.
+            </p>
+            <p>
+              Les documents partagés s'ouvrent simultanément chez tous les joueurs. Le MJ peut en afficher plusieurs et les refermer à tout moment.
+            </p>
+          </Section>
+
+          <Section id="macros" icon={<Wand2 className="h-5 w-5" />} title="Macros personnalisables">
+            <Step n="1" title="Créer une macro">
+              Barre <em>Macros</em> sous le tabletop → <strong>Nouvelle</strong>. Donne un nom, une catégorie (Attaques, Sorts, Compétences, Défense, Général) et une couleur.
+            </Step>
+            <Step n="2" title="Actions enchaînées">
+              Une macro peut contenir plusieurs <strong>jets de dés</strong> (<code>1d20+5</code>, <code>2d6+3</code>…) et des blocs de <strong>texte</strong>. Attaque et dégâts s'affichent à la suite dans le même message.
+            </Step>
+            <Step n="3" title="Variables de fiche">
+              Utilise <Kbd>{"{FOR}"}</Kbd>, <Kbd>{"{DEX}"}</Kbd>, <Kbd>{"{NIV}"}</Kbd>, <Kbd>{"{MAIT}"}</Kbd>… Sous Glyphes, <Kbd>{"{DE:ESP}"}</Kbd> renvoie le dé correspondant au niveau d'aptitude. Les valeurs sont lues <strong>au moment du clic</strong>, jamais figées.
+            </Step>
+            <Step n="4" title="Organiser & partager">
+              Filtre par catégorie, réordonne par <strong>glisser-déposer</strong>, duplique ou supprime. Les macros marquées <strong>privées</strong> chuchotent le résultat au MJ ; le MJ peut créer des <strong>macros de table</strong> visibles par toute la campagne.
+            </Step>
+            <Step n="5" title="Macros de base par système">
+              Le bouton <em>Macros de base</em> installe un jeu de macros adaptées au système de la campagne (attaque, initiative/épreuve, sauvegarde), modifiables ensuite librement.
+            </Step>
+          </Section>
+
+
+
           <Section id="mj" icon={<Crown className="h-5 w-5" />} title="Astuces MJ">
             <ul className="space-y-1.5 ml-4 list-disc list-outside marker:text-amber-400/70">
               <li><strong>Brouillard de guerre</strong> : outil <em>Révéler</em> pour dévoiler progressivement la carte aux joueurs.</li>
