@@ -1464,6 +1464,7 @@ export type Database = {
           id: string
           image_url: string | null
           intelligence: number
+          is_public: boolean
           name: string
           power_level: string
           profile: string
@@ -1483,6 +1484,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           intelligence?: number
+          is_public?: boolean
           name: string
           power_level?: string
           profile?: string
@@ -1502,6 +1504,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           intelligence?: number
+          is_public?: boolean
           name?: string
           power_level?: string
           profile?: string
