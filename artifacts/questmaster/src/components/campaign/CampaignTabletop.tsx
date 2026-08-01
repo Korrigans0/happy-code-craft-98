@@ -416,6 +416,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const denied = (msg = "Action réservée au MJ") =>
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
 
+  // ── Audio partagé (ambiance + effets sonores) ──
+  const audio = useCampaignAudio(campaignId, isGM);
+
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
   const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus } = useTabletopSync({
