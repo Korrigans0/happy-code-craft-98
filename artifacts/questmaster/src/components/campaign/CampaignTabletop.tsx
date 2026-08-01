@@ -270,6 +270,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Grille (par scène) ──────────────────────────────────────
   const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
   const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  // Restaure la grille locale des campagnes sans scène enregistrée.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`vtt-grid-${campaignId}`);
+      if (raw) setGridConfig(normalizeGridConfig(JSON.parse(raw)));
+    } catch { /* ignore */ }
+  }, [campaignId]);
   /** Config effective : le raccourci « G » peut désactiver globalement le snap. */
   const grid = useMemo<GridConfig>(
     () => ({ ...gridConfig, snapEnabled: gridConfig.snapEnabled && snapToGrid }),
@@ -2782,6 +2789,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Scene management ──────────────────────────────────────
   // Applique une nouvelle configuration de grille : ré-accroche les jetons si
   // nécessaire, met à jour la scène active et persiste l'état.
+  // Hydrate la grille depuis la scène active reçue via la synchro temps réel.
+  const hydratedGridSceneRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeSceneId || hydratedGridSceneRef.current === activeSceneId) return;
+    const scene = scenes.find(s => s.id === activeSceneId);
+    if (!scene) return;
+    hydratedGridSceneRef.current = activeSceneId;
+    setGridConfig(normalizeGridConfig(scene.grid));
+  }, [activeSceneId, scenes]);
+
   const applyGridConfig = (next: GridConfig) => {
     if (!isGM) { denied(); return; }
     const typeChanged = next.type !== gridConfig.type
