@@ -55,6 +55,12 @@ import SheetRouter from "@/components/characters/sheets/SheetRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
+import {
+  GridConfig, DEFAULT_GRID_CONFIG, normalizeGridConfig, cellPixels,
+  snapTopLeft, drawGrid, distanceInCells, distanceInUnits, unitsToPixels,
+  strokeHexAt,
+} from "@/lib/vtt/grid";
+import GridSettingsPanel from "./vtt/GridSettingsPanel";
 
 // ── Constants ──────────────────────────────────────────────
 const GRID_SIZE = 40;
