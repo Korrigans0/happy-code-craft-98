@@ -266,6 +266,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   );
   const cellPx = useMemo(() => cellPixels(grid), [grid]);
 
+  /** Libellé d'une distance exprimée en cases / hexagones, selon l'unité choisie. */
+  const formatMeasure = useCallback((cells: number): string => {
+    const cellWord = grid.type === "hex"
+      ? `${Math.round(cells)} hex`
+      : `${cells.toFixed(1)} case${cells >= 2 ? "s" : ""}`;
+    const units = cells * grid.unitsPerCell;
+    if (grid.type === "none") {
+      // Mode libre : la valeur reçue est déjà convertie en unités réelles.
+      return `${cells.toFixed(1)} ${grid.unitLabel}`;
+    }
+    switch (measureUnit) {
+      case "ft":    return `${(units / 0.3048).toFixed(0)} ft (${cellWord})`;
+      case "cases": return cellWord;
+      case "km":    return `${(units / 1000).toFixed(3)} km (${cellWord})`;
+      case "m":
+      default:      return `${units.toFixed(1)} ${grid.unitLabel} (${cellWord})`;
+    }
+  }, [measureUnit, grid]);
+
+  /** Distance affichable entre deux points du monde (gère les 3 modes). */
+  const measureBetween = useCallback((a: { x: number; y: number }, b: { x: number; y: number }): string => {
+    if (grid.type === "none") return `${distanceInUnits(grid, a, b).toFixed(1)} ${grid.unitLabel}`;
+    return formatMeasure(distanceInCells(grid, a, b));
+  }, [grid, formatMeasure]);
+
+
+
   // ── Scenes ──
   const [scenes, setScenes] = useState<VTTScene[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
