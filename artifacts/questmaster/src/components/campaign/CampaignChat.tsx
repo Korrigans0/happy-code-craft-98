@@ -222,10 +222,30 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
   const [imageUrl, setImageUrl] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Temps réel : les nouveaux messages / jets arrivent par websocket.
+  // Le polling ne sert plus que de filet de sécurité si le socket tombe.
+  const chatRealtime = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:chat`,
+    enabled: !!campaignId,
+    subscriptions: useMemo(
+      () => [
+        {
+          table: "campaign_messages",
+          event: "*" as const,
+          filter: `campaign_id=eq.${campaignId}`,
+          onChange: () => {
+            queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] });
+          },
+        },
+      ],
+      [campaignId, queryClient]
+    ),
+  });
+
   const { data: messages = [] } = useQuery({
     queryKey: ["campaignMessages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    refetchInterval: 1200,
+    refetchInterval: chatRealtime === "connected" ? 30000 : 1200,
     refetchOnWindowFocus: true,
   });
 
