@@ -3302,7 +3302,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             isSaving={isSaving}
             isDirty={isDirty}
             lastSavedAt={lastSavedAt}
+            realtimeStatus={realtimeStatus}
           />
+
         </div>
       </div>
 
