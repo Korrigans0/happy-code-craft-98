@@ -771,9 +771,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   }, [campaignId]);
 
   // ── Helpers ──
-  const snapValue = useCallback(
-    (v: number) => snapToGrid ? Math.round(v / cellPx) * cellPx : v,
-    [snapToGrid]
+  // Accrochage du coin haut-gauche d'un jeton — délègue au module de grille
+  // (carrée, hexagonale ou aucune) : un seul chemin de code pour les 3 modes.
+  const snapPos = useCallback(
+    (x: number, y: number, size: number = cellPx) => snapTopLeft(grid, x, y, size),
+    [grid, cellPx]
   );
 
   const tokensOverlap = (
@@ -802,8 +804,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Token builders ──
   const buildCharacterToken = (char: any, worldX: number, worldY: number): TokenItem => {
-    const tx = snapValue(worldX - cellPx / 2);
-    const ty = snapValue(worldY - cellPx / 2);
+    const { x: tx, y: ty } = snapPos(worldX - cellPx / 2, worldY - cellPx / 2);
     const free = findFreePosition(tx, ty, cellPx);
     return {
       id: newId(), name: char.name, x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
@@ -845,8 +846,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const size = cellPx * su;
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - size / 2);
-    const wy = snapValue(cy - size / 2);
+    const { x: wx, y: wy } = snapPos(cx - size / 2, cy - size / 2, size);
     const free = findFreePosition(wx, wy, size);
     setTokens(prev => [...prev, {
       id: newId(), name: creature.name, x: free.x, y: free.y, size, sizeUnits: su,
@@ -861,8 +861,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - cellPx / 2);
-    const wy = snapValue(cy - cellPx / 2);
+    const { x: wx, y: wy } = snapPos(cx - cellPx / 2, cy - cellPx / 2);
     const free = findFreePosition(wx, wy, cellPx);
     setTokens(prev => [...prev, {
       id: newId(),
@@ -892,8 +891,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const size = cellPx * su;
     const cx = atX ?? ((-panOffset.x / zoom) + 200);
     const cy = atY ?? ((-panOffset.y / zoom) + 200);
-    const wx = snapValue(cx - size / 2);
-    const wy = snapValue(cy - size / 2);
+    const { x: wx, y: wy } = snapPos(cx - size / 2, cy - size / 2, size);
     const free = findFreePosition(wx, wy, size);
     const hpVal = (() => {
       const m = String(monster.hit_points ?? "10").match(/^(\d+)/);
@@ -923,8 +921,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const addToken = () => {
     if (!newTokenName.trim()) return;
     if (!perms.canAddToken) { denied(); return; }
-    const wx = snapValue((-panOffset.x / zoom) + 200);
-    const wy = snapValue((-panOffset.y / zoom) + 200);
+    const { x: wx, y: wy } = snapPos((-panOffset.x / zoom) + 200, (-panOffset.y / zoom) + 200);
     const free = findFreePosition(wx, wy, cellPx);
     setTokens(prev => [...prev, {
       id: newId(), name: newTokenName.trim(), x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
@@ -937,8 +934,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const addTokenAt = (wx: number, wy: number) => {
     if (!perms.canAddToken) { denied(); return; }
     const name = prompt("Nom du jeton :"); if (!name?.trim()) return;
-    const sx = snapValue(wx - cellPx / 2);
-    const sy = snapValue(wy - cellPx / 2);
+    const { x: sx, y: sy } = snapPos(wx - cellPx / 2, wy - cellPx / 2);
     const free = findFreePosition(sx, sy, cellPx);
     setTokens(prev => [...prev, {
       id: newId(), name: name.trim(), x: free.x, y: free.y, size: cellPx, sizeUnits: 1,
@@ -1005,7 +1001,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!perms.canAddToken) { denied("Seul le MJ peut coller un jeton"); return; }
     const baseX = wx !== undefined ? wx - src.size / 2 : src.x + cellPx;
     const baseY = wy !== undefined ? wy - src.size / 2 : src.y;
-    const free = findFreePosition(snapValue(baseX), snapValue(baseY), src.size);
+    const snapped = snapPos(baseX, baseY, src.size);
+    const free = findFreePosition(snapped.x, snapped.y, src.size);
     const copy: TokenItem = { ...src, id: newId(), x: free.x, y: free.y };
     setTokens(prev => [...prev, copy]);
     setSelectedTokenId(copy.id);
@@ -2261,7 +2258,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const t = e.touches[0];
         const w = toWorld(t.clientX, t.clientY);
         const rawX = w.x - tokenOffset.x, rawY = w.y - tokenOffset.y;
-        const sx = snapValue(rawX), sy = snapValue(rawY);
+        const { x: sx, y: sy } = snapPosRef.current(rawX, rawY, tokenSizeRef.current);
         setTokens(prev => prev.map(tok => {
           if (tok.id !== activeTokenId) return tok;
           if (collisionEnabled && prev.some(o => o.id !== activeTokenId && o.visible && tokensOverlap({ x: sx, y: sy, size: tok.size }, { x: o.x, y: o.y, size: o.size }))) return tok;
@@ -2715,7 +2712,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setTokens(prev => {
         const t = prev.find(x => x.id === id);
         if (!t) return prev;
-        const sx = snapValue(t.x), sy = snapValue(t.y);
+        const { x: sx, y: sy } = snapPos(t.x, t.y, t.size);
         let nx = sx, ny = sy;
         // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
         if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
