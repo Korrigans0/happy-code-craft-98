@@ -12,8 +12,10 @@ import {
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
   RotateCcw, PanelRight, MousePointerClick, ListPlus,
-  ArrowUp, ArrowDown, FileText, Upload, Loader2,
+  ArrowUp, ArrowDown, FileText, Upload, Loader2, Music,
 } from "lucide-react";
+import AudioTab from "./AudioTab";
+import type { useCampaignAudio } from "@/hooks/useCampaignAudio";
 import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,10 +68,12 @@ interface GMPanelProps {
   onRemoveConditionFromInitiative: (id: string, cond: string) => void;
   onNextTurn: () => void;
   onResetInitiative: () => void;
+  /** Instance partagée du hook audio (fournie par le plateau). */
+  audio?: ReturnType<typeof useCampaignAudio>;
   onClose: () => void;
 }
 
-type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf";
+type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf" | "audio";
 
 // Glyphes system utilise "Épreuve d'initiative" (jet de SOU) au lieu du concept classique.
 // On adapte uniquement le vocabulaire côté UI ; l'ordre de tour reste basé sur la valeur numérique.
@@ -80,6 +84,7 @@ const buildTabItems = (isGlyphes: boolean): { id: Tab; icon: React.ReactNode; la
   { id: "bestiary",   icon: <Skull className="h-4 w-4" />,         label: "Bestiaire" },
   { id: "notes",      icon: <BookOpen className="h-4 w-4" />,      label: "Notes" },
   { id: "pdf",        icon: <FileText className="h-4 w-4" />,      label: "PDF" },
+  { id: "audio",      icon: <Music className="h-4 w-4" />,         label: "Audio" },
 ];
 
 function parseRollCommand(input: string): { formula: string; label?: string } | null {
@@ -98,7 +103,7 @@ export default function GMPanel({
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
-  onNextTurn, onResetInitiative, onClose,
+  onNextTurn, onResetInitiative, audio, onClose,
 }: GMPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -217,7 +222,7 @@ export default function GMPanel({
 
       {/* Tab bar */}
       <div className="flex border-b border-border">
-        {TAB_ITEMS.filter(t => t.id !== "pdf" || isGM).map(tab => (
+        {TAB_ITEMS.filter(t => (t.id !== "pdf" && t.id !== "audio") || isGM).map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -829,6 +834,9 @@ export default function GMPanel({
         {activeTab === "pdf" && isGM && (
           <PdfTab campaignId={campaignId} currentUserId={currentUserId} />
         )}
+
+        {/* ── AUDIO ────────────────────────────────────────── */}
+        {activeTab === "audio" && isGM && audio && <AudioTab audio={audio} />}
       </div>
     </div>
   );
