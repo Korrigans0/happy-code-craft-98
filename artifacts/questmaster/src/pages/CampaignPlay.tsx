@@ -299,7 +299,11 @@ const CampaignPlay = () => {
                     </div>
                   )}
                 </div>
+                <div className="px-2 pb-2">
+                  <MacroBar campaignId={id!} isGM={isGM} system={campaign.system} />
+                </div>
               </TabsContent>
+
               <TabsContent value="chat" className="m-0 h-full">
                 <CampaignChat campaignId={id!} isGM={isGM} />
               </TabsContent>
