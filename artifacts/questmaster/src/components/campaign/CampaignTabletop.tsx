@@ -3164,6 +3164,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     </div>
                   </div>
                 ))}
+                <Separator />
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setGridSettingsOpen(v => !v)}
+                    className="flex w-full items-center justify-between text-sm font-semibold"
+                  >
+                    <span>Grille de la scène</span>
+                    <span className="text-[10px] uppercase text-muted-foreground">
+                      {gridConfig.type === "square" ? "Carrée" : gridConfig.type === "hex" ? "Hexagonale" : "Libre"}
+                    </span>
+                  </button>
+                  {gridSettingsOpen && (
+                    <GridSettingsPanel
+                      config={gridConfig}
+                      onChange={applyGridConfig}
+                      onTypeChange={applyGridConfig}
+                      disabled={!isGM}
+                    />
+                  )}
+                </div>
                 {activeSceneId && (
                   <>
                     <Separator />
