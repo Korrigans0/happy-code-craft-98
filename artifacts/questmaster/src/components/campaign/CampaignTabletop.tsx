@@ -97,13 +97,12 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// ── Helper: draw a cone ────────────────────────────────────
+// ── Helper: draw a cone (adapté aux 3 modes de grille) ─────
 function renderCone(
   ctx: CanvasRenderingContext2D,
   action: DrawAction,
   zoom: number,
-  GRID: number,
-  MPQ: number,
+  grid: GridConfig,
 ) {
   if (action.points.length < 2) return;
   const start = action.points[0];
@@ -124,11 +123,20 @@ function renderCone(
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  // Distance label
-  const squares = Math.round(length / GRID);
+  // Surbrillance des hexagones couverts (mode hexagonal uniquement)
+  if (grid.type === "hex") {
+    ctx.strokeStyle = action.color + "88";
+    ctx.lineWidth = 1 / zoom;
+    for (const c of hexesInRadius(grid, start, length)) {
+      const a = Math.atan2(c.y - start.y, c.x - start.x);
+      let diff = Math.abs(a - angle);
+      if (diff > Math.PI) diff = 2 * Math.PI - diff;
+      if (diff <= spread / 2) strokeHexAt(ctx, grid, c.x, c.y);
+    }
+  }
   ctx.fillStyle = action.color;
   ctx.font = `bold ${11 / zoom}px sans-serif`;
-  ctx.fillText(`${squares * MPQ}m`, end.x + 6 / zoom, end.y);
+  ctx.fillText(formatDistance(grid, length), end.x + 6 / zoom, end.y);
   ctx.restore();
 }
 
@@ -136,8 +144,7 @@ function renderZone(
   ctx: CanvasRenderingContext2D,
   action: DrawAction,
   zoom: number,
-  GRID: number,
-  MPQ: number,
+  grid: GridConfig,
 ) {
   if (action.points.length < 2) return;
   const [center, edge] = action.points;
@@ -154,11 +161,15 @@ function renderZone(
   ctx.fill();
   ctx.stroke();
   ctx.setLineDash([]);
-  const squares = Math.round(radius / GRID);
+  if (grid.type === "hex") {
+    ctx.strokeStyle = action.color + "88";
+    ctx.lineWidth = 1 / zoom;
+    for (const c of hexesInRadius(grid, center, radius)) strokeHexAt(ctx, grid, c.x, c.y);
+  }
   ctx.fillStyle = action.color;
   ctx.font = `bold ${11 / zoom}px sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(`r=${squares * MPQ}m`, center.x, center.y - 4 / zoom);
+  ctx.fillText(`r=${formatDistance(grid, radius)}`, center.x, center.y - 4 / zoom);
   ctx.textAlign = "start";
   ctx.restore();
 }
