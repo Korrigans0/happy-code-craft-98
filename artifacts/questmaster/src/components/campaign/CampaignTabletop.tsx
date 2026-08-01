@@ -45,6 +45,8 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
+import CampaignAudioPlayer from "@/components/campaign/vtt/CampaignAudioPlayer";
+import { useCampaignAudio } from "@/hooks/useCampaignAudio";
 import { SharedPdfPopups, type SharedDocument } from "@/components/campaign/vtt/SharedPdfPopups";
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { FileText } from "lucide-react";
@@ -413,6 +415,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const perms = usePermissions({ isGM, userId: user?.id, ownCharacterId });
   const denied = (msg = "Action réservée au MJ") =>
     toast({ title: "Permission refusée", description: msg, variant: "destructive" });
+
+  // ── Audio partagé (ambiance + effets sonores) ──
+  const audio = useCampaignAudio(campaignId, isGM);
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
@@ -3296,7 +3301,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         </Button>
 
         {/* Connection / sync status — discret en bout de toolbar */}
-        <div className="ml-auto flex items-center pr-1">
+        <div className="ml-auto flex items-center gap-2 pr-1">
+          <CampaignAudioPlayer campaignId={campaignId} isGM={isGM} audio={audio} />
           <ConnectionStatus
             status={connectionStatus}
             isSaving={isSaving}
@@ -3921,6 +3927,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onAddConditionToInitiative={addConditionToInitiative}
             onRemoveConditionFromInitiative={removeConditionFromInitiative}
             onNextTurn={nextTurn}
+            audio={audio}
             onResetInitiative={resetInitiative}
             onClose={() => setGmPanelOpen(false)}
           />
