@@ -115,6 +115,110 @@ export type Database = {
           },
         ]
       }
+      campaign_audio_state: {
+        Row: {
+          campaign_id: string
+          is_playing: boolean
+          loop: boolean
+          master_volume: number
+          sfx_event: Json | null
+          started_at: string | null
+          track_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          is_playing?: boolean
+          loop?: boolean
+          master_volume?: number
+          sfx_event?: Json | null
+          started_at?: string | null
+          track_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          is_playing?: boolean
+          loop?: boolean
+          master_volume?: number
+          sfx_event?: Json | null
+          started_at?: string | null
+          track_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_audio_state_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_audio_state_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_audio_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_audio_tracks: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          external_url: string | null
+          file_path: string | null
+          id: string
+          kind: string
+          loop_default: boolean
+          name: string
+          size_bytes: number | null
+          source: string
+          updated_at: string
+          volume_default: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          kind?: string
+          loop_default?: boolean
+          name: string
+          size_bytes?: number | null
+          source?: string
+          updated_at?: string
+          volume_default?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          kind?: string
+          loop_default?: boolean
+          name?: string
+          size_bytes?: number | null
+          source?: string
+          updated_at?: string
+          volume_default?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_audio_tracks_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_audit_log: {
         Row: {
           action: string
