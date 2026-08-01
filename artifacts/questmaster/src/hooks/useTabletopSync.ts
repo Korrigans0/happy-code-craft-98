@@ -351,5 +351,54 @@ export function useTabletopSync({
     };
   }, [campaignId, userId, pollMs, flush, warnOnUnload]);
 
-  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus };
+  // ── TEMPS RÉEL (websocket) ────────────────────────────────
+  // On écoute la ligne `tabletop_state` de CETTE campagne uniquement.
+  // Le payload contient la ligne complète (REPLICA IDENTITY FULL), donc
+  // aucun re-fetch n'est nécessaire : on applique directement les champs
+  // qui ont changé.
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: "tabletop_state",
+        event: "*" as const,
+        filter: `campaign_id=eq.${campaignId}`,
+        onChange: (payload: { new?: Record<string, unknown> | null }) => {
+          const row = payload.new;
+          if (!row || !initializedRef.current) return;
+          // Écho de nos propres écritures : déjà appliqué localement.
+          if (row.updated_by === userId) return;
+          // Des modifications locales non sauvegardées sont en attente :
+          // on laisse le flush suivant primer pour ne pas les écraser.
+          if (dirtyRef.current) return;
+
+          const updatedAt = (row.updated_at as string | undefined) ?? null;
+          if (updatedAt && updatedAt === lastUpdatedAtRef.current) return;
+          lastUpdatedAtRef.current = updatedAt;
+
+          const normalized = normalize(row);
+          // Ne remonter que les sections réellement modifiées.
+          const changed = new Set<TabletopStateKey>();
+          for (const key of Object.keys(normalized) as TabletopStateKey[]) {
+            if (!isEqual(normalized[key], lastSavedRef.current[key])) changed.add(key);
+          }
+          lastSavedRef.current = normalized;
+          if (changed.size === 0) return;
+          onStateReceivedRef.current(normalized, changed);
+        },
+      },
+    ],
+    [campaignId, userId]
+  );
+
+  const realtimeStatus = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:tabletop`,
+    subscriptions,
+    enabled: !!campaignId,
+  });
+
+  useEffect(() => {
+    realtimeOkRef.current = realtimeStatus === "connected";
+  }, [realtimeStatus]);
+
+  return { saveState, flushNow, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus };
 }
