@@ -58,7 +58,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   GridConfig, DEFAULT_GRID_CONFIG, normalizeGridConfig, cellPixels,
   snapTopLeft, drawGrid, distanceInCells, distanceInUnits, unitsToPixels,
-  strokeHexAt,
+  strokeHexAt, hexesInRadius, formatDistance,
 } from "@/lib/vtt/grid";
 import GridSettingsPanel from "./vtt/GridSettingsPanel";
 
