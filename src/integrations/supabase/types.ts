@@ -956,6 +956,75 @@ export type Database = {
         }
         Relationships: []
       }
+      macros: {
+        Row: {
+          actions: Json
+          campaign_id: string | null
+          category: string
+          character_id: string | null
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_private_roll: boolean
+          is_shared: boolean
+          name: string
+          owner_user_id: string
+          sort_order: number
+          system: string
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          campaign_id?: string | null
+          category?: string
+          character_id?: string | null
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_private_roll?: boolean
+          is_shared?: boolean
+          name: string
+          owner_user_id: string
+          sort_order?: number
+          system?: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          campaign_id?: string | null
+          category?: string
+          character_id?: string | null
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_private_roll?: boolean
+          is_shared?: boolean
+          name?: string
+          owner_user_id?: string
+          sort_order?: number
+          system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "macros_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "macros_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       magic_items: {
         Row: {
           attunement: boolean
