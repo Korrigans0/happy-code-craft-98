@@ -231,10 +231,34 @@ const CampaignCombat = ({ campaignId, isGM }: CampaignCombatProps) => {
     return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Temps réel : rencontre + participants (tour actif, PV, conditions).
+  const combatRealtime = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:combat`,
+    enabled: !!campaignId,
+    subscriptions: useMemo(
+      () => [
+        {
+          table: "combat_encounters",
+          event: "*" as const,
+          filter: `campaign_id=eq.${campaignId}`,
+          onChange: () => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] }),
+        },
+        {
+          // Les participants n'ont pas de campaign_id : RLS limite déjà
+          // la diffusion aux rencontres accessibles à l'utilisateur.
+          table: "combat_participants",
+          event: "*" as const,
+          onChange: () => queryClient.invalidateQueries({ queryKey: ["combat", campaignId] }),
+        },
+      ],
+      [campaignId, queryClient]
+    ),
+  });
+
   const { data: combatData, isLoading } = useQuery<Encounter | null>({
     queryKey: ["combat", campaignId],
     queryFn: () => campaignsApi.getCombat(campaignId),
-    refetchInterval: 3000,
+    refetchInterval: combatRealtime === "connected" ? 30000 : 3000,
     refetchIntervalInBackground: true,
   });
 
