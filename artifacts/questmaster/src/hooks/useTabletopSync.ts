@@ -242,9 +242,12 @@ export function useTabletopSync({
 
     const scheduleNext = () => {
       if (cancelled) return;
-      // Exponential backoff on consecutive errors: 3s → 6s → 12s → 24s → 30s max
+      // Exponential backoff on consecutive errors: 3s → 6s → 12s → 24s → 30s max.
+      // Quand le websocket temps réel est actif, le polling devient un simple
+      // filet de sécurité (30s) au lieu d'une boucle serrée.
       const errs = consecutiveErrorsRef.current;
-      const delay = errs === 0 ? pollMs : Math.min(pollMs * 2 ** errs, 30_000);
+      const base = realtimeOkRef.current ? Math.max(pollMs, 30_000) : pollMs;
+      const delay = errs === 0 ? base : Math.min(base * 2 ** errs, 60_000);
       pollTimer = setTimeout(() => void pull(false), delay);
     };
 
