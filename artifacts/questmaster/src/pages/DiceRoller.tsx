@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
 
 const DICE_SEO = (
@@ -80,7 +81,8 @@ const DiceRoller = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col">
+      <PageAmbiance />
       {DICE_SEO}
       <Header />
       <main className="flex-1 py-12">

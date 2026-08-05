@@ -8,6 +8,7 @@ import SEO from "@/components/SEO";
 import MagicParticles from "@/components/fantasy/MagicParticles";
 import MistOverlay from "@/components/fantasy/MistOverlay";
 import FloatingRunes from "@/components/fantasy/FloatingRunes";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 interface Plan {
   id: string;
@@ -112,7 +113,8 @@ const Subscriptions = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col">
+      <PageAmbiance />
       <SEO
         title="Abonnements — Aetheria VTT premium"
         description="Découvrez les offres Aetheria VTT : Gratuit, Premium PJ, Premium MJ et Premium Mixte. Plus de campagnes, plus de stockage, plus de magie."
@@ -121,13 +123,6 @@ const Subscriptions = () => {
       <Header />
 
       <main className="relative flex-1 overflow-hidden">
-        {/* Ambiance fond */}
-        <div className="pointer-events-none absolute inset-0">
-          <MistOverlay />
-          <MagicParticles density={0.6} />
-          <FloatingRunes />
-        </div>
-
         <section className="container relative mx-auto px-4 py-16 md:px-6 md:py-24">
           {/* Header */}
           <div className="mb-14 text-center">

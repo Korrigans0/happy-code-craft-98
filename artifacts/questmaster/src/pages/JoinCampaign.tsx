@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sword, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 const JoinCampaign = () => {
   const { code } = useParams<{ code: string }>();
@@ -43,7 +44,8 @@ const JoinCampaign = () => {
   }, [user, loading, code]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-dark px-4">
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-4">
+      <PageAmbiance noSides />
       {/* Logo */}
       <img
         src="/aetheria-logo.png"

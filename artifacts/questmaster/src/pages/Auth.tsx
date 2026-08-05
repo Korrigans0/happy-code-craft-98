@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
+import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,7 +87,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-dark px-4">
+    <div className="relative flex min-h-screen items-center justify-center px-4">
+      <PageAmbiance noSides />
       <Card className="w-full max-w-md p-6 space-y-4 border-amber-500/20">
         <h1 className="text-2xl font-bold text-center text-amber-100 font-cinzel">
           {mode === "signin" ? "Connexion à Aetheria" : "Rejoindre Aetheria"}
