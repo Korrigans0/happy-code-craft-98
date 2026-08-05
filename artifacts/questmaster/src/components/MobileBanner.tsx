@@ -52,7 +52,7 @@ const MobileBanner = () => {
           className="w-full font-bold"
           style={{
             background: "linear-gradient(135deg, hsl(43,75%,50%) 0%, hsl(35,85%,40%) 100%)",
-            color: "hsl(215,70%,8%)",
+            color: "hsl(228,70%,8%)",
           }}
           onClick={() => {
             try { sessionStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }

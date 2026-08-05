@@ -17,8 +17,8 @@ const Branch = ({ side, hue }: { side: "left" | "right"; hue: number }) => {
           <stop offset="100%" stopColor={`hsl(${hue}, 90%, 50%)`} stopOpacity="0" />
         </radialGradient>
         <linearGradient id={`branch-${side}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="hsl(215, 30%, 15%)" />
-          <stop offset="100%" stopColor="hsl(215, 25%, 8%)" />
+          <stop offset="0%" stopColor="hsl(228, 30%, 15%)" />
+          <stop offset="100%" stopColor="hsl(228, 25%, 8%)" />
         </linearGradient>
       </defs>
 
@@ -31,9 +31,9 @@ const Branch = ({ side, hue }: { side: "left" | "right"; hue: number }) => {
         strokeLinecap="round"
       />
       {/* Petites branches */}
-      <path d="M 35,120 Q 70,100 95,130" stroke="hsl(215, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M 45,280 Q 80,260 110,300" stroke="hsl(215, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M 40,440 Q 80,420 105,450" stroke="hsl(215, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M 35,120 Q 70,100 95,130" stroke="hsl(228, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M 45,280 Q 80,260 110,300" stroke="hsl(228, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M 40,440 Q 80,420 105,450" stroke="hsl(228, 28%, 14%)" strokeWidth="3" fill="none" strokeLinecap="round" />
 
       {/* Orchidées lumineuses */}
       {[

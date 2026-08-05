@@ -84,7 +84,7 @@ export default function GlyphesCompendium() {
   const [tab, setTab] = useState<TabId>("regles");
 
   return (
-    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
+    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(228,70%,8%)]">
       <SEO
         title="Compendium Glyphes — Races, Origines, Archétypes | Aetheria VTT"
         description="Compendium officiel du système Glyphes : races jouables, origines (factions et territoires), archétypes de personnage."
@@ -138,7 +138,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Caractéristiques</h2>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {CARACTERISTIQUES.map((c) => (
-                    <article key={c.key} className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5">
+                    <article key={c.key} className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-5">
                       <div className="flex items-baseline gap-3">
                         <span className="font-mono text-amber-400 text-lg">{c.key}</span>
                         <h3 className="font-display text-lg text-amber-200">{c.label}</h3>
@@ -153,7 +153,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Sens</h2>
                 <div className="grid gap-3 md:grid-cols-2">
                   {SENS.map((s) => (
-                    <article key={s.sens} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                    <article key={s.sens} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4">
                       <h3 className="text-sm font-semibold text-amber-200">{s.sens}</h3>
                       <p className="mt-1 text-xs text-slate-400 font-mono">{s.formule}</p>
                     </article>
@@ -164,7 +164,7 @@ export default function GlyphesCompendium() {
 
               <div>
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Difficultés</h2>
-                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)]">
                   <table className="w-full text-sm">
                     <thead className="bg-amber-500/10 text-amber-300">
                       <tr>
@@ -189,7 +189,7 @@ export default function GlyphesCompendium() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <h2 className="font-display text-xl text-amber-300 mb-3">Rangs</h2>
-                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-4 space-y-2">
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-4 space-y-2">
                     {RANGS.map((r) => (
                       <div key={r.rang} className="text-sm text-slate-300">
                         <span className="font-mono text-amber-200 mr-2">Rang {r.rang}</span>
@@ -200,7 +200,7 @@ export default function GlyphesCompendium() {
                 </div>
                 <div>
                   <h2 className="font-display text-xl text-amber-300 mb-3">Richesses</h2>
-                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-4 space-y-2">
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-4 space-y-2">
                     {RICHESSES.map((r) => (
                       <div key={r.piece} className="text-sm text-slate-300 flex justify-between gap-3">
                         <span className="font-semibold text-amber-200">{r.piece}</span>
@@ -215,7 +215,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Actions héroïques</h2>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {ACTIONS_HEROIQUES.map((a) => (
-                    <article key={a.nom} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                    <article key={a.nom} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4">
                       <div className="flex items-baseline justify-between gap-2">
                         <h3 className="text-sm font-semibold text-amber-200">{a.nom}</h3>
                         <span className="shrink-0 text-xs font-mono text-amber-400/80">{a.cout} pt</span>
@@ -230,7 +230,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">États</h2>
                 <div className="grid gap-2 md:grid-cols-2">
                   {ETATS.map((e) => (
-                    <div key={e.etat} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-3">
+                    <div key={e.etat} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-3">
                       <h3 className="text-sm font-semibold text-amber-200">{e.etat}</h3>
                       <p className="mt-1 text-xs text-slate-400 leading-relaxed">{e.effet}</p>
                     </div>
@@ -240,7 +240,7 @@ export default function GlyphesCompendium() {
 
               <div>
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Table d'immersion</h2>
-                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)]">
                   <table className="w-full text-sm">
                     <thead className="bg-amber-500/10 text-amber-300">
                       <tr>
@@ -271,7 +271,7 @@ export default function GlyphesCompendium() {
               {RACES.map((r) => (
                 <article
                   key={r.nom}
-                  className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5 shadow-lg"
+                  className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-5 shadow-lg"
                 >
                   <h3 className="font-display text-xl text-amber-300">{r.nom}</h3>
                   <p className="mt-2 text-sm text-slate-400">{r.desc}</p>
@@ -295,7 +295,7 @@ export default function GlyphesCompendium() {
                   {FACTIONS.map((f) => (
                     <article
                       key={f.nom}
-                      className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5"
+                      className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-5"
                     >
                       <h3 className="font-display text-lg text-amber-200">{f.nom}</h3>
                       <p className="mt-2 text-sm text-slate-400 leading-relaxed">{f.desc}</p>
@@ -310,7 +310,7 @@ export default function GlyphesCompendium() {
                   {ATLAS.map((a) => (
                     <article
                       key={a.lieu}
-                      className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4"
+                      className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4"
                     >
                       <h3 className="font-semibold text-amber-200">{a.lieu}</h3>
                       <p className="mt-1 text-xs text-slate-400 leading-relaxed">{a.desc}</p>
@@ -331,7 +331,7 @@ export default function GlyphesCompendium() {
                 {ARCHETYPES.map((a) => (
                   <article
                     key={a.nom}
-                    className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5"
+                    className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-5"
                   >
                     <div className="flex items-baseline justify-between">
                       <h3 className="font-display text-xl text-amber-300">{a.nom}</h3>
@@ -375,7 +375,7 @@ export default function GlyphesCompendium() {
                       <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
                       <div className="grid gap-3 md:grid-cols-2">
                         {cat.items.map((it) => (
-                          <article key={it.nom} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                          <article key={it.nom} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4">
                             <h4 className="text-sm font-semibold text-amber-200">{it.nom}</h4>
                             <p className="mt-1 text-xs text-slate-400 leading-relaxed">{it.desc}</p>
                           </article>
@@ -396,7 +396,7 @@ export default function GlyphesCompendium() {
                   {APTITUDES.map((cat) => (
                     <div key={cat.cat}>
                       <h3 className="font-display text-lg text-amber-200 mb-2">{cat.cat}</h3>
-                      <div className="overflow-x-auto rounded-lg border border-white/10 bg-[hsl(215,68%,9%)]">
+                      <div className="overflow-x-auto rounded-lg border border-white/10 bg-[hsl(228,68%,9%)]">
                         <table className="w-full text-sm">
                           <thead className="bg-amber-500/5 text-amber-300/80">
                             <tr>
@@ -431,7 +431,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Armes</h2>
                 <div className="grid gap-3 md:grid-cols-2">
                   {ARMES_CATEGORIES.map((a) => (
-                    <article key={a.cat} className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] p-5">
+                    <article key={a.cat} className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] p-5">
                       <h3 className="font-display text-lg text-amber-200">{a.cat}</h3>
                       <p className="mt-1 text-sm text-slate-400">{a.desc}</p>
                       <p className="mt-2 text-xs text-slate-500"><span className="text-amber-400/70">Exemples :</span> {a.exemples}</p>
@@ -442,7 +442,7 @@ export default function GlyphesCompendium() {
 
               <div>
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Armures</h2>
-                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)]">
                   <table className="w-full text-sm">
                     <thead className="bg-amber-500/10 text-amber-300">
                       <tr>
@@ -470,7 +470,7 @@ export default function GlyphesCompendium() {
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Objets de qualité</h2>
                 <div className="grid gap-3 md:grid-cols-2">
                   {OBJETS_QUALITE.map((o) => (
-                    <article key={o.type} className="rounded-lg border border-white/10 bg-[hsl(215,68%,9%)] p-4">
+                    <article key={o.type} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4">
                       <div className="flex items-baseline justify-between gap-3">
                         <h3 className="text-sm font-semibold text-amber-200">{o.type}</h3>
                         <span className="shrink-0 text-xs font-mono text-amber-400/80">{o.prix}</span>
@@ -503,7 +503,7 @@ export default function GlyphesCompendium() {
 
               <div>
                 <h2 className="font-display text-2xl text-amber-300 mb-4">Fabrication d'un sort</h2>
-                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)]">
+                <div className="overflow-x-auto rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)]">
                   <table className="w-full text-sm">
                     <thead className="bg-amber-500/10 text-amber-300">
                       <tr>
@@ -530,7 +530,7 @@ export default function GlyphesCompendium() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <h2 className="font-display text-xl text-amber-300 mb-3">Magnitude des dégâts</h2>
-                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] overflow-hidden">
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-amber-500/10 text-amber-300">
                         <tr>
@@ -552,7 +552,7 @@ export default function GlyphesCompendium() {
 
                 <div>
                   <h2 className="font-display text-xl text-amber-300 mb-3">Tempête spirituelle</h2>
-                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(215,68%,10%)] overflow-hidden">
+                  <div className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-amber-500/10 text-amber-300">
                         <tr>

@@ -39,7 +39,7 @@ const ERAS = [
 
 export default function GlyphesHub() {
   return (
-    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
+    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(228,70%,8%)]">
       <SEO
         title="Glyphes — Système JDR | Aetheria VTT"
         description="Glyphes : système modulaire dark fantasy en trois époques. Nouvel Empire (médiéval), Expédition et Odyssée."
@@ -73,7 +73,7 @@ export default function GlyphesHub() {
               const Icon = era.icon;
               const card = (
                 <div
-                  className={`group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(215,60%,12%)] to-[hsl(215,68%,8%)] p-6 shadow-card transition-all duration-300 ${
+                  className={`group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-6 shadow-card transition-all duration-300 ${
                     era.available ? "hover:-translate-y-1 hover:shadow-gold hover:border-amber-400/60" : "opacity-80"
                   }`}
                 >

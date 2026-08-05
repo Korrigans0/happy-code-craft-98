@@ -66,6 +66,7 @@ export default {
       },
       fontFamily: {
         display: ["Cinzel", "serif"],
+        title: ["Cinzel Decorative", "Cinzel", "serif"],
         body: ["Lora", "serif"],
         sans: ["Lora", "serif"],
       },

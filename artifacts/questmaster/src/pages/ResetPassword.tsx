@@ -67,7 +67,7 @@ const ResetPassword = () => {
 
       <div className="w-full max-w-sm rounded-2xl p-8"
         style={{
-          background: "hsl(215,60%,11%)",
+          background: "hsl(228,60%,11%)",
           border: "1px solid hsl(43,75%,50%,0.2)",
           boxShadow: "0 20px 60px hsl(0,0%,0%,0.6)",
         }}>
@@ -133,7 +133,7 @@ const ResetPassword = () => {
               className="w-full font-bold"
               style={{
                 background: "linear-gradient(135deg, hsl(43,75%,50%) 0%, hsl(35,85%,40%) 100%)",
-                color: "hsl(215,70%,8%)",
+                color: "hsl(228,70%,8%)",
               }}
               onClick={handleSubmit}
               disabled={loading || password.length < 8 || password !== confirm}

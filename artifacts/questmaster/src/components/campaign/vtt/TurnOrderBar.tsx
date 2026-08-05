@@ -222,7 +222,7 @@ export default function TurnOrderBar({
     <div
       className="relative overflow-hidden rounded-xl border"
       style={{
-        background: "linear-gradient(180deg, hsl(215,68%,10%) 0%, hsl(215,65%,8%) 100%)",
+        background: "linear-gradient(180deg, hsl(228,68%,10%) 0%, hsl(228,65%,8%) 100%)",
         borderColor: "hsl(43,75%,50%,0.25)",
         boxShadow: "0 4px 24px hsl(0,0%,0%,0.5), inset 0 1px 0 hsl(43,75%,50%,0.1)",
       }}

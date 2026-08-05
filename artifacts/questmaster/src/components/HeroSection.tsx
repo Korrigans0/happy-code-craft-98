@@ -34,14 +34,14 @@ const HeroSection = () => {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at center, hsl(215, 70%, 6%, 0.35) 0%, hsl(215, 75%, 5%, 0.75) 70%, hsl(215, 80%, 4%, 0.95) 100%)",
+              "radial-gradient(ellipse at center, hsl(228, 70%, 6%, 0.35) 0%, hsl(228, 75%, 5%, 0.75) 70%, hsl(228, 80%, 4%, 0.95) 100%)",
           }}
         />
         <div
           className="absolute inset-x-0 bottom-0 h-40"
           style={{
             background:
-              "linear-gradient(to bottom, transparent, hsl(215, 70%, 8%))",
+              "linear-gradient(to bottom, transparent, hsl(228, 70%, 8%))",
           }}
         />
       </div>
@@ -72,7 +72,7 @@ const HeroSection = () => {
         </div>
 
         {/* Titre */}
-        <h1 className="font-display text-5xl font-bold tracking-wide text-gradient-gold md:text-7xl lg:text-8xl">
+        <h1 className="font-title text-5xl font-bold tracking-wide text-gradient-gold md:text-7xl lg:text-8xl">
           AETHERIA
         </h1>
         <p
@@ -98,7 +98,7 @@ const HeroSection = () => {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             {user ? (
               <>
-                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(215,70%,8%)" }}>
+                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(228,70%,8%)" }}>
                   <Link to="/campaigns">
                     <Sword className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
                     Créer mon aventure
@@ -113,7 +113,7 @@ const HeroSection = () => {
               </>
             ) : (
               <>
-                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(215,70%,8%)" }}>
+                <Button asChild size="lg" className="shadow-gold group font-bold" style={{ background: "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)", color: "hsl(228,70%,8%)" }}>
                   <Link to="/sign-up">
                     <Sparkles className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
                     Créer mon aventure
@@ -138,7 +138,7 @@ const HeroSection = () => {
                 className="flex h-12 w-12 items-center justify-center rounded-full border md:h-14 md:w-14"
                 style={{
                   borderColor: `hsl(${b.hue}, 75%, 55%, 0.4)`,
-                  background: `radial-gradient(circle, hsl(${b.hue}, 70%, 30%, 0.35) 0%, hsl(215, 70%, 10%, 0.6) 100%)`,
+                  background: `radial-gradient(circle, hsl(${b.hue}, 70%, 30%, 0.35) 0%, hsl(228, 70%, 10%, 0.6) 100%)`,
                   boxShadow: `0 0 18px hsl(${b.hue}, 80%, 55%, 0.25), inset 0 0 12px hsl(${b.hue}, 80%, 55%, 0.1)`,
                 }}
               >

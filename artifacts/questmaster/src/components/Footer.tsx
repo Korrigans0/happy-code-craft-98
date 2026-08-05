@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const Footer = forwardRef<HTMLElement>((props, ref) => {
   return (
-    <footer ref={ref} className="border-t py-8" style={{ borderColor: "hsl(43,75%,50%,0.10)", background: "hsl(215,70%,7%)" }} {...props}>
+    <footer ref={ref} className="border-t py-8" style={{ borderColor: "hsl(43,75%,50%,0.10)", background: "hsl(228,70%,7%)" }} {...props}>
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
           <div className="flex items-center gap-3">

@@ -157,7 +157,7 @@ const Subscriptions = () => {
                     ? "hsl(43, 80%, 55%, 0.55)"
                     : `hsl(${p.hue}, 75%, 55%, 0.25)`,
                   background:
-                    "linear-gradient(160deg, hsl(215, 60%, 12%, 0.85) 0%, hsl(230, 65%, 9%, 0.95) 100%)",
+                    "linear-gradient(160deg, hsl(228, 60%, 12%, 0.85) 0%, hsl(230, 65%, 9%, 0.95) 100%)",
                   boxShadow: p.highlight
                     ? "0 18px 60px hsl(0,0%,0%,0.65), 0 0 40px hsl(43, 80%, 55%, 0.25)"
                     : "0 8px 32px hsl(0,0%,0%,0.5)",
@@ -168,7 +168,7 @@ const Subscriptions = () => {
                     className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-md px-3 py-1 font-display text-[10px] font-bold uppercase tracking-widest"
                     style={{
                       background: "linear-gradient(135deg, hsl(43,80%,55%), hsl(35,90%,45%))",
-                      color: "hsl(215,70%,8%)",
+                      color: "hsl(228,70%,8%)",
                     }}
                   >
                     <Star className="mr-1 inline h-3 w-3" />
@@ -242,11 +242,11 @@ const Subscriptions = () => {
                           ? {
                               background:
                                 "linear-gradient(135deg, hsl(43,80%,55%) 0%, hsl(35,90%,45%) 100%)",
-                              color: "hsl(215,70%,8%)",
+                              color: "hsl(228,70%,8%)",
                             }
                           : {
                               background: `linear-gradient(135deg, hsl(${p.hue}, 75%, 50%) 0%, hsl(${p.hue}, 70%, 35%) 100%)`,
-                              color: "hsl(215,70%,8%)",
+                              color: "hsl(228,70%,8%)",
                             }
                       }
                     >

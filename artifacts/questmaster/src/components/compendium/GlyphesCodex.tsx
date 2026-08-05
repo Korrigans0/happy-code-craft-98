@@ -17,7 +17,7 @@ import {
 } from "@/pages/systems/glyphes/data";
 
 const Card = ({ title, children }: { title?: string; children: React.ReactNode }) => (
-  <div className="rounded-xl border border-amber-500/20 bg-[hsl(215,60%,11%)]/60 p-4">
+  <div className="rounded-xl border border-amber-500/20 bg-[hsl(228,60%,11%)]/60 p-4">
     {title && <h3 className="mb-2 font-display text-base font-semibold text-amber-300">{title}</h3>}
     <div className="text-sm leading-relaxed text-slate-300">{children}</div>
   </div>
@@ -47,7 +47,7 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 const ComingSoonEra = ({
   icon: Icon, title, subtitle, desc,
 }: { icon: typeof Hourglass; title: string; subtitle: string; desc: string }) => (
-  <div className="mx-auto max-w-2xl rounded-2xl border border-amber-500/20 bg-gradient-to-b from-[hsl(215,60%,12%)] to-[hsl(215,68%,8%)] p-8 text-center">
+  <div className="mx-auto max-w-2xl rounded-2xl border border-amber-500/20 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-8 text-center">
     <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10">
       <Icon className="h-8 w-8 text-amber-400" />
     </div>
