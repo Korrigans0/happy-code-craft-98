@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Swords, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Swords, ChevronRight, X, UserPlus } from "lucide-react";
 import { TokenItem, InitiativeEntry, CONDITIONS } from "./types";
 
 interface PlayerPanelProps {
@@ -8,6 +9,9 @@ interface PlayerPanelProps {
   initiativeRound: number;
   initiativeActiveIdx: number;
   campaignSystem?: string;
+  /** Personnages que le joueur peut poser sur le plateau (les siens). */
+  ownCharacters?: any[];
+  onSpawnCharacter?: (char: any) => void;
   onClose: () => void;
 }
 
@@ -17,11 +21,16 @@ export default function PlayerPanel({
   initiativeRound,
   initiativeActiveIdx,
   campaignSystem = "Aetheria",
+  ownCharacters = [],
+  onSpawnCharacter,
   onClose,
 }: PlayerPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
   const sortedInit = [...initiative].sort((a, b) => b.initiative - a.initiative);
+  const isPlaced = (charId: string) =>
+    tokens.some((t) => t.creatureType === "character" && t.creatureId === charId);
+
 
   return (
     <aside
@@ -50,6 +59,35 @@ export default function PlayerPanel({
         <span className="text-xs text-muted-foreground">Round</span>
         <span className="text-base font-bold text-primary">{initiativeRound}</span>
       </div>
+
+      {/* Mes personnages — placement de son propre jeton */}
+      {ownCharacters.length > 0 && onSpawnCharacter && (
+        <div className="border-b border-border px-2 py-2">
+          <p className="px-1 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            Mes personnages
+          </p>
+          <div className="space-y-1">
+            {ownCharacters.map((char: any) => (
+              <Button
+                key={char.id}
+                variant="outline"
+                size="sm"
+                className="h-8 w-full justify-start text-xs"
+                disabled={isPlaced(char.id)}
+                onClick={() => onSpawnCharacter(char)}
+              >
+                <UserPlus className="mr-2 h-3 w-3" />
+                <span className="truncate">{char.name}</span>
+                {isPlaced(char.id) && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">déjà posé</span>
+                )}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+
 
       {/* Combatant list (read-only) */}
       <ScrollArea className="flex-1">
