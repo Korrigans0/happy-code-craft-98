@@ -314,6 +314,7 @@ const Characters = () => {
 
   const handleSystemSelect = useCallback((systemId: string) => {
     setIsSelectorOpen(false);
+    resetEditSession();
     setPendingSystem(systemId);
     if (systemId === "Aetheria") {
       setIsAetheriaFormOpen(true);
@@ -324,9 +325,10 @@ const Characters = () => {
     } else {
       setIsFormOpen(true);
     }
-  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET, resetEditSession]);
 
   const handleEdit = useCallback((character: Character) => {
+    resetEditSession();
     setSelectedCharacter(character);
     setIsSheetOpen(false);
     const sys = character.system as string | undefined;
