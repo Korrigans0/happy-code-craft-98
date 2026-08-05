@@ -4039,9 +4039,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             initiativeRound={initiativeRound}
             initiativeActiveIdx={initiativeActiveIdx}
             campaignSystem={campaignSystem}
+            ownCharacters={userCharacters}
+            onSpawnCharacter={spawnCharacter}
             onClose={() => setGmPanelOpen(false)}
           />
         )}
+
       </div>
 
       {/* Fiche personnage interactive du jeton */}
