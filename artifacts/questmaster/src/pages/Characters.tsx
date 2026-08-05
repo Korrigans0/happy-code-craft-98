@@ -162,20 +162,37 @@ const Characters = () => {
       return charactersApi.create(character);
     },
     onSuccess: (created: any) => {
+      creatingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({ title: "Personnage créé ✓" });
-      // On garde la fiche ouverte avec l'id reçu pour que les éditions
-      // suivantes (autosave) deviennent des updates et non des doublons.
       if (created?.id) {
-        setSelectedCharacter((prev) => ({ ...(prev ?? {} as Character), ...created }));
+        createdIdRef.current = created.id;
+        // On conserve l'état local de la fiche (frappe en cours) et on y
+        // attache seulement l'id pour que les autosaves suivants soient
+        // des mises à jour et non des doublons.
+        setSelectedCharacter((prev) => ({ ...(prev ?? ({} as Character)), id: created.id }));
+        // Rejoue les modifications faites pendant la création.
+        const pending = pendingPatchRef.current;
+        pendingPatchRef.current = null;
+        if (pending && Object.keys(pending).length > 0) {
+          updateMutation.mutate({ ...(pending as Partial<Character>), id: created.id });
+        }
       } else {
         setIsFormOpen(false);
         setIsAetheriaFormOpen(false);
         setSelectedCharacter(null);
       }
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer le personnage.", variant: "destructive" });
+    onError: (err: any) => {
+      creatingRef.current = false;
+      pendingPatchRef.current = null;
+      toast({
+        title: "Erreur",
+        description: err?.message
+          ? `Impossible de créer le personnage : ${err.message}`
+          : "Impossible de créer le personnage.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -189,10 +206,17 @@ const Characters = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de mettre à jour.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({
+        title: "Erreur",
+        description: err?.message
+          ? `Impossible de mettre à jour : ${err.message}`
+          : "Impossible de mettre à jour.",
+        variant: "destructive",
+      });
     },
   });
+
 
   // Supprimer personnage
   const deleteMutation = useMutation({
