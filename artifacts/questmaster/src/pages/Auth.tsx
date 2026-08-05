@@ -15,6 +15,9 @@ const Auth = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
+  const rawNext = params.get("next") ?? "";
+  const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
+  const afterAuth = nextPath || "/campaigns";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const REMEMBER_KEY = "aetheria.remember.credentials";
   const remembered = (() => {
