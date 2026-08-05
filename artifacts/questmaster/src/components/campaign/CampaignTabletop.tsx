@@ -11,6 +11,7 @@ import {
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
+  Grid3x3, Hexagon,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -269,7 +270,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Grille (par scène) ──────────────────────────────────────
   const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
-  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  const [gridSettingsOpen, setGridSettingsOpen] = useState(true);
   // Restaure la grille locale des campagnes sans scène enregistrée.
   useEffect(() => {
     try {
@@ -3051,6 +3052,29 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           onClick={() => setCollisionEnabled(c => !c)} title={`Collision ${collisionEnabled ? "ON" : "OFF"}`}>
           <Crosshair className="h-3.5 w-3.5" />
         </Button>
+
+        {/* Type de grille (MJ) : carrée / hexagonale / libre */}
+        {isGM && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7"
+                title={`Grille : ${gridConfig.type === "square" ? "Carrée" : gridConfig.type === "hex" ? "Hexagonale" : "Libre"}`}>
+                {gridConfig.type === "hex"
+                  ? <Hexagon className="h-3.5 w-3.5" />
+                  : <Grid3x3 className="h-3.5 w-3.5" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-3">
+              <h3 className="mb-3 text-sm font-semibold">Grille de la scène</h3>
+              <GridSettingsPanel
+                config={gridConfig}
+                onChange={applyGridConfig}
+                onTypeChange={applyGridConfig}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
