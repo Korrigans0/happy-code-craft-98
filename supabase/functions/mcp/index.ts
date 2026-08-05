@@ -7,7 +7,7 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.1";
 
 // src/lib/mcp/tools/list-campaigns.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z } from "npm:zod";
+import { z } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.105.4";
@@ -86,7 +86,7 @@ var list_campaigns_default = defineTool({
 
 // src/lib/mcp/tools/get-campaign.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z2 } from "npm:zod";
+import { z as z2 } from "npm:zod@^3.25.76";
 var get_campaign_default = defineTool2({
   name: "get_campaign",
   title: "Get campaign details",
@@ -131,7 +131,7 @@ var get_campaign_default = defineTool2({
 
 // src/lib/mcp/tools/list-characters.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z3 } from "npm:zod";
+import { z as z3 } from "npm:zod@^3.25.76";
 var list_characters_default = defineTool3({
   name: "list_characters",
   title: "List characters",
@@ -157,7 +157,7 @@ var list_characters_default = defineTool3({
 
 // src/lib/mcp/tools/get-character.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z4 } from "npm:zod";
+import { z as z4 } from "npm:zod@^3.25.76";
 var get_character_default = defineTool4({
   name: "get_character",
   title: "Get character sheet",
@@ -183,7 +183,7 @@ var get_character_default = defineTool4({
 
 // src/lib/mcp/tools/list-campaign-notes.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z5 } from "npm:zod";
+import { z as z5 } from "npm:zod@^3.25.76";
 var list_campaign_notes_default = defineTool5({
   name: "list_campaign_notes",
   title: "List campaign notes",
@@ -210,7 +210,7 @@ var list_campaign_notes_default = defineTool5({
 
 // src/lib/mcp/tools/create-campaign-note.ts
 import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z6 } from "npm:zod";
+import { z as z6 } from "npm:zod@^3.25.76";
 var create_campaign_note_default = defineTool6({
   name: "create_campaign_note",
   title: "Create campaign note",
