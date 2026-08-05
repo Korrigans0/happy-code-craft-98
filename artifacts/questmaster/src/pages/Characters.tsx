@@ -345,7 +345,7 @@ const Characters = () => {
     } else {
       setIsFormOpen(true);
     }
-  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET, resetEditSession]);
 
   const handleDelete = useCallback((id: string) => {
     setCharacterToDelete(id);
@@ -353,9 +353,10 @@ const Characters = () => {
   }, []);
 
   const handleViewSheet = useCallback((character: Character) => {
+    resetEditSession();
     setSelectedCharacter(character);
     setIsSheetOpen(true);
-  }, []);
+  }, [resetEditSession]);
 
   const isAetheriaCharacter = useCallback((character: Character) => {
     if (character.campaign === "Aetheria") return true;
