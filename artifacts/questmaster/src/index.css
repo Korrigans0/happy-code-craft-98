@@ -9,34 +9,34 @@
   :root {
     /* ── AETHERIA — Bleu nuit profond #0d1829 + Or #c9a227 ── */
 
-    --background: 215 70% 8%;          /* #050d1a très sombre */
+    --background: 228 70% 8%;          /* #050d1a très sombre */
     --foreground: 220 15% 80%;         /* gris-perle doux, non-aveuglant */
 
-    --card: 215 60% 12%;
+    --card: 228 60% 12%;
     --card-foreground: 220 15% 80%;
 
-    --popover: 215 62% 11%;
+    --popover: 228 62% 11%;
     --popover-foreground: 220 15% 80%;
 
     /* Or Aetheria */
-    --primary: 43 75% 50%;             /* #c9a227 légèrement plus vif */
-    --primary-foreground: 215 70% 8%;
+    --primary: 41 60% 55%;             /* #c9a227 légèrement plus vif */
+    --primary-foreground: 228 70% 8%;
 
-    --secondary: 215 45% 18%;
+    --secondary: 228 45% 18%;
     --secondary-foreground: 43 30% 90%;
 
-    --muted: 215 50% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 228 50% 14%;
+    --muted-foreground: 228 20% 55%;
 
-    --accent: 215 48% 17%;
+    --accent: 228 48% 17%;
     --accent-foreground: 43 30% 90%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 43 30% 95%;
 
-    --border: 215 40% 20%;
-    --input: 215 50% 14%;
-    --ring: 43 75% 50%;
+    --border: 228 40% 20%;
+    --input: 228 50% 14%;
+    --ring: 41 60% 55%;
 
     --radius: 0.75rem;
 
@@ -59,50 +59,50 @@
     --magic-rose: 320 70% 60%;
 
     /* ── Gradients ── */
-    --gradient-gold: linear-gradient(135deg, hsl(43, 75%, 55%) 0%, hsl(35, 85%, 42%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(215, 70%, 10%) 0%, hsl(215, 72%, 7%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(215, 60%, 13%) 0%, hsl(215, 62%, 10%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(43, 62%, 62%) 0%, hsl(37, 55%, 42%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(228, 70%, 10%) 0%, hsl(228, 72%, 7%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(228, 60%, 13%) 0%, hsl(228, 62%, 10%) 100%);
     --gradient-parchment: linear-gradient(160deg, hsl(43, 60%, 92%) 0%, hsl(38, 50%, 84%) 40%, hsl(35, 45%, 80%) 100%);
-    --gradient-fantasy: linear-gradient(135deg, hsl(230, 65%, 12%) 0%, hsl(270, 50%, 18%) 50%, hsl(215, 70%, 10%) 100%);
+    --gradient-fantasy: linear-gradient(135deg, hsl(230, 65%, 12%) 0%, hsl(270, 50%, 18%) 50%, hsl(228, 70%, 10%) 100%);
     --gradient-portal: linear-gradient(135deg, hsl(190, 90%, 55%) 0%, hsl(270, 70%, 55%) 100%);
 
     /* ── Shadows ── */
-    --shadow-gold: 0 0 30px hsl(43, 75%, 50%, 0.30);
+    --shadow-gold: 0 0 30px hsl(41, 60%, 55%, 0.30);
     --shadow-card: 0 8px 40px hsl(0, 0%, 0%, 0.55);
     --shadow-magic: 0 0 40px hsl(270, 70%, 55%, 0.25), 0 0 80px hsl(190, 80%, 50%, 0.12);
-    --shadow-rune: 0 0 20px hsl(43, 85%, 55%, 0.45);
+    --shadow-rune: 0 0 20px hsl(43, 70%, 62%, 0.45);
 
     /* ── Sidebar ── */
-    --sidebar-background: 215 68% 10%;
+    --sidebar-background: 228 68% 10%;
     --sidebar-foreground: 43 30% 90%;
-    --sidebar-primary: 43 75% 50%;
-    --sidebar-primary-foreground: 215 70% 8%;
-    --sidebar-accent: 215 48% 15%;
+    --sidebar-primary: 41 60% 55%;
+    --sidebar-primary-foreground: 228 70% 8%;
+    --sidebar-accent: 228 48% 15%;
     --sidebar-accent-foreground: 43 30% 90%;
-    --sidebar-border: 215 40% 18%;
-    --sidebar-ring: 43 75% 50%;
+    --sidebar-border: 228 40% 18%;
+    --sidebar-ring: 41 60% 55%;
   }
 
   .dark {
-    --background: 215 70% 8%;
+    --background: 228 70% 8%;
     --foreground: 220 15% 80%;
-    --card: 215 60% 12%;
+    --card: 228 60% 12%;
     --card-foreground: 220 15% 80%;
-    --popover: 215 62% 11%;
+    --popover: 228 62% 11%;
     --popover-foreground: 220 15% 80%;
-    --primary: 43 75% 50%;
-    --primary-foreground: 215 70% 8%;
-    --secondary: 215 45% 18%;
+    --primary: 41 60% 55%;
+    --primary-foreground: 228 70% 8%;
+    --secondary: 228 45% 18%;
     --secondary-foreground: 43 30% 90%;
-    --muted: 215 50% 14%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 215 48% 17%;
+    --muted: 228 50% 14%;
+    --muted-foreground: 228 20% 55%;
+    --accent: 228 48% 17%;
     --accent-foreground: 43 30% 90%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 43 30% 95%;
-    --border: 215 40% 20%;
-    --input: 215 50% 14%;
-    --ring: 43 75% 50%;
+    --border: 228 40% 20%;
+    --input: 228 50% 14%;
+    --ring: 41 60% 55%;
   }
 }
 
@@ -129,9 +129,9 @@
     font-family: 'Lora', serif;
     padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
     background-image:
-      radial-gradient(ellipse at 20% 0%, hsl(215, 80%, 18%) 0%, transparent 55%),
-      radial-gradient(ellipse at 80% 100%, hsl(215, 70%, 10%) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 50%, hsl(43, 50%, 10%) 0%, transparent 70%);
+      radial-gradient(ellipse at 20% 0%, hsl(228, 80%, 18%) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, hsl(228, 70%, 10%) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, hsl(258, 55%, 13%) 0%, transparent 70%);
   }
 
   @media (min-width: 768px) {
@@ -158,13 +158,13 @@
 
   /* Scrollbar assortie */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: hsl(215, 70%, 8%); }
+  ::-webkit-scrollbar-track { background: hsl(228, 70%, 8%); }
   ::-webkit-scrollbar-thumb {
-    background: hsl(215, 40%, 22%);
+    background: hsl(228, 40%, 22%);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(43, 75%, 50%, 0.5);
+    background: hsl(41, 60%, 55%, 0.5);
   }
 
   .safe-pt { padding-top: env(safe-area-inset-top); }
@@ -175,7 +175,7 @@
 
   /* ── Texte or gradient ── */
   .text-gradient-gold {
-    background: linear-gradient(135deg, hsl(43, 85%, 68%) 0%, hsl(35, 90%, 52%) 50%, hsl(43, 80%, 62%) 100%);
+    background: linear-gradient(135deg, hsl(44, 65%, 78%) 0%, hsl(38, 55%, 48%) 50%, hsl(43, 60%, 68%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -183,17 +183,17 @@
 
   /* ── Fond or gradient ── */
   .bg-gradient-gold {
-    background: linear-gradient(135deg, hsl(43, 75%, 50%) 0%, hsl(35, 85%, 40%) 100%);
+    background: linear-gradient(135deg, hsl(41, 60%, 55%) 0%, hsl(37, 55%, 42%) 100%);
   }
 
   /* ── Fond bleu nuit (pages) ── */
   .bg-gradient-dark {
-    background: linear-gradient(180deg, hsl(215, 70%, 10%) 0%, hsl(215, 72%, 7%) 100%);
+    background: linear-gradient(180deg, hsl(228, 70%, 10%) 0%, hsl(228, 72%, 7%) 100%);
   }
 
   /* ── Fond carte standard ── */
   .bg-gradient-card {
-    background: linear-gradient(145deg, hsl(215, 60%, 13%) 0%, hsl(215, 62%, 10%) 100%);
+    background: linear-gradient(145deg, hsl(228, 60%, 13%) 0%, hsl(228, 62%, 10%) 100%);
   }
 
   /* ── Fond parchemin — pour cartes de contenu chaudes ── */
@@ -217,13 +217,13 @@
 
   /* ── Shadows ── */
   .shadow-gold {
-    box-shadow: 0 0 30px hsl(43, 75%, 50%, 0.25), 0 0 80px hsl(43, 75%, 50%, 0.08);
+    box-shadow: 0 0 30px hsl(41, 60%, 55%, 0.25), 0 0 80px hsl(41, 60%, 55%, 0.08);
   }
   .shadow-card {
     box-shadow: 0 8px 40px hsl(0, 0%, 0%, 0.55);
   }
   .glow-gold {
-    filter: drop-shadow(0 0 10px hsl(43, 75%, 50%, 0.55)) drop-shadow(0 0 30px hsl(43, 75%, 50%, 0.18));
+    filter: drop-shadow(0 0 10px hsl(41, 60%, 55%, 0.55)) drop-shadow(0 0 30px hsl(41, 60%, 55%, 0.18));
   }
 
   /* ── Plateau — Mode Ciel ── */
@@ -300,8 +300,8 @@
 
   /* ── Bordure dorée animée ── */
   .border-gold-glow {
-    border: 1px solid hsl(43, 75%, 50%, 0.45);
-    box-shadow: 0 0 0 1px hsl(43, 75%, 50%, 0.12), inset 0 0 20px hsl(43, 75%, 50%, 0.04);
+    border: 1px solid hsl(41, 60%, 55%, 0.45);
+    box-shadow: 0 0 0 1px hsl(41, 60%, 55%, 0.12), inset 0 0 20px hsl(41, 60%, 55%, 0.04);
   }
 
   /* ── Hover card lift ── */
@@ -310,7 +310,7 @@
   }
   .card-lift:hover {
     transform: translateY(-4px);
-    box-shadow: 0 18px 60px hsl(0, 0%, 0%, 0.7), 0 0 36px hsl(43, 75%, 50%, 0.18);
+    box-shadow: 0 18px 60px hsl(0, 0%, 0%, 0.7), 0 0 36px hsl(41, 60%, 55%, 0.18);
   }
 
   /* ── Magie ── */
@@ -335,10 +335,10 @@
 
   /* ── Glass fantasy carte ── */
   .glass-fantasy {
-    background: linear-gradient(145deg, hsl(215, 60%, 13%, 0.7) 0%, hsl(230, 65%, 10%, 0.85) 100%);
+    background: linear-gradient(145deg, hsl(228, 60%, 13%, 0.7) 0%, hsl(230, 65%, 10%, 0.85) 100%);
     backdrop-filter: blur(12px);
-    border: 1px solid hsl(43, 75%, 50%, 0.18);
-    box-shadow: inset 0 1px 0 hsl(43, 75%, 50%, 0.08), 0 8px 32px hsl(0, 0%, 0%, 0.5);
+    border: 1px solid hsl(41, 60%, 55%, 0.18);
+    box-shadow: inset 0 1px 0 hsl(41, 60%, 55%, 0.08), 0 8px 32px hsl(0, 0%, 0%, 0.5);
   }
 
   /* ── Animations magie ── */
@@ -354,7 +354,7 @@
     animation: rune-pulse 4s ease-in-out infinite;
   }
   @keyframes rune-pulse {
-    0%, 100% { opacity: 0.35; filter: drop-shadow(0 0 4px hsl(43, 85%, 55%, 0.4)); }
+    0%, 100% { opacity: 0.35; filter: drop-shadow(0 0 4px hsl(43, 70%, 62%, 0.4)); }
     50% { opacity: 0.85; filter: drop-shadow(0 0 14px hsl(43, 85%, 65%, 0.85)); }
   }
 
