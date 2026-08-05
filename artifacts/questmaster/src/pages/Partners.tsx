@@ -50,7 +50,7 @@ const VAELORIA = {
 const Partners = () => {
   return (
     <div className="relative flex min-h-screen flex-col animate-fade-in">
-      <PageAmbiance />
+      <PageAmbiance imageOpacity={0.3} />
       <SEO
         title="Partenaires — Aetheria VTT"
         description="Découvrez les partenaires d'Aetheria VTT : communautés, créateurs et univers JDR francophones."

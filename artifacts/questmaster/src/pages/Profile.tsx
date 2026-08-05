@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import PageAmbiance from '@/components/fantasy/PageAmbiance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -213,7 +214,8 @@ const Profile = () => {
     : user?.email?.slice(0, 2).toUpperCase() || 'U';
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark">
+    <div className="relative flex min-h-screen flex-col">
+      <PageAmbiance />
       <Header />
       <main className="flex-1 py-12">
         <div className="container mx-auto max-w-2xl px-4 md:px-6">
