@@ -167,6 +167,17 @@ const Characters = () => {
   const [pendingSystem, setPendingSystem] = useState<string>("Aetheria");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
+  /** Id du personnage créé pendant la session d'édition en cours. */
+  const createdIdRef = useRef<string | null>(null);
+  /** Création en vol : évite les doublons pendant l'autosave. */
+  const creatingRef = useRef(false);
+  /** Modifications faites pendant la création, rejouées ensuite. */
+  const pendingPatchRef = useRef<Record<string, any> | null>(null);
+  const resetEditSession = useCallback(() => {
+    createdIdRef.current = null;
+    creatingRef.current = false;
+    pendingPatchRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
