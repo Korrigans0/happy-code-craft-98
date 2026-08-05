@@ -51,7 +51,7 @@ const FeaturesSection = () => {
               style={{
                 borderColor: `hsl(${f.hue}, 75%, 55%, 0.25)`,
                 background:
-                  "linear-gradient(160deg, hsl(215, 60%, 12%, 0.85) 0%, hsl(230, 65%, 9%, 0.95) 100%)",
+                  "linear-gradient(160deg, hsl(228, 60%, 12%, 0.85) 0%, hsl(230, 65%, 9%, 0.95) 100%)",
                 boxShadow:
                   "0 8px 32px hsl(0,0%,0%,0.5), inset 0 1px 0 hsl(43, 75%, 50%, 0.06)",
               }}
@@ -67,7 +67,7 @@ const FeaturesSection = () => {
                 <div
                   className="absolute inset-0"
                   style={{
-                    background: `linear-gradient(to bottom, hsl(215, 70%, 8%, 0.1) 0%, hsl(215, 70%, 8%, 0.9) 100%), radial-gradient(ellipse at top right, hsl(${f.hue}, 80%, 55%, 0.25), transparent 60%)`,
+                    background: `linear-gradient(to bottom, hsl(228, 70%, 8%, 0.1) 0%, hsl(228, 70%, 8%, 0.9) 100%), radial-gradient(ellipse at top right, hsl(${f.hue}, 80%, 55%, 0.25), transparent 60%)`,
                   }}
                 />
                 {/* Glow halo */}

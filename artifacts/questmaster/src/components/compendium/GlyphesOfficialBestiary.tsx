@@ -17,7 +17,7 @@ const WoundRow = ({ count, icon }: { count: number; icon: "wound" | "shield" }) 
 );
 
 const CreatureCard = ({ c }: { c: GlyphesCreature }) => (
-  <article className="rounded-xl border border-amber-500/20 bg-[hsl(215,68%,10%)] p-5 shadow-lg">
+  <article className="rounded-xl border border-amber-500/20 bg-[hsl(228,68%,10%)] p-5 shadow-lg">
     <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-amber-500/15 pb-3">
       <div>
         <h3 className="font-display text-lg font-bold text-amber-300">{c.nom}</h3>

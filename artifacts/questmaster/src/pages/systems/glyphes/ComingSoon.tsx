@@ -27,7 +27,7 @@ export default function ComingSoon({ era }: Props) {
   const m = META[era];
   const Icon = m.icon;
   return (
-    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
+    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(228,70%,8%)]">
       <SEO
         title={`${m.title} — Glyphes | Aetheria VTT`}
         description={`Module ${m.title} du système Glyphes — en développement.`}
@@ -43,7 +43,7 @@ export default function ComingSoon({ era }: Props) {
             <ArrowLeft className="h-4 w-4" /> Retour à Glyphes
           </Link>
 
-          <div className="mx-auto max-w-2xl rounded-3xl border border-amber-500/20 bg-gradient-to-b from-[hsl(215,60%,12%)] to-[hsl(215,68%,8%)] p-10 text-center shadow-card">
+          <div className="mx-auto max-w-2xl rounded-3xl border border-amber-500/20 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-10 text-center shadow-card">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10">
               <Icon className="h-10 w-10 text-amber-400" />
             </div>

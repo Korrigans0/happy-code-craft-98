@@ -30,7 +30,7 @@ const PageAmbiance = ({ imageOpacity = 0.18, noSides = false, noRunes = false }:
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at center, hsl(215, 70%, 6%, 0.55) 0%, hsl(215, 75%, 5%, 0.85) 60%, hsl(215, 80%, 4%, 0.98) 100%)",
+            "radial-gradient(ellipse at center, hsl(228, 70%, 6%, 0.55) 0%, hsl(228, 75%, 5%, 0.85) 60%, hsl(228, 80%, 4%, 0.98) 100%)",
         }}
       />
       <MistOverlay />

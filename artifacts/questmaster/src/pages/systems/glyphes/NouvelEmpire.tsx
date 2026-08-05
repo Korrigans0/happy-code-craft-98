@@ -32,7 +32,7 @@ const Quote = ({ children }: { children: React.ReactNode }) => (
   </blockquote>
 );
 const Card = ({ title, children }: { title?: string; children: React.ReactNode }) => (
-  <div className="mb-4 rounded-xl border border-amber-500/20 bg-[hsl(215,60%,11%)]/60 p-4">
+  <div className="mb-4 rounded-xl border border-amber-500/20 bg-[hsl(228,60%,11%)]/60 p-4">
     {title && <h3 className="mb-2 font-display text-base font-semibold text-amber-300">{title}</h3>}
     <div className="text-sm leading-relaxed text-slate-300">{children}</div>
   </div>
@@ -58,7 +58,7 @@ const Table = ({ head, rows }: { head: string[]; rows: (string | number)[][] }) 
 const Accordion = ({ title, badge, children }: { title: string; badge?: string; children: React.ReactNode }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-2 overflow-hidden rounded-lg border border-amber-500/20 bg-[hsl(215,60%,11%)]/60">
+    <div className="mb-2 overflow-hidden rounded-lg border border-amber-500/20 bg-[hsl(228,60%,11%)]/60">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-amber-500/5"
@@ -119,7 +119,7 @@ export default function NouvelEmpire() {
   );
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-[hsl(215,70%,8%)]">
+    <div className="relative flex min-h-screen flex-col bg-[hsl(228,70%,8%)]">
       <SEO
         title="Nouvel Empire — Glyphes | Aetheria VTT"
         description="Module Médiéval Fantastique du système Glyphes. Règles complètes : épreuves, races, dons, magie des glyphes, factions, atlas."
@@ -156,7 +156,7 @@ export default function NouvelEmpire() {
           <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             {/* Sidebar desktop */}
             <aside className="hidden lg:block">
-              <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-amber-500/20 bg-[hsl(215,60%,10%)]/80 p-3 backdrop-blur">
+              <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-amber-500/20 bg-[hsl(228,60%,10%)]/80 p-3 backdrop-blur">
                 <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-widest text-amber-400/70">
                   Sommaire
                 </div>
@@ -166,7 +166,7 @@ export default function NouvelEmpire() {
 
             {/* Mobile drawer */}
             {navOpen && (
-              <div className="rounded-xl border border-amber-500/20 bg-[hsl(215,60%,10%)] p-3 lg:hidden">
+              <div className="rounded-xl border border-amber-500/20 bg-[hsl(228,60%,10%)] p-3 lg:hidden">
                 {nav}
               </div>
             )}

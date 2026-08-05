@@ -62,7 +62,7 @@ const Header = () => {
       <div
         className="border-b border-amber-500/10"
         style={{
-          background: "linear-gradient(180deg, hsl(215,70%,9%) 0%, hsl(215,68%,7%) 100%)",
+          background: "linear-gradient(180deg, hsl(228,70%,9%) 0%, hsl(228,68%,7%) 100%)",
           backdropFilter: "blur(24px)",
           boxShadow: "0 4px 32px hsl(0,0%,0%,0.5), inset 0 -1px 0 hsl(43,75%,50%,0.12)",
         }}
@@ -131,7 +131,7 @@ const Header = () => {
                       <AvatarFallback
                         className="font-display text-sm font-bold"
                         style={{
-                          background: "linear-gradient(135deg, hsl(215,60%,18%) 0%, hsl(215,62%,13%) 100%)",
+                          background: "linear-gradient(135deg, hsl(228,60%,18%) 0%, hsl(228,62%,13%) 100%)",
                           color: "hsl(43,75%,62%)",
                           border: "1px solid hsl(43,75%,50%,0.25)",
                         }}
@@ -145,7 +145,7 @@ const Header = () => {
                   className="w-56"
                   align="end"
                   style={{
-                    background: "hsl(215,68%,10%)",
+                    background: "hsl(228,68%,10%)",
                     border: "1px solid hsl(43,75%,50%,0.2)",
                     boxShadow: "0 20px 60px hsl(0,0%,0%,0.7)",
                   }}
@@ -203,7 +203,7 @@ const Header = () => {
                 size="sm"
                 style={{
                   background: "linear-gradient(135deg, hsl(43,75%,50%) 0%, hsl(35,85%,40%) 100%)",
-                  color: "hsl(215,70%,8%)",
+                  color: "hsl(228,70%,8%)",
                   fontWeight: "700",
                   boxShadow: "0 0 20px hsl(43,75%,50%,0.30)",
                 }}
@@ -234,7 +234,7 @@ const Header = () => {
         <div
           className="md:hidden animate-fade-in"
           style={{
-            background: "hsl(215,68%,8%)",
+            background: "hsl(228,68%,8%)",
             borderBottom: "1px solid hsl(43,75%,50%,0.12)",
             boxShadow: "0 8px 40px hsl(0,0%,0%,0.6)",
           }}
@@ -289,7 +289,7 @@ const Header = () => {
                   className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all"
                   style={{
                     background: "linear-gradient(135deg, hsl(43,75%,50%) 0%, hsl(35,85%,40%) 100%)",
-                    color: "hsl(215,70%,8%)",
+                    color: "hsl(228,70%,8%)",
                   }}
                 >
                   <LogIn className="h-5 w-5" />

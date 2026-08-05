@@ -27,7 +27,7 @@ const ACCENT_BY_ID: Record<string, string> = {
 
 export default function SystemsIndex() {
   return (
-    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(215,70%,8%)]">
+    <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(228,70%,8%)]">
       <SEO
         title="Systèmes de jeu | Aetheria VTT"
         description="Tous les systèmes JDR supportés par Aetheria VTT : Aetheria, Worlds Awakening, D&D 5e, Pathfinder 2e, L'Appel de Cthulhu, Glyphes et Homebrew."
@@ -68,7 +68,7 @@ export default function SystemsIndex() {
               const hasHub = !!SYSTEM_HUB[sys.id];
               return (
                 <Link key={sys.id} to={href} className="block h-full">
-                  <div className="group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(215,60%,12%)] to-[hsl(215,68%,8%)] p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-gold">
+                  <div className="group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-gold">
                     <div
                       className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${accent}`}
                     />

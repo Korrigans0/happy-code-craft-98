@@ -55,7 +55,7 @@ const JoinCampaign = () => {
       <div
         className="w-full max-w-sm rounded-2xl p-8 text-center"
         style={{
-          background: "hsl(215,60%,11%)",
+          background: "hsl(228,60%,11%)",
           border: "1px solid hsl(43,75%,50%,0.2)",
           boxShadow: "0 20px 60px hsl(0,0%,0%,0.6)",
         }}
