@@ -73,10 +73,11 @@
     "vaul": "^1.1.2",
     "vite": "^7.3.2",
     "wouter": "^3.3.5",
-    "zod": "^3.25.76"
+    "zod": "catalog:"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.2",
+    "@lovable.dev/mcp-js": "^0.26.1",
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",

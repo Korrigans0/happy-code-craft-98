@@ -15,6 +15,9 @@ const Auth = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
+  const rawNext = params.get("next") ?? "";
+  const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
+  const afterAuth = nextPath || "/campaigns";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const REMEMBER_KEY = "aetheria.remember.credentials";
   const remembered = (() => {
@@ -32,11 +35,11 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate("/campaigns", { replace: true });
-  }, [loading, user, navigate]);
+    if (!loading && user) navigate(afterAuth, { replace: true });
+  }, [loading, user, navigate, afterAuth]);
 
   if (loading) return null;
-  if (user) return <Navigate to="/campaigns" replace />;
+  if (user) return <Navigate to={afterAuth} replace />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +50,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}${afterAuth}`,
             data: { display_name: displayName || email.split("@")[0] },
           },
         });
@@ -72,14 +75,14 @@ const Auth = () => {
 
   const google = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}${afterAuth}`,
     });
     if (result.error) {
       toast.error(toFriendlyMessage(result.error));
       return;
     }
     if (result.redirected) return;
-    navigate("/campaigns", { replace: true });
+    navigate(afterAuth, { replace: true });
   };
 
   return (
