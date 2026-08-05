@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 const DEFAULT_PORT = 5173;
 const rawPort = process.env.PORT;
@@ -15,6 +16,7 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    mcpPlugin({ functionsDir: "../../supabase/functions" }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
