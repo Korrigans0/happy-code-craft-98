@@ -734,14 +734,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     },
   });
 
+  // Personnages disponibles : les siens + (pour le MJ) ceux des membres de la campagne.
   const { data: userCharacters = [] } = useQuery({
-    queryKey: ["vtt-user-characters", user?.id],
+    queryKey: ["vtt-user-characters", user?.id, campaignId, isGM],
     enabled: !!user?.id,
     queryFn: async () => {
-      try { return await charactersApi.list(); }
-      catch { return []; }
+      const [mine, campaignChars] = await Promise.all([
+        charactersApi.list().catch(() => []),
+        isGM ? campaignsApi.getCampaignCharacters(campaignId).catch(() => []) : Promise.resolve([]),
+      ]);
+      const map = new Map<string, any>();
+      for (const c of [...(mine as any[]), ...(campaignChars as any[])]) map.set(c.id, c);
+      return Array.from(map.values());
     },
   });
+
 
   // ── Preload token images ──
   useEffect(() => {
