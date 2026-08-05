@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { charactersApi } from "@/lib/api";
@@ -18,6 +18,32 @@ import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterShe
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import PlanLimitBanner from "@/components/PlanLimitBanner";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { getSystemConfig } from "@/lib/game-systems";
+
+/**
+ * Complète un patch partiel (autosave d'une fiche dédiée) avec toutes les
+ * colonnes obligatoires en base, sinon l'insertion échoue en boucle.
+ */
+function buildNewCharacterPayload(system: string, patch: Record<string, any>) {
+  const cfg = getSystemConfig(system);
+  return {
+    level: 1,
+    strength: 10,
+    dexterity: 10,
+    constitution: 10,
+    intelligence: 10,
+    wisdom: 10,
+    charisma: 10,
+    hp: 10,
+    max_hp: 10,
+    armor_class: 10,
+    ...patch,
+    system,
+    name: (patch.name as string)?.trim() || "Nouveau personnage",
+    race: (patch.race as string) || cfg.races?.[0] || "—",
+    class: (patch.class as string) || cfg.classes?.[0] || "—",
+  };
+}
 
 interface Character {
   id: string;
@@ -138,6 +164,17 @@ const Characters = () => {
   const [pendingSystem, setPendingSystem] = useState<string>("Aetheria");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
+  /** Id du personnage créé pendant la session d'édition en cours. */
+  const createdIdRef = useRef<string | null>(null);
+  /** Création en vol : évite les doublons pendant l'autosave. */
+  const creatingRef = useRef(false);
+  /** Modifications faites pendant la création, rejouées ensuite. */
+  const pendingPatchRef = useRef<Record<string, any> | null>(null);
+  const resetEditSession = useCallback(() => {
+    createdIdRef.current = null;
+    creatingRef.current = false;
+    pendingPatchRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -162,20 +199,37 @@ const Characters = () => {
       return charactersApi.create(character);
     },
     onSuccess: (created: any) => {
+      creatingRef.current = false;
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
       toast({ title: "Personnage créé ✓" });
-      // On garde la fiche ouverte avec l'id reçu pour que les éditions
-      // suivantes (autosave) deviennent des updates et non des doublons.
       if (created?.id) {
-        setSelectedCharacter((prev) => ({ ...(prev ?? {} as Character), ...created }));
+        createdIdRef.current = created.id;
+        // On conserve l'état local de la fiche (frappe en cours) et on y
+        // attache seulement l'id pour que les autosaves suivants soient
+        // des mises à jour et non des doublons.
+        setSelectedCharacter((prev) => ({ ...(prev ?? ({} as Character)), id: created.id }));
+        // Rejoue les modifications faites pendant la création.
+        const pending = pendingPatchRef.current;
+        pendingPatchRef.current = null;
+        if (pending && Object.keys(pending).length > 0) {
+          updateMutation.mutate({ ...(pending as Partial<Character>), id: created.id });
+        }
       } else {
         setIsFormOpen(false);
         setIsAetheriaFormOpen(false);
         setSelectedCharacter(null);
       }
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de créer le personnage.", variant: "destructive" });
+    onError: (err: any) => {
+      creatingRef.current = false;
+      pendingPatchRef.current = null;
+      toast({
+        title: "Erreur",
+        description: err?.message
+          ? `Impossible de créer le personnage : ${err.message}`
+          : "Impossible de créer le personnage.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -189,10 +243,17 @@ const Characters = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", user?.id] });
     },
-    onError: () => {
-      toast({ title: "Erreur", description: "Impossible de mettre à jour.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({
+        title: "Erreur",
+        description: err?.message
+          ? `Impossible de mettre à jour : ${err.message}`
+          : "Impossible de mettre à jour.",
+        variant: "destructive",
+      });
     },
   });
+
 
   // Supprimer personnage
   const deleteMutation = useMutation({
@@ -211,12 +272,21 @@ const Characters = () => {
   // ── Handlers ───────────────────────────────────────────────
 
   const handleSave = useCallback((characterData: Partial<Character>) => {
-    if (selectedCharacter?.id) {
-      updateMutation.mutate({ ...characterData, id: selectedCharacter.id });
-    } else {
-      // Première sauvegarde : attache le système choisi pour router les fiches.
-      createMutation.mutate({ ...characterData, system: pendingSystem });
+    const id = selectedCharacter?.id ?? createdIdRef.current;
+    if (id) {
+      updateMutation.mutate({ ...characterData, id });
+      return;
     }
+    if (creatingRef.current) {
+      // Création déjà en cours : on empile le patch, rejoué au retour serveur.
+      pendingPatchRef.current = { ...(pendingPatchRef.current ?? {}), ...characterData };
+      return;
+    }
+    creatingRef.current = true;
+    // Première sauvegarde : complète les colonnes obligatoires + le système.
+    createMutation.mutate(
+      buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Partial<Character>,
+    );
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
 
   const handleNewCharacter = useCallback(() => {
@@ -228,9 +298,10 @@ const Characters = () => {
       });
       return;
     }
+    resetEditSession();
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, [plan]);
+  }, [plan, resetEditSession]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
@@ -240,6 +311,7 @@ const Characters = () => {
 
   const handleSystemSelect = useCallback((systemId: string) => {
     setIsSelectorOpen(false);
+    resetEditSession();
     setPendingSystem(systemId);
     if (systemId === "Aetheria") {
       setIsAetheriaFormOpen(true);
@@ -250,9 +322,10 @@ const Characters = () => {
     } else {
       setIsFormOpen(true);
     }
-  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET, resetEditSession]);
 
   const handleEdit = useCallback((character: Character) => {
+    resetEditSession();
     setSelectedCharacter(character);
     setIsSheetOpen(false);
     const sys = character.system as string | undefined;
@@ -269,7 +342,7 @@ const Characters = () => {
     } else {
       setIsFormOpen(true);
     }
-  }, [SYSTEMS_WITH_DEDICATED_SHEET]);
+  }, [SYSTEMS_WITH_DEDICATED_SHEET, resetEditSession]);
 
   const handleDelete = useCallback((id: string) => {
     setCharacterToDelete(id);
@@ -277,9 +350,10 @@ const Characters = () => {
   }, []);
 
   const handleViewSheet = useCallback((character: Character) => {
+    resetEditSession();
     setSelectedCharacter(character);
     setIsSheetOpen(true);
-  }, []);
+  }, [resetEditSession]);
 
   const isAetheriaCharacter = useCallback((character: Character) => {
     if (character.campaign === "Aetheria") return true;
