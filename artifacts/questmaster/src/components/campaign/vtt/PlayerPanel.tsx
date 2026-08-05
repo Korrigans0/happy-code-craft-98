@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Swords, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Swords, ChevronRight, X, UserPlus } from "lucide-react";
 import { TokenItem, InitiativeEntry, CONDITIONS } from "./types";
 
 interface PlayerPanelProps {
@@ -8,6 +9,9 @@ interface PlayerPanelProps {
   initiativeRound: number;
   initiativeActiveIdx: number;
   campaignSystem?: string;
+  /** Personnages que le joueur peut poser sur le plateau (les siens). */
+  ownCharacters?: any[];
+  onSpawnCharacter?: (char: any) => void;
   onClose: () => void;
 }
 
@@ -17,11 +21,16 @@ export default function PlayerPanel({
   initiativeRound,
   initiativeActiveIdx,
   campaignSystem = "Aetheria",
+  ownCharacters = [],
+  onSpawnCharacter,
   onClose,
 }: PlayerPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
   const sortedInit = [...initiative].sort((a, b) => b.initiative - a.initiative);
+  const isPlaced = (charId: string) =>
+    tokens.some((t) => t.creatureType === "character" && t.creatureId === charId);
+
 
   return (
     <aside
