@@ -122,8 +122,42 @@ export const campaignsApi = {
   },
   getMembers: async (id: string) => {
     const r = await supabase.from("campaign_members").select("*").eq("campaign_id", id);
-    return unwrap(r) ?? [];
+    const members = (unwrap(r) ?? []) as any[];
+    if (!members.length) return [];
+
+    const userIds = Array.from(new Set(members.map((m) => m.user_id).filter(Boolean)));
+    const charIds = Array.from(new Set(members.map((m) => m.character_id).filter(Boolean)));
+
+    const [profilesRes, charsRes] = await Promise.all([
+      userIds.length
+        ? supabase.from("profiles").select("user_id, display_name, avatar_url").in("user_id", userIds)
+        : Promise.resolve({ data: [], error: null } as any),
+      charIds.length
+        ? supabase.from("characters").select("id, name, race, class, level, avatar_url").in("id", charIds)
+        : Promise.resolve({ data: [], error: null } as any),
+    ]);
+
+    const profileMap = new Map<string, any>(
+      ((profilesRes.data ?? []) as any[]).map((p) => [p.user_id, p]),
+    );
+    const charMap = new Map<string, any>(((charsRes.data ?? []) as any[]).map((c) => [c.id, c]));
+
+    return members.map((m) => {
+      const p = profileMap.get(m.user_id);
+      const c = m.character_id ? charMap.get(m.character_id) : null;
+      return {
+        ...m,
+        display_name: p?.display_name ?? null,
+        avatar_url: p?.avatar_url ?? null,
+        character_name: c?.name ?? null,
+        character_race: c?.race ?? null,
+        character_class: c?.class ?? null,
+        character_level: c?.level ?? null,
+        character_avatar_url: c?.avatar_url ?? null,
+      };
+    });
   },
+
   removeMember: async (id: string, memberId: string) => {
     const r = await supabase.from("campaign_members").delete().eq("id", memberId).eq("campaign_id", id);
     if (r.error) fail(r.error);
