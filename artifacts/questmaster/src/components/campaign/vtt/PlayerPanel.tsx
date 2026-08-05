@@ -60,6 +60,35 @@ export default function PlayerPanel({
         <span className="text-base font-bold text-primary">{initiativeRound}</span>
       </div>
 
+      {/* Mes personnages — placement de son propre jeton */}
+      {ownCharacters.length > 0 && onSpawnCharacter && (
+        <div className="border-b border-border px-2 py-2">
+          <p className="px-1 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            Mes personnages
+          </p>
+          <div className="space-y-1">
+            {ownCharacters.map((char: any) => (
+              <Button
+                key={char.id}
+                variant="outline"
+                size="sm"
+                className="h-8 w-full justify-start text-xs"
+                disabled={isPlaced(char.id)}
+                onClick={() => onSpawnCharacter(char)}
+              >
+                <UserPlus className="mr-2 h-3 w-3" />
+                <span className="truncate">{char.name}</span>
+                {isPlaced(char.id) && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">déjà posé</span>
+                )}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+
       {/* Combatant list (read-only) */}
       <ScrollArea className="flex-1">
         <div className="space-y-1 p-2">
