@@ -27,9 +27,6 @@ import { getSystemConfig } from "@/lib/game-systems";
 function buildNewCharacterPayload(system: string, patch: Record<string, any>) {
   const cfg = getSystemConfig(system);
   return {
-    name: "Nouveau personnage",
-    race: cfg.races?.[0] ?? "—",
-    class: cfg.classes?.[0] ?? "—",
     level: 1,
     strength: 10,
     dexterity: 10,
