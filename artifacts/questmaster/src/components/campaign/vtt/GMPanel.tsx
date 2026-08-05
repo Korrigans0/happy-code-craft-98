@@ -121,8 +121,11 @@ export default function GMPanel({
   const { data: messages = [] } = useQuery({
     queryKey: ["vtt-chat-messages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    refetchInterval: 3000,
+    // Le chat est déjà synchronisé en temps réel : filet de sécurité lent uniquement.
+    refetchInterval: 20000,
+    refetchOnWindowFocus: true,
   });
+
 
   useEffect(() => {
     if (activeTab === "chat") {
