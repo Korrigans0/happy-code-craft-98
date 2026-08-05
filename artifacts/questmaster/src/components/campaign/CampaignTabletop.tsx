@@ -3053,6 +3053,29 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <Crosshair className="h-3.5 w-3.5" />
         </Button>
 
+        {/* Type de grille (MJ) : carrée / hexagonale / libre */}
+        {isGM && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7"
+                title={`Grille : ${gridConfig.type === "square" ? "Carrée" : gridConfig.type === "hex" ? "Hexagonale" : "Libre"}`}>
+                {gridConfig.type === "hex"
+                  ? <Hexagon className="h-3.5 w-3.5" />
+                  : <Grid3x3 className="h-3.5 w-3.5" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-3">
+              <h3 className="mb-3 text-sm font-semibold">Grille de la scène</h3>
+              <GridSettingsPanel
+                config={gridConfig}
+                onChange={applyGridConfig}
+                onTypeChange={applyGridConfig}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
+
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
         {/* Measure unit (GM only) */}
