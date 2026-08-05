@@ -270,7 +270,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Grille (par scène) ──────────────────────────────────────
   const [gridConfig, setGridConfig] = useState<GridConfig>(DEFAULT_GRID_CONFIG);
-  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  const [gridSettingsOpen, setGridSettingsOpen] = useState(true);
   // Restaure la grille locale des campagnes sans scène enregistrée.
   useEffect(() => {
     try {
