@@ -246,16 +246,30 @@ export const campaignsApi = {
     return { ok: true };
   },
   getCampaignCharacters: async (id: string) => {
+    // Tous les personnages appartenant aux membres de la campagne (le MJ doit pouvoir
+    // assigner un personnage existant, pas seulement ceux déjà liés).
     const members = await supabase
       .from("campaign_members")
-      .select("character_id")
-      .eq("campaign_id", id)
-      .not("character_id", "is", null);
+      .select("user_id, character_id")
+      .eq("campaign_id", id);
     if (members.error) fail(members.error);
-    const ids = (members.data ?? []).map((m: { character_id: string }) => m.character_id).filter(Boolean);
-    if (!ids.length) return [];
-    const r = await supabase.from("characters").select("*").in("id", ids);
-    return unwrap(r) ?? [];
+    const rows = (members.data ?? []) as { user_id: string; character_id: string | null }[];
+    const userIds = Array.from(new Set(rows.map((m) => m.user_id).filter(Boolean)));
+    const linkedIds = Array.from(new Set(rows.map((m) => m.character_id).filter(Boolean))) as string[];
+    if (!userIds.length && !linkedIds.length) return [];
+
+    const [byUser, byId] = await Promise.all([
+      userIds.length
+        ? supabase.from("characters").select("*").in("user_id", userIds)
+        : Promise.resolve({ data: [], error: null } as any),
+      linkedIds.length
+        ? supabase.from("characters").select("*").in("id", linkedIds)
+        : Promise.resolve({ data: [], error: null } as any),
+    ]);
+    const map = new Map<string, any>();
+    for (const c of [...((byUser.data ?? []) as any[]), ...((byId.data ?? []) as any[])]) map.set(c.id, c);
+    return Array.from(map.values());
+
   },
   getSessions: async (id: string) => {
     const r = await supabase
