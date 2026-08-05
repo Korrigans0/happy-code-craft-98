@@ -72,7 +72,7 @@ const HeroSection = () => {
         </div>
 
         {/* Titre */}
-        <h1 className="font-display text-5xl font-bold tracking-wide text-gradient-gold md:text-7xl lg:text-8xl">
+        <h1 className="font-title text-5xl font-bold tracking-wide text-gradient-gold md:text-7xl lg:text-8xl">
           AETHERIA
         </h1>
         <p

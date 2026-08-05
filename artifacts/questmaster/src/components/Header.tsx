@@ -76,11 +76,11 @@ const Header = () => {
                 src="/aetheria-logo.png"
                 alt="Aetheria"
                 className="h-11 w-11 rounded-full object-cover"
-                style={{ filter: "drop-shadow(0 0 12px hsl(43,75%,50%,0.45))" }}
+                style={{ filter: "drop-shadow(0 0 12px hsl(41,60%,55%,0.45))" }}
               />
             </div>
             <div className="hidden sm:block">
-              <h1 className="font-display text-xl font-bold leading-none text-gradient-gold">
+              <h1 className="font-title text-xl font-bold leading-none text-gradient-gold">
                 Aetheria
               </h1>
               <p className="text-[9px] uppercase tracking-[3px] text-amber-500/50 mt-0.5">
