@@ -275,12 +275,21 @@ const Characters = () => {
   // ── Handlers ───────────────────────────────────────────────
 
   const handleSave = useCallback((characterData: Partial<Character>) => {
-    if (selectedCharacter?.id) {
-      updateMutation.mutate({ ...characterData, id: selectedCharacter.id });
-    } else {
-      // Première sauvegarde : attache le système choisi pour router les fiches.
-      createMutation.mutate({ ...characterData, system: pendingSystem });
+    const id = selectedCharacter?.id ?? createdIdRef.current;
+    if (id) {
+      updateMutation.mutate({ ...characterData, id });
+      return;
     }
+    if (creatingRef.current) {
+      // Création déjà en cours : on empile le patch, rejoué au retour serveur.
+      pendingPatchRef.current = { ...(pendingPatchRef.current ?? {}), ...characterData };
+      return;
+    }
+    creatingRef.current = true;
+    // Première sauvegarde : complète les colonnes obligatoires + le système.
+    createMutation.mutate(
+      buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Partial<Character>,
+    );
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
 
   const handleNewCharacter = useCallback(() => {
@@ -292,9 +301,10 @@ const Characters = () => {
       });
       return;
     }
+    resetEditSession();
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, [plan]);
+  }, [plan, resetEditSession]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
