@@ -16,7 +16,7 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
-    mcpPlugin({ functionsDir: "../../supabase/functions" }),
+    mcpPlugin(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
