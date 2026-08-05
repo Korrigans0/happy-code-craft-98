@@ -751,18 +751,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
   // ── Preload token images ──
+  // Ne dépend que de la liste des URLs (pas de l'objet tokens complet) et redessine
+  // via le ref : éviter setTokens ici supprime une sauvegarde réseau + un re-render
+  // global à chaque image chargée (source majeure de lag sur le plateau).
+  const tokenImageUrlsKey = useMemo(
+    () => Array.from(new Set(tokens.map(t => t.imageUrl).filter(Boolean))).sort().join("|"),
+    [tokens]
+  );
   useEffect(() => {
-    for (const token of tokens) {
-      if (!token.imageUrl || tokenImagesRef.current.has(token.imageUrl)) continue;
+    const urls = tokenImageUrlsKey ? tokenImageUrlsKey.split("|") : [];
+    for (const url of urls) {
+      if (tokenImagesRef.current.has(url)) continue;
       const img = new window.Image();
       img.crossOrigin = "anonymous";
-      img.onload = () => {
-        tokenImagesRef.current.set(token.imageUrl!, img);
-        setTokens(prev => [...prev]);
-      };
-      img.src = token.imageUrl;
+      // Placeholder immédiat : empêche de relancer 10x le même téléchargement.
+      tokenImagesRef.current.set(url, img);
+      img.onload = () => { redrawCanvasRef.current(); };
+      img.onerror = () => { tokenImagesRef.current.delete(url); };
+      img.src = url;
     }
-  }, [tokens]);
+  }, [tokenImageUrlsKey]);
+
 
   // ── Ping animation loop ──
   useEffect(() => {
