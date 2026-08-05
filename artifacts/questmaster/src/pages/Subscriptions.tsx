@@ -5,9 +5,6 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import MagicParticles from "@/components/fantasy/MagicParticles";
-import MistOverlay from "@/components/fantasy/MistOverlay";
-import FloatingRunes from "@/components/fantasy/FloatingRunes";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 
 interface Plan {
