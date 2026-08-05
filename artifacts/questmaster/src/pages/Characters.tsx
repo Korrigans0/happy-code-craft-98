@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { charactersApi } from "@/lib/api";
@@ -18,6 +18,35 @@ import AetheriaCharacterSheet from "@/components/characters/AetheriaCharacterShe
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
 import PlanLimitBanner from "@/components/PlanLimitBanner";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { getSystemConfig } from "@/lib/game-systems";
+
+/**
+ * Complète un patch partiel (autosave d'une fiche dédiée) avec toutes les
+ * colonnes obligatoires en base, sinon l'insertion échoue en boucle.
+ */
+function buildNewCharacterPayload(system: string, patch: Record<string, any>) {
+  const cfg = getSystemConfig(system);
+  return {
+    name: "Nouveau personnage",
+    race: cfg.races?.[0] ?? "—",
+    class: cfg.classes?.[0] ?? "—",
+    level: 1,
+    strength: 10,
+    dexterity: 10,
+    constitution: 10,
+    intelligence: 10,
+    wisdom: 10,
+    charisma: 10,
+    hp: 10,
+    max_hp: 10,
+    armor_class: 10,
+    ...patch,
+    system,
+    name: (patch.name as string)?.trim() || "Nouveau personnage",
+    race: (patch.race as string) || cfg.races?.[0] || "—",
+    class: (patch.class as string) || cfg.classes?.[0] || "—",
+  };
+}
 
 interface Character {
   id: string;
