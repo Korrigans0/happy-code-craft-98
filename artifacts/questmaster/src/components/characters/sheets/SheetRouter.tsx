@@ -1,9 +1,9 @@
 // SheetRouter — résout la fiche personnage à utiliser selon character.system.
-// Réutilise AetheriaCharacterSheet pour Aetheria/WA (mécaniques identiques v1),
-// Dnd5eSheet pour D&D 5e, HomebrewSheet pour Personnalisé, GenericSystemSheet
-// pour PF2e / CoC.
+// AetheriaCharacterSheet est STRICTEMENT réservée au système Aetheria.
+// Chaque autre système utilise sa fiche dédiée, ou GenericSystemSheet
+// (pilotée par la définition du système) en dernier recours.
 
-import { getSystem } from "@/lib/systems";
+import { getSystem, isKnownSystem } from "@/lib/systems";
 import AetheriaCharacterSheet from "../AetheriaCharacterSheet";
 import Dnd5eSheet from "./Dnd5eSheet";
 import HomebrewSheet from "./HomebrewSheet";
@@ -22,11 +22,13 @@ interface SheetRouterProps {
 
 const SheetRouter = ({ character, editable, onSave, onClose, onEdit }: SheetRouterProps) => {
   const system = getSystem(character?.system);
-  const key = system.sheetComponent ?? "homebrew";
+  // Système inconnu/absent : jamais de fiche Aetheria par défaut.
+  const key = !isKnownSystem(character?.system)
+    ? "generic"
+    : system.sheetComponent ?? "homebrew";
 
   switch (key) {
     case "aetheria":
-    case "worlds-awakening":
       return (
         <AetheriaCharacterSheet
           character={character}
