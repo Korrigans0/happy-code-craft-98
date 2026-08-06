@@ -2807,12 +2807,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // Applique une nouvelle configuration de grille : ré-accroche les jetons si
   // nécessaire, met à jour la scène active et persiste l'état.
   // Hydrate la grille depuis la scène active reçue via la synchro temps réel.
-  const hydratedGridSceneRef = useRef<string | null>(null);
+  // On resynchronise à CHAQUE changement de la config de grille de la scène
+  // active (et pas seulement au changement de scène) afin que les PJ voient
+  // immédiatement un passage carré → hexagone décidé par le MJ.
+  const hydratedGridRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!activeSceneId || hydratedGridSceneRef.current === activeSceneId) return;
+    if (!activeSceneId) return;
     const scene = scenes.find(s => s.id === activeSceneId);
-    if (!scene) return;
-    hydratedGridSceneRef.current = activeSceneId;
+    if (!scene?.grid) return;
+    const key = `${activeSceneId}:${JSON.stringify(scene.grid)}`;
+    if (hydratedGridRef.current === key) return;
+    hydratedGridRef.current = key;
     setGridConfig(normalizeGridConfig(scene.grid));
   }, [activeSceneId, scenes]);
 
@@ -2831,16 +2836,34 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setTokens(nextTokens);
     }
     if (activeSceneId) {
+      hydratedGridRef.current = `${activeSceneId}:${JSON.stringify(next)}`;
       setScenes(prev => {
         const updated = prev.map(s => s.id === activeSceneId ? { ...s, grid: next, tokens: nextTokens } : s);
         saveState({ scenes: updated, tokens: nextTokens });
         return updated;
       });
     } else {
-      saveState({ tokens: nextTokens });
+      // Aucune scène active : on en crée une implicite pour que la grille soit
+      // persistée et diffusée à tous les joueurs (sinon elle restait locale).
+      const sceneId = newId();
+      const implicitScene: VTTScene = {
+        id: sceneId,
+        name: scenes.length ? `Scène ${scenes.length + 1}` : "Scène principale",
+        mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
+        tokens: nextTokens,
+        drawings: actions,
+        grid: next,
+        createdAt: Date.now(),
+      };
+      const updated = [...scenes, implicitScene];
+      hydratedGridRef.current = `${sceneId}:${JSON.stringify(next)}`;
+      setScenes(updated);
+      setActiveSceneId(sceneId);
+      saveState({ scenes: updated, active_scene_id: sceneId, tokens: nextTokens } as any);
       try { localStorage.setItem(`vtt-grid-${campaignId}`, JSON.stringify(next)); } catch { /* ignore */ }
     }
   };
+
 
   const saveCurrentScene = (): VTTScene => ({
     id: activeSceneId || newId(),
