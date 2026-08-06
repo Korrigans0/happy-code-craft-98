@@ -238,7 +238,7 @@ const Compendium = () => {
                   <Swords className="h-3.5 w-3.5" /> Matchups
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={false} /></TabsContent>
+              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={false} searchQuery={searchQuery} /></TabsContent>
               <TabsContent value="aetheria-codex"><AetheriaLore /></TabsContent>
               <TabsContent value="aetheria-matchups"><AetheriaMatchups /></TabsContent>
             </Tabs>

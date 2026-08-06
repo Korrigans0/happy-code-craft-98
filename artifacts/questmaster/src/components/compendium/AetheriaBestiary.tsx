@@ -49,6 +49,8 @@ interface AetheriaCreature {
 interface Props {
   campaignId?: string;
   isGM?: boolean;
+  /** Requête de recherche externe (barre de recherche globale du Compendium) */
+  searchQuery?: string;
 }
 
 function CreatureCard({
@@ -249,7 +251,7 @@ function CreatureCard({
   );
 }
 
-export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
+export default function AetheriaBestiary({ campaignId, isGM = false, searchQuery = "" }: Props) {
   const { user } = useAuth();
   const isAdmin = useIsAdmin();
   const { toast } = useToast();
@@ -275,7 +277,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
   });
 
   const { myCreatures, publicCreatures } = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = (search || searchQuery).toLowerCase();
     const filtered = creatures.filter(c =>
       c.name.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q)
     );
@@ -289,7 +291,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
       myCreatures: mine,
       publicCreatures: isAdmin ? others : others.filter(c => c.is_public),
     };
-  }, [creatures, search, user?.id, isAdmin]);
+  }, [creatures, search, searchQuery, user?.id, isAdmin]);
 
   return (
     <div className="space-y-4">
@@ -328,9 +330,9 @@ export default function AetheriaBestiary({ campaignId, isGM = false }: Props) {
         <div className="text-center py-8">
           <Skull className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">
-            {search ? "Aucune créature trouvée" : "Aucune créature dans le bestiaire"}
+            {(search || searchQuery) ? "Aucune créature trouvée" : "Aucune créature dans le bestiaire"}
           </p>
-          {isGM && !search && (
+          {isGM && !search && !searchQuery && (
             <p className="text-muted-foreground/70 text-xs mt-1">Crée ta première créature Aetheria !</p>
           )}
         </div>
