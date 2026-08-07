@@ -106,7 +106,7 @@ export const campaignsApi = {
   },
   join: async (invite_code: string) => {
     const { data, error } = await supabase.rpc("join_campaign_by_invite_code", {
-      _code: invite_code.trim(),
+      _code: sanitizeInviteCode(invite_code),
     });
     if (error) {
       const friendly = toFriendlyMessage(error);
