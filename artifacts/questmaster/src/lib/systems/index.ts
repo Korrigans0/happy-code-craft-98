@@ -62,4 +62,4 @@ export type {
   SkillDef, ResourceDef, CalculationsAPI, CalcContext, SheetComponentKey,
 } from "./types";
 export { DEFAULT_CALCULATIONS, genericStatModifier } from "./types";
-export { AETHERIA_SYSTEM, WA_SYSTEM, DND5E_SYSTEM, PF2E_SYSTEM, COC_SYSTEM, GLYPHES_SYSTEM, CUSTOM_SYSTEM };
+export { AETHERIA_SYSTEM, WA_SYSTEM, DND5E_SYSTEM, PF2E_SYSTEM, COC_SYSTEM, COF_SYSTEM, GLYPHES_SYSTEM, CUSTOM_SYSTEM };
