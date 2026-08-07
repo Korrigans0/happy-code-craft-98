@@ -386,6 +386,16 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       message_type: "dice_roll",
       metadata: { dice: input, results, total, modifier },
     });
+
+    const rollResults = results.map(v => ({ type: sides, value: v }));
+    broadcastDiceRoll(campaignId, {
+      author: selfName,
+      formula: input,
+      total,
+      results: rollResults,
+      modifier,
+      crit: detectCrit(rollResults),
+    });
   };
 
   const quickAction = (action: typeof QUICK_ACTIONS[0]) => {
@@ -410,6 +420,17 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       content,
       message_type: "dice_roll",
       metadata: { dice: action.dice, results, total, modifier: 0 },
+    });
+
+    const rollResults = results.map(v => ({ type: sides, value: v }));
+    broadcastDiceRoll(campaignId, {
+      author: selfName,
+      formula: action.dice,
+      label: action.skill,
+      total,
+      results: rollResults,
+      modifier: 0,
+      crit: detectCrit(rollResults),
     });
     setShowQuickActions(false);
   };
