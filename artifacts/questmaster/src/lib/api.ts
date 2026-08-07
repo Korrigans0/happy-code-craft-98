@@ -4,6 +4,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 // Kept for backward compatibility with App.tsx wiring; no longer used.
 export function setTokenGetter(_fn: () => Promise<string | null>) {}
@@ -25,14 +27,9 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 }
 
 function randomInviteCode(): string {
-  const bytes = new Uint8Array(6);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(36).padStart(2, "0"))
-    .join("")
-    .toUpperCase()
-    .slice(0, 8);
+  return generateInviteCode(8);
 }
+
 
 // ============== PROFILES ==============
 export const profilesApi = {
@@ -79,7 +76,7 @@ export const campaignsApi = {
       system: (data.system as string) ?? "aetheria",
       image_url: (data.image_url as string) ?? null,
       is_active: data.is_active !== false,
-      invite_code: (data.invite_code as string) ?? randomInviteCode(),
+      invite_code: sanitizeInviteCode((data.invite_code as string) ?? "") || randomInviteCode(),
       discord_link: (data.discord_link as string) ?? null,
       summary: (data.summary as string) ?? null,
       planned_sessions: (data.planned_sessions as number) ?? null,
@@ -109,7 +106,7 @@ export const campaignsApi = {
   },
   join: async (invite_code: string) => {
     const { data, error } = await supabase.rpc("join_campaign_by_invite_code", {
-      _code: invite_code.trim(),
+      _code: sanitizeInviteCode(invite_code),
     });
     if (error) {
       const friendly = toFriendlyMessage(error);

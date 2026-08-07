@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
+import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
+
 import {
   Save, Trash2, RefreshCw, Copy, Link2, ExternalLink,
   Volume2, MessageCircle, Image, Shield, Users, Lock,
@@ -47,8 +49,9 @@ interface CampaignSettingsProps {
 }
 
 function generateCode() {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
+  return generateInviteCode(8);
 }
+
 
 const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   const navigate = useNavigate();
@@ -142,9 +145,10 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   });
 
   const handleCodeChange = useCallback((val: string) => {
-    setInviteCode(val.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 16));
+    setInviteCode(sanitizeInviteCode(val));
     setCodeEdited(true);
   }, []);
+
 
   const shuffleCode = useCallback(() => {
     setInviteCode(generateCode());
@@ -449,8 +453,10 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              4 à 16 caractères (lettres et chiffres uniquement). Les joueurs entrent ce code
-              sur la page «&nbsp;Mes Campagnes&nbsp;» → «&nbsp;Rejoindre&nbsp;».
+              4 à 16 caractères (lettres et chiffres uniquement). Les caractères ambigus
+              «&nbsp;O&nbsp;» et «&nbsp;0&nbsp;» sont interdits pour éviter les confusions.
+              Les joueurs entrent ce code sur la page «&nbsp;Mes Campagnes&nbsp;» → «&nbsp;Rejoindre&nbsp;».
+
             </p>
 
             {codeEdited && (

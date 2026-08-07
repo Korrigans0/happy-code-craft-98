@@ -25,6 +25,8 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import PlanLimitBanner from "@/components/PlanLimitBanner";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { toast } from "@/hooks/use-toast";
+import { sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 interface Campaign {
   id: string;
@@ -649,7 +651,7 @@ const Campaigns = () => {
               <Input
                 id="join-code"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                onChange={(e) => setJoinCode(sanitizeInviteCode(e.target.value))}
                 placeholder="AETHERIA"
                 className="text-center text-2xl font-mono tracking-[0.4em] h-14"
                 maxLength={16}

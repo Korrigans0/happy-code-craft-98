@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sword, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import { sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 const JoinCampaign = () => {
   const { code } = useParams<{ code: string }>();
@@ -17,9 +19,10 @@ const JoinCampaign = () => {
 
   const joinMutation = useMutation({
     mutationFn: async (inviteCode: string) => {
-      const result = await campaignsApi.join(inviteCode.trim());
+      const result = await campaignsApi.join(sanitizeInviteCode(inviteCode));
       return result.campaign_id;
     },
+
     onSuccess: (campaignId) => {
       setStatus("success");
       toast({ title: "Bienvenue !", description: "Vous avez rejoint la campagne." });
