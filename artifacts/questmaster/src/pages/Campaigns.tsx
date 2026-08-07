@@ -25,6 +25,8 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import PlanLimitBanner from "@/components/PlanLimitBanner";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { toast } from "@/hooks/use-toast";
+import { sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 interface Campaign {
   id: string;
