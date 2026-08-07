@@ -396,6 +396,8 @@ interface Translatable {
   subtitle: string;
   description: string;
   sections: Section[];
+  /** Meta *values* (keys are already localized server-side). */
+  meta?: Record<string, string>;
 }
 
 const admin = () => createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
@@ -437,6 +439,7 @@ async function translateBatch(
     subtitle: b.fields.subtitle,
     description: b.fields.description,
     sections: b.fields.sections,
+    meta: b.fields.meta,
   }));
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -451,7 +454,8 @@ async function translateBatch(
             "You translate tabletop RPG stat blocks from English to French. Keep the JSON structure, ids, " +
             "dice notation (2d6+3), numbers, units and markdown ** ** markers untouched. Use standard French " +
             "RPG terminology (hit points → points de vie, saving throw → jet de sauvegarde, DC → DD…). " +
-            "Return ONLY a JSON array with the same ids and the fields name, subtitle, description, sections.",
+            "Translate the values of the `meta` object but NEVER its keys. Return ONLY a JSON array with the same " +
+            "ids and the fields name, subtitle, description, sections, meta.",
         },
         { role: "user", content: JSON.stringify(payload) },
       ],
@@ -476,6 +480,9 @@ async function translateBatch(
         sections: Array.isArray(item.sections)
           ? item.sections.map((s: any) => ({ title: String(s?.title ?? ""), text: String(s?.text ?? "") }))
           : [],
+        meta: item.meta && typeof item.meta === "object"
+          ? Object.fromEntries(Object.entries(item.meta).map(([k, v]) => [k, String(v)]))
+          : undefined,
       });
     }
   } catch (e) {
@@ -499,7 +506,13 @@ async function localize(entries: OfficialEntry[], lang: Lang): Promise<OfficialE
     const results = await Promise.all(chunks.map((chunk) =>
       translateBatch(chunk.map((e) => ({
         id: e.id,
-        fields: { name: e.name, subtitle: e.subtitle, description: e.description, sections: e.sections },
+        fields: {
+          name: e.name,
+          subtitle: e.subtitle,
+          description: e.description,
+          sections: e.sections,
+          meta: e.meta,
+        },
       })))
     ));
 
@@ -523,6 +536,7 @@ async function localize(entries: OfficialEntry[], lang: Lang): Promise<OfficialE
       subtitle: tr.subtitle || e.subtitle,
       description: tr.description || e.description,
       sections: tr.sections?.length ? tr.sections : e.sections,
+      meta: tr.meta && Object.keys(tr.meta).length ? { ...e.meta, ...tr.meta } : e.meta,
     };
   });
 }
