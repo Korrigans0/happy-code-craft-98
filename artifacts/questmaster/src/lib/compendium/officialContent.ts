@@ -3,8 +3,12 @@
 // (Archives of Nethys) and COF (bibliothèque intégrée).
 // Every kind of content is available in French and in English.
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const SUPABASE_URL =
+  ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) ||
+  "https://snawpxrejmcxfbiiowxr.supabase.co";
+const SUPABASE_ANON_KEY =
+  ((import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuYXdweHJlam1jeGZiaWlvd3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MDgwNTEsImV4cCI6MjA4MjA4NDA1MX0.1knQmnMMqbD4XetxEFJ7YO8IZSN959KpNF1ZXyWTwz0";
 
 export type OfficialKind = "monsters" | "spells" | "items";
 export type OfficialLang = "fr" | "en";
