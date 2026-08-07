@@ -806,6 +806,33 @@ export type Database = {
           },
         ]
       }
+      compendium_translations: {
+        Row: {
+          created_at: string
+          entry_id: string
+          id: string
+          lang: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id: string
+          id?: string
+          lang: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string
+          id?: string
+          lang?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
