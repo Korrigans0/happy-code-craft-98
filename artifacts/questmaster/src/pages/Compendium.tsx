@@ -27,6 +27,9 @@ import CreateMonsterDialog from "@/components/compendium/CreateMonsterDialog";
 import CreateSpellDialog from "@/components/compendium/CreateSpellDialog";
 import CreateItemDialog from "@/components/compendium/CreateItemDialog";
 import GlyphesCodex from "@/components/compendium/GlyphesCodex";
+import OfficialContentBrowser from "@/components/compendium/OfficialContentBrowser";
+import { hasOfficialContent } from "@/lib/compendium/officialContent";
+
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
 import { SYSTEM_LIST } from "@/lib/systems";
@@ -117,7 +120,9 @@ const AetheriaLore = () => (
 );
 
 // ── Codex générique pour D&D / Pathfinder / Cthulhu / Homebrew ──────
-// Affiche monstres + sorts + objets filtrés par système, avec création possible.
+// Deux sources : le contenu OFFICIEL (SRD 5.1 / Archives of Nethys) pour les
+// systèmes ouverts, et le contenu communautaire/MJ stocké en base.
+// Cloisonnement strict : Aetheria et Glyphes n'utilisent jamais cette source.
 const SystemCodex = ({
   system,
   searchQuery,
@@ -128,8 +133,13 @@ const SystemCodex = ({
   canCreate: boolean;
 }) => {
   const [tab, setTab] = useState<"monsters" | "spells" | "items">("monsters");
+  const [source, setSource] = useState<"official" | "community">(
+    hasOfficialContent(system) ? "official" : "community",
+  );
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const official = hasOfficialContent(system);
+
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -144,20 +154,54 @@ const SystemCodex = ({
             <Gem className="h-3.5 w-3.5" /> Objets
           </TabsTrigger>
         </TabsList>
-        {canCreate && (
-          <div className="flex flex-wrap gap-2">
-            {tab === "monsters" && <CreateMonsterDialog defaultSystem={system} onCreated={triggerRefresh} />}
-            {tab === "spells" && <CreateSpellDialog defaultSystem={system} onCreated={triggerRefresh} />}
-            {tab === "items" && <CreateItemDialog defaultSystem={system} onCreated={triggerRefresh} />}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {official && (
+            <div className="flex rounded-lg border border-border bg-card/50 p-0.5">
+              <button
+                onClick={() => setSource("official")}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  source === "official" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Contenu officiel
+              </button>
+              <button
+                onClick={() => setSource("community")}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  source === "community" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Communauté & MJ
+              </button>
+            </div>
+          )}
+          {canCreate && source === "community" && (
+            <>
+              {tab === "monsters" && <CreateMonsterDialog defaultSystem={system} onCreated={triggerRefresh} />}
+              {tab === "spells" && <CreateSpellDialog defaultSystem={system} onCreated={triggerRefresh} />}
+              {tab === "items" && <CreateItemDialog defaultSystem={system} onCreated={triggerRefresh} />}
+            </>
+          )}
+        </div>
       </div>
-      <TabsContent value="monsters"><MonstersList key={`m-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="spells"><SpellsList key={`s-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
-      <TabsContent value="items"><ItemsList key={`i-${refreshKey}`} searchQuery={searchQuery} system={system} /></TabsContent>
+
+      {(["monsters", "spells", "items"] as const).map((kind) => (
+        <TabsContent key={kind} value={kind}>
+          {official && source === "official" ? (
+            <OfficialContentBrowser system={system} kind={kind} searchQuery={searchQuery} />
+          ) : kind === "monsters" ? (
+            <MonstersList key={`m-${refreshKey}`} searchQuery={searchQuery} system={system} />
+          ) : kind === "spells" ? (
+            <SpellsList key={`s-${refreshKey}`} searchQuery={searchQuery} system={system} />
+          ) : (
+            <ItemsList key={`i-${refreshKey}`} searchQuery={searchQuery} system={system} />
+          )}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 };
+
 
 // ── Page principale ────────────────────────────────────────
 const Compendium = () => {
