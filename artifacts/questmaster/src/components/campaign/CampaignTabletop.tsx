@@ -2698,7 +2698,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       wallsHook.finishWall(w.x, w.y);
       return;
     }
-    // ── Click vs drag: simple click on a token opens the character sheet ──
+    // ── Click vs drag: DOUBLE click on a token opens the character sheet ──
     const pendingClick = clickStartRef.current;
     const wasClick =
       !!pendingClick && !didDragRef.current && Date.now() - pendingClick.t < 500;
@@ -2711,7 +2711,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setDragStart(null);
       setIsDrawing(false);
       setLastPanPoint(null);
-      if (tok) {
+      const prevClick = lastTokenClickRef.current;
+      const isDoubleClick =
+        !!prevClick && prevClick.tokenId === pendingClick.tokenId && Date.now() - prevClick.t < 400;
+      lastTokenClickRef.current = isDoubleClick ? null : { tokenId: pendingClick.tokenId, t: Date.now() };
+      if (tok && isDoubleClick) {
         if (pendingClick.denied) {
           toast({
             title: "Accès refusé",
