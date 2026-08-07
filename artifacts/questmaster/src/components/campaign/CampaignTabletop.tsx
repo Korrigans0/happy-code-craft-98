@@ -331,6 +331,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Click vs drag tracking (simple click on token = open sheet) ──
   const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
+  // Double-click detection to open a character sheet (single click only selects)
+  const lastTokenClickRef = useRef<{ tokenId: string; t: number } | null>(null);
   const didDragRef = useRef(false);
 
   // ── Voir fiche dialog ──
@@ -1956,7 +1958,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
       // Voile de nuit : bleu nuit profond plutôt qu'un noir plat
       if (lightsHook.nightMode) {
-        lCtx.fillStyle = "rgba(7, 14, 38, 0.86)";
+        lCtx.fillStyle = "rgba(2, 6, 22, 0.95)";
         lCtx.fillRect(0, 0, tmp2.width, tmp2.height);
       }
 
