@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
+import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
+
 import {
   Save, Trash2, RefreshCw, Copy, Link2, ExternalLink,
   Volume2, MessageCircle, Image, Shield, Users, Lock,
