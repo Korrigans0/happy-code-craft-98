@@ -21,6 +21,14 @@ import {
   isYoutube,
   type AudioTrack,
 } from "@/hooks/useCampaignAudio";
+import {
+  installSfxAutoUnlock,
+  onSfxUnlockChange,
+  playSfx,
+  preloadSfx,
+  unlockSfx,
+} from "@/lib/vtt/sfxEngine";
+
 
 interface YTPlayer {
   playVideo: () => void;
@@ -164,9 +172,35 @@ export default function CampaignAudioPlayer({ campaignId, isGM, audio }: Props) 
   }, [state?.is_playing, usingYoutube]);
 
   // ── Effets sonores ponctuels ──────────────────────────────
+  // Déblocage automatique du moteur audio au premier geste utilisateur.
+  useEffect(() => installSfxAutoUnlock(), []);
+  useEffect(() => onSfxUnlockChange((ready) => { if (ready) setBlocked(false); }), []);
+
+  // Préchargement des effets : déclenchement instantané, sans latence réseau.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      for (const t of tracks) {
+        if (t.kind !== "sfx" || isYoutube(t)) continue;
+        const url = await resolveUrl(t);
+        if (cancelled) return;
+        if (url) preloadSfx(url);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tracks, resolveUrl]);
+
   const lastSfx = useRef<string | null>(null);
+  const sfxInit = useRef(false);
   useEffect(() => {
     const evt = state?.sfx_event;
+    // Au premier chargement, on ignore l'événement déjà présent en base
+    // (sinon un vieil effet se rejoue à chaque arrivée sur la table).
+    if (!sfxInit.current) {
+      sfxInit.current = true;
+      lastSfx.current = evt?.nonce ?? null;
+      return;
+    }
     if (!evt?.nonce || evt.nonce === lastSfx.current) return;
     lastSfx.current = evt.nonce;
     const track = tracks.find((t: AudioTrack) => t.id === evt.track_id);
@@ -174,21 +208,22 @@ export default function CampaignAudioPlayer({ campaignId, isGM, audio }: Props) 
     void (async () => {
       const url = await resolveUrl(track);
       if (!url) return;
-      const one = new Audio(url);
-      one.volume = Math.min(1, effective * (track.volume_default ?? 0.9));
-      one.play().catch(() => setBlocked(true));
+      const res = await playSfx(url, Math.min(1, effective * (track.volume_default ?? 0.9)));
+      if (res.blocked) setBlocked(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.sfx_event?.nonce]);
+  }, [state?.sfx_event?.nonce, tracks]);
 
   // Débloque l'autoplay au premier clic de l'utilisateur.
   const unblock = useCallback(() => {
+    void unlockSfx();
     setBlocked(false);
     if (usingYoutube) yt.current?.playVideo();
     else audioRef.current?.play().catch(() => setBlocked(true));
   }, [usingYoutube]);
 
   useEffect(() => () => { audioRef.current?.pause(); yt.current?.destroy?.(); }, []);
+
 
   const playing = !!state?.is_playing && !!currentTrack;
 

@@ -5,10 +5,11 @@
 
 import { useRef, useState } from "react";
 import {
-  Music, Play, Pause, Square, Repeat, Trash2, Upload, Link2, Zap, Loader2, Volume2,
+  Music, Play, Pause, Square, Repeat, Trash2, Upload, Link2, Zap, Loader2, Volume2, Headphones,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
+import { playSfx, unlockSfx } from "@/lib/vtt/sfxEngine";
 import {
   formatAudioSize,
   isYoutube,
@@ -17,16 +18,18 @@ import {
   type useCampaignAudio,
 } from "@/hooks/useCampaignAudio";
 
+
 interface Props {
   audio: ReturnType<typeof useCampaignAudio>;
 }
 
 export default function AudioTab({ audio }: Props) {
   const {
-    music, sfx, state, currentTrack, loading, uploading,
+    music, sfx, state, currentTrack, loading, uploading, resolveUrl,
     play, pause, resume, stop, setLoop, setMasterVolume, triggerSfx,
     uploadTrack, addUrlTrack, deleteTrack,
   } = audio;
+
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [pendingKind, setPendingKind] = useState<AudioKind>("music");
@@ -60,6 +63,26 @@ export default function AudioTab({ audio }: Props) {
     });
   };
 
+  /** Écoute locale d'un effet, sans le diffuser à la table. */
+  const previewSfx = async (t: AudioTrack) => {
+    await unlockSfx();
+    const url = await resolveUrl(t);
+    if (!url) {
+      toast({ title: "Audio", description: "Fichier introuvable.", variant: "destructive" });
+      return;
+    }
+    const res = await playSfx(url, t.volume_default ?? 0.9);
+    if (!res.ok) {
+      toast({
+        title: "Audio bloqué",
+        description: "Le navigateur a refusé la lecture. Cliquez sur la page puis réessayez.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+
   const TrackRow = ({ t }: { t: AudioTrack }) => {
     const active = currentTrack?.id === t.id;
     return (
@@ -83,15 +106,29 @@ export default function AudioTab({ audio }: Props) {
             {active && state?.is_playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
         ) : (
-          <button
-            title="Déclencher pour tous"
-            className="rounded p-1 text-muted-foreground transition-colors hover:text-amber-400"
-            onClick={() => guard(() => triggerSfx(t))}
-            disabled={isYoutube(t)}
-          >
-            <Zap className="h-4 w-4" />
-          </button>
+          <>
+            <button
+              title="Écouter (moi seul)"
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-primary disabled:opacity-40"
+              disabled={isYoutube(t)}
+              onClick={() => void previewSfx(t)}
+            >
+              <Headphones className="h-4 w-4" />
+            </button>
+            <button
+              title={isYoutube(t) ? "YouTube non supporté pour les effets" : "Déclencher pour tous"}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-amber-400 disabled:opacity-40"
+              onClick={() => guard(async () => {
+                await unlockSfx();
+                await triggerSfx(t);
+              })}
+              disabled={isYoutube(t)}
+            >
+              <Zap className="h-4 w-4" />
+            </button>
+          </>
         )}
+
         <button
           title="Supprimer"
           className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
