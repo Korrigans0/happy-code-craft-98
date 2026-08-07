@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2, Plus, Minus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { broadcastDiceRoll, detectCrit } from "@/lib/vtt/diceBroadcast";
 
 interface CampaignChatProps {
   campaignId: string;

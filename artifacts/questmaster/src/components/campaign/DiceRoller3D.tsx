@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignsApi } from "@/lib/api";
 import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
+import { broadcastDiceRoll } from "@/lib/vtt/diceBroadcast";
 
 /* ============================================================
  *  Aetheria 3D Dice — physical dice, dark fantasy feel
