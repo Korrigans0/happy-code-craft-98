@@ -20,6 +20,8 @@ import MacroEditorDialog from "./MacroEditorDialog";
 import { macroColorClass, type Macro, type MacroDraft } from "@/lib/macros/types";
 import { resolveVariables } from "@/lib/macros/variables";
 import { rollFormula, formatRoll, DiceError } from "@/lib/macros/engine";
+import { broadcastDiceRoll, detectCrit } from "@/lib/vtt/diceBroadcast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   campaignId: string;
@@ -29,6 +31,7 @@ interface Props {
 
 const MacroBar = ({ campaignId, isGM, system }: Props) => {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   const {
     macros, isLoading, userId,
     createMacro, updateMacro, deleteMacro, duplicateMacro, reorder, seedDefaults,
@@ -138,7 +141,7 @@ const MacroBar = ({ campaignId, isGM, system }: Props) => {
         });
       }
     },
-    [characters, sendMessage],
+    [characters, sendMessage, campaignId, authUser],
   );
 
   const handleSubmit = (draft: MacroDraft) => {
