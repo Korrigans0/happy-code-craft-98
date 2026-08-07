@@ -76,7 +76,7 @@ export const campaignsApi = {
       system: (data.system as string) ?? "aetheria",
       image_url: (data.image_url as string) ?? null,
       is_active: data.is_active !== false,
-      invite_code: (data.invite_code as string) ?? randomInviteCode(),
+      invite_code: sanitizeInviteCode((data.invite_code as string) ?? "") || randomInviteCode(),
       discord_link: (data.discord_link as string) ?? null,
       summary: (data.summary as string) ?? null,
       planned_sessions: (data.planned_sessions as number) ?? null,
