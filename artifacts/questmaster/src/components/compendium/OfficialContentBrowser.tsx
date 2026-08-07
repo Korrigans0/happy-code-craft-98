@@ -68,6 +68,10 @@ const UI: Record<OfficialLang, Record<string, string>> = {
     source: "Source",
     officialSheet: "Official page",
     translating: "",
+    loadingTitle: "The archivists are consulting the grimoires…",
+    loadingHint:
+      "The first visit to a page may take a few moments: official entries are fetched, then sealed into the archives. Later visits will be instant.",
+
   },
 };
 
