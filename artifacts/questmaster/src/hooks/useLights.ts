@@ -65,9 +65,11 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
 
   const setNightMode = useCallback((v: boolean) => {
     if (!isGM) return;
+    hydratedRef.current = true;
     setNightModeState(v);
-    saveStateDebounced({ night_mode: v });
+    saveStateDebounced({ night_mode: v }, { immediate: true });
   }, [isGM, saveStateDebounced]);
+
 
   // Crée une lumière à une position du monde
   const addLightAt = useCallback((wx: number, wy: number, preset: LightPreset = selectedPreset) => {
