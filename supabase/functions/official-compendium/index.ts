@@ -339,7 +339,18 @@ async function fetchPathfinder(kind: Kind, search: string, page: number, lang: L
 
 /* ──────────────────────────── COF (intégré) ──────────────────────────── */
 
+/** COF ability keys are stored in French — mirror them for the English view. */
+const COF_ABILITY_EN: Record<string, string> = { FOR: "STR", SAG: "WIS" };
+
+/** Accent- and case-insensitive comparison key (« Épée » matches « epee »). */
+const fold = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 function mapCof(e: CofEntry, lang: Lang): OfficialEntry {
+  const abilities = e.abilities && lang === "en"
+    ? Object.fromEntries(Object.entries(e.abilities).map(([k, v]) => [COF_ABILITY_EN[k] ?? k, v]))
+    : e.abilities;
+
   return {
     id: `cof:${e.kind}:${e.slug}`,
     name: e.name[lang],
@@ -347,7 +358,7 @@ function mapCof(e: CofEntry, lang: Lang): OfficialEntry {
     subtitle: e.subtitle[lang],
     tags: e.tags[lang],
     meta: e.meta[lang],
-    abilities: e.abilities,
+    abilities,
     description: e.description[lang],
     sections: e.sections[lang],
     source: COF_SOURCE[lang],
@@ -355,14 +366,13 @@ function mapCof(e: CofEntry, lang: Lang): OfficialEntry {
 }
 
 function fetchCof(kind: Kind, search: string, page: number, lang: Lang) {
-  const needle = search.toLowerCase();
+  const needle = fold(search);
   const all = COF_ENTRIES
     .filter((e) => e.kind === kind)
     .filter((e) =>
       !needle ||
-      e.name[lang].toLowerCase().includes(needle) ||
-      e.description[lang].toLowerCase().includes(needle) ||
-      e.tags[lang].some((t) => t.toLowerCase().includes(needle)))
+      // Recherche dans les deux langues : un MJ francophone trouve « fireball ».
+      fold(`${e.name.fr} ${e.name.en} ${e.description[lang]} ${e.tags[lang].join(" ")}`).includes(needle))
     .sort((a, b) => a.name[lang].localeCompare(b.name[lang], lang));
 
   const start = (page - 1) * PAGE_SIZE;
@@ -370,6 +380,7 @@ function fetchCof(kind: Kind, search: string, page: number, lang: Lang) {
     total: all.length,
     items: all.slice(start, start + PAGE_SIZE).map((e) => mapCof(e, lang)),
     pageSize: PAGE_SIZE,
+
   };
 }
 
