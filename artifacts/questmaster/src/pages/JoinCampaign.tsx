@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sword, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import { sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 const JoinCampaign = () => {
   const { code } = useParams<{ code: string }>();
