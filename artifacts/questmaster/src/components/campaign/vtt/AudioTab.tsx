@@ -5,10 +5,11 @@
 
 import { useRef, useState } from "react";
 import {
-  Music, Play, Pause, Square, Repeat, Trash2, Upload, Link2, Zap, Loader2, Volume2,
+  Music, Play, Pause, Square, Repeat, Trash2, Upload, Link2, Zap, Loader2, Volume2, Headphones,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
+import { playSfx, unlockSfx } from "@/lib/vtt/sfxEngine";
 import {
   formatAudioSize,
   isYoutube,
@@ -16,6 +17,7 @@ import {
   type AudioTrack,
   type useCampaignAudio,
 } from "@/hooks/useCampaignAudio";
+
 
 interface Props {
   audio: ReturnType<typeof useCampaignAudio>;
