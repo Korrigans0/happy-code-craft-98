@@ -118,6 +118,25 @@ const MacroBar = ({ campaignId, isGM, system }: Props) => {
           ...(rolls[0] ?? {}),
         },
       });
+
+      // Notification flottante sur la table (jets publics uniquement)
+      const first = rolls[0];
+      if (first && !macro.is_private_roll) {
+        const sides = Number(String(first.dice).match(/d(\d+)/i)?.[1] ?? 0);
+        const results = (Array.isArray(first.results) ? first.results : []).map((v: any) => ({
+          type: sides,
+          value: typeof v === "number" ? v : Number(v?.value ?? 0),
+        }));
+        broadcastDiceRoll(campaignId, {
+          author: authUser?.display_name || "Joueur",
+          formula: String(first.dice ?? macro.name),
+          label: first.label || macro.name,
+          total: Number(first.total ?? 0),
+          results,
+          modifier: Number(first.modifier ?? 0),
+          crit: detectCrit(results),
+        });
+      }
     },
     [characters, sendMessage],
   );
