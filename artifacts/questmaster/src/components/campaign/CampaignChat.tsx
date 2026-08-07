@@ -263,6 +263,13 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     return map;
   }, [members]);
 
+  // Pseudo affiché dans la notification de jet sur la table
+  const selfName = useMemo(
+    () => memberMap.get(userId)?.display_name || authUser?.display_name || "Joueur",
+    [memberMap, userId, authUser],
+  );
+
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
