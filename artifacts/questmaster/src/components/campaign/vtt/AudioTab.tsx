@@ -83,15 +83,29 @@ export default function AudioTab({ audio }: Props) {
             {active && state?.is_playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
         ) : (
-          <button
-            title="Déclencher pour tous"
-            className="rounded p-1 text-muted-foreground transition-colors hover:text-amber-400"
-            onClick={() => guard(() => triggerSfx(t))}
-            disabled={isYoutube(t)}
-          >
-            <Zap className="h-4 w-4" />
-          </button>
+          <>
+            <button
+              title="Écouter (moi seul)"
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-primary disabled:opacity-40"
+              disabled={isYoutube(t)}
+              onClick={() => void previewSfx(t)}
+            >
+              <Headphones className="h-4 w-4" />
+            </button>
+            <button
+              title={isYoutube(t) ? "YouTube non supporté pour les effets" : "Déclencher pour tous"}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-amber-400 disabled:opacity-40"
+              onClick={() => guard(async () => {
+                await unlockSfx();
+                await triggerSfx(t);
+              })}
+              disabled={isYoutube(t)}
+            >
+              <Zap className="h-4 w-4" />
+            </button>
+          </>
         )}
+
         <button
           title="Supprimer"
           className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
