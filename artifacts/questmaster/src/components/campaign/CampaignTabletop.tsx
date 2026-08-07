@@ -331,6 +331,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Click vs drag tracking (simple click on token = open sheet) ──
   const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
+  // Double-click detection to open a character sheet (single click only selects)
+  const lastTokenClickRef = useRef<{ tokenId: string; t: number } | null>(null);
   const didDragRef = useRef(false);
 
   // ── Voir fiche dialog ──
@@ -1956,7 +1958,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
       // Voile de nuit : bleu nuit profond plutôt qu'un noir plat
       if (lightsHook.nightMode) {
-        lCtx.fillStyle = "rgba(7, 14, 38, 0.86)";
+        lCtx.fillStyle = "rgba(2, 6, 22, 0.95)";
         lCtx.fillRect(0, 0, tmp2.width, tmp2.height);
       }
 
@@ -2696,7 +2698,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       wallsHook.finishWall(w.x, w.y);
       return;
     }
-    // ── Click vs drag: simple click on a token opens the character sheet ──
+    // ── Click vs drag: DOUBLE click on a token opens the character sheet ──
     const pendingClick = clickStartRef.current;
     const wasClick =
       !!pendingClick && !didDragRef.current && Date.now() - pendingClick.t < 500;
@@ -2709,7 +2711,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setDragStart(null);
       setIsDrawing(false);
       setLastPanPoint(null);
-      if (tok) {
+      const prevClick = lastTokenClickRef.current;
+      const isDoubleClick =
+        !!prevClick && prevClick.tokenId === pendingClick.tokenId && Date.now() - prevClick.t < 400;
+      lastTokenClickRef.current = isDoubleClick ? null : { tokenId: pendingClick.tokenId, t: Date.now() };
+      if (tok && isDoubleClick) {
         if (pendingClick.denied) {
           toast({
             title: "Accès refusé",
