@@ -13,7 +13,10 @@ const newId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toSt
 interface UseLightsOptions {
   campaignId: string;
   isGM: boolean;
-  saveStateDebounced: (partial: { lights?: LightSource[]; night_mode?: boolean }) => void;
+  saveStateDebounced: (
+    partial: { lights?: LightSource[]; night_mode?: boolean },
+    options?: { immediate?: boolean },
+  ) => void;
 }
 
 export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOptions) {
@@ -21,6 +24,9 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
   const [nightMode, setNightModeState] = useState(false);
   const lightsRef = useRef<LightSource[]>([]);
   useEffect(() => { lightsRef.current = lights; }, [lights]);
+  // Une fois l'état reçu via la synchro temps réel, le chargement initial
+  // ne doit plus écraser les données (évite les lumières « qui reviennent »).
+  const hydratedRef = useRef(false);
 
   const [selectedPreset, setSelectedPreset] = useState<LightPreset>("torch");
 
@@ -31,6 +37,7 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
       .select("lights, night_mode" as never)
       .eq("campaign_id", campaignId)
       .maybeSingle();
+    if (hydratedRef.current) return;
     const d = data as { lights?: LightSource[]; night_mode?: boolean } | null;
     if (d?.lights) setLights(d.lights);
     if (typeof d?.night_mode === "boolean") setNightModeState(d.night_mode);
@@ -40,22 +47,29 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
 
   // Réception depuis la sync (sans triggerer une nouvelle save)
   const receiveLights = useCallback((incoming: LightSource[]) => {
+    hydratedRef.current = true;
     setLights(incoming || []);
   }, []);
   const receiveNightMode = useCallback((v: boolean) => {
+    hydratedRef.current = true;
     setNightModeState(!!v);
   }, []);
 
   const persistLights = useCallback((next: LightSource[]) => {
+    hydratedRef.current = true;
     setLights(next);
-    saveStateDebounced({ lights: next });
+    // Diffusion immédiate : tous les joueurs doivent voir la lumière tout de suite.
+    saveStateDebounced({ lights: next }, { immediate: true });
   }, [saveStateDebounced]);
+
 
   const setNightMode = useCallback((v: boolean) => {
     if (!isGM) return;
+    hydratedRef.current = true;
     setNightModeState(v);
-    saveStateDebounced({ night_mode: v });
+    saveStateDebounced({ night_mode: v }, { immediate: true });
   }, [isGM, saveStateDebounced]);
+
 
   // Crée une lumière à une position du monde
   const addLightAt = useCallback((wx: number, wy: number, preset: LightPreset = selectedPreset) => {

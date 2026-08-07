@@ -1935,7 +1935,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         if (l.tokenId) {
           const tk = tokens.find(t => t.id === l.tokenId);
           if (!tk) return null;
-          return { light: l, wx: tk.x, wy: tk.y };
+          // Le token est dessiné depuis son coin haut-gauche : on centre la lumière.
+          return { light: l, wx: tk.x + tk.size / 2, wy: tk.y + tk.size / 2 };
         }
         if (typeof l.x === "number" && typeof l.y === "number") {
           return { light: l, wx: l.x, wy: l.y };
@@ -1953,11 +1954,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       tmp2.height = canvas.height;
       const lCtx = tmp2.getContext("2d")!;
 
-      // Fond noir si nuit, sinon transparent
+      // Voile de nuit : bleu nuit profond plutôt qu'un noir plat
       if (lightsHook.nightMode) {
-        lCtx.fillStyle = "rgba(0, 0, 0, 0.82)";
+        lCtx.fillStyle = "rgba(7, 14, 38, 0.86)";
         lCtx.fillRect(0, 0, tmp2.width, tmp2.height);
       }
+
 
       // Pour chaque lumière, "punch" un dégradé radial clippé par visibilité
       lCtx.save();
@@ -2024,11 +2026,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const vr = tk.visionRadius ?? 0;
           if (!tk.visible || vr <= 0) continue;
           const totalR = unitsToPixels(grid, vr);
+          // Centre réel du token (x/y = coin haut-gauche)
+          const cxw = tk.x + tk.size / 2;
+          const cyw = tk.y + tk.size / 2;
           const poly = blockers.length > 0
-            ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
+            ? computeVisibilityPolygon(cxw, cyw, totalR, blockers)
             : [];
-          const sx = tk.x * zoom + panOffset.x;
-          const sy = tk.y * zoom + panOffset.y;
+          const sx = cxw * zoom + panOffset.x;
+          const sy = cyw * zoom + panOffset.y;
           const sR = totalR * zoom;
           lCtx.save();
           lCtx.beginPath();
