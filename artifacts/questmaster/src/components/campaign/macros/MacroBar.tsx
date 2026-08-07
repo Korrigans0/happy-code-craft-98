@@ -20,6 +20,8 @@ import MacroEditorDialog from "./MacroEditorDialog";
 import { macroColorClass, type Macro, type MacroDraft } from "@/lib/macros/types";
 import { resolveVariables } from "@/lib/macros/variables";
 import { rollFormula, formatRoll, DiceError } from "@/lib/macros/engine";
+import { broadcastDiceRoll, detectCrit } from "@/lib/vtt/diceBroadcast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   campaignId: string;
@@ -29,6 +31,7 @@ interface Props {
 
 const MacroBar = ({ campaignId, isGM, system }: Props) => {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
   const {
     macros, isLoading, userId,
     createMacro, updateMacro, deleteMacro, duplicateMacro, reorder, seedDefaults,
@@ -118,8 +121,27 @@ const MacroBar = ({ campaignId, isGM, system }: Props) => {
           ...(rolls[0] ?? {}),
         },
       });
+
+      // Notification flottante sur la table (jets publics uniquement)
+      const first = rolls[0];
+      if (first && !macro.is_private_roll) {
+        const sides = Number(String(first.dice).match(/d(\d+)/i)?.[1] ?? 0);
+        const results = (Array.isArray(first.results) ? first.results : []).map((v: any) => ({
+          type: sides,
+          value: typeof v === "number" ? v : Number(v?.value ?? 0),
+        }));
+        broadcastDiceRoll(campaignId, {
+          author: authUser?.display_name || "Joueur",
+          formula: String(first.dice ?? macro.name),
+          label: first.label || macro.name,
+          total: Number(first.total ?? 0),
+          results,
+          modifier: Number(first.modifier ?? 0),
+          crit: detectCrit(results),
+        });
+      }
     },
-    [characters, sendMessage],
+    [characters, sendMessage, campaignId, authUser],
   );
 
   const handleSubmit = (draft: MacroDraft) => {

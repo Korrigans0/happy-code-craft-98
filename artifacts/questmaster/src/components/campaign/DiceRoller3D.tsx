@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { campaignsApi } from "@/lib/api";
 import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
+import { broadcastDiceRoll } from "@/lib/vtt/diceBroadcast";
 
 /* ============================================================
  *  Aetheria 3D Dice — physical dice, dark fantasy feel
@@ -718,16 +719,13 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
           }).catch(() => { /* ignore */ });
           // Realtime broadcast for floating overlay
-          const ch: any = (supabase as any).channel(`vtt-dice-${campaignId}`);
-          ch.subscribe?.((status: string) => {
-            if (status === "SUBSCRIBED") {
-              ch.send?.({
-                type: "broadcast",
-                event: "roll",
-                payload: { author, formula, total, results: all.map(r => ({ type: r.type, value: r.value })), modifier, crit, t: Date.now() },
-              });
-              setTimeout(() => { (supabase as any).removeChannel?.(ch); }, 800);
-            }
+          broadcastDiceRoll(campaignId, {
+            author,
+            formula,
+            total,
+            results: all.map(r => ({ type: Number(r.type), value: r.value ?? 0 })),
+            modifier,
+            crit,
           });
         }
       }
