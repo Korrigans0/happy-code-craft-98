@@ -30,6 +30,33 @@ export interface CofEntry {
 
 /* ──────────────────────────── Créatures ──────────────────────────── */
 
+/** Glossaire de combat FR → EN appliqué aux lignes d'attaque et de dégâts. */
+const COMBAT_GLOSSARY: [RegExp, string][] = [
+  [/Hache d'armes/gi, "Battleaxe"],
+  [/Morsure venimeuse/gi, "Venomous bite"],
+  [/Contact brûlant/gi, "Burning touch"],
+  [/Toucher glacé/gi, "Chilling touch"],
+  [/Épée rouillée/gi, "Rusted sword"],
+  [/Épée courte/gi, "Short sword"],
+  [/Arbalète/gi, "Crossbow"],
+  [/Cimeterre/gi, "Scimitar"],
+  [/Gourdin/gi, "Club"],
+  [/Morsure/gi, "Bite"],
+  [/Griffes/gi, "Claws"],
+  [/Serres/gi, "Talons"],
+  [/Dague/gi, "Dagger"],
+  [/Lance/gi, "Spear"],
+  [/Fronde/gi, "Sling"],
+  [/Poing/gi, "Fist"],
+  [/nécrotique/gi, "necrotic"],
+  [/électrique/gi, "lightning"],
+  [/poison/gi, "poison"],
+  [/feu/gi, "fire"],
+];
+
+const toEnCombat = (fr: string) =>
+  COMBAT_GLOSSARY.reduce((acc, [re, en]) => acc.replace(re, en), fr);
+
 const monster = (
   slug: string,
   name: Localized,
@@ -60,10 +87,11 @@ const monster = (
       Initiative: String(stats.init),
       Defence: String(stats.def),
       "Hit points": String(stats.pv),
-      Attack: stats.att,
-      Damage: stats.dm,
+      Attack: toEnCombat(stats.att),
+      Damage: toEnCombat(stats.dm),
     },
   },
+
   abilities,
   description,
   sections: {
