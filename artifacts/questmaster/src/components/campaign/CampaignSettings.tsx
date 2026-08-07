@@ -453,8 +453,10 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              4 à 16 caractères (lettres et chiffres uniquement). Les joueurs entrent ce code
-              sur la page «&nbsp;Mes Campagnes&nbsp;» → «&nbsp;Rejoindre&nbsp;».
+              4 à 16 caractères (lettres et chiffres uniquement). Les caractères ambigus
+              «&nbsp;O&nbsp;» et «&nbsp;0&nbsp;» sont interdits pour éviter les confusions.
+              Les joueurs entrent ce code sur la page «&nbsp;Mes Campagnes&nbsp;» → «&nbsp;Rejoindre&nbsp;».
+
             </p>
 
             {codeEdited && (
