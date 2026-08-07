@@ -1,6 +1,8 @@
 // Shared realtime broadcast for dice rolls.
 // Every roll (chat, quick actions, macros, 3D dice tab) is pushed on the same
 // channel so the floating overlay on the tabletop shows: author + result.
+// IMPORTANT: sender and listener MUST share the SAME channel instance with
+// `broadcast.self = true`, otherwise the author never sees his own roll.
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DiceRollBroadcast {
@@ -16,6 +18,33 @@ export interface DiceRollBroadcast {
 
 export function diceChannelName(campaignId: string) {
   return `vtt-dice-${campaignId}`;
+}
+
+type Entry = { channel: any; ready: boolean; queue: DiceRollBroadcast[] };
+const registry = new Map<string, Entry>();
+
+/** Get (or lazily create) the shared dice channel for a campaign. */
+export function getDiceChannel(campaignId: string): any {
+  const existing = registry.get(campaignId);
+  if (existing) return existing.channel;
+
+  const channel: any = (supabase as any).channel(diceChannelName(campaignId), {
+    config: { broadcast: { self: true } },
+  });
+  const entry: Entry = { channel, ready: false, queue: [] };
+  registry.set(campaignId, entry);
+
+  channel.subscribe?.((status: string) => {
+    if (status === "SUBSCRIBED") {
+      entry.ready = true;
+      const pending = entry.queue.splice(0);
+      pending.forEach(payload =>
+        channel.send?.({ type: "broadcast", event: "roll", payload }),
+      );
+    }
+  });
+
+  return channel;
 }
 
 /** Detect crit/fumble on a single d20 roll. */
@@ -34,16 +63,14 @@ export function broadcastDiceRoll(
 ) {
   if (!campaignId) return;
   try {
-    const ch: any = (supabase as any).channel(diceChannelName(campaignId));
-    ch.subscribe?.((status: string) => {
-      if (status !== "SUBSCRIBED") return;
-      ch.send?.({
-        type: "broadcast",
-        event: "roll",
-        payload: { ...payload, t: payload.t ?? Date.now() },
-      });
-      setTimeout(() => { (supabase as any).removeChannel?.(ch); }, 800);
-    });
+    const channel = getDiceChannel(campaignId);
+    const entry = registry.get(campaignId);
+    const full: DiceRollBroadcast = { ...payload, t: payload.t ?? Date.now() };
+    if (entry?.ready) {
+      channel.send?.({ type: "broadcast", event: "roll", payload: full });
+    } else {
+      entry?.queue.push(full);
+    }
   } catch {
     /* non-blocking */
   }

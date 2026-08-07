@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Dices } from "lucide-react";
-import { diceChannelName, type DiceRollBroadcast } from "@/lib/vtt/diceBroadcast";
+import { getDiceChannel, type DiceRollBroadcast } from "@/lib/vtt/diceBroadcast";
 
 interface DisplayRoll extends DiceRollBroadcast {
   id: string;
@@ -17,20 +16,25 @@ const DiceBroadcastOverlay = ({ campaignId }: { campaignId: string }) => {
 
   useEffect(() => {
     if (!campaignId) return;
-    const channel: any = (supabase as any).channel(diceChannelName(campaignId), {
-      config: { broadcast: { self: true } },
-    });
-    channel.on?.("broadcast", { event: "roll" }, ({ payload }: { payload: DiceRollBroadcast }) => {
+    const channel: any = getDiceChannel(campaignId);
+    const handler = ({ payload }: { payload: DiceRollBroadcast }) => {
       if (!payload || typeof payload.total !== "number") return;
       const id = `${payload.t}-${Math.random().toString(36).slice(2, 7)}`;
       setRolls(prev => [...prev, { ...payload, id }].slice(-4));
       setTimeout(() => {
         setRolls(prev => prev.filter(r => r.id !== id));
       }, 7000);
-    });
-    channel.subscribe?.();
-    return () => { (supabase as any).removeChannel?.(channel); };
+    };
+    channel.on?.("broadcast", { event: "roll" }, handler);
+    return () => {
+      // Keep the shared channel alive, just drop this listener.
+      const bindings = channel.bindings?.broadcast;
+      if (Array.isArray(bindings)) {
+        channel.bindings.broadcast = bindings.filter((b: any) => b.callback !== handler);
+      }
+    };
   }, [campaignId]);
+
 
   if (rolls.length === 0) return null;
 
