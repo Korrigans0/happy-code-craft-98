@@ -143,9 +143,10 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
   });
 
   const handleCodeChange = useCallback((val: string) => {
-    setInviteCode(val.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 16));
+    setInviteCode(sanitizeInviteCode(val));
     setCodeEdited(true);
   }, []);
+
 
   const shuffleCode = useCallback(() => {
     setInviteCode(generateCode());
