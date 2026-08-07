@@ -213,11 +213,14 @@ const Compendium = () => {
   const [refreshKey] = useState(0);
 
   // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
-  // Glyphes est rendu via un composant dédié, ajouté ici en plus du registre.
-  const visibleSystems = [
-    ...SYSTEM_LIST,
-    { id: "Glyphes", label: "Glyphes", emoji: "✨", featured: false, partner: false, custom: false, nouveau: true } as any,
-  ];
+  // Glyphes est rendu via un composant dédié ; on évite tout doublon avec le registre.
+  const visibleSystems = SYSTEM_LIST.some((s) => s.id === "Glyphes")
+    ? SYSTEM_LIST
+    : [
+      ...SYSTEM_LIST,
+      { id: "Glyphes", label: "Glyphes", emoji: "✨", featured: false, partner: false, custom: false, nouveau: true } as any,
+    ];
+
 
   return (
     <div className="relative flex min-h-screen flex-col">
