@@ -4,6 +4,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
+
 
 // Kept for backward compatibility with App.tsx wiring; no longer used.
 export function setTokenGetter(_fn: () => Promise<string | null>) {}
