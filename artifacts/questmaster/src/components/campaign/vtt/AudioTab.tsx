@@ -63,6 +63,26 @@ export default function AudioTab({ audio }: Props) {
     });
   };
 
+  /** Écoute locale d'un effet, sans le diffuser à la table. */
+  const previewSfx = async (t: AudioTrack) => {
+    await unlockSfx();
+    const url = await resolveUrl(t);
+    if (!url) {
+      toast({ title: "Audio", description: "Fichier introuvable.", variant: "destructive" });
+      return;
+    }
+    const res = await playSfx(url, t.volume_default ?? 0.9);
+    if (!res.ok) {
+      toast({
+        title: "Audio bloqué",
+        description: "Le navigateur a refusé la lecture. Cliquez sur la page puis réessayez.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+
   const TrackRow = ({ t }: { t: AudioTrack }) => {
     const active = currentTrack?.id === t.id;
     return (
