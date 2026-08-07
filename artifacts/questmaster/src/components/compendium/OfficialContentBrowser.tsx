@@ -207,7 +207,7 @@ const OfficialContentBrowser = ({ system, kind, searchQuery }: Props) => {
               <span className="absolute inset-0 animate-ping rounded-full border border-primary/20" />
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
             </div>
-            <p className="font-heading text-lg text-primary">{t.loadingTitle}</p>
+            <p className="font-display text-lg tracking-wide text-primary">{t.loadingTitle}</p>
             <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{t.loadingHint}</p>
           </div>
         </div>
