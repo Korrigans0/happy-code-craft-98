@@ -50,6 +50,10 @@ const UI: Record<OfficialLang, Record<string, string>> = {
     source: "Source",
     officialSheet: "Fiche officielle",
     translating: "Traduction française en cours pour les nouvelles fiches…",
+    loadingTitle: "Les archivistes consultent les grimoires…",
+    loadingHint:
+      "La première consultation d'une page peut demander quelques instants : les fiches officielles sont récupérées puis traduites, avant d'être scellées dans les archives. Les prochaines visites seront instantanées.",
+
   },
   en: {
     loading: "Loading…",
