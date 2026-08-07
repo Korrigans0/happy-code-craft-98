@@ -200,9 +200,18 @@ const OfficialContentBrowser = ({ system, kind, searchQuery }: Props) => {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-gradient-card px-6 py-14 text-center shadow-card">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/0.16),transparent_70%)]" />
+          <div className="relative flex flex-col items-center gap-4">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-background/60">
+              <span className="absolute inset-0 animate-ping rounded-full border border-primary/20" />
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+            <p className="font-heading text-lg text-primary">{t.loadingTitle}</p>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{t.loadingHint}</p>
+          </div>
         </div>
+
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry) => (
