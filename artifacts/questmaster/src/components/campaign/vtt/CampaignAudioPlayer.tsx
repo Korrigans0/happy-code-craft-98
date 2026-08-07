@@ -21,6 +21,14 @@ import {
   isYoutube,
   type AudioTrack,
 } from "@/hooks/useCampaignAudio";
+import {
+  installSfxAutoUnlock,
+  onSfxUnlockChange,
+  playSfx,
+  preloadSfx,
+  unlockSfx,
+} from "@/lib/vtt/sfxEngine";
+
 
 interface YTPlayer {
   playVideo: () => void;
