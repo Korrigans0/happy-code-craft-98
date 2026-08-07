@@ -723,7 +723,7 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             author,
             formula,
             total,
-            results: all.map(r => ({ type: r.type, value: r.value })),
+            results: all.map(r => ({ type: Number(r.type), value: r.value ?? 0 })),
             modifier,
             crit,
           });
