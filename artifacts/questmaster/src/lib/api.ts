@@ -25,14 +25,9 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 }
 
 function randomInviteCode(): string {
-  const bytes = new Uint8Array(6);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(36).padStart(2, "0"))
-    .join("")
-    .toUpperCase()
-    .slice(0, 8);
+  return generateInviteCode(8);
 }
+
 
 // ============== PROFILES ==============
 export const profilesApi = {
