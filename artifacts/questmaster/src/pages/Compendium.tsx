@@ -312,9 +312,10 @@ const Compendium = () => {
             </Tabs>
           )}
 
-          {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "Call of Cthulhu") && (
+          {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "COF" || system === "Call of Cthulhu") && (
             <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
+
 
           {system === "Glyphes" && <GlyphesCodex />}
 
