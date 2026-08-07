@@ -2026,11 +2026,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const vr = tk.visionRadius ?? 0;
           if (!tk.visible || vr <= 0) continue;
           const totalR = unitsToPixels(grid, vr);
+          // Centre réel du token (x/y = coin haut-gauche)
+          const cxw = tk.x + tk.size / 2;
+          const cyw = tk.y + tk.size / 2;
           const poly = blockers.length > 0
-            ? computeVisibilityPolygon(tk.x, tk.y, totalR, blockers)
+            ? computeVisibilityPolygon(cxw, cyw, totalR, blockers)
             : [];
-          const sx = tk.x * zoom + panOffset.x;
-          const sy = tk.y * zoom + panOffset.y;
+          const sx = cxw * zoom + panOffset.x;
+          const sy = cyw * zoom + panOffset.y;
           const sR = totalR * zoom;
           lCtx.save();
           lCtx.beginPath();
