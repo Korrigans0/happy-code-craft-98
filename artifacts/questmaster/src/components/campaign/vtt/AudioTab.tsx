@@ -25,10 +25,11 @@ interface Props {
 
 export default function AudioTab({ audio }: Props) {
   const {
-    music, sfx, state, currentTrack, loading, uploading,
+    music, sfx, state, currentTrack, loading, uploading, resolveUrl,
     play, pause, resume, stop, setLoop, setMasterVolume, triggerSfx,
     uploadTrack, addUrlTrack, deleteTrack,
   } = audio;
+
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [pendingKind, setPendingKind] = useState<AudioKind>("music");
