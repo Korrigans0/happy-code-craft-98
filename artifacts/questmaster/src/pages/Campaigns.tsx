@@ -649,7 +649,7 @@ const Campaigns = () => {
               <Input
                 id="join-code"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                onChange={(e) => setJoinCode(sanitizeInviteCode(e.target.value))}
                 placeholder="AETHERIA"
                 className="text-center text-2xl font-mono tracking-[0.4em] h-14"
                 maxLength={16}
