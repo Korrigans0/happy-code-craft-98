@@ -1100,6 +1100,48 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }));
   };
 
+  // ── Sélection multiple (outil "Sélectionner") ──
+  // Liste effective des tokens sélectionnés (fallback sur la sélection simple).
+  const getSelectionIds = (): string[] => {
+    if (selectedTokenIds.size > 0) return Array.from(selectedTokenIds);
+    return selectedTokenId ? [selectedTokenId] : [];
+  };
+
+  const selectAllTokens = () => {
+    const ids = tokens
+      .filter(t => t.visible && (!t.isHidden || isGM) && perms.canSelectToken(t))
+      .map(t => t.id);
+    setSelectedTokenIds(new Set(ids));
+    setSelectedTokenId(ids[ids.length - 1] ?? null);
+  };
+
+  const clearSelection = () => {
+    setSelectedTokenIds(new Set());
+    setSelectedTokenId(null);
+  };
+
+  const deleteSelection = () => {
+    const ids = getSelectionIds().filter(id => {
+      const t = tokens.find(x => x.id === id);
+      return !!t && perms.canMoveToken(t);
+    });
+    if (ids.length === 0) return;
+    ids.forEach(id => deletedTokenIdsRef.current.add(id));
+    setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    clearSelection();
+    toast({ title: `${ids.length} élément(s) supprimé(s)` });
+  };
+
+  const moveSelectionBy = (dx: number, dy: number) => {
+    const ids = getSelectionIds().filter(id => {
+      const t = tokens.find(x => x.id === id);
+      return !!t && perms.canMoveToken(t);
+    });
+    ids.forEach(id => moveTokenBy(id, dx, dy));
+  };
+
+
+
   const toggleTokenCondition = (tokenId: string, condId: string) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
