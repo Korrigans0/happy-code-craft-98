@@ -2434,6 +2434,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
+        else if (e.key === "s" || e.key === "S") setTool("select");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
         else if (e.key === "m" || e.key === "M") setTool("measure");
