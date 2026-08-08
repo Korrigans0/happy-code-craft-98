@@ -9,7 +9,8 @@
 //
 // Le filtre par système empêche toute contamination entre univers.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Swords, BookOpen, Globe, Skull, Sparkles, Map, Scroll, Users, Shield, Gem, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
