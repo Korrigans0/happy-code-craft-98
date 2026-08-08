@@ -3039,6 +3039,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (draggedToken) return "grabbing";
     if (isSpacePressed) return "grab";
     if (tool === "move") return "grab";
+    if (tool === "select") return "default";
     if (tool === "token") return "pointer";
     if (tool === "ping") return "cell";
     if (tool === "fogReveal") return "cell";
