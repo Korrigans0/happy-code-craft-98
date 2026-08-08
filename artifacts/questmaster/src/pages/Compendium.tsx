@@ -270,7 +270,7 @@ const Compendium = () => {
               return (
                 <button
                   key={s.id}
-                  onClick={() => setSystem(s.id)}
+                  onClick={() => selectSystem(s.id)}
                   className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                     active
                       ? "border-primary bg-primary/15 text-primary shadow-md"
