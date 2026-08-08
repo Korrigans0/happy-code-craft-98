@@ -11,7 +11,7 @@ import {
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
-  Grid3x3, Hexagon,
+  Grid3x3, Hexagon, MousePointerSquareDashed,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
