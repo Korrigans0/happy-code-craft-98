@@ -3013,7 +3013,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const visibleTools = useMemo(() => {
     let list = TOOLS.filter(t => !t.gmOnly || isGM);
     if (isMobilePlayer) {
-      const allowed = new Set(["move", "pencil", "eraser"]);
+      const allowed = new Set(["move", "select", "pencil", "eraser"]);
       list = list.filter(t => allowed.has(t.id));
     } else if (isMobileGM) {
       // Hide walls + dynamic lights on mobile GM
