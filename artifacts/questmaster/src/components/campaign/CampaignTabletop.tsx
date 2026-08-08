@@ -2980,6 +2980,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Tool definitions (rangés par catégorie) ──
   const TOOLS = useMemo<{ id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[]>(() => [
     { id: "move",      icon: <FIMove className="h-4 w-4" />,        label: "Déplacer",     key: "V", group: "nav" },
+    { id: "select",    icon: <MousePointerSquareDashed className="h-4 w-4" />, label: "Sélectionner (multi)", key: "S", group: "nav" },
     { id: "ping",      icon: <FIPing className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
     { id: "pencil",    icon: <FIQuill className="h-4 w-4" />,       label: "Crayon",       key: "P", group: "draw" },
     { id: "eraser",    icon: <FIEraser className="h-4 w-4" />,      label: "Gomme",        key: "E", group: "draw" },
