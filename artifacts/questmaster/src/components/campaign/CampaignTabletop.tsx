@@ -2746,29 +2746,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
     if (draggedToken) {
       const id = draggedToken;
+      const groupIds = selectedTokenIds.has(id) && selectedTokenIds.size > 1
+        ? new Set(selectedTokenIds)
+        : new Set([id]);
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
       setDraggedToken(null);
       setDragStart(null);
       setIsDrawing(false);
-      setTokens(prev => {
-        const t = prev.find(x => x.id === id);
-        if (!t) return prev;
+      setTokens(prev => prev.map(t => {
+        if (!groupIds.has(t.id)) return t;
         const { x: sx, y: sy } = snapPos(t.x, t.y, t.size);
         let nx = sx, ny = sy;
         // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
         if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
         if (collisionEnabled) {
           const overlaps = prev.some(o =>
-            o.id !== id && o.visible &&
+            o.id !== t.id && o.visible && !groupIds.has(o.id) &&
             tokensOverlap({ x: nx, y: ny, size: t.size }, { x: o.x, y: o.y, size: o.size })
           );
           if (overlaps) {
-            const last = tokenLastPosRef.current.get(id);
+            const last = tokenLastPosRef.current.get(t.id);
             nx = last?.x ?? t.x; ny = last?.y ?? t.y;
           }
         }
-        return prev.map(x => x.id === id ? { ...x, x: nx, y: ny } : x);
-      });
+        return { ...t, x: nx, y: ny };
+      }));
       return;
     }
     if (marquee) {
@@ -2783,15 +2785,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
       });
       if (hits.length > 0) {
-        const ids = new Set(hits.map(h => h.id));
-        setSelectedTokenIds(ids);
+        const additive = !!e?.shiftKey;
+        setSelectedTokenIds(prev => {
+          const next = additive ? new Set(prev) : new Set<string>();
+          hits.forEach(h => next.add(h.id));
+          return next;
+        });
         setSelectedTokenId(hits[hits.length - 1].id);
       }
       setMarquee(null);
       setIsDrawing(false);
       return;
     }
-    if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
+    if (tool === "move" || tool === "select" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
       if (currentAction.type !== "measure") {
