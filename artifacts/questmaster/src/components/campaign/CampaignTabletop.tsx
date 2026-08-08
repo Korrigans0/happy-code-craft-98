@@ -2559,7 +2559,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
+    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "select" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
@@ -2573,8 +2573,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           didDragRef.current = false;
           return;
         }
-        // Shift+click → toggle in multi-selection (no drag)
-        if (e.shiftKey) {
+        // Shift+click (ou clic simple avec l'outil Sélectionner) → bascule dans la multi-sélection
+        if (e.shiftKey || (tool === "select" && e.ctrlKey)) {
           setSelectedTokenIds(prev => {
             const next = new Set(prev);
             if (next.has(tokenHit.id)) next.delete(tokenHit.id);
@@ -2586,7 +2586,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
-        setSelectedTokenIds(new Set([tokenHit.id]));
+        // Avec l'outil Sélectionner, on conserve le groupe si le token cliqué en fait partie
+        setSelectedTokenIds(prev =>
+          tool === "select" && prev.has(tokenHit.id) ? prev : new Set([tokenHit.id])
+        );
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
@@ -2594,8 +2597,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: false };
         didDragRef.current = false;
         return;
-      } else if (e.shiftKey && tool === "move") {
-        // Shift+drag on empty → marquee selection
+      } else if (tool === "select" || (e.shiftKey && tool === "move")) {
+        // Rectangle de sélection (par défaut avec l'outil Sélectionner)
+        if (!e.shiftKey) { setSelectedTokenId(null); setSelectedTokenIds(new Set()); }
         setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
         setIsDrawing(true);
         return;
