@@ -2456,18 +2456,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") wallsHook.cancelWall();
         }
       }
-      if (selectedTokenId) {
+      // Ctrl/Cmd + A → tout sélectionner sur la table
+      if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A")) {
+        e.preventDefault();
+        selectAllTokens();
+        return;
+      }
+      const multi = selectedTokenIds.size > 1;
+      if (selectedTokenId || multi) {
         const step = e.shiftKey ? cellPx * 5 : cellPx;
-        if (e.key === "ArrowUp") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, -step); }
-        else if (e.key === "ArrowDown") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, step); }
-        else if (e.key === "ArrowLeft") { e.preventDefault(); moveTokenBy(selectedTokenId, -step, 0); }
-        else if (e.key === "ArrowRight") { e.preventDefault(); moveTokenBy(selectedTokenId, step, 0); }
-        else if (e.key === "r") rotateToken(selectedTokenId, 15);
-        else if (e.key === "R") rotateToken(selectedTokenId, -15);
-        else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
-        else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
-        else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
-        else if (e.key === "f") centerOnToken(selectedTokenId);
+        if (e.key === "ArrowUp") { e.preventDefault(); moveSelectionBy(0, -step); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); moveSelectionBy(0, step); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); moveSelectionBy(-step, 0); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); moveSelectionBy(step, 0); }
+        else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
+        else if (selectedTokenId) {
+          if (e.key === "r") rotateToken(selectedTokenId, 15);
+          else if (e.key === "R") rotateToken(selectedTokenId, -15);
+          else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
+          else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
+          else if (e.key === "f") centerOnToken(selectedTokenId);
+        }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "v" && hasClipboard && perms.canAddToken) {
         e.preventDefault(); pasteTokenAt(); return;
