@@ -11,7 +11,7 @@ import {
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
-  Grid3x3, Hexagon,
+  Grid3x3, Hexagon, MousePointerSquareDashed,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -1099,6 +1099,48 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       return { ...t, x: free.x, y: free.y };
     }));
   };
+
+  // ── Sélection multiple (outil "Sélectionner") ──
+  // Liste effective des tokens sélectionnés (fallback sur la sélection simple).
+  const getSelectionIds = (): string[] => {
+    if (selectedTokenIds.size > 0) return Array.from(selectedTokenIds);
+    return selectedTokenId ? [selectedTokenId] : [];
+  };
+
+  const selectAllTokens = () => {
+    const ids = tokens
+      .filter(t => t.visible && (!t.isHidden || isGM) && perms.canSelectToken(t))
+      .map(t => t.id);
+    setSelectedTokenIds(new Set(ids));
+    setSelectedTokenId(ids[ids.length - 1] ?? null);
+  };
+
+  const clearSelection = () => {
+    setSelectedTokenIds(new Set());
+    setSelectedTokenId(null);
+  };
+
+  const deleteSelection = () => {
+    const ids = getSelectionIds().filter(id => {
+      const t = tokens.find(x => x.id === id);
+      return !!t && perms.canMoveToken(t);
+    });
+    if (ids.length === 0) return;
+    ids.forEach(id => deletedTokenIdsRef.current.add(id));
+    setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    clearSelection();
+    toast({ title: `${ids.length} élément(s) supprimé(s)` });
+  };
+
+  const moveSelectionBy = (dx: number, dy: number) => {
+    const ids = getSelectionIds().filter(id => {
+      const t = tokens.find(x => x.id === id);
+      return !!t && perms.canMoveToken(t);
+    });
+    ids.forEach(id => moveTokenBy(id, dx, dy));
+  };
+
+
 
   const toggleTokenCondition = (tokenId: string, condId: string) => {
     setTokens(prev => prev.map(t => {
@@ -2392,6 +2434,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
       if (!e.ctrlKey && !e.metaKey) {
         if (e.key === "v" || e.key === "V") setTool("move");
+        else if (e.key === "s" || e.key === "S") setTool("select");
         else if (e.key === "p" || e.key === "P") setTool("pencil");
         else if (e.key === "e" || e.key === "E") setTool("eraser");
         else if (e.key === "m" || e.key === "M") setTool("measure");
@@ -2413,18 +2456,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           if (tool === "wall" || tool === "wallDoor" || tool === "wallWindow" || tool === "wallTerrain") wallsHook.cancelWall();
         }
       }
-      if (selectedTokenId) {
+      // Ctrl/Cmd + A → tout sélectionner sur la table
+      if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A")) {
+        e.preventDefault();
+        selectAllTokens();
+        return;
+      }
+      const multi = selectedTokenIds.size > 1;
+      if (selectedTokenId || multi) {
         const step = e.shiftKey ? cellPx * 5 : cellPx;
-        if (e.key === "ArrowUp") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, -step); }
-        else if (e.key === "ArrowDown") { e.preventDefault(); moveTokenBy(selectedTokenId, 0, step); }
-        else if (e.key === "ArrowLeft") { e.preventDefault(); moveTokenBy(selectedTokenId, -step, 0); }
-        else if (e.key === "ArrowRight") { e.preventDefault(); moveTokenBy(selectedTokenId, step, 0); }
-        else if (e.key === "r") rotateToken(selectedTokenId, 15);
-        else if (e.key === "R") rotateToken(selectedTokenId, -15);
-        else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeToken(selectedTokenId); }
-        else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
-        else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
-        else if (e.key === "f") centerOnToken(selectedTokenId);
+        if (e.key === "ArrowUp") { e.preventDefault(); moveSelectionBy(0, -step); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); moveSelectionBy(0, step); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); moveSelectionBy(-step, 0); }
+        else if (e.key === "ArrowRight") { e.preventDefault(); moveSelectionBy(step, 0); }
+        else if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
+        else if (selectedTokenId) {
+          if (e.key === "r") rotateToken(selectedTokenId, 15);
+          else if (e.key === "R") rotateToken(selectedTokenId, -15);
+          else if ((e.ctrlKey || e.metaKey) && e.key === "d") { e.preventDefault(); duplicateToken(selectedTokenId); }
+          else if ((e.ctrlKey || e.metaKey) && e.key === "c") { e.preventDefault(); copyToken(selectedTokenId); }
+          else if (e.key === "f") centerOnToken(selectedTokenId);
+        }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "v" && hasClipboard && perms.canAddToken) {
         e.preventDefault(); pasteTokenAt(); return;
@@ -2436,7 +2488,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
+  }, [selectedTokenId, selectedTokenIds, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
@@ -2559,7 +2611,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
+    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "select" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
@@ -2573,8 +2625,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           didDragRef.current = false;
           return;
         }
-        // Shift+click → toggle in multi-selection (no drag)
-        if (e.shiftKey) {
+        // Shift+click (ou clic simple avec l'outil Sélectionner) → bascule dans la multi-sélection
+        if (e.shiftKey || (tool === "select" && e.ctrlKey)) {
           setSelectedTokenIds(prev => {
             const next = new Set(prev);
             if (next.has(tokenHit.id)) next.delete(tokenHit.id);
@@ -2586,7 +2638,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
         setDraggedToken(tokenHit.id);
         setSelectedTokenId(tokenHit.id);
-        setSelectedTokenIds(new Set([tokenHit.id]));
+        // Avec l'outil Sélectionner, on conserve le groupe si le token cliqué en fait partie
+        setSelectedTokenIds(prev =>
+          tool === "select" && prev.has(tokenHit.id) ? prev : new Set([tokenHit.id])
+        );
         setDragStart({ x: tokenHit.x, y: tokenHit.y });
         setTokenDragOffset({ x: coords.x - tokenHit.x, y: coords.y - tokenHit.y });
         setIsDrawing(true);
@@ -2594,8 +2649,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         clickStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), tokenId: tokenHit.id, denied: false };
         didDragRef.current = false;
         return;
-      } else if (e.shiftKey && tool === "move") {
-        // Shift+drag on empty → marquee selection
+      } else if (tool === "select" || (e.shiftKey && tool === "move")) {
+        // Rectangle de sélection (par défaut avec l'outil Sélectionner)
+        if (!e.shiftKey) { setSelectedTokenId(null); setSelectedTokenIds(new Set()); }
         setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
         setIsDrawing(true);
         return;
@@ -2669,7 +2725,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const nextY = coords.y - tokenDragOffset.y;
       // Bloque la traversée des murs/portes fermées
       if (crossesBlocker(draggedT.x, draggedT.y, nextX, nextY)) return;
-      setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
+      // Déplacement de groupe : tous les tokens sélectionnés suivent le même delta
+      const groupIds = selectedTokenIds.has(draggedToken) && selectedTokenIds.size > 1
+        ? selectedTokenIds
+        : null;
+      const gdx = nextX - draggedT.x;
+      const gdy = nextY - draggedT.y;
+      setTokens(prev => prev.map(t => {
+        if (t.id === draggedToken) return { ...t, x: nextX, y: nextY };
+        if (!groupIds || !groupIds.has(t.id) || !perms.canMoveToken(t)) return t;
+        const tx = t.x + gdx, ty = t.y + gdy;
+        if (crossesBlocker(t.x, t.y, tx, ty)) return t;
+        return { ...t, x: tx, y: ty };
+      }));
       return;
     }
     if (marquee) {
@@ -2730,29 +2798,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
     if (draggedToken) {
       const id = draggedToken;
+      const groupIds = selectedTokenIds.has(id) && selectedTokenIds.size > 1
+        ? new Set(selectedTokenIds)
+        : new Set([id]);
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
       setDraggedToken(null);
       setDragStart(null);
       setIsDrawing(false);
-      setTokens(prev => {
-        const t = prev.find(x => x.id === id);
-        if (!t) return prev;
+      setTokens(prev => prev.map(t => {
+        if (!groupIds.has(t.id)) return t;
         const { x: sx, y: sy } = snapPos(t.x, t.y, t.size);
         let nx = sx, ny = sy;
         // Si le snap fait traverser un mur/porte fermée, on garde la position libre actuelle
         if (crossesBlocker(t.x, t.y, sx, sy)) { nx = t.x; ny = t.y; }
         if (collisionEnabled) {
           const overlaps = prev.some(o =>
-            o.id !== id && o.visible &&
+            o.id !== t.id && o.visible && !groupIds.has(o.id) &&
             tokensOverlap({ x: nx, y: ny, size: t.size }, { x: o.x, y: o.y, size: o.size })
           );
           if (overlaps) {
-            const last = tokenLastPosRef.current.get(id);
+            const last = tokenLastPosRef.current.get(t.id);
             nx = last?.x ?? t.x; ny = last?.y ?? t.y;
           }
         }
-        return prev.map(x => x.id === id ? { ...x, x: nx, y: ny } : x);
-      });
+        return { ...t, x: nx, y: ny };
+      }));
       return;
     }
     if (marquee) {
@@ -2767,15 +2837,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
       });
       if (hits.length > 0) {
-        const ids = new Set(hits.map(h => h.id));
-        setSelectedTokenIds(ids);
+        const additive = !!e?.shiftKey;
+        setSelectedTokenIds(prev => {
+          const next = additive ? new Set(prev) : new Set<string>();
+          hits.forEach(h => next.add(h.id));
+          return next;
+        });
         setSelectedTokenId(hits[hits.length - 1].id);
       }
       setMarquee(null);
       setIsDrawing(false);
       return;
     }
-    if (tool === "move" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
+    if (tool === "move" || tool === "select" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
       if (currentAction.type !== "measure") {
@@ -2965,6 +3039,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (draggedToken) return "grabbing";
     if (isSpacePressed) return "grab";
     if (tool === "move") return "grab";
+    if (tool === "select") return "default";
     if (tool === "token") return "pointer";
     if (tool === "ping") return "cell";
     if (tool === "fogReveal") return "cell";
@@ -2980,6 +3055,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Tool definitions (rangés par catégorie) ──
   const TOOLS = useMemo<{ id: Tool; icon: React.ReactNode; label: string; key?: string; gmOnly?: boolean; group: string }[]>(() => [
     { id: "move",      icon: <FIMove className="h-4 w-4" />,        label: "Déplacer",     key: "V", group: "nav" },
+    { id: "select",    icon: <MousePointerSquareDashed className="h-4 w-4" />, label: "Sélectionner (multi)", key: "S", group: "nav" },
     { id: "ping",      icon: <FIPing className="h-4 w-4" />,        label: "Ping",                   group: "nav" },
     { id: "pencil",    icon: <FIQuill className="h-4 w-4" />,       label: "Crayon",       key: "P", group: "draw" },
     { id: "eraser",    icon: <FIEraser className="h-4 w-4" />,      label: "Gomme",        key: "E", group: "draw" },
@@ -3012,7 +3088,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const visibleTools = useMemo(() => {
     let list = TOOLS.filter(t => !t.gmOnly || isGM);
     if (isMobilePlayer) {
-      const allowed = new Set(["move", "pencil", "eraser"]);
+      const allowed = new Set(["move", "select", "pencil", "eraser"]);
       list = list.filter(t => allowed.has(t.id));
     } else if (isMobileGM) {
       // Hide walls + dynamic lights on mobile GM
@@ -3932,6 +4008,40 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                   </section>
                 </div>
                 <p className="mt-4 text-center text-xs text-muted-foreground">Appuyez sur <kbd className="rounded bg-muted px-1.5 py-0.5">?</kbd> à tout moment pour rouvrir</p>
+              </div>
+            </div>
+          )}
+
+
+          {/* Barre de sélection multiple (outil Sélectionner) */}
+          {(tool === "select" || selectedTokenIds.size > 1) && (
+            <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-lg border border-amber-500/35 bg-[linear-gradient(to_bottom,rgba(24,19,14,0.96),rgba(16,12,9,0.96))] px-3 py-2 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-xs text-amber-100/80">
+                <MousePointerSquareDashed className="h-4 w-4 text-amber-300" />
+                <span className="font-semibold text-amber-200">
+                  {selectedTokenIds.size > 0 ? `${selectedTokenIds.size} sélectionné(s)` : "Aucune sélection"}
+                </span>
+                <span className="hidden sm:inline text-amber-100/45">— glissez pour encadrer, Maj+clic pour ajouter</span>
+                <button
+                  onClick={selectAllTokens}
+                  className="rounded border border-amber-500/40 px-2 py-0.5 text-amber-200 hover:bg-amber-400/15"
+                >
+                  Tout sélectionner
+                </button>
+                <button
+                  onClick={clearSelection}
+                  disabled={selectedTokenIds.size === 0}
+                  className="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-muted disabled:opacity-40"
+                >
+                  Désélectionner
+                </button>
+                <button
+                  onClick={deleteSelection}
+                  disabled={selectedTokenIds.size === 0}
+                  className="flex items-center gap-1 rounded border border-destructive/50 px-2 py-0.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                </button>
               </div>
             </div>
           )}
