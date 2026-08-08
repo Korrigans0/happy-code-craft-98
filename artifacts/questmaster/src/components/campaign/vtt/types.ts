@@ -5,7 +5,7 @@
 
 export type Tool =
   | "pencil" | "eraser" | "line" | "rect" | "circle" | "text"
-  | "move" | "token" | "cone" | "zone" | "fogReveal" | "ping"
+  | "move" | "select" | "token" | "cone" | "zone" | "fogReveal" | "ping"
   | "measure" | "wall" | "wallDoor" | "wallWindow" | "wallTerrain" | "wallDelete"
   | "light" | "lightDelete";
 
