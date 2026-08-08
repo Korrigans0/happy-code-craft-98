@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import ScrollToTop from "@/components/ScrollToTop";
 import MobileBanner from "@/components/MobileBanner";
 import SiteAmbientMusic from "@/components/SiteAmbientMusic";
 import CookieBanner from "@/components/CookieBanner";
@@ -61,6 +62,7 @@ const AppRoutes = () => (
       <Toaster />
       <Sonner />
       <TokenSyncer />
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/sign-in/*" element={<Auth />} />
