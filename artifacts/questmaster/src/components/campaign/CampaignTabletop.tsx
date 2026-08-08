@@ -2673,7 +2673,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const nextY = coords.y - tokenDragOffset.y;
       // Bloque la traversée des murs/portes fermées
       if (crossesBlocker(draggedT.x, draggedT.y, nextX, nextY)) return;
-      setTokens(prev => prev.map(t => t.id === draggedToken ? { ...t, x: nextX, y: nextY } : t));
+      // Déplacement de groupe : tous les tokens sélectionnés suivent le même delta
+      const groupIds = selectedTokenIds.has(draggedToken) && selectedTokenIds.size > 1
+        ? selectedTokenIds
+        : null;
+      const gdx = nextX - draggedT.x;
+      const gdy = nextY - draggedT.y;
+      setTokens(prev => prev.map(t => {
+        if (t.id === draggedToken) return { ...t, x: nextX, y: nextY };
+        if (!groupIds || !groupIds.has(t.id) || !perms.canMoveToken(t)) return t;
+        const tx = t.x + gdx, ty = t.y + gdy;
+        if (crossesBlocker(t.x, t.y, tx, ty)) return t;
+        return { ...t, x: tx, y: ty };
+      }));
       return;
     }
     if (marquee) {
