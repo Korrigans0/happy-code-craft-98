@@ -4013,6 +4013,40 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           )}
 
 
+          {/* Barre de sélection multiple (outil Sélectionner) */}
+          {(tool === "select" || selectedTokenIds.size > 1) && (
+            <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-lg border border-amber-500/35 bg-[linear-gradient(to_bottom,rgba(24,19,14,0.96),rgba(16,12,9,0.96))] px-3 py-2 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-xs text-amber-100/80">
+                <MousePointerSquareDashed className="h-4 w-4 text-amber-300" />
+                <span className="font-semibold text-amber-200">
+                  {selectedTokenIds.size > 0 ? `${selectedTokenIds.size} sélectionné(s)` : "Aucune sélection"}
+                </span>
+                <span className="hidden sm:inline text-amber-100/45">— glissez pour encadrer, Maj+clic pour ajouter</span>
+                <button
+                  onClick={selectAllTokens}
+                  className="rounded border border-amber-500/40 px-2 py-0.5 text-amber-200 hover:bg-amber-400/15"
+                >
+                  Tout sélectionner
+                </button>
+                <button
+                  onClick={clearSelection}
+                  disabled={selectedTokenIds.size === 0}
+                  className="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-muted disabled:opacity-40"
+                >
+                  Désélectionner
+                </button>
+                <button
+                  onClick={deleteSelection}
+                  disabled={selectedTokenIds.size === 0}
+                  className="flex items-center gap-1 rounded border border-destructive/50 px-2 py-0.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                </button>
+              </div>
+            </div>
+          )}
+
+
           {/* Selected token panel (floating bottom) */}
           {selectedToken && !gmPanelOpen && (
             <div className="absolute bottom-12 left-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
