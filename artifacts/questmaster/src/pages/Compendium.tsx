@@ -207,11 +207,27 @@ const SystemCodex = ({
 // ── Page principale ────────────────────────────────────────
 const Compendium = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [system, setSystem] = useState<string>("Aetheria");
+  const [system, setSystem] = useState<string>(searchParams.get("system") || "Aetheria");
   const [aetheriaTab, setAetheriaTab] = useState("aetheria-bestiary");
   const [waTab, setWaTab] = useState("wa-bestiary");
   const [refreshKey] = useState(0);
+
+  // Synchronise le système sélectionné avec l'URL (?system=...) pour les liens entrants.
+  useEffect(() => {
+    const fromUrl = searchParams.get("system");
+    if (fromUrl && fromUrl !== system) setSystem(fromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const selectSystem = useCallback(
+    (id: string) => {
+      setSystem(id);
+      setSearchParams({ system: id }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
   // Glyphes est rendu via un composant dédié ; on évite tout doublon avec le registre.
