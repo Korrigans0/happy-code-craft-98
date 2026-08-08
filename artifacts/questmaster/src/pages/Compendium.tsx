@@ -9,7 +9,8 @@
 //
 // Le filtre par système empêche toute contamination entre univers.
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Swords, BookOpen, Globe, Skull, Sparkles, Map, Scroll, Users, Shield, Gem, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -206,11 +207,27 @@ const SystemCodex = ({
 // ── Page principale ────────────────────────────────────────
 const Compendium = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [system, setSystem] = useState<string>("Aetheria");
+  const [system, setSystem] = useState<string>(searchParams.get("system") || "Aetheria");
   const [aetheriaTab, setAetheriaTab] = useState("aetheria-bestiary");
   const [waTab, setWaTab] = useState("wa-bestiary");
   const [refreshKey] = useState(0);
+
+  // Synchronise le système sélectionné avec l'URL (?system=...) pour les liens entrants.
+  useEffect(() => {
+    const fromUrl = searchParams.get("system");
+    if (fromUrl && fromUrl !== system) setSystem(fromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const selectSystem = useCallback(
+    (id: string) => {
+      setSystem(id);
+      setSearchParams({ system: id }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
   // Glyphes est rendu via un composant dédié ; on évite tout doublon avec le registre.
@@ -253,7 +270,7 @@ const Compendium = () => {
               return (
                 <button
                   key={s.id}
-                  onClick={() => setSystem(s.id)}
+                  onClick={() => selectSystem(s.id)}
                   className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                     active
                       ? "border-primary bg-primary/15 text-primary shadow-md"

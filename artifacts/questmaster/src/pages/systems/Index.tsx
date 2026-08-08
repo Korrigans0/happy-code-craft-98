@@ -61,7 +61,9 @@ export default function SystemsIndex() {
 
           <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
             {SYSTEM_LIST.map((sys) => {
-              const href = SYSTEM_HUB[sys.id] ?? "/compendium";
+              const href =
+                SYSTEM_HUB[sys.id] ??
+                `/compendium?system=${encodeURIComponent(sys.id)}`;
               const accent =
                 ACCENT_BY_ID[sys.id] ??
                 "from-amber-500/20 via-amber-400/5 to-transparent";
