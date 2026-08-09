@@ -2528,7 +2528,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, selectedTokenIds, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
+  }, [selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, tokens, actions, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
