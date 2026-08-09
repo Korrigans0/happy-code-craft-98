@@ -224,6 +224,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
   const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  // Sélection multi-objets (dessins, murs, lumières) via l'outil "Sélectionner"
+  const [selectedDrawingIds, setSelectedDrawingIds] = useState<Set<string>>(new Set());
+  const [selectedWallIds, setSelectedWallIds] = useState<Set<string>>(new Set());
+  const [selectedLightIds, setSelectedLightIds] = useState<Set<string>>(new Set());
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
@@ -1107,17 +1111,30 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     return selectedTokenId ? [selectedTokenId] : [];
   };
 
+  /** Nombre total d'objets sélectionnés (tokens + dessins + murs + lumières). */
+  const selectionCount =
+    getSelectionIds().length + selectedDrawingIds.size + selectedWallIds.size + selectedLightIds.size;
+
   const selectAllTokens = () => {
     const ids = tokens
       .filter(t => t.visible && (!t.isHidden || isGM) && perms.canSelectToken(t))
       .map(t => t.id);
     setSelectedTokenIds(new Set(ids));
     setSelectedTokenId(ids[ids.length - 1] ?? null);
+    // Le MJ sélectionne aussi les dessins, murs et lumières de la scène.
+    setSelectedDrawingIds(new Set(actions.map(a => a.id)));
+    if (isGM) {
+      setSelectedWallIds(new Set(wallsHook.walls.map(w => w.id)));
+      setSelectedLightIds(new Set(lightsHook.lights.filter(l => !l.tokenId).map(l => l.id)));
+    }
   };
 
   const clearSelection = () => {
     setSelectedTokenIds(new Set());
     setSelectedTokenId(null);
+    setSelectedDrawingIds(new Set());
+    setSelectedWallIds(new Set());
+    setSelectedLightIds(new Set());
   };
 
   const deleteSelection = () => {
@@ -1125,11 +1142,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const t = tokens.find(x => x.id === id);
       return !!t && perms.canMoveToken(t);
     });
-    if (ids.length === 0) return;
-    ids.forEach(id => deletedTokenIdsRef.current.add(id));
-    setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    const drawIds = Array.from(selectedDrawingIds);
+    const wallIds = isGM ? Array.from(selectedWallIds) : [];
+    const lightIds = isGM ? Array.from(selectedLightIds) : [];
+    const total = ids.length + drawIds.length + wallIds.length + lightIds.length;
+    if (total === 0) return;
+    if (ids.length) {
+      ids.forEach(id => deletedTokenIdsRef.current.add(id));
+      setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    }
+    if (drawIds.length) {
+      const set = new Set(drawIds);
+      setActions(prev => prev.filter(a => !set.has(a.id)));
+    }
+    if (wallIds.length) wallsHook.deleteWallsByIds(wallIds);
+    if (lightIds.length) lightsHook.deleteLightsByIds(lightIds);
     clearSelection();
-    toast({ title: `${ids.length} élément(s) supprimé(s)` });
+    toast({ title: `${total} élément(s) supprimé(s)` });
   };
 
   const moveSelectionBy = (dx: number, dy: number) => {
@@ -1138,7 +1167,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       return !!t && perms.canMoveToken(t);
     });
     ids.forEach(id => moveTokenBy(id, dx, dy));
+    if (selectedDrawingIds.size) {
+      setActions(prev => prev.map(a =>
+        selectedDrawingIds.has(a.id)
+          ? { ...a, points: a.points.map(p => ({ x: p.x + dx, y: p.y + dy })) }
+          : a,
+      ));
+    }
+    if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), dx, dy);
+    if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), dx, dy);
   };
+
 
 
 
@@ -1912,6 +1951,41 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ctx.restore();
     }
 
+    // ── Surlignage des objets sélectionnés (dessins, murs, lumières) ──
+    if (selectedDrawingIds.size || selectedWallIds.size || selectedLightIds.size) {
+      ctx.save();
+      ctx.strokeStyle = "hsla(42, 90%, 62%, 0.95)";
+      ctx.lineWidth = 2 / zoom;
+      ctx.setLineDash([5 / zoom, 3 / zoom]);
+      // Dessins → cadre englobant
+      actions.forEach(a => {
+        if (!selectedDrawingIds.has(a.id) || a.points.length === 0) return;
+        const xs = a.points.map(p => p.x);
+        const ys = a.points.map(p => p.y);
+        const pad = 4 / zoom;
+        const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
+        const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      });
+      // Murs → segment surligné
+      wallsHook.walls.forEach(w => {
+        if (!selectedWallIds.has(w.id)) return;
+        ctx.beginPath();
+        ctx.moveTo(w.x1, w.y1);
+        ctx.lineTo(w.x2, w.y2);
+        ctx.stroke();
+      });
+      // Lumières → cercle de sélection
+      lightsHook.lights.forEach(l => {
+        if (!selectedLightIds.has(l.id) || l.tokenId) return;
+        ctx.beginPath();
+        ctx.arc(l.x ?? 0, l.y ?? 0, 14 / zoom, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     ctx.restore(); // ← end world transform
 
     // ── Fog (screen space composite) ─────────────────────────
@@ -2127,7 +2201,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
@@ -2463,7 +2537,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return;
       }
       const multi = selectedTokenIds.size > 1;
-      if (selectedTokenId || multi) {
+      const hasObjSel = selectedDrawingIds.size > 0 || selectedWallIds.size > 0 || selectedLightIds.size > 0;
+      if (selectedTokenId || multi || hasObjSel) {
         const step = e.shiftKey ? cellPx * 5 : cellPx;
         if (e.key === "ArrowUp") { e.preventDefault(); moveSelectionBy(0, -step); }
         else if (e.key === "ArrowDown") { e.preventDefault(); moveSelectionBy(0, step); }
@@ -2488,7 +2563,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, selectedTokenIds, tokens, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
+  }, [selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, tokens, actions, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
@@ -2651,7 +2726,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return;
       } else if (tool === "select" || (e.shiftKey && tool === "move")) {
         // Rectangle de sélection (par défaut avec l'outil Sélectionner)
-        if (!e.shiftKey) { setSelectedTokenId(null); setSelectedTokenIds(new Set()); }
+        if (!e.shiftKey) {
+          setSelectedTokenId(null);
+          setSelectedTokenIds(new Set());
+          setSelectedDrawingIds(new Set());
+          setSelectedWallIds(new Set());
+          setSelectedLightIds(new Set());
+        }
         setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
         setIsDrawing(true);
         return;
@@ -2801,6 +2882,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const groupIds = selectedTokenIds.has(id) && selectedTokenIds.size > 1
         ? new Set(selectedTokenIds)
         : new Set([id]);
+      // Les autres objets sélectionnés suivent le même déplacement (appliqué au relâchement)
+      const draggedNow = tokens.find(t => t.id === id);
+      if (dragStart && draggedNow) {
+        const gdx = draggedNow.x - dragStart.x;
+        const gdy = draggedNow.y - dragStart.y;
+        if (gdx !== 0 || gdy !== 0) {
+          if (selectedDrawingIds.size) {
+            setActions(prev => prev.map(a =>
+              selectedDrawingIds.has(a.id)
+                ? { ...a, points: a.points.map(p => ({ x: p.x + gdx, y: p.y + gdy })) }
+                : a,
+            ));
+          }
+          if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), gdx, gdy);
+          if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), gdx, gdy);
+        }
+      }
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
       setDraggedToken(null);
       setDragStart(null);
@@ -2830,25 +2928,40 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const maxX = Math.max(marquee.x0, marquee.x1);
       const minY = Math.min(marquee.y0, marquee.y1);
       const maxY = Math.max(marquee.y0, marquee.y1);
+      const inside = (x: number, y: number) => x >= minX && x <= maxX && y >= minY && y <= maxY;
       const hits = tokens.filter(t => {
         if (!t.visible || (t.isHidden && !isGM)) return false;
         if (!perms.canSelectToken(t)) return false;
         const cx = t.x + t.size / 2, cy = t.y + t.size / 2;
-        return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
+        return inside(cx, cy);
       });
-      if (hits.length > 0) {
-        const additive = !!e?.shiftKey;
-        setSelectedTokenIds(prev => {
-          const next = additive ? new Set(prev) : new Set<string>();
-          hits.forEach(h => next.add(h.id));
-          return next;
-        });
-        setSelectedTokenId(hits[hits.length - 1].id);
-      }
+      // Dessins : sélectionnés si tous leurs points sont dans le rectangle
+      const drawHits = actions.filter(a =>
+        a.points.length > 0 && a.points.every(p => inside(p.x, p.y))
+      );
+      // Murs & lumières : réservés au MJ
+      const wallHits = isGM
+        ? wallsHook.walls.filter(w => inside((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2))
+        : [];
+      const lightHits = isGM
+        ? lightsHook.lights.filter(l => !l.tokenId && inside(l.x ?? 0, l.y ?? 0))
+        : [];
+      const additive = !!e?.shiftKey;
+      const merge = (prev: Set<string>, ids: string[]) => {
+        const next = additive ? new Set(prev) : new Set<string>();
+        ids.forEach(id => next.add(id));
+        return next;
+      };
+      setSelectedTokenIds(prev => merge(prev, hits.map(h => h.id)));
+      setSelectedDrawingIds(prev => merge(prev, drawHits.map(d => d.id)));
+      setSelectedWallIds(prev => merge(prev, wallHits.map(w => w.id)));
+      setSelectedLightIds(prev => merge(prev, lightHits.map(l => l.id)));
+      if (hits.length > 0) setSelectedTokenId(hits[hits.length - 1].id);
       setMarquee(null);
       setIsDrawing(false);
       return;
     }
+
     if (tool === "move" || tool === "select" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
@@ -4014,13 +4127,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
           {/* Barre de sélection multiple (outil Sélectionner) */}
-          {(tool === "select" || selectedTokenIds.size > 1) && (
+          {(tool === "select" || selectionCount > 1) && (
             <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-lg border border-amber-500/35 bg-[linear-gradient(to_bottom,rgba(24,19,14,0.96),rgba(16,12,9,0.96))] px-3 py-2 shadow-lg backdrop-blur-sm">
               <div className="flex items-center gap-2 text-xs text-amber-100/80">
                 <MousePointerSquareDashed className="h-4 w-4 text-amber-300" />
                 <span className="font-semibold text-amber-200">
-                  {selectedTokenIds.size > 0 ? `${selectedTokenIds.size} sélectionné(s)` : "Aucune sélection"}
+                  {selectionCount > 0 ? `${selectionCount} sélectionné(s)` : "Aucune sélection"}
                 </span>
+                {selectionCount > 0 && (
+                  <span className="hidden md:inline text-amber-100/45">
+                    {[
+                      selectedTokenIds.size ? `${selectedTokenIds.size} jeton(s)` : null,
+                      selectedDrawingIds.size ? `${selectedDrawingIds.size} dessin(s)` : null,
+                      selectedWallIds.size ? `${selectedWallIds.size} mur(s)` : null,
+                      selectedLightIds.size ? `${selectedLightIds.size} lumière(s)` : null,
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                )}
                 <span className="hidden sm:inline text-amber-100/45">— glissez pour encadrer, Maj+clic pour ajouter</span>
                 <button
                   onClick={selectAllTokens}
@@ -4030,14 +4153,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 </button>
                 <button
                   onClick={clearSelection}
-                  disabled={selectedTokenIds.size === 0}
+                  disabled={selectionCount === 0}
                   className="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Désélectionner
                 </button>
                 <button
                   onClick={deleteSelection}
-                  disabled={selectedTokenIds.size === 0}
+                  disabled={selectionCount === 0}
                   className="flex items-center gap-1 rounded border border-destructive/50 px-2 py-0.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Supprimer

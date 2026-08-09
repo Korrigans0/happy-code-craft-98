@@ -117,6 +117,24 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
     persistLights(lightsRef.current.filter(l => l.id !== id));
   }, [isGM, persistLights]);
 
+  // Suppression multiple (sélection sur la table)
+  const deleteLightsByIds = useCallback((ids: string[]) => {
+    if (!isGM || ids.length === 0) return;
+    const set = new Set(ids);
+    persistLights(lightsRef.current.filter(l => !set.has(l.id)));
+  }, [isGM, persistLights]);
+
+  // Déplacement multiple (lumières statiques uniquement)
+  const moveLightsBy = useCallback((ids: string[], dx: number, dy: number) => {
+    if (!isGM || ids.length === 0 || (dx === 0 && dy === 0)) return;
+    const set = new Set(ids);
+    persistLights(lightsRef.current.map(l =>
+      set.has(l.id) && !l.tokenId
+        ? { ...l, x: (l.x ?? 0) + dx, y: (l.y ?? 0) + dy }
+        : l,
+    ));
+  }, [isGM, persistLights]);
+
   // Trouve la lumière (statique) la plus proche d'un point dans threshold (monde)
   const findLightAt = useCallback((wx: number, wy: number, threshold = 20): LightSource | null => {
     let best: LightSource | null = null;
@@ -151,6 +169,8 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
     addLightAt,
     addLightToToken,
     deleteLightById,
+    deleteLightsByIds,
+    moveLightsBy,
     deleteLightAt,
     findLightAt,
     clearAllLights,
