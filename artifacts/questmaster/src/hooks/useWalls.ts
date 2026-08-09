@@ -175,6 +175,37 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     if (selectedWallIdRef.current === wallId) setSelectedWallId(null);
   }, [isGM, saveWalls, pushHistory]);
 
+  // ── Supprimer plusieurs murs (sélection multiple) ──────
+  const deleteWallsByIds = useCallback((ids: string[]) => {
+    if (!isGM || ids.length === 0) return;
+    const set = new Set(ids);
+    setWalls(prev => {
+      if (!prev.some(w => set.has(w.id))) return prev;
+      pushHistory(prev);
+      const updated = prev.filter(w => !set.has(w.id));
+      saveWalls(updated);
+      return updated;
+    });
+    if (selectedWallIdRef.current && set.has(selectedWallIdRef.current)) setSelectedWallId(null);
+  }, [isGM, saveWalls, pushHistory]);
+
+  // ── Déplacer plusieurs murs (sélection multiple) ───────
+  const moveWallsBy = useCallback((ids: string[], dx: number, dy: number) => {
+    if (!isGM || ids.length === 0 || (dx === 0 && dy === 0)) return;
+    const set = new Set(ids);
+    setWalls(prev => {
+      if (!prev.some(w => set.has(w.id))) return prev;
+      pushHistory(prev);
+      const updated = prev.map(w =>
+        set.has(w.id)
+          ? { ...w, x1: w.x1 + dx, y1: w.y1 + dy, x2: w.x2 + dx, y2: w.y2 + dy }
+          : w,
+      );
+      saveWalls(updated);
+      return updated;
+    });
+  }, [isGM, saveWalls, pushHistory]);
+
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
     let closestId: string | null = null;
