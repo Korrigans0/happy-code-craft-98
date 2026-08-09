@@ -169,6 +169,8 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
     addLightAt,
     addLightToToken,
     deleteLightById,
+    deleteLightsByIds,
+    moveLightsBy,
     deleteLightAt,
     findLightAt,
     clearAllLights,
