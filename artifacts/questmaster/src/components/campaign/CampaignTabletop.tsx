@@ -1951,6 +1951,41 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ctx.restore();
     }
 
+    // ── Surlignage des objets sélectionnés (dessins, murs, lumières) ──
+    if (selectedDrawingIds.size || selectedWallIds.size || selectedLightIds.size) {
+      ctx.save();
+      ctx.strokeStyle = "hsla(42, 90%, 62%, 0.95)";
+      ctx.lineWidth = 2 / zoom;
+      ctx.setLineDash([5 / zoom, 3 / zoom]);
+      // Dessins → cadre englobant
+      actions.forEach(a => {
+        if (!selectedDrawingIds.has(a.id) || a.points.length === 0) return;
+        const xs = a.points.map(p => p.x);
+        const ys = a.points.map(p => p.y);
+        const pad = 4 / zoom;
+        const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
+        const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      });
+      // Murs → segment surligné
+      wallsHook.walls.forEach(w => {
+        if (!selectedWallIds.has(w.id)) return;
+        ctx.beginPath();
+        ctx.moveTo(w.x1, w.y1);
+        ctx.lineTo(w.x2, w.y2);
+        ctx.stroke();
+      });
+      // Lumières → cercle de sélection
+      lightsHook.lights.forEach(l => {
+        if (!selectedLightIds.has(l.id) || l.tokenId) return;
+        ctx.beginPath();
+        ctx.arc(l.x ?? 0, l.y ?? 0, 14 / zoom, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     ctx.restore(); // ← end world transform
 
     // ── Fog (screen space composite) ─────────────────────────
