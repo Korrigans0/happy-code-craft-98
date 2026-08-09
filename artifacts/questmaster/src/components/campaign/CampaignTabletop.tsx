@@ -1111,17 +1111,30 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     return selectedTokenId ? [selectedTokenId] : [];
   };
 
+  /** Nombre total d'objets sélectionnés (tokens + dessins + murs + lumières). */
+  const selectionCount =
+    getSelectionIds().length + selectedDrawingIds.size + selectedWallIds.size + selectedLightIds.size;
+
   const selectAllTokens = () => {
     const ids = tokens
       .filter(t => t.visible && (!t.isHidden || isGM) && perms.canSelectToken(t))
       .map(t => t.id);
     setSelectedTokenIds(new Set(ids));
     setSelectedTokenId(ids[ids.length - 1] ?? null);
+    // Le MJ sélectionne aussi les dessins, murs et lumières de la scène.
+    setSelectedDrawingIds(new Set(actions.map(a => a.id)));
+    if (isGM) {
+      setSelectedWallIds(new Set(wallsHook.walls.map(w => w.id)));
+      setSelectedLightIds(new Set(lightsHook.lights.filter(l => !l.tokenId).map(l => l.id)));
+    }
   };
 
   const clearSelection = () => {
     setSelectedTokenIds(new Set());
     setSelectedTokenId(null);
+    setSelectedDrawingIds(new Set());
+    setSelectedWallIds(new Set());
+    setSelectedLightIds(new Set());
   };
 
   const deleteSelection = () => {
@@ -1129,11 +1142,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const t = tokens.find(x => x.id === id);
       return !!t && perms.canMoveToken(t);
     });
-    if (ids.length === 0) return;
-    ids.forEach(id => deletedTokenIdsRef.current.add(id));
-    setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    const drawIds = Array.from(selectedDrawingIds);
+    const wallIds = isGM ? Array.from(selectedWallIds) : [];
+    const lightIds = isGM ? Array.from(selectedLightIds) : [];
+    const total = ids.length + drawIds.length + wallIds.length + lightIds.length;
+    if (total === 0) return;
+    if (ids.length) {
+      ids.forEach(id => deletedTokenIdsRef.current.add(id));
+      setTokens(prev => prev.filter(t => !ids.includes(t.id)));
+    }
+    if (drawIds.length) {
+      const set = new Set(drawIds);
+      setActions(prev => prev.filter(a => !set.has(a.id)));
+    }
+    if (wallIds.length) wallsHook.deleteWallsByIds(wallIds);
+    if (lightIds.length) lightsHook.deleteLightsByIds(lightIds);
     clearSelection();
-    toast({ title: `${ids.length} élément(s) supprimé(s)` });
+    toast({ title: `${total} élément(s) supprimé(s)` });
   };
 
   const moveSelectionBy = (dx: number, dy: number) => {
@@ -1142,7 +1167,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       return !!t && perms.canMoveToken(t);
     });
     ids.forEach(id => moveTokenBy(id, dx, dy));
+    if (selectedDrawingIds.size) {
+      setActions(prev => prev.map(a =>
+        selectedDrawingIds.has(a.id)
+          ? { ...a, points: a.points.map(p => ({ x: p.x + dx, y: p.y + dy })) }
+          : a,
+      ));
+    }
+    if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), dx, dy);
+    if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), dx, dy);
   };
+
 
 
 
