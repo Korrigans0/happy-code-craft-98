@@ -2201,7 +2201,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
