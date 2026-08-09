@@ -2869,25 +2869,40 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const maxX = Math.max(marquee.x0, marquee.x1);
       const minY = Math.min(marquee.y0, marquee.y1);
       const maxY = Math.max(marquee.y0, marquee.y1);
+      const inside = (x: number, y: number) => x >= minX && x <= maxX && y >= minY && y <= maxY;
       const hits = tokens.filter(t => {
         if (!t.visible || (t.isHidden && !isGM)) return false;
         if (!perms.canSelectToken(t)) return false;
         const cx = t.x + t.size / 2, cy = t.y + t.size / 2;
-        return cx >= minX && cx <= maxX && cy >= minY && cy <= maxY;
+        return inside(cx, cy);
       });
-      if (hits.length > 0) {
-        const additive = !!e?.shiftKey;
-        setSelectedTokenIds(prev => {
-          const next = additive ? new Set(prev) : new Set<string>();
-          hits.forEach(h => next.add(h.id));
-          return next;
-        });
-        setSelectedTokenId(hits[hits.length - 1].id);
-      }
+      // Dessins : sélectionnés si tous leurs points sont dans le rectangle
+      const drawHits = actions.filter(a =>
+        a.points.length > 0 && a.points.every(p => inside(p.x, p.y))
+      );
+      // Murs & lumières : réservés au MJ
+      const wallHits = isGM
+        ? wallsHook.walls.filter(w => inside((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2))
+        : [];
+      const lightHits = isGM
+        ? lightsHook.lights.filter(l => !l.tokenId && inside(l.x ?? 0, l.y ?? 0))
+        : [];
+      const additive = !!e?.shiftKey;
+      const merge = (prev: Set<string>, ids: string[]) => {
+        const next = additive ? new Set(prev) : new Set<string>();
+        ids.forEach(id => next.add(id));
+        return next;
+      };
+      setSelectedTokenIds(prev => merge(prev, hits.map(h => h.id)));
+      setSelectedDrawingIds(prev => merge(prev, drawHits.map(d => d.id)));
+      setSelectedWallIds(prev => merge(prev, wallHits.map(w => w.id)));
+      setSelectedLightIds(prev => merge(prev, lightHits.map(l => l.id)));
+      if (hits.length > 0) setSelectedTokenId(hits[hits.length - 1].id);
       setMarquee(null);
       setIsDrawing(false);
       return;
     }
+
     if (tool === "move" || tool === "select" || isSpacePressed) { setIsDrawing(false); setLastPanPoint(null); return; }
     if (currentAction) {
       // "measure" is ephemeral — don't persist to actions list
