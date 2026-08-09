@@ -224,6 +224,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [selectedTokenIds, setSelectedTokenIds] = useState<Set<string>>(new Set());
   const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  // Sélection multi-objets (dessins, murs, lumières) via l'outil "Sélectionner"
+  const [selectedDrawingIds, setSelectedDrawingIds] = useState<Set<string>>(new Set());
+  const [selectedWallIds, setSelectedWallIds] = useState<Set<string>>(new Set());
+  const [selectedLightIds, setSelectedLightIds] = useState<Set<string>>(new Set());
   const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
 
