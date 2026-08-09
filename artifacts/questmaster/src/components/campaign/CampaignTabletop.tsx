@@ -2502,7 +2502,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return;
       }
       const multi = selectedTokenIds.size > 1;
-      if (selectedTokenId || multi) {
+      const hasObjSel = selectedDrawingIds.size > 0 || selectedWallIds.size > 0 || selectedLightIds.size > 0;
+      if (selectedTokenId || multi || hasObjSel) {
         const step = e.shiftKey ? cellPx * 5 : cellPx;
         if (e.key === "ArrowUp") { e.preventDefault(); moveSelectionBy(0, -step); }
         else if (e.key === "ArrowDown") { e.preventDefault(); moveSelectionBy(0, step); }
