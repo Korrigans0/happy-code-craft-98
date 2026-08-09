@@ -2882,6 +2882,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const groupIds = selectedTokenIds.has(id) && selectedTokenIds.size > 1
         ? new Set(selectedTokenIds)
         : new Set([id]);
+      // Les autres objets sélectionnés suivent le même déplacement (appliqué au relâchement)
+      const draggedNow = tokens.find(t => t.id === id);
+      if (dragStart && draggedNow) {
+        const gdx = draggedNow.x - dragStart.x;
+        const gdy = draggedNow.y - dragStart.y;
+        if (gdx !== 0 || gdy !== 0) {
+          if (selectedDrawingIds.size) {
+            setActions(prev => prev.map(a =>
+              selectedDrawingIds.has(a.id)
+                ? { ...a, points: a.points.map(p => ({ x: p.x + gdx, y: p.y + gdy })) }
+                : a,
+            ));
+          }
+          if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), gdx, gdy);
+          if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), gdx, gdy);
+        }
+      }
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
       setDraggedToken(null);
       setDragStart(null);
