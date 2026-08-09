@@ -4074,13 +4074,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
           {/* Barre de sélection multiple (outil Sélectionner) */}
-          {(tool === "select" || selectedTokenIds.size > 1) && (
+          {(tool === "select" || selectionCount > 1) && (
             <div className="absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-lg border border-amber-500/35 bg-[linear-gradient(to_bottom,rgba(24,19,14,0.96),rgba(16,12,9,0.96))] px-3 py-2 shadow-lg backdrop-blur-sm">
               <div className="flex items-center gap-2 text-xs text-amber-100/80">
                 <MousePointerSquareDashed className="h-4 w-4 text-amber-300" />
                 <span className="font-semibold text-amber-200">
-                  {selectedTokenIds.size > 0 ? `${selectedTokenIds.size} sélectionné(s)` : "Aucune sélection"}
+                  {selectionCount > 0 ? `${selectionCount} sélectionné(s)` : "Aucune sélection"}
                 </span>
+                {selectionCount > 0 && (
+                  <span className="hidden md:inline text-amber-100/45">
+                    {[
+                      selectedTokenIds.size ? `${selectedTokenIds.size} jeton(s)` : null,
+                      selectedDrawingIds.size ? `${selectedDrawingIds.size} dessin(s)` : null,
+                      selectedWallIds.size ? `${selectedWallIds.size} mur(s)` : null,
+                      selectedLightIds.size ? `${selectedLightIds.size} lumière(s)` : null,
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                )}
                 <span className="hidden sm:inline text-amber-100/45">— glissez pour encadrer, Maj+clic pour ajouter</span>
                 <button
                   onClick={selectAllTokens}
@@ -4090,18 +4100,22 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 </button>
                 <button
                   onClick={clearSelection}
-                  disabled={selectedTokenIds.size === 0}
+                  disabled={selectionCount === 0}
                   className="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Désélectionner
                 </button>
                 <button
                   onClick={deleteSelection}
-                  disabled={selectedTokenIds.size === 0}
+                  disabled={selectionCount === 0}
                   className="flex items-center gap-1 rounded border border-destructive/50 px-2 py-0.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Supprimer
                 </button>
+              </div>
+            </div>
+          )}
+
               </div>
             </div>
           )}
