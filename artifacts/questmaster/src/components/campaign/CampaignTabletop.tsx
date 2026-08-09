@@ -4116,10 +4116,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             </div>
           )}
 
-              </div>
-            </div>
-          )}
-
 
           {/* Selected token panel (floating bottom) */}
           {selectedToken && !gmPanelOpen && (
