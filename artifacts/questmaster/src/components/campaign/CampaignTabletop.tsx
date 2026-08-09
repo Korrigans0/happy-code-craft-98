@@ -2690,7 +2690,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         return;
       } else if (tool === "select" || (e.shiftKey && tool === "move")) {
         // Rectangle de sélection (par défaut avec l'outil Sélectionner)
-        if (!e.shiftKey) { setSelectedTokenId(null); setSelectedTokenIds(new Set()); }
+        if (!e.shiftKey) {
+          setSelectedTokenId(null);
+          setSelectedTokenIds(new Set());
+          setSelectedDrawingIds(new Set());
+          setSelectedWallIds(new Set());
+          setSelectedLightIds(new Set());
+        }
         setMarquee({ x0: coords.x, y0: coords.y, x1: coords.x, y1: coords.y });
         setIsDrawing(true);
         return;
