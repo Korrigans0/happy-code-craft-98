@@ -117,6 +117,12 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
     persistLights(lightsRef.current.filter(l => l.id !== id));
   }, [isGM, persistLights]);
 
+  // Ajout multiple (copier / coller)
+  const addLights = useCallback((newLights: LightSource[]) => {
+    if (!isGM || newLights.length === 0) return;
+    persistLights([...lightsRef.current, ...newLights]);
+  }, [isGM, persistLights]);
+
   // Suppression multiple (sélection sur la table)
   const deleteLightsByIds = useCallback((ids: string[]) => {
     if (!isGM || ids.length === 0) return;
@@ -169,6 +175,7 @@ export function useLights({ campaignId, isGM, saveStateDebounced }: UseLightsOpt
     addLightAt,
     addLightToToken,
     deleteLightById,
+    addLights,
     deleteLightsByIds,
     moveLightsBy,
     deleteLightAt,
