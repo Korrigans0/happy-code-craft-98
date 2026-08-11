@@ -11,7 +11,7 @@ import {
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
-  Grid3x3, Hexagon, MousePointerSquareDashed,
+  Grid3x3, Hexagon, MousePointerSquareDashed, ClipboardPaste,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -38,7 +38,7 @@ import GMPanel from "./vtt/GMPanel";
 import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
-  CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset,
+  CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
 } from "./vtt/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -332,6 +332,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Token clipboard (copy / paste) ──
   const tokenClipboardRef = useRef<TokenItem | null>(null);
   const [hasClipboard, setHasClipboard] = useState(false);
+  // Presse-papiers multi-objets (jetons, dessins, murs, lumières)
+  const selectionClipboardRef = useRef<{
+    tokens: TokenItem[];
+    drawings: DrawAction[];
+    walls: Wall[];
+    lights: LightSource[];
+  } | null>(null);
+  const [hasSelectionClipboard, setHasSelectionClipboard] = useState(false);
 
   // ── Click vs drag tracking (simple click on token = open sheet) ──
   const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
@@ -1176,6 +1184,81 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
     if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), dx, dy);
     if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), dx, dy);
+  };
+
+  // ── Copier / coller la sélection (jetons, dessins, murs, lumières) ──
+  const copySelection = () => {
+    const tokenIds = new Set(getSelectionIds());
+    const copiedTokens = tokens.filter(t => tokenIds.has(t.id));
+    const copiedDrawings = actions.filter(a => selectedDrawingIds.has(a.id));
+    const copiedWalls = isGM ? wallsHook.walls.filter(w => selectedWallIds.has(w.id)) : [];
+    const copiedLights = isGM ? lightsHook.lights.filter(l => selectedLightIds.has(l.id) && !l.tokenId) : [];
+    const total = copiedTokens.length + copiedDrawings.length + copiedWalls.length + copiedLights.length;
+    if (total === 0) return;
+    selectionClipboardRef.current = {
+      tokens: copiedTokens.map(t => ({ ...t })),
+      drawings: copiedDrawings.map(a => ({ ...a, points: a.points.map(p => ({ ...p })) })),
+      walls: copiedWalls.map(w => ({ ...w })),
+      lights: copiedLights.map(l => ({ ...l })),
+    };
+    setHasSelectionClipboard(true);
+    if (copiedTokens.length === 1) { tokenClipboardRef.current = copiedTokens[0]; setHasClipboard(true); }
+    toast({ title: `${total} élément(s) copié(s)` });
+  };
+
+  /** Colle le presse-papiers. Si (wx, wy) est fourni, la sélection est centrée dessus. */
+  const pasteSelection = (wx?: number, wy?: number) => {
+    const clip = selectionClipboardRef.current;
+    if (!clip) return;
+    // Origine de la copie = coin haut/gauche de l'ensemble copié
+    const xs: number[] = [
+      ...clip.tokens.map(t => t.x),
+      ...clip.drawings.flatMap(a => a.points.map(p => p.x)),
+      ...clip.walls.flatMap(w => [w.x1, w.x2]),
+      ...clip.lights.map(l => l.x ?? 0),
+    ];
+    const ys: number[] = [
+      ...clip.tokens.map(t => t.y),
+      ...clip.drawings.flatMap(a => a.points.map(p => p.y)),
+      ...clip.walls.flatMap(w => [w.y1, w.y2]),
+      ...clip.lights.map(l => l.y ?? 0),
+    ];
+    if (xs.length === 0) return;
+    const minX = Math.min(...xs), minY = Math.min(...ys);
+    const offset = cellPx;
+    const dx = wx !== undefined ? wx - minX : offset;
+    const dy = wy !== undefined ? wy - minY : offset;
+
+    const newTokens = perms.canAddToken
+      ? clip.tokens.map(t => ({ ...t, id: newId(), x: t.x + dx, y: t.y + dy }))
+      : [];
+    const newDrawings = clip.drawings.map(a => ({
+      ...a,
+      id: newId(),
+      points: a.points.map(p => ({ x: p.x + dx, y: p.y + dy })),
+    }));
+    const newWalls = isGM
+      ? clip.walls.map(w => ({ ...w, id: newId(), x1: w.x1 + dx, y1: w.y1 + dy, x2: w.x2 + dx, y2: w.y2 + dy }))
+      : [];
+    const newLights = isGM
+      ? clip.lights.map(l => ({ ...l, id: newId(), x: (l.x ?? 0) + dx, y: (l.y ?? 0) + dy }))
+      : [];
+
+    const total = newTokens.length + newDrawings.length + newWalls.length + newLights.length;
+    if (total === 0) return;
+
+    if (newTokens.length) setTokens(prev => [...prev, ...newTokens]);
+    if (newDrawings.length) setActions(prev => [...prev, ...newDrawings]);
+    if (newWalls.length) wallsHook.addWalls(newWalls);
+    if (newLights.length) lightsHook.addLights(newLights);
+
+    // La copie devient la nouvelle sélection
+    setSelectedTokenIds(new Set(newTokens.map(t => t.id)));
+    setSelectedTokenId(newTokens[newTokens.length - 1]?.id ?? null);
+    setSelectedDrawingIds(new Set(newDrawings.map(a => a.id)));
+    setSelectedWallIds(new Set(newWalls.map(w => w.id)));
+    setSelectedLightIds(new Set(newLights.map(l => l.id)));
+    toast({ title: `${total} élément(s) collé(s)` });
   };
 
 
@@ -2538,6 +2621,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
       const multi = selectedTokenIds.size > 1;
       const hasObjSel = selectedDrawingIds.size > 0 || selectedWallIds.size > 0 || selectedLightIds.size > 0;
+      // Ctrl/Cmd + C → copier toute la sélection
+      if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C") && (multi || hasObjSel)) {
+        e.preventDefault(); copySelection(); return;
+      }
+      // Ctrl/Cmd + V → coller la sélection copiée
+      if ((e.ctrlKey || e.metaKey) && (e.key === "v" || e.key === "V") && hasSelectionClipboard) {
+        e.preventDefault(); pasteSelection(); return;
+      }
       if (selectedTokenId || multi || hasObjSel) {
         const step = e.shiftKey ? cellPx * 5 : cellPx;
         if (e.key === "ArrowUp") { e.preventDefault(); moveSelectionBy(0, -step); }
@@ -2563,7 +2654,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onKeyUp); };
-  }, [selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, tokens, actions, collisionEnabled, fullscreen, hasClipboard, perms.canAddToken]);
+  }, [selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, tokens, actions, collisionEnabled, fullscreen, hasClipboard, hasSelectionClipboard, perms.canAddToken]);
 
   // ── findTokenAt ──
   const findTokenAt = (x: number, y: number): TokenItem | null => {
@@ -4157,6 +4248,20 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                   className="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Désélectionner
+                </button>
+                <button
+                  onClick={copySelection}
+                  disabled={selectionCount === 0}
+                  className="flex items-center gap-1 rounded border border-amber-500/40 px-2 py-0.5 text-amber-200 hover:bg-amber-400/15 disabled:opacity-40"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copier
+                </button>
+                <button
+                  onClick={() => pasteSelection()}
+                  disabled={!hasSelectionClipboard}
+                  className="flex items-center gap-1 rounded border border-amber-500/40 px-2 py-0.5 text-amber-200 hover:bg-amber-400/15 disabled:opacity-40"
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5" /> Coller
                 </button>
                 <button
                   onClick={deleteSelection}

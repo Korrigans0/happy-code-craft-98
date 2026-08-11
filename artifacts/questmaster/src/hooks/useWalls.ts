@@ -206,6 +206,19 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     });
   }, [isGM, saveWalls, pushHistory]);
 
+  // ── Ajouter plusieurs murs (copier / coller) ───────────
+  const addWalls = useCallback((newWalls: Wall[]) => {
+    if (!isGM || newWalls.length === 0) return;
+    setWalls(prev => {
+      pushHistory(prev);
+      const updated = [...prev, ...newWalls];
+      saveWalls(updated);
+      return updated;
+    });
+  }, [isGM, saveWalls, pushHistory]);
+
+
+
   // ── Sélectionner le mur le plus proche ─────────────────
   const selectWallAt = useCallback((x: number, y: number, threshold = 10) => {
     let closestId: string | null = null;
@@ -533,6 +546,7 @@ export function useWalls({ campaignId, isGM, saveStateDebounced, gridSize = 40, 
     deleteWallById,
     deleteWallsByIds,
     moveWallsBy,
+    addWalls,
     selectWallAt,
     toggleDoor,
     setAllDoorsOpen,
