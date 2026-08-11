@@ -11,7 +11,7 @@ import {
   RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
-  Grid3x3, Hexagon, MousePointerSquareDashed,
+  Grid3x3, Hexagon, MousePointerSquareDashed, ClipboardPaste,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -38,7 +38,7 @@ import GMPanel from "./vtt/GMPanel";
 import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
-  CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset,
+  CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
 } from "./vtt/types";
 import { supabase } from "@/integrations/supabase/client";
 
