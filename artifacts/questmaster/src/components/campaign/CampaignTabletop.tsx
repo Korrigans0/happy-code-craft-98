@@ -3340,18 +3340,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       <div className="flex shrink-0 flex-nowrap sm:flex-wrap items-center gap-1 border-b border-border bg-card/95 px-2 py-1 backdrop-blur-sm overflow-x-auto sm:overflow-x-visible scrollbar-thin">
 
         {/* Zoom */}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} title="Dézoomer">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} title="Dézoomer" aria-label="Dézoomer">
           <ZoomOut className="h-3.5 w-3.5" />
         </Button>
         <button onClick={resetView}
           className="min-w-[40px] rounded px-1 text-xs font-medium text-muted-foreground hover:bg-muted"
-          title="Réinitialiser la vue">
+          title="Réinitialiser la vue" aria-label="Réinitialiser la vue">
           {Math.round(zoom * 100)}%
         </button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} title="Zoomer (+)">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} title="Zoomer (+)" aria-label="Zoomer (+)">
           <ZoomIn className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShortcutsHelpOpen(true)} title="Raccourcis clavier (?)">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShortcutsHelpOpen(true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier (?)">
           <Keyboard className="h-3.5 w-3.5" />
         </Button>
 
@@ -3397,7 +3397,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 gap-1 px-1.5 text-[10px] font-semibold"
-                title="Unité de la règle">
+                title="Unité de la règle" aria-label="Unité de la règle">
                 <Ruler className="h-3.5 w-3.5" />
                 <span className="uppercase">{measureUnit === "cases" ? "□" : measureUnit}</span>
               </Button>
@@ -3439,18 +3439,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
         {/* Undo/Redo/Clear/Export */}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={actions.length === 0} title="Annuler (Ctrl+Z)">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={actions.length === 0} title="Annuler (Ctrl+Z)" aria-label="Annuler (Ctrl+Z)">
           <Undo2 className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={undoneActions.length === 0} title="Rétablir">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={undoneActions.length === 0} title="Rétablir" aria-label="Rétablir">
           <Redo2 className="h-3.5 w-3.5" />
         </Button>
         {isGM && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={clearAll} title="Tout effacer">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={clearAll} title="Tout effacer" aria-label="Tout effacer">
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="h-7 w-7 hidden sm:flex" onClick={exportCanvas} title="Exporter PNG">
+        <Button variant="ghost" size="icon" className="h-7 w-7 hidden sm:flex" onClick={exportCanvas} title="Exporter PNG" aria-label="Exporter PNG">
           <Download className="h-3.5 w-3.5" />
         </Button>
 
@@ -3467,7 +3467,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <MediaPickerDialog
             fileType="document"
             campaignId={campaignId}
-            title="Partager un document PDF"
+            title="Partager un document PDF" aria-label="Partager un document PDF"
             onSelect={(asset) => {
               if (asset.mime !== "application/pdf") {
                 toast({ title: "Format non supporté", description: "Seuls les PDF peuvent être ouverts en fenêtre pop-up.", variant: "destructive" });
@@ -3476,7 +3476,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               shareDocument({ id: asset.id, name: asset.name, storage_path: asset.storage_path });
             }}
             trigger={
-              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" title="Partager un PDF en fenêtre pop-up">
+              <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" title="Partager un PDF en fenêtre pop-up" aria-label="Partager un PDF en fenêtre pop-up">
                 <FileText className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">PDF</span>
                 {sharedDocs.length > 0 && (
@@ -3543,7 +3543,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                         <button
                           onClick={() => switchScene(scene)}
                           className="rounded p-1 text-primary hover:bg-primary/20 transition-colors text-xs font-semibold"
-                          title="Charger cette scène"
+                          title="Charger cette scène" aria-label="Charger cette scène"
                         >
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
@@ -3551,14 +3551,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                       <button
                         onClick={() => renameScene(scene.id)}
                         className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        title="Renommer"
+                        title="Renommer" aria-label="Renommer"
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => deleteScene(scene.id)}
                         className="rounded p-1 text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Supprimer"
+                        title="Supprimer" aria-label="Supprimer"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -3616,7 +3616,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             size="sm"
             className="h-7 gap-1 px-2 text-xs"
             onClick={onToggleLayers}
-            title="Calques"
+            title="Calques" aria-label="Calques"
             aria-pressed={!!layersOpen}
           >
             <Layers className="h-3.5 w-3.5" />
