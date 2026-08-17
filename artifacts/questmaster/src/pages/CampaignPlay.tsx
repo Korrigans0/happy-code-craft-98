@@ -339,6 +339,11 @@ const CampaignPlay = () => {
               <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
+              {isGM && (
+                <TabsContent value="prep" className="m-0 h-full">
+                  <CampaignPrep campaignId={id!} isGM={isGM} />
+                </TabsContent>
+              )}
               <TabsContent value="codex" className="m-0 h-full">
                 <CampaignCodex campaignId={id!} system={campaign.system} isGM={isGM} />
               </TabsContent>
