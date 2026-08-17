@@ -8,7 +8,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Image as ImageIcon, Loader2, Search, Trash2, Pencil, UploadCloud,
-  AlertTriangle, CheckSquare, Square, FileText,
+  AlertTriangle, CheckSquare, Square, FileText, FolderOpen, Tag, FolderInput,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AssetMetaDialog } from "./AssetMetaDialog";
 import { useMediaLibrary, formatBytes, type MediaAsset, type MediaFileType } from "@/hooks/useMediaLibrary";
 
 const TYPE_OPTIONS: { value: MediaFileType | "all"; label: string }[] = [
