@@ -212,6 +212,17 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
+        <Input
+          list="upload-folder-options"
+          placeholder="Dossier (optionnel)"
+          value={uploadFolder}
+          onChange={(e) => setUploadFolder(e.target.value)}
+          className="h-9 w-[190px]"
+          aria-label="Dossier de destination"
+        />
+        <datalist id="upload-folder-options">
+          {folders.map((f) => <option key={f} value={f} />)}
+        </datalist>
         <Button onClick={() => fileRef.current?.click()} disabled={uploading || isOver}>
           {uploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-1 h-4 w-4" />}
           Importer
@@ -294,6 +305,11 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           <span className="text-xs text-muted-foreground">
             {selected.size} sélectionné{selected.size > 1 ? "s" : ""}
           </span>
+          {selected.size > 0 && (
+            <Button size="sm" variant="ghost" className="h-8" onClick={handleBulkMove}>
+              <FolderInput className="mr-1 h-3.5 w-3.5" /> Ranger dans…
+            </Button>
+          )}
           {selected.size > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
