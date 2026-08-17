@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
+import SessionAgenda from "./SessionAgenda";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck } from "lucide-react";
 
 
@@ -116,6 +118,8 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
         title: data.title,
         description: data.description,
         notes: data.notes,
+        recap: data.recap ?? null,
+        is_recap_shared: !!data.is_recap_shared,
         scheduled_at: nextIso,
       });
       return { updated, rescheduled };
@@ -332,12 +336,21 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                     {session.description && (
                       <p className="text-sm text-muted-foreground mb-2">{session.description}</p>
                     )}
-                    {session.notes && (
+                    {isGM && session.notes && (
                       <div className="rounded-md bg-muted/50 p-3 mt-2">
                         <p className="text-xs font-medium text-foreground mb-1">Notes de session</p>
                         <p className="text-xs text-muted-foreground whitespace-pre-wrap">{session.notes}</p>
                       </div>
                     )}
+                    {(session as any).recap && (isGM || (session as any).is_recap_shared) && (
+                      <div className="mt-2 rounded-md border border-primary/25 bg-primary/5 p-3">
+                        <p className="mb-1 text-xs font-medium text-primary">
+                          Résumé d'après-partie{!(session as any).is_recap_shared && isGM ? " (privé)" : ""}
+                        </p>
+                        <p className="whitespace-pre-wrap text-xs text-muted-foreground">{(session as any).recap}</p>
+                      </div>
+                    )}
+                    {isGM && <SessionAgenda campaignId={campaignId} sessionId={session.id} />}
                   </CardContent>
                 </Card>
               );
@@ -377,6 +390,25 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                   placeholder="Résumé de ce qui s'est passé..."
                   rows={5}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Résumé d'après-partie</Label>
+                <Textarea
+                  value={editingSession.recap || ""}
+                  onChange={(e) => setEditingSession((s: any) => ({ ...s, recap: e.target.value }))}
+                  placeholder="Ce que les joueurs ont accompli, à partager avec la table..."
+                  rows={4}
+                />
+                <div className="flex items-center justify-between rounded-md border border-border/60 p-3">
+                  <div>
+                    <p className="text-sm text-foreground">Partager le résumé aux joueurs</p>
+                    <p className="text-xs text-muted-foreground">Visible par toute la table dans l'onglet Sessions.</p>
+                  </div>
+                  <Switch
+                    checked={!!editingSession.is_recap_shared}
+                    onCheckedChange={(v) => setEditingSession((s: any) => ({ ...s, is_recap_shared: v }))}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Date prévue</Label>
