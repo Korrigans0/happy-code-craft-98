@@ -9,10 +9,26 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { SYSTEM_LIST } from "@/lib/systems";
+import dnd5eArt from "@/assets/systems/dnd5e.jpg";
+import pathfinderArt from "@/assets/systems/pathfinder2e.jpg";
+import cthulhuArt from "@/assets/systems/cthulhu.jpg";
+import cofArt from "@/assets/systems/cof.jpg";
+import waArt from "@/assets/systems/worlds-awakening.jpg";
+import customArt from "@/assets/systems/custom.jpg";
 
 // Systèmes dotés d'un hub public dédié (autres → renvoient vers /compendium).
 const SYSTEM_HUB: Record<string, string> = {
   Glyphes: "/systems/glyphes",
+};
+
+// Illustration de fond par système. Aetheria et Glyphes gardent un fond sobre.
+const ART_BY_ID: Record<string, string> = {
+  "Worlds Awakening": waArt,
+  "D&D 5e": dnd5eArt,
+  "Pathfinder 2e": pathfinderArt,
+  "Call of Cthulhu": cthulhuArt,
+  COF: cofArt,
+  "Personnalisé": customArt,
 };
 
 const ACCENT_BY_ID: Record<string, string> = {
@@ -24,6 +40,7 @@ const ACCENT_BY_ID: Record<string, string> = {
   Glyphes: "from-indigo-500/25 via-indigo-400/5 to-transparent",
   Custom: "from-slate-500/20 via-slate-400/5 to-transparent",
 };
+
 
 export default function SystemsIndex() {
   return (
