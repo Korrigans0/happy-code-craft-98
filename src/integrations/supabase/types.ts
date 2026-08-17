@@ -249,6 +249,50 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_chapters: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_published: boolean
+          sort_order: number
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_published?: boolean
+          sort_order?: number
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_published?: boolean
+          sort_order?: number
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_chapters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_entities: {
         Row: {
           campaign_id: string
@@ -460,6 +504,69 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_prep_scenes: {
+        Row: {
+          campaign_id: string
+          chapter_id: string | null
+          created_at: string
+          created_by: string
+          entity_ids: string[]
+          gm_notes: string
+          id: string
+          sort_order: number
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          vtt_scene_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          chapter_id?: string | null
+          created_at?: string
+          created_by: string
+          entity_ids?: string[]
+          gm_notes?: string
+          id?: string
+          sort_order?: number
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          vtt_scene_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          chapter_id?: string | null
+          created_at?: string
+          created_by?: string
+          entity_ids?: string[]
+          gm_notes?: string
+          id?: string
+          sort_order?: number
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          vtt_scene_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_prep_scenes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_prep_scenes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_chapters"
             referencedColumns: ["id"]
           },
         ]
