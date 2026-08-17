@@ -121,6 +121,7 @@ export default function Dashboard() {
       <SEO
         title="Tableau de bord — Aetheria VTT"
         description="Retrouvez vos campagnes, vos prochaines sessions, vos personnages et vos dernières activités sur Aetheria VTT."
+        path="/dashboard"
       />
       <Header />
       <main className="container mx-auto flex-1 px-4 py-6">
