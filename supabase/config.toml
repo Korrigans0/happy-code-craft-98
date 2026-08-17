@@ -12,4 +12,10 @@ project_id = "snawpxrejmcxfbiiowxr"
   [functions.handle-email-unsubscribe]
     verify_jwt = false
   [functions.handle-email-suppression]
+  [functions.handle-email-suppression]
     verify_jwt = false
+  [functions.notify-session]
+    verify_jwt = false
+  [functions.session-reminders]
+    verify_jwt = true
+
