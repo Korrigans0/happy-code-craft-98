@@ -26,6 +26,8 @@ export interface PrepScene {
   sort_order: number;
   entity_ids: string[];
   vtt_scene_id: string | null;
+  session_id: string | null;
+  agenda_order: number;
   created_by: string;
   created_at: string;
   updated_at: string;

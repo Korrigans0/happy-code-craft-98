@@ -36,6 +36,7 @@ export interface SceneInput {
   status?: PrepSceneStatus;
   entity_ids?: string[];
   vtt_scene_id?: string | null;
+  session_id?: string | null;
 }
 
 export const prepApi = {
@@ -111,6 +112,42 @@ export const prepApi = {
     patch: Partial<SceneInput> & { sort_order?: number; chapter_id?: string | null },
   ) => {
     const r = await db.from("campaign_prep_scenes").update(patch).eq("id", sceneId).select().single();
+    return unwrap<PrepScene>(r);
+  },
+
+  // --- Session agenda: link prepared scenes to a planned session ---
+
+  listSessionScenes: async (campaignId: string, sessionId: string): Promise<PrepScene[]> => {
+    const r = await db
+      .from("campaign_prep_scenes")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .eq("session_id", sessionId)
+      .order("agenda_order", { ascending: true });
+    return unwrap<PrepScene[]>(r) ?? [];
+  },
+
+  assignScenesToSession: async (sceneIds: string[], sessionId: string | null, startOrder = 0) => {
+    await Promise.all(
+      sceneIds.map((id, i) =>
+        db
+          .from("campaign_prep_scenes")
+          .update({ session_id: sessionId, agenda_order: startOrder + i })
+          .eq("id", id),
+      ),
+    );
+    return { ok: true };
+  },
+
+  reorderAgenda: async (scenes: { id: string; agenda_order: number }[]) => {
+    await Promise.all(
+      scenes.map((s) => db.from("campaign_prep_scenes").update({ agenda_order: s.agenda_order }).eq("id", s.id)),
+    );
+    return { ok: true };
+  },
+
+  setSceneStatus: async (sceneId: string, status: PrepSceneStatus) => {
+    const r = await db.from("campaign_prep_scenes").update({ status }).eq("id", sceneId).select().single();
     return unwrap<PrepScene>(r);
   },
 
