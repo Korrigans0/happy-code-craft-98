@@ -510,6 +510,7 @@ export type Database = {
       }
       campaign_prep_scenes: {
         Row: {
+          agenda_order: number
           campaign_id: string
           chapter_id: string | null
           created_at: string
@@ -517,6 +518,7 @@ export type Database = {
           entity_ids: string[]
           gm_notes: string
           id: string
+          session_id: string | null
           sort_order: number
           status: string
           summary: string | null
@@ -525,6 +527,7 @@ export type Database = {
           vtt_scene_id: string | null
         }
         Insert: {
+          agenda_order?: number
           campaign_id: string
           chapter_id?: string | null
           created_at?: string
@@ -532,6 +535,7 @@ export type Database = {
           entity_ids?: string[]
           gm_notes?: string
           id?: string
+          session_id?: string | null
           sort_order?: number
           status?: string
           summary?: string | null
@@ -540,6 +544,7 @@ export type Database = {
           vtt_scene_id?: string | null
         }
         Update: {
+          agenda_order?: number
           campaign_id?: string
           chapter_id?: string | null
           created_at?: string
@@ -547,6 +552,7 @@ export type Database = {
           entity_ids?: string[]
           gm_notes?: string
           id?: string
+          session_id?: string | null
           sort_order?: number
           status?: string
           summary?: string | null
@@ -569,6 +575,13 @@ export type Database = {
             referencedRelation: "campaign_chapters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_prep_scenes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       campaign_sessions: {
@@ -578,7 +591,9 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_recap_shared: boolean
           notes: string | null
+          recap: string | null
           scheduled_at: string | null
           session_number: number
           title: string
@@ -590,7 +605,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_recap_shared?: boolean
           notes?: string | null
+          recap?: string | null
           scheduled_at?: string | null
           session_number?: number
           title: string
@@ -602,7 +619,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_recap_shared?: boolean
           notes?: string | null
+          recap?: string | null
           scheduled_at?: string | null
           session_number?: number
           title?: string
