@@ -1262,6 +1262,60 @@ export type Database = {
         }
         Relationships: []
       }
+      session_email_notifications: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          kind: string
+          recipient_email: string | null
+          sent_at: string | null
+          session_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          kind: string
+          recipient_email?: string | null
+          sent_at?: string | null
+          session_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          kind?: string
+          recipient_email?: string | null
+          sent_at?: string | null
+          session_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_email_notifications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_email_notifications_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spells: {
         Row: {
           campaign_id: string | null
