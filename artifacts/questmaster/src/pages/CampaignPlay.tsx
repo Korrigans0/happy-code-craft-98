@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X, Library, History, BookMarked,
+  Volume2, ExternalLink, Wand2, X, Library, History, BookMarked, Eye, EyeOff,
 } from "lucide-react";
 import LayersPanel from "@/components/campaign/vtt/LayersPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
