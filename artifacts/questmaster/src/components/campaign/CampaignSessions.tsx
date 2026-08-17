@@ -35,38 +35,100 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
     queryFn: () => campaignsApi.getSessions(campaignId),
   });
 
+  // Delivery status of the automatic e-mails, per session.
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["sessionNotifications", campaignId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("session_email_notifications")
+        .select("session_id, kind, status")
+        .eq("campaign_id", campaignId);
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  const notifStats = useMemo(() => {
+    const map = new Map<string, { sent: number; failed: number }>();
+    for (const n of notifications as any[]) {
+      const entry = map.get(n.session_id) ?? { sent: 0, failed: 0 };
+      if (n.status === "failed") entry.failed++;
+      else if (n.status === "sent") entry.sent++;
+      map.set(n.session_id, entry);
+    }
+    return map;
+  }, [notifications]);
+
+  // Fire-and-forget: an e-mail failure must never break session management.
+  const notifySession = useCallback(
+    async (sessionId: string, kind: "created" | "rescheduled") => {
+      try {
+        const { error } = await supabase.functions.invoke("notify-session", {
+          body: { sessionId, kind },
+        });
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["sessionNotifications", campaignId] });
+        toast({
+          title: kind === "rescheduled" ? "Participants prévenus du changement" : "Invitations envoyées",
+          description: "Les joueurs ont reçu un e-mail avec la date et l'heure de la session.",
+        });
+      } catch (e) {
+        console.error("notify-session failed", e);
+        toast({
+          title: "Notification e-mail indisponible",
+          description: "La session est enregistrée, mais l'e-mail n'a pas pu être envoyé.",
+          variant: "destructive",
+        });
+      }
+    },
+    [campaignId, queryClient],
+  );
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof newSession) => {
       const nextNumber = sessions.length > 0 ? Math.max(...(sessions as any[]).map((s: any) => s.session_number || 0)) + 1 : 1;
       return campaignsApi.createSession(campaignId, {
         ...data,
+        scheduled_at: data.scheduled_at ? new Date(data.scheduled_at).toISOString() : null,
         session_number: nextNumber,
         title: data.title || `Session ${nextNumber}`,
       });
     },
-    onSuccess: () => {
+    onSuccess: (created: any) => {
       queryClient.invalidateQueries({ queryKey: ["campaignSessions", campaignId] });
       setIsCreateOpen(false);
       setNewSession({ title: "", description: "", scheduled_at: "", notes: "" });
       toast({ title: "Session créée" });
+      if (created?.id && created?.scheduled_at) void notifySession(created.id, "created");
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      return campaignsApi.updateSession(campaignId, data.id, {
+      const previous = (sessions as any[]).find((s) => s.id === data.id);
+      const nextIso = data.scheduled_at ? new Date(data.scheduled_at).toISOString() : null;
+      const prevTime = previous?.scheduled_at ? new Date(previous.scheduled_at).getTime() : null;
+      const nextTime = nextIso ? new Date(nextIso).getTime() : null;
+      // Only a real schedule change (> 5 min) warrants a new e-mail.
+      const rescheduled =
+        !!nextTime && (prevTime === null || Math.abs(nextTime - prevTime) > 5 * 60 * 1000);
+      const updated = await campaignsApi.updateSession(campaignId, data.id, {
         title: data.title,
         description: data.description,
         notes: data.notes,
-        scheduled_at: data.scheduled_at || null,
+        scheduled_at: nextIso,
       });
+      return { updated, rescheduled };
     },
-    onSuccess: () => {
+    onSuccess: ({ rescheduled }: any) => {
       queryClient.invalidateQueries({ queryKey: ["campaignSessions", campaignId] });
+      const id = editingSession?.id;
       setEditingSession(null);
       toast({ title: "Session mise à jour" });
+      if (rescheduled && id) void notifySession(id, "rescheduled");
     },
   });
+
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
