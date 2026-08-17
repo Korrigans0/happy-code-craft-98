@@ -1446,6 +1446,7 @@ export type Database = {
           checksum: string | null
           created_at: string
           file_type: string
+          folder: string | null
           height: number | null
           id: string
           mime: string
@@ -1453,6 +1454,7 @@ export type Database = {
           owner_id: string
           size_bytes: number
           storage_path: string
+          tags: string[]
           thumbnail_path: string | null
           updated_at: string
           width: number | null
@@ -1462,6 +1464,7 @@ export type Database = {
           checksum?: string | null
           created_at?: string
           file_type: string
+          folder?: string | null
           height?: number | null
           id?: string
           mime: string
@@ -1469,6 +1472,7 @@ export type Database = {
           owner_id: string
           size_bytes: number
           storage_path: string
+          tags?: string[]
           thumbnail_path?: string | null
           updated_at?: string
           width?: number | null
@@ -1478,6 +1482,7 @@ export type Database = {
           checksum?: string | null
           created_at?: string
           file_type?: string
+          folder?: string | null
           height?: number | null
           id?: string
           mime?: string
@@ -1485,6 +1490,7 @@ export type Database = {
           owner_id?: string
           size_bytes?: number
           storage_path?: string
+          tags?: string[]
           thumbnail_path?: string | null
           updated_at?: string
           width?: number | null
