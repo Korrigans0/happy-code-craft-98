@@ -265,6 +265,21 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                                 À venir
                               </Badge>
                             )}
+                            {(() => {
+                              const n = notifStats.get(session.id);
+                              if (!n || (!n.sent && !n.failed)) return null;
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${n.failed ? "border-destructive/50 text-destructive" : "border-primary/40 text-primary"}`}
+                                  title={n.failed ? `${n.failed} envoi(s) en échec` : `${n.sent} e-mail(s) envoyé(s)`}
+                                >
+                                  <MailCheck className="mr-1 h-3 w-3" />
+                                  {n.failed ? `${n.failed} échec` : `${n.sent} notifié${n.sent > 1 ? "s" : ""}`}
+                                </Badge>
+                              );
+                            })()}
+
                             {session.scheduled_at && (
                               <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
