@@ -111,8 +111,6 @@ export default function SystemsIndex() {
                               : "object-cover opacity-50"
                           }`}
                         />
-                      </>
-                    )}
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[hsl(228,68%,8%)]/40 via-[hsl(228,68%,8%)]/70 to-[hsl(228,68%,8%)]" />
                       </>
                     )}
