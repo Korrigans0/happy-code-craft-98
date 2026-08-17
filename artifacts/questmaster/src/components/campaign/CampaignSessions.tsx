@@ -39,7 +39,7 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
   const { data: notifications = [] } = useQuery({
     queryKey: ["sessionNotifications", campaignId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("session_email_notifications")
         .select("session_id, kind, status")
         .eq("campaign_id", campaignId);
