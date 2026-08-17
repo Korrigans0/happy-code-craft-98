@@ -52,7 +52,7 @@ import { SharedPdfPopups, type SharedDocument } from "@/components/campaign/vtt/
 import { MediaPickerDialog } from "@/components/media/MediaPickerDialog";
 import { FileText } from "lucide-react";
 
-import SheetRouter from "@/components/characters/sheets/SheetRouter";
+import SheetViewSwitcher from "@/components/characters/sheets/SheetViewSwitcher";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "@/hooks/use-toast";
@@ -4736,7 +4736,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             const linkedTok = tokens.find(t => t.creatureType === "character" && t.creatureId === fullSheetCharacter.id) ?? null;
             const canEditSheet = isGM || (user?.id && fullSheetCharacter.user_id === user.id);
             return (
-              <SheetRouter
+              <SheetViewSwitcher
+                campaignId={campaignId}
+                authorName={fullSheetCharacter?.name}
                 character={fullSheetCharacter}
                 editable={!!canEditSheet}
                 onSave={(charPatch: any) => {
