@@ -205,6 +205,14 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                     onChange={(e) => setNewSession(s => ({ ...s, scheduled_at: e.target.value }))}
                   />
                 </div>
+                <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/10 p-3">
+                  <Bell className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <p className="text-xs text-muted-foreground">
+                    Notifications activées : si une date est renseignée, les joueurs recevront
+                    automatiquement un e-mail d'invitation, puis un rappel la veille de la session.
+                  </p>
+                </div>
+
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
