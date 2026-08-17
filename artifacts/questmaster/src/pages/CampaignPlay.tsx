@@ -115,7 +115,26 @@ const CampaignPlay = () => {
 
   const handleTabChange = useCallback((v: string) => {
     setActiveTab(v);
-  }, []);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (v === "tabletop") next.delete("tab");
+        else next.set("tab", v);
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  // Keep the state in sync when the URL changes (deep link, back/forward),
+  // and fall back to the tabletop when the requested tab is not available.
+  useEffect(() => {
+    const requested = searchParams.get("tab");
+    if (!requested) return;
+    if (!tabs.some((t) => t.id === requested)) return;
+    setActiveTab((current) => (current === requested ? current : requested));
+  }, [searchParams, tabs]);
+
 
   if (authLoading || campaignLoading || membershipLoading) {
     return (
