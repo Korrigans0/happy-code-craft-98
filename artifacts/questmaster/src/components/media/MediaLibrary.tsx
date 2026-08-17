@@ -205,7 +205,7 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rechercher…"
+            placeholder="Rechercher (nom, dossier, étiquette)…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 w-64 pl-8"
@@ -219,8 +219,48 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={folderFilter} onValueChange={setFolderFilter}>
+          <SelectTrigger className="h-10 w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les dossiers</SelectItem>
+            <SelectItem value="__root__">Sans dossier</SelectItem>
+            {folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="ml-auto text-sm text-muted-foreground">{filtered.length} média{filtered.length > 1 ? "s" : ""}</span>
       </div>
+
+      {/* Étiquettes */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Tag className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+          {allTags.map((t) => {
+            const on = activeTags.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  setActiveTags((prev) => (on ? prev.filter((x) => x !== t) : [...prev, t]))
+                }
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
+                  on
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
+          {activeTags.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => setActiveTags([])}>
+              Réinitialiser
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Barre de sélection groupée */}
       {filtered.length > 0 && (
