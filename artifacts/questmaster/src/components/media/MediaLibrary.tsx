@@ -388,6 +388,15 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           })}
         </div>
       )}
+
+      <AssetMetaDialog
+        asset={editing}
+        folders={folders}
+        allTags={allTags}
+        open={!!editing}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        onSave={updateMeta}
+      />
     </div>
   );
 }
