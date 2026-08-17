@@ -9,10 +9,26 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { SYSTEM_LIST } from "@/lib/systems";
+import dnd5eArt from "@/assets/systems/dnd5e.jpg";
+import pathfinderArt from "@/assets/systems/pathfinder2e.jpg";
+import cthulhuArt from "@/assets/systems/cthulhu.jpg";
+import cofArt from "@/assets/systems/cof.jpg";
+import waArt from "@/assets/systems/worlds-awakening.jpg";
+import customArt from "@/assets/systems/custom.jpg";
 
 // Systèmes dotés d'un hub public dédié (autres → renvoient vers /compendium).
 const SYSTEM_HUB: Record<string, string> = {
   Glyphes: "/systems/glyphes",
+};
+
+// Illustration de fond par système. Aetheria et Glyphes gardent un fond sobre.
+const ART_BY_ID: Record<string, string> = {
+  "Worlds Awakening": waArt,
+  "D&D 5e": dnd5eArt,
+  "Pathfinder 2e": pathfinderArt,
+  "Call of Cthulhu": cthulhuArt,
+  COF: cofArt,
+  "Personnalisé": customArt,
 };
 
 const ACCENT_BY_ID: Record<string, string> = {
@@ -24,6 +40,7 @@ const ACCENT_BY_ID: Record<string, string> = {
   Glyphes: "from-indigo-500/25 via-indigo-400/5 to-transparent",
   Custom: "from-slate-500/20 via-slate-400/5 to-transparent",
 };
+
 
 export default function SystemsIndex() {
   return (
@@ -68,12 +85,28 @@ export default function SystemsIndex() {
                 ACCENT_BY_ID[sys.id] ??
                 "from-amber-500/20 via-amber-400/5 to-transparent";
               const hasHub = !!SYSTEM_HUB[sys.id];
+              const art = ART_BY_ID[sys.id];
               return (
                 <Link key={sys.id} to={href} className="block h-full">
                   <div className="group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-gold">
+                    {art && (
+                      <>
+                        <img
+                          src={art}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          width={1024}
+                          height={512}
+                          className="pointer-events-none absolute inset-x-0 top-0 h-40 w-full select-none object-cover opacity-50 transition-opacity duration-300 group-hover:opacity-70"
+                        />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[hsl(228,68%,8%)]/40 via-[hsl(228,68%,8%)]/70 to-[hsl(228,68%,8%)]" />
+                      </>
+                    )}
                     <div
                       className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${accent}`}
                     />
+
                     <div className="relative">
                       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-2xl">
                         {sys.emoji ?? "📖"}
