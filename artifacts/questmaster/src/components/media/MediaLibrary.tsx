@@ -330,9 +330,29 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
                 <div className="min-w-0 px-1">
                   <p className="truncate text-xs font-medium text-foreground">{a.name}</p>
                   <p className="text-[10px] text-muted-foreground">{formatBytes(a.size_bytes)}{a.width ? ` · ${a.width}×${a.height}` : ""}</p>
+                  {a.folder && (
+                    <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                      <FolderOpen className="h-3 w-3 shrink-0" aria-hidden />
+                      {a.folder}
+                    </p>
+                  )}
+                  {(a.tags?.length ?? 0) > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {a.tags.slice(0, 3).map((t) => (
+                        <Badge key={t} variant="outline" className="px-1 py-0 text-[9px]">{t}</Badge>
+                      ))}
+                      {a.tags.length > 3 && (
+                        <Badge variant="outline" className="px-1 py-0 text-[9px]">+{a.tags.length - 3}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-1 px-1 opacity-80 group-hover:opacity-100">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleRename(a)}>
+                  <Button
+                    size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                    aria-label="Classer le média"
+                    onClick={() => setEditing(a)}
+                  >
                     <Pencil className="h-3 w-3" />
                   </Button>
                   <AlertDialog>
