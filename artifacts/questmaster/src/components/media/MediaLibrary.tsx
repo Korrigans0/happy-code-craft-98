@@ -8,7 +8,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Image as ImageIcon, Loader2, Search, Trash2, Pencil, UploadCloud,
-  AlertTriangle, CheckSquare, Square, FileText,
+  AlertTriangle, CheckSquare, Square, FileText, FolderOpen, Tag, FolderInput,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AssetMetaDialog } from "./AssetMetaDialog";
 import { useMediaLibrary, formatBytes, type MediaAsset, type MediaFileType } from "@/hooks/useMediaLibrary";
 
 const TYPE_OPTIONS: { value: MediaFileType | "all"; label: string }[] = [
@@ -48,11 +49,18 @@ interface Props {
 }
 
 export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
-  const { assets, usage, loading, uploading, upload, remove, rename } = useMediaLibrary();
+  const {
+    assets, usage, loading, uploading, upload, remove,
+    updateMeta, moveToFolder, folders, allTags,
+  } = useMediaLibrary();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [type, setType] = useState<MediaFileType | "all">(defaultType ?? "all");
   const [uploadType, setUploadType] = useState<MediaFileType>(defaultType ?? "map");
+  const [uploadFolder, setUploadFolder] = useState("");
+  const [folderFilter, setFolderFilter] = useState<string>("all");
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [editing, setEditing] = useState<MediaAsset | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -62,19 +70,26 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
     const q = search.trim().toLowerCase();
     return assets.filter((a) => {
       if (type !== "all" && a.file_type !== type) return false;
-      if (q && !a.name.toLowerCase().includes(q)) return false;
+      if (folderFilter === "__root__" && a.folder) return false;
+      if (folderFilter !== "all" && folderFilter !== "__root__" && a.folder !== folderFilter) return false;
+      if (activeTags.length && !activeTags.every((t) => (a.tags ?? []).includes(t))) return false;
+      if (q) {
+        const haystack = [a.name, a.folder ?? "", ...(a.tags ?? [])].join(" ").toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
-  }, [assets, search, type]);
+  }, [assets, search, type, folderFilter, activeTags]);
 
   const handleFiles = useCallback(async (files: FileList | File[] | null) => {
     if (!files) return;
     const list = Array.from(files);
     if (!list.length) return;
+    const folder = uploadFolder.trim() || null;
     let ok = 0, fail = 0;
     for (const file of list) {
       try {
-        await upload(file, { fileType: uploadType, campaignId });
+        await upload(file, { fileType: uploadType, campaignId, folder });
         ok++;
       } catch (e: any) {
         fail++;
@@ -83,13 +98,20 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
     }
     if (ok) toast({ title: `${ok} fichier${ok > 1 ? "s" : ""} importé${ok > 1 ? "s" : ""}`, description: fail ? `${fail} échec(s)` : undefined });
     if (fileRef.current) fileRef.current.value = "";
-  }, [upload, uploadType, campaignId, toast]);
+  }, [upload, uploadType, uploadFolder, campaignId, toast]);
 
-  const handleRename = async (asset: MediaAsset) => {
-    const next = window.prompt("Nouveau nom", asset.name);
-    if (!next || next === asset.name) return;
-    try { await rename(asset, next); toast({ title: "Renommé" }); }
-    catch (e: any) { toast({ title: "Erreur", description: e?.message, variant: "destructive" }); }
+  // Range en un geste tous les médias cochés dans un dossier (nouveau ou existant).
+  const handleBulkMove = async () => {
+    if (!selected.size) return;
+    const answer = window.prompt("Ranger la sélection dans le dossier (vide = racine)", "");
+    if (answer === null) return;
+    try {
+      await moveToFolder(Array.from(selected), answer.trim() || null);
+      setSelected(new Set());
+      toast({ title: "Médias rangés" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+    }
   };
 
   const toggleOne = (id: string) =>
@@ -190,6 +212,17 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
+        <Input
+          list="upload-folder-options"
+          placeholder="Dossier (optionnel)"
+          value={uploadFolder}
+          onChange={(e) => setUploadFolder(e.target.value)}
+          className="h-9 w-[190px]"
+          aria-label="Dossier de destination"
+        />
+        <datalist id="upload-folder-options">
+          {folders.map((f) => <option key={f} value={f} />)}
+        </datalist>
         <Button onClick={() => fileRef.current?.click()} disabled={uploading || isOver}>
           {uploading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-1 h-4 w-4" />}
           Importer
@@ -205,7 +238,7 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Rechercher…"
+            placeholder="Rechercher (nom, dossier, étiquette)…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 w-64 pl-8"
@@ -219,8 +252,48 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={folderFilter} onValueChange={setFolderFilter}>
+          <SelectTrigger className="h-10 w-[190px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les dossiers</SelectItem>
+            <SelectItem value="__root__">Sans dossier</SelectItem>
+            {folders.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <span className="ml-auto text-sm text-muted-foreground">{filtered.length} média{filtered.length > 1 ? "s" : ""}</span>
       </div>
+
+      {/* Étiquettes */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Tag className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+          {allTags.map((t) => {
+            const on = activeTags.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  setActiveTags((prev) => (on ? prev.filter((x) => x !== t) : [...prev, t]))
+                }
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
+                  on
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
+          {activeTags.length > 0 && (
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => setActiveTags([])}>
+              Réinitialiser
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Barre de sélection groupée */}
       {filtered.length > 0 && (
@@ -232,6 +305,11 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           <span className="text-xs text-muted-foreground">
             {selected.size} sélectionné{selected.size > 1 ? "s" : ""}
           </span>
+          {selected.size > 0 && (
+            <Button size="sm" variant="ghost" className="h-8" onClick={handleBulkMove}>
+              <FolderInput className="mr-1 h-3.5 w-3.5" /> Ranger dans…
+            </Button>
+          )}
           {selected.size > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -330,9 +408,29 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
                 <div className="min-w-0 px-1">
                   <p className="truncate text-xs font-medium text-foreground">{a.name}</p>
                   <p className="text-[10px] text-muted-foreground">{formatBytes(a.size_bytes)}{a.width ? ` · ${a.width}×${a.height}` : ""}</p>
+                  {a.folder && (
+                    <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                      <FolderOpen className="h-3 w-3 shrink-0" aria-hidden />
+                      {a.folder}
+                    </p>
+                  )}
+                  {(a.tags?.length ?? 0) > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {a.tags.slice(0, 3).map((t) => (
+                        <Badge key={t} variant="outline" className="px-1 py-0 text-[9px]">{t}</Badge>
+                      ))}
+                      {a.tags.length > 3 && (
+                        <Badge variant="outline" className="px-1 py-0 text-[9px]">+{a.tags.length - 3}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-1 px-1 opacity-80 group-hover:opacity-100">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleRename(a)}>
+                  <Button
+                    size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                    aria-label="Classer le média"
+                    onClick={() => setEditing(a)}
+                  >
                     <Pencil className="h-3 w-3" />
                   </Button>
                   <AlertDialog>
@@ -368,6 +466,15 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
           })}
         </div>
       )}
+
+      <AssetMetaDialog
+        asset={editing}
+        folders={folders}
+        allTags={allTags}
+        open={!!editing}
+        onOpenChange={(o) => { if (!o) setEditing(null); }}
+        onSave={updateMeta}
+      />
     </div>
   );
 }
