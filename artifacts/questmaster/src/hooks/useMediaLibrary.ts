@@ -6,7 +6,7 @@
 // la consommation avant insertion. Les erreurs de quota remontent un message
 // clair utilisable par les composants.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -159,7 +159,7 @@ export function useMediaLibrary() {
 
   const upload = useCallback(async (
     file: File,
-    opts: { fileType: MediaFileType; campaignId?: string | null; name?: string }
+    opts: { fileType: MediaFileType; campaignId?: string | null; name?: string; folder?: string | null; tags?: string[] }
   ): Promise<MediaAsset> => {
     if (!user) throw new Error("Non authentifié");
 
@@ -234,6 +234,8 @@ export function useMediaLibrary() {
         width,
         height,
         checksum,
+        folder: opts.folder ?? null,
+        tags: opts.tags ?? [],
       }).select().single();
 
       if (ins.error) {
@@ -270,5 +272,38 @@ export function useMediaLibrary() {
     setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, name } : a)));
   }, []);
 
-  return { assets, usage, loading, uploading, upload, remove, rename, refresh };
+  // Met à jour les métadonnées de classement (nom, dossier, étiquettes).
+  const updateMeta = useCallback(async (
+    assetId: string,
+    patch: { name?: string; folder?: string | null; tags?: string[] },
+  ) => {
+    const r = await supabase.from("media_assets").update(patch).eq("id", assetId);
+    if (r.error) throw new Error(r.error.message);
+    setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, ...patch } as MediaAsset : a)));
+  }, []);
+
+  // Applique un dossier à plusieurs médias d'un coup.
+  const moveToFolder = useCallback(async (assetIds: string[], folder: string | null) => {
+    if (!assetIds.length) return;
+    const r = await supabase.from("media_assets").update({ folder }).in("id", assetIds);
+    if (r.error) throw new Error(r.error.message);
+    setAssets((prev) => prev.map((a) => (assetIds.includes(a.id) ? { ...a, folder } : a)));
+  }, []);
+
+  const folders = useMemo(() => {
+    const set = new Set<string>();
+    assets.forEach((a) => { if (a.folder) set.add(a.folder); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [assets]);
+
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    assets.forEach((a) => (a.tags ?? []).forEach((t) => set.add(t)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
+  }, [assets]);
+
+  return {
+    assets, usage, loading, uploading, upload, remove, rename,
+    updateMeta, moveToFolder, folders, allTags, refresh,
+  };
 }
