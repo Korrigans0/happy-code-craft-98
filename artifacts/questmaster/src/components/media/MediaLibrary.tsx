@@ -48,11 +48,18 @@ interface Props {
 }
 
 export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
-  const { assets, usage, loading, uploading, upload, remove, rename } = useMediaLibrary();
+  const {
+    assets, usage, loading, uploading, upload, remove,
+    updateMeta, moveToFolder, folders, allTags,
+  } = useMediaLibrary();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [type, setType] = useState<MediaFileType | "all">(defaultType ?? "all");
   const [uploadType, setUploadType] = useState<MediaFileType>(defaultType ?? "map");
+  const [uploadFolder, setUploadFolder] = useState("");
+  const [folderFilter, setFolderFilter] = useState<string>("all");
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [editing, setEditing] = useState<MediaAsset | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dragActive, setDragActive] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -62,19 +69,26 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
     const q = search.trim().toLowerCase();
     return assets.filter((a) => {
       if (type !== "all" && a.file_type !== type) return false;
-      if (q && !a.name.toLowerCase().includes(q)) return false;
+      if (folderFilter === "__root__" && a.folder) return false;
+      if (folderFilter !== "all" && folderFilter !== "__root__" && a.folder !== folderFilter) return false;
+      if (activeTags.length && !activeTags.every((t) => (a.tags ?? []).includes(t))) return false;
+      if (q) {
+        const haystack = [a.name, a.folder ?? "", ...(a.tags ?? [])].join(" ").toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       return true;
     });
-  }, [assets, search, type]);
+  }, [assets, search, type, folderFilter, activeTags]);
 
   const handleFiles = useCallback(async (files: FileList | File[] | null) => {
     if (!files) return;
     const list = Array.from(files);
     if (!list.length) return;
+    const folder = uploadFolder.trim() || null;
     let ok = 0, fail = 0;
     for (const file of list) {
       try {
-        await upload(file, { fileType: uploadType, campaignId });
+        await upload(file, { fileType: uploadType, campaignId, folder });
         ok++;
       } catch (e: any) {
         fail++;
@@ -83,13 +97,20 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
     }
     if (ok) toast({ title: `${ok} fichier${ok > 1 ? "s" : ""} importé${ok > 1 ? "s" : ""}`, description: fail ? `${fail} échec(s)` : undefined });
     if (fileRef.current) fileRef.current.value = "";
-  }, [upload, uploadType, campaignId, toast]);
+  }, [upload, uploadType, uploadFolder, campaignId, toast]);
 
-  const handleRename = async (asset: MediaAsset) => {
-    const next = window.prompt("Nouveau nom", asset.name);
-    if (!next || next === asset.name) return;
-    try { await rename(asset, next); toast({ title: "Renommé" }); }
-    catch (e: any) { toast({ title: "Erreur", description: e?.message, variant: "destructive" }); }
+  // Range en un geste tous les médias cochés dans un dossier (nouveau ou existant).
+  const handleBulkMove = async () => {
+    if (!selected.size) return;
+    const answer = window.prompt("Ranger la sélection dans le dossier (vide = racine)", "");
+    if (answer === null) return;
+    try {
+      await moveToFolder(Array.from(selected), answer.trim() || null);
+      setSelected(new Set());
+      toast({ title: "Médias rangés" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+    }
   };
 
   const toggleOne = (id: string) =>
