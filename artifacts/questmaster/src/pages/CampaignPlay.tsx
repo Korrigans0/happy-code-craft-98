@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X, Library, History,
+  Volume2, ExternalLink, Wand2, X, Library, History, BookMarked,
 } from "lucide-react";
 import LayersPanel from "@/components/campaign/vtt/LayersPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,6 +27,7 @@ import CampaignSessions from "@/components/campaign/CampaignSessions";
 import GMTools from "@/components/campaign/GMTools";
 import CampaignCodex from "@/components/campaign/codex/CampaignCodex";
 import CampaignHistory from "@/components/campaign/CampaignHistory";
+import CampaignPrep from "@/components/campaign/prep/CampaignPrep";
 
 interface Campaign {
   id: string;
@@ -108,6 +109,7 @@ const CampaignPlay = () => {
       { id: "tabletop", icon: Map, label: "Partie" },
       { id: "chat", icon: MessageSquare, label: "Chat" },
       { id: "sessions", icon: CalendarDays, label: "Sessions" },
+      ...(isGM ? [{ id: "prep", icon: BookMarked, label: "Préparation" }] : []),
       { id: "codex", icon: Library, label: "Codex" },
       { id: "notes", icon: BookOpen, label: "Notes" },
       ...(isGM ? [{ id: "history", icon: History, label: "Historique" }] : []),
@@ -337,6 +339,11 @@ const CampaignPlay = () => {
               <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
+              {isGM && (
+                <TabsContent value="prep" className="m-0 h-full">
+                  <CampaignPrep campaignId={id!} isGM={isGM} />
+                </TabsContent>
+              )}
               <TabsContent value="codex" className="m-0 h-full">
                 <CampaignCodex campaignId={id!} system={campaign.system} isGM={isGM} />
               </TabsContent>
