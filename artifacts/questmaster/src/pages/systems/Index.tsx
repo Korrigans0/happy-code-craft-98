@@ -15,14 +15,18 @@ import cthulhuArt from "@/assets/systems/cthulhu.jpg";
 import cofArt from "@/assets/systems/cof.jpg";
 import waArt from "@/assets/systems/worlds-awakening.jpg";
 import customArt from "@/assets/systems/custom.jpg";
+import aetheriaArt from "@/assets/systems/aetheria.png.asset.json";
+import glyphesArt from "@/assets/systems/glyphes.png.asset.json";
 
 // Systèmes dotés d'un hub public dédié (autres → renvoient vers /compendium).
 const SYSTEM_HUB: Record<string, string> = {
   Glyphes: "/systems/glyphes",
 };
 
-// Illustration de fond par système. Aetheria et Glyphes gardent un fond sobre.
+// Illustration de fond par système.
 const ART_BY_ID: Record<string, string> = {
+  Aetheria: aetheriaArt.url,
+  Glyphes: glyphesArt.url,
   "Worlds Awakening": waArt,
   "D&D 5e": dnd5eArt,
   "Pathfinder 2e": pathfinderArt,
