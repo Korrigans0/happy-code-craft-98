@@ -85,12 +85,28 @@ export default function SystemsIndex() {
                 ACCENT_BY_ID[sys.id] ??
                 "from-amber-500/20 via-amber-400/5 to-transparent";
               const hasHub = !!SYSTEM_HUB[sys.id];
+              const art = ART_BY_ID[sys.id];
               return (
                 <Link key={sys.id} to={href} className="block h-full">
                   <div className="group relative h-full overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-b from-[hsl(228,60%,12%)] to-[hsl(228,68%,8%)] p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/60 hover:shadow-gold">
+                    {art && (
+                      <>
+                        <img
+                          src={art}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          width={1024}
+                          height={512}
+                          className="pointer-events-none absolute inset-x-0 top-0 h-40 w-full select-none object-cover opacity-50 transition-opacity duration-300 group-hover:opacity-70"
+                        />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[hsl(228,68%,8%)]/40 via-[hsl(228,68%,8%)]/70 to-[hsl(228,68%,8%)]" />
+                      </>
+                    )}
                     <div
                       className={`pointer-events-none absolute inset-0 bg-gradient-to-b ${accent}`}
                     />
+
                     <div className="relative">
                       <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-2xl">
                         {sys.emoji ?? "📖"}
