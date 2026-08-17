@@ -42,7 +42,9 @@ const CampaignPlay = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("tabletop");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The ?tab= param lets other pages (e.g. the campaign card gear icon) deep-link to a tab.
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") || "tabletop");
   const [chatOpen, setChatOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
 
