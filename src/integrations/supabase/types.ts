@@ -249,6 +249,62 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_entities: {
+        Row: {
+          campaign_id: string
+          content: Json
+          created_at: string
+          created_by: string
+          id: string
+          image_url: string | null
+          kind: string
+          name: string
+          summary: string | null
+          system: string
+          tags: string[]
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          campaign_id: string
+          content?: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          image_url?: string | null
+          kind: string
+          name: string
+          summary?: string | null
+          system?: string
+          tags?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          image_url?: string | null
+          kind?: string
+          name?: string
+          summary?: string | null
+          system?: string
+          tags?: string[]
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_entities_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_members: {
         Row: {
           campaign_id: string
@@ -919,6 +975,175 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      entity_gm_notes: {
+        Row: {
+          campaign_id: string
+          entity_id: string
+          notes: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          entity_id: string
+          notes?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          entity_id?: string
+          notes?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_gm_notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_gm_notes_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: true
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_links: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          relation: string
+          source_id: string
+          target_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          relation?: string
+          source_id: string
+          target_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          relation?: string
+          source_id?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_links_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_links_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_permissions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          entity_id: string
+          id: string
+          level: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          entity_id: string
+          id?: string
+          level?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          entity_id?: string
+          id?: string
+          level?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_permissions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_permissions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_revisions: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          id: string
+          snapshot: Json
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          id?: string
+          snapshot: Json
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_revisions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_revisions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
@@ -1601,6 +1826,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_entity: {
+        Args: { _entity_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_entity: {
+        Args: { _entity_id: string; _user_id: string }
+        Returns: boolean
+      }
       check_campaign_access: {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean

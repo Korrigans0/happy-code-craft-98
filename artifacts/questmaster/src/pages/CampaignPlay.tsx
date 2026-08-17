@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X,
+  Volume2, ExternalLink, Wand2, X, Library, History,
 } from "lucide-react";
 import LayersPanel from "@/components/campaign/vtt/LayersPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,6 +25,8 @@ import CampaignSettings from "@/components/campaign/CampaignSettings";
 import CampaignTabletop from "@/components/campaign/CampaignTabletop";
 import CampaignSessions from "@/components/campaign/CampaignSessions";
 import GMTools from "@/components/campaign/GMTools";
+import CampaignCodex from "@/components/campaign/codex/CampaignCodex";
+import CampaignHistory from "@/components/campaign/CampaignHistory";
 
 interface Campaign {
   id: string;
@@ -106,7 +108,9 @@ const CampaignPlay = () => {
       { id: "tabletop", icon: Map, label: "Partie" },
       { id: "chat", icon: MessageSquare, label: "Chat" },
       { id: "sessions", icon: CalendarDays, label: "Sessions" },
+      { id: "codex", icon: Library, label: "Codex" },
       { id: "notes", icon: BookOpen, label: "Notes" },
+      ...(isGM ? [{ id: "history", icon: History, label: "Historique" }] : []),
       { id: "members", icon: Users, label: "Joueurs" },
       ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
       ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
@@ -333,6 +337,14 @@ const CampaignPlay = () => {
               <TabsContent value="sessions" className="m-0 h-full">
                 <CampaignSessions campaignId={id!} isGM={isGM} />
               </TabsContent>
+              <TabsContent value="codex" className="m-0 h-full">
+                <CampaignCodex campaignId={id!} system={campaign.system} isGM={isGM} />
+              </TabsContent>
+              {isGM && (
+                <TabsContent value="history" className="m-0 h-full">
+                  <CampaignHistory campaignId={id!} />
+                </TabsContent>
+              )}
               <TabsContent value="notes" className="m-0 h-full">
                 <CampaignNotes campaignId={id!} isGM={isGM} />
               </TabsContent>

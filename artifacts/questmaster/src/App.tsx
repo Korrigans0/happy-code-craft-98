@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import ScrollToTop from "@/components/ScrollToTop";
+import CommandPalette from "@/components/CommandPalette";
 import MobileBanner from "@/components/MobileBanner";
 import SiteAmbientMusic from "@/components/SiteAmbientMusic";
 import CookieBanner from "@/components/CookieBanner";
@@ -17,6 +18,7 @@ import Campaigns from "./pages/Campaigns";
 import Characters from "./pages/Characters";
 import Compendium from "./pages/Compendium";
 import Library from "./pages/Library";
+import Dashboard from "./pages/Dashboard";
 
 import Profile from "./pages/Profile";
 import CampaignPlay from "./pages/CampaignPlay";
@@ -69,6 +71,7 @@ const AppRoutes = () => (
         <Route path="/sign-up/*" element={<Auth />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
         <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
@@ -90,6 +93,7 @@ const AppRoutes = () => (
         <Route path="/systems/glyphes/futur" element={<GlyphesComingSoon era="futur" />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />
       <MobileBanner />
