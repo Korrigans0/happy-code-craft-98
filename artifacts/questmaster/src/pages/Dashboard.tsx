@@ -80,7 +80,7 @@ export default function Dashboard() {
     queryKey: ["dash-players", campaignIds],
     queryFn: async () => {
       const all = await Promise.all(campaigns.map((c) => campaignsApi.getMembers(c.id) as Promise<any[]>));
-      const seen = new Map<string, any>();
+      const seen = new globalThis.Map<string, any>();
       all.flat().forEach((m) => { if (m.user_id && m.user_id !== user?.id) seen.set(m.user_id, m); });
       return Array.from(seen.values());
     },
