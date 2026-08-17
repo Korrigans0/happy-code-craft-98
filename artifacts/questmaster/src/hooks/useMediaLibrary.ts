@@ -28,6 +28,8 @@ export interface MediaAsset {
   width: number | null;
   height: number | null;
   checksum: string | null;
+  folder: string | null;
+  tags: string[];
   created_at: string;
   updated_at: string;
   // Champ enrichi côté client.
