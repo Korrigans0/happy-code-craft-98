@@ -645,7 +645,25 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (user?.id && isGM) saveState({ shared_documents: sharedDocs as unknown as unknown[] } as any);
   }, [sharedDocs, saveState, user?.id, isGM]);
 
+  // ── Calques : mise à jour + persistance temps réel (MJ uniquement) ──
+  const updateLayerConfig = useCallback((id: LayerId, patch: Partial<LayerConfig>) => {
+    if (!isGM) { denied(); return; }
+    setVttLayers(prev => {
+      const next = { ...prev, [id]: { ...prev[id], ...patch } };
+      saveState({ layers: next as unknown as Record<string, unknown> });
+      return next;
+    });
+  }, [isGM, saveState]);
+
+  const resetLayerConfig = useCallback(() => {
+    if (!isGM) { denied(); return; }
+    setVttLayers(DEFAULT_LAYERS);
+    saveState({ layers: DEFAULT_LAYERS as unknown as Record<string, unknown> });
+    toast({ title: "Calques réinitialisés", description: "Configuration par défaut restaurée." });
+  }, [isGM, saveState]);
+
   const shareDocument = useCallback((asset: { id: string; name: string; storage_path: string }) => {
+
     if (!isGM || !user?.id) return;
     setSharedDocs(prev => {
       if (prev.some(d => d.id === asset.id)) return prev;
