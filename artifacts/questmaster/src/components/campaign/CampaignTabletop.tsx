@@ -648,6 +648,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (user?.id && isGM) saveState({ shared_documents: sharedDocs as unknown as unknown[] } as any);
   }, [sharedDocs, saveState, user?.id, isGM]);
 
+  // Synchronise les refs de verrouillage avec l'état des calques
+  useEffect(() => {
+    drawLayerLockedRef.current = vttLayers[activeDrawLayer as LayerId]?.locked ?? false;
+    tokensLayerLockedRef.current = vttLayers.tokens?.locked ?? false;
+  }, [vttLayers, activeDrawLayer]);
+
   // ── Calques : mise à jour + persistance temps réel (MJ uniquement) ──
   const updateLayerConfig = useCallback((id: LayerId, patch: Partial<LayerConfig>) => {
     if (!isGM) { denied(); return; }
