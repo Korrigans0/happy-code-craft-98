@@ -111,8 +111,6 @@ export function themeStyle(theme: CampaignTheme): React.CSSProperties {
   return {
     ["--primary" as string]: accent,
     ["--ring" as string]: accent,
-    ["--accent" as string]: accent,
-    ["--sidebar-primary" as string]: accent,
     backgroundImage: preset.background,
   } as React.CSSProperties;
 }
