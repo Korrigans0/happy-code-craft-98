@@ -5,7 +5,7 @@ import { campaignsApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import MacroBar from "@/components/campaign/macros/MacroBar";
 
@@ -16,6 +16,7 @@ import {
   Volume2, ExternalLink, Wand2, X, Library, History, BookMarked, Eye, EyeOff, Sparkles,
 } from "lucide-react";
 import LayersPanel from "@/components/campaign/vtt/LayersPanel";
+import CampaignNav, { type CampaignNavGroup } from "@/components/campaign/CampaignNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CampaignChat from "@/components/campaign/CampaignChat";
 
@@ -101,27 +102,54 @@ const CampaignPlay = () => {
   const isMobile = useIsMobile();
   const isMobilePlayer = isMobile && !isGM;
 
-  const tabs = useMemo(() => {
+  // Grouped navigation: few top-level entries, related sections in sub-menus.
+  const navGroups = useMemo<CampaignNavGroup[]>(() => {
     if (isMobilePlayer) {
       return [
-        { id: "tabletop", icon: Map, label: "Plateau" },
-        { id: "chat", icon: MessageSquare, label: "Chat" },
+        { id: "play", icon: Map, label: "Plateau", items: [{ id: "tabletop", icon: Map, label: "Plateau" }] },
+        { id: "chat", icon: MessageSquare, label: "Chat", items: [{ id: "chat", icon: MessageSquare, label: "Chat" }] },
       ];
     }
     return [
-      { id: "tabletop", icon: Map, label: "Partie" },
-      { id: "chat", icon: MessageSquare, label: "Chat" },
-      { id: "sessions", icon: CalendarDays, label: "Sessions" },
-      ...(isGM ? [{ id: "prep", icon: BookMarked, label: "Préparation" }] : []),
-      { id: "codex", icon: Library, label: "Codex" },
-      { id: "notes", icon: BookOpen, label: "Notes" },
-      ...(isGM ? [{ id: "history", icon: History, label: "Historique" }] : []),
-      { id: "members", icon: Users, label: "Joueurs" },
-      ...(isGM ? [{ id: "assistant", icon: Sparkles, label: "Assistant IA" }] : []),
-      ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
-      ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
+      { id: "play", icon: Map, label: "Partie", items: [{ id: "tabletop", icon: Map, label: "Partie" }] },
+      { id: "chat", icon: MessageSquare, label: "Chat", items: [{ id: "chat", icon: MessageSquare, label: "Chat" }] },
+      {
+        id: "table",
+        icon: Users,
+        label: "Table",
+        items: [
+          { id: "sessions", icon: CalendarDays, label: "Sessions", description: "Planning et rappels" },
+          { id: "members", icon: Users, label: "Joueurs", description: "Membres et personnages" },
+          ...(isGM ? [{ id: "history", icon: History, label: "Historique", description: "Journal de la campagne" }] : []),
+        ],
+      },
+      {
+        id: "content",
+        icon: Library,
+        label: "Contenu",
+        items: [
+          { id: "codex", icon: Library, label: "Codex", description: "Créatures, objets, sorts" },
+          { id: "notes", icon: BookOpen, label: "Notes", description: "Notes partagées et privées" },
+          ...(isGM ? [{ id: "prep", icon: BookMarked, label: "Préparation", description: "Scénarios et scènes" }] : []),
+        ],
+      },
+      ...(isGM
+        ? [{
+            id: "gm",
+            icon: Wand2,
+            label: "MJ",
+            items: [
+              { id: "assistant", icon: Sparkles, label: "Assistant IA", description: "Génération et aide de jeu" },
+              { id: "gmtools", icon: Wand2, label: "Outils MJ", description: "Générateurs et utilitaires" },
+              { id: "settings", icon: Settings, label: "Options", description: "Paramètres de campagne" },
+            ],
+          } as CampaignNavGroup]
+        : []),
     ];
   }, [isGM, isMobilePlayer]);
+
+  const tabs = useMemo(() => navGroups.flatMap((g) => g.items), [navGroups]);
+
 
   const handleTabChange = useCallback((v: string) => {
     setActiveTab(v);
@@ -263,17 +291,8 @@ const CampaignPlay = () => {
         {/* ── MAIN CONTENT ─────────────────────────────────── */}
         <div className="container mx-auto flex-1 px-4 py-4">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-            <TabsList
-              className="grid w-full bg-muted"
-              style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
-            >
-              {tabs.map(tab => (
-                <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
-                  <tab.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <CampaignNav groups={navGroups} activeTab={activeTab} onSelect={handleTabChange} />
+
 
             <div className="mt-4 flex-1">
               <TabsContent value="tabletop" className="m-0 h-full">
