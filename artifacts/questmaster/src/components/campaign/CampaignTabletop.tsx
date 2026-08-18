@@ -654,6 +654,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     tokensLayerLockedRef.current = vttLayers.tokens?.locked ?? false;
   }, [vttLayers, activeDrawLayer]);
 
+  // Nombre d'objets par calque (indicateur du panneau)
+  const layerCounts = useMemo(() => {
+    const c: Partial<Record<LayerId, number>> = {};
+    for (const a of actions) {
+      if ((a.type as string) === "fogReveal") { c.fog = (c.fog ?? 0) + 1; continue; }
+      const id = layerForDrawing(a.layer);
+      c[id] = (c[id] ?? 0) + 1;
+    }
+    c.tokens = tokens.length;
+    c.walls = wallsHookRef.current?.walls.length ?? 0;
+    c.lights = lightsHookRef.current?.lights.length ?? 0;
+    c.background = mapImageRef.current ? 1 : 0;
+    return c;
+  }, [actions, tokens, wallsHook.walls, lightsHook.lights]);
+
   // ── Calques : mise à jour + persistance temps réel (MJ uniquement) ──
   const updateLayerConfig = useCallback((id: LayerId, patch: Partial<LayerConfig>) => {
     if (!isGM) { denied(); return; }
