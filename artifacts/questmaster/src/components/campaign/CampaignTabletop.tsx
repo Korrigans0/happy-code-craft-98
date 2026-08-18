@@ -2433,18 +2433,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const canvas = canvasRef.current; if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom(prev => {
-        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta));
-        if (next === prev) return prev;
-        const wx = (mx - panOffset.x) / prev, wy = (my - panOffset.y) / prev;
-        setPanOffset({ x: mx - wx * next, y: my - wy * next });
-        return next;
-      });
+      // Zoom exponentiel proportionnel au delta : un flick de trackpad émet
+      // des dizaines d'events, un pas fixe saturerait le zoom instantanément.
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const prev = zoomRef.current;
+      const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * Math.exp(-dy * 0.0015)));
+      if (next === prev) return;
+      const pan = panOffsetRef.current;
+      const k = next / prev;
+      const nextPan = { x: mx - (mx - pan.x) * k, y: my - (my - pan.y) * k };
+      zoomRef.current = next;
+      panOffsetRef.current = nextPan;
+      setZoom(next);
+      setPanOffset(nextPan);
     };
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [selectedTokenId, panOffset]);
+  }, [selectedTokenId, rotateToken]);
 
   // ── Touch support ──
   useEffect(() => {
