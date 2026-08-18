@@ -28,12 +28,14 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { codexApi } from "@/lib/codex/api";
 import type { EntityKind } from "@/lib/codex/types";
+import AiEntityGenerator from "./AiEntityGenerator";
 import {
   aiConversationsApi,
   deriveTitle,
   type AiChatMessage,
   type AiConversationSummary,
 } from "@/lib/ai/conversations";
+
 
 const SUPABASE_URL =
   ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) ||
