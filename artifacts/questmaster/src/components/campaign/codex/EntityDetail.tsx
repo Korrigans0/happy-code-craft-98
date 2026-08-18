@@ -186,11 +186,41 @@ export default function EntityDetail({
             </div>
           )}
 
-          {description && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{description}</p>
+          {sections.length > 0 ? (
+            <div className="space-y-3">
+              {sections.map((s, i) => (
+                <div key={`${s.title}-${i}`}>
+                  <h3 className="font-display text-sm font-semibold text-primary">{s.title}</h3>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{s.body}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            description && (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{description}</p>
+            )
+          )}
+
+          {hooks.length > 0 && (
+            <div className="rounded-md border border-border/60 bg-background/40 p-3">
+              <h3 className="font-display text-sm font-semibold text-primary">Accroches d'intrigue</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+                {hooks.map((h, i) => (
+                  <li key={i}>{h}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {isGM && secret && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <h3 className="font-display text-sm font-semibold text-primary">Secret MJ</h3>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{secret}</p>
+            </div>
           )}
         </div>
       </Card>
+
 
       {/* Relations */}
       <Card className="space-y-3 border-border/60 bg-card/70 p-4">
