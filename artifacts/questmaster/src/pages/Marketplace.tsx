@@ -170,6 +170,7 @@ const Marketplace = () => {
       <SEO
         title="Boutique de packs — Aetheria VTT"
         description="Découvrez, installez et partagez des packs de contenu créés par la communauté Aetheria VTT."
+        path="/marketplace"
       />
       <Header />
       <main className="container mx-auto flex-1 px-4 py-8">

@@ -117,6 +117,7 @@ const Atelier = () => {
       <SEO
         title="Atelier de création — Aetheria VTT"
         description="Créez vos races, classes, sorts, objets et créatures maison, puis partagez-les en packs avec la communauté."
+        path="/atelier"
       />
       <Header />
       <main className="container mx-auto flex-1 px-4 py-8">
