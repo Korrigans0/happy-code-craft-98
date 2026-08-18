@@ -97,6 +97,10 @@ export interface VTTScene {
   tokens: TokenItem[];
   drawings: DrawAction[];
   walls?: Wall[];
+  /** Lumières dynamiques propres à la scène. */
+  lights?: LightSource[];
+  /** Mode nuit propre à la scène. */
+  nightMode?: boolean;
   createdAt: number;
 }
 

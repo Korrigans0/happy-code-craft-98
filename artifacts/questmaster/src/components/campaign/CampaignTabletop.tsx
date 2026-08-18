@@ -40,6 +40,11 @@ import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
 } from "./vtt/types";
+import LayersPanel from "./vtt/LayersPanel";
+import {
+  DEFAULT_LAYERS, normalizeLayers, effectiveLayer, layerForDrawing, DRAWABLE_LAYERS,
+  type LayersState, type LayerId, type LayerConfig,
+} from "./vtt/layers";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -241,7 +246,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
   ]);
-  const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
+  // ── Calques canoniques VTT (persistés dans tabletop_state.layers) ──
+  const [vttLayers, setVttLayers] = useState<LayersState>(DEFAULT_LAYERS);
+  const [activeVttLayer, setActiveVttLayer] = useState<LayerId>("effects");
+  const activeDrawLayer = DRAWABLE_LAYERS.includes(activeVttLayer) ? activeVttLayer : "effects";
+  // Refs consultées dans les handlers d'événements (évite les closures obsolètes)
+  const drawLayerLockedRef = useRef(false);
+  const tokensLayerLockedRef = useRef(false);
+
 
   // ── UI state ──
   const [snapToGrid, setSnapToGrid] = useState(true);
@@ -565,6 +577,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       // ── Documents partagés (PDF pop-up) ──
       const incomingDocs = (state as any).shared_documents;
       if (has("shared_documents") && Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
+      // ── Calques (persistés + diffusés en temps réel) ──
+      if (has("layers") && (state as any).layers) {
+        setVttLayers(normalizeLayers((state as any).layers));
+      }
+
 
     },
     debounceMs: 250,
@@ -631,7 +648,46 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (user?.id && isGM) saveState({ shared_documents: sharedDocs as unknown as unknown[] } as any);
   }, [sharedDocs, saveState, user?.id, isGM]);
 
+  // Synchronise les refs de verrouillage avec l'état des calques
+  useEffect(() => {
+    drawLayerLockedRef.current = vttLayers[activeDrawLayer as LayerId]?.locked ?? false;
+    tokensLayerLockedRef.current = vttLayers.tokens?.locked ?? false;
+  }, [vttLayers, activeDrawLayer]);
+
+  // Nombre d'objets par calque (indicateur du panneau)
+  const layerCounts = useMemo(() => {
+    const c: Partial<Record<LayerId, number>> = {};
+    for (const a of actions) {
+      if ((a.type as string) === "fogReveal") { c.fog = (c.fog ?? 0) + 1; continue; }
+      const id = layerForDrawing(a.layer);
+      c[id] = (c[id] ?? 0) + 1;
+    }
+    c.tokens = tokens.length;
+    c.walls = wallsHookRef.current?.walls.length ?? 0;
+    c.lights = lightsHookRef.current?.lights.length ?? 0;
+    c.background = mapImageRef.current ? 1 : 0;
+    return c;
+  }, [actions, tokens, wallsHook.walls, lightsHook.lights]);
+
+  // ── Calques : mise à jour + persistance temps réel (MJ uniquement) ──
+  const updateLayerConfig = useCallback((id: LayerId, patch: Partial<LayerConfig>) => {
+    if (!isGM) { denied(); return; }
+    setVttLayers(prev => {
+      const next = { ...prev, [id]: { ...prev[id], ...patch } };
+      saveState({ layers: next as unknown as Record<string, unknown> });
+      return next;
+    });
+  }, [isGM, saveState]);
+
+  const resetLayerConfig = useCallback(() => {
+    if (!isGM) { denied(); return; }
+    setVttLayers(DEFAULT_LAYERS);
+    saveState({ layers: DEFAULT_LAYERS as unknown as Record<string, unknown> });
+    toast({ title: "Calques réinitialisés", description: "Configuration par défaut restaurée." });
+  }, [isGM, saveState]);
+
   const shareDocument = useCallback((asset: { id: string; name: string; storage_path: string }) => {
+
     if (!isGM || !user?.id) return;
     setSharedDocs(prev => {
       if (prev.some(d => d.id === asset.id)) return prev;
@@ -1516,11 +1572,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
 
+    // ── Calques canoniques : état effectif pour le rôle courant ──
+    const lBackground = effectiveLayer(vttLayers, "background", isGM);
+    const lTokens = effectiveLayer(vttLayers, "tokens", isGM);
+    const lFog = effectiveLayer(vttLayers, "fog", isGM);
+
     // ── Grille (calque dédié « grid », verrouillé) ────────────
     // Rendue avant la carte et les dessins : jamais affectée par la gomme,
     // le dessin libre ou le brouillard, qui vivent sur d'autres calques.
     const gridLayer = layers.find(l => l.id === "grid");
-    if (gridLayer?.visible !== false) {
+    if (gridLayer?.visible !== false && lBackground.visible) {
+      ctx.save();
+      ctx.globalAlpha = lBackground.alpha;
       drawGrid(
         ctx,
         grid,
@@ -1528,13 +1591,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         { minor: plateauColors.gridMinor, major: plateauColors.gridMajor },
         zoom,
       );
+      ctx.restore();
     }
 
     // ── Map layer ─────────────────────────────────────────────
     const mapLayer = layers.find(l => l.id === "map");
-    if (mapLayer?.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
+    if (mapLayer?.visible && lBackground.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
       ctx.save();
-      ctx.globalAlpha = mapLayer.opacity / 100;
+      ctx.globalAlpha = (mapLayer.opacity / 100) * lBackground.alpha;
       const mScale = mapLayer.scale ?? 1;
       try {
         ctx.drawImage(
@@ -1549,7 +1613,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
-    // Rendu sur canvas offscreen pour isoler la gomme du fond/grille/carte.
+    // Chaque dessin porte un calque canonique (décor / objets / effets / MJ) :
+    // il n'est rendu que si ce calque est visible pour le rôle courant.
     const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
       const off = document.createElement("canvas");
@@ -1560,13 +1625,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         octx.translate(panOffset.x, panOffset.y);
         octx.scale(zoom, zoom);
 
-        const visibleActions = actions.filter(a =>
-          a.layer === "drawings" && (a.type as string) !== "fogReveal"
-        );
+        const visibleActions = actions.filter(a => {
+          if ((a.type as string) === "fogReveal") return false;
+          const eff = effectiveLayer(vttLayers, layerForDrawing(a.layer), isGM);
+          return eff.visible;
+        });
+
 
         for (const action of visibleActions) {
           octx.save();
+          octx.globalAlpha = effectiveLayer(vttLayers, layerForDrawing(action.layer), isGM).alpha;
           octx.strokeStyle = action.color;
+
           octx.fillStyle = action.color;
           octx.lineWidth = action.size / zoom;
           octx.lineCap = "round";
@@ -1748,9 +1818,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
     // ── Tokens layer ──────────────────────────────────────────
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible) {
+    if (tokensLayer?.visible && lTokens.visible) {
       ctx.save();
-      ctx.globalAlpha = tokensLayer.opacity / 100;
+      ctx.globalAlpha = (tokensLayer.opacity / 100) * lTokens.alpha;
+
 
       for (const __t of tokens) {
         // Apply slide animation to displayed position (does not mutate state)
@@ -1972,7 +2043,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           ctx.textAlign = "center";
           ctx.fillText("👁️‍🗨️", cx, token.y - 22 / zoom);
           ctx.textAlign = "start";
-          ctx.globalAlpha = tokensLayer.opacity / 100;
+          ctx.globalAlpha = (tokensLayer.opacity / 100) * lTokens.alpha;
         }
 
         // Movement trail
@@ -2073,16 +2144,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
     // ── Fog (screen space composite) ─────────────────────────
     const fogLayer = layers.find(l => l.id === "fog");
-    wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
-    if (fogLayer?.visible) {
+    const lWalls = effectiveLayer(vttLayers, "walls", isGM);
+    if (lWalls.visible) {
+      ctx.save();
+      ctx.globalAlpha = lWalls.alpha;
+      wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
+      ctx.restore();
+    }
+    if (fogLayer?.visible && lFog.visible) {
       const tmp = document.createElement("canvas");
       tmp.width = canvas.width;
       tmp.height = canvas.height;
       const tCtx = tmp.getContext("2d")!;
 
       // Fond du brouillard
-      tCtx.fillStyle = `rgba(0, 0, 0, ${fogLayer.opacity / 100})`;
+      tCtx.fillStyle = `rgba(0, 0, 0, ${(fogLayer.opacity / 100) * lFog.alpha})`;
       tCtx.fillRect(0, 0, tmp.width, tmp.height);
+
 
       // Découper les zones révélées (destination-out = effet gomme)
       tCtx.save();
@@ -2128,8 +2206,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     // ── Lumières dynamiques (composite screen-space) ──────────
-    const activeLights = lightsHook.lights.filter(l => l.enabled !== false);
-    const showLighting = lightsHook.nightMode || activeLights.length > 0;
+    const lLights = effectiveLayer(vttLayers, "lights", isGM);
+    const activeLights = lLights.visible ? lightsHook.lights.filter(l => l.enabled !== false) : [];
+    const showLighting = (lightsHook.nightMode && lLights.visible) || activeLights.length > 0;
     if (showLighting) {
       // Résoudre les positions monde pour chaque lumière (token → x/y du token)
       const resolved = activeLights.map(l => {
@@ -2284,7 +2363,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, vttLayers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
@@ -2426,6 +2505,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
         // Text
         if (tool === "text") {
+          if (drawLayerLockedRef.current) { toast({ title: "Calque verrouillé", description: `Le calque « ${activeDrawLayer} » est verrouillé.`, variant: "destructive" }); mode = "none"; return; }
           const w = toWorld(t.clientX, t.clientY);
           const text = prompt("Texte à ajouter :");
           if (text) {
@@ -2437,7 +2517,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
 
         const tokensLayer = layers.find(l => l.id === "tokens");
-        if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
+        if (tokensLayer?.visible && !tokensLayer.locked && !tokensLayerLockedRef.current && (tool === "move" || tool === "token")) {
           const w = toWorld(t.clientX, t.clientY);
           const hit = findTokenAt(w.x, w.y);
           if (hit) {
@@ -2450,6 +2530,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           setSelectedTokenId(null);
         }
         if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone", "fogReveal"].includes(tool)) {
+          if (drawLayerLockedRef.current && (tool as string) !== "fogReveal") { toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour dessiner.", variant: "destructive" }); mode = "none"; return; }
           const w = toWorld(t.clientX, t.clientY);
           const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
           setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer });
@@ -2777,7 +2858,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "select" || tool === "token")) {
+    if (tokensLayer?.visible && !tokensLayer.locked && !tokensLayerLockedRef.current && (tool === "move" || tool === "select" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
@@ -2850,6 +2931,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
     if (tool === "token") return;
     if (tool === "text") {
+      if (drawLayerLockedRef.current) { toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour écrire.", variant: "destructive" }); return; }
       const text = prompt("Texte à ajouter :");
       if (text) {
         const action: DrawAction = { id: newId(), type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
@@ -2859,6 +2941,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       return;
     }
 
+    if (drawLayerLockedRef.current && (tool as string) !== "fogReveal") {
+      toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour dessiner.", variant: "destructive" });
+      return;
+    }
     const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
     setIsDrawing(true);
     setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer });
@@ -3160,16 +3246,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
     tokens: [...tokens],
     drawings: [...actions],
+    walls: [...(wallsHookRef.current?.walls ?? [])],
+    lights: [...(lightsHookRef.current?.lights ?? [])],
+    nightMode: lightsHookRef.current?.nightMode ?? false,
     grid: gridConfig,
-    createdAt: Date.now(),
+    createdAt: scenes.find(s => s.id === activeSceneId)?.createdAt ?? Date.now(),
   });
+
+  /** Persiste la liste de scènes (et la scène active) pour tous les participants. */
+  const persistScenes = (updated: VTTScene[], activeId?: string | null) => {
+    setScenes(updated);
+    if (!isGM) return;
+    saveState({
+      scenes: updated,
+      ...(activeId !== undefined ? { active_scene_id: activeId } : {}),
+    } as any, { immediate: true });
+  };
 
   const loadScene = (scene: VTTScene) => {
     setActiveSceneId(scene.id);
     setGridConfig(normalizeGridConfig(scene.grid));
-    setTokens(scene.tokens);
-    setActions(scene.drawings);
+    hydratedGridRef.current = `${scene.id}:${JSON.stringify(normalizeGridConfig(scene.grid))}`;
+    setTokens(scene.tokens ?? []);
+    setActions(scene.drawings ?? []);
     setUndoneActions([]);
+    wallsHookRef.current?.receiveWalls(scene.walls ?? []);
+    lightsHookRef.current?.receiveLights(scene.lights ?? []);
+    lightsHookRef.current?.receiveNightMode(scene.nightMode ?? false);
     mapImageRef.current = null;
     setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: scene.mapImageUrl } : l));
     if (scene.mapImageUrl) {
@@ -3178,12 +3281,24 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       img.onload = () => { mapImageRef.current = img; };
       img.src = scene.mapImageUrl;
     }
-    // Synchronise immédiatement la carte côté serveur pour que les autres
-    // utilisateurs (et le rechargement) voient la même scène.
-    saveState({ map_image_url: scene.mapImageUrl ?? null }, { immediate: true });
+    // Synchronise immédiatement l'intégralité de la scène côté serveur pour que
+    // les autres utilisateurs (et le rechargement) voient exactement la même chose.
+    if (isGM) {
+      saveState({
+        map_image_url: scene.mapImageUrl ?? null,
+        active_scene_id: scene.id,
+        tokens: scene.tokens ?? [],
+        drawings: scene.drawings ?? [],
+        walls: scene.walls ?? [],
+        lights: scene.lights ?? [],
+        night_mode: scene.nightMode ?? false,
+        grid: normalizeGridConfig(scene.grid),
+      } as any, { immediate: true });
+    }
     setPanOffset({ x: 0, y: 0 });
     setZoom(1);
     setSelectedTokenId(null);
+    setSelectedTokenIds(new Set());
     toast({ title: `Scène chargée : ${scene.name}` });
   };
 
@@ -3191,45 +3306,70 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!isGM) { denied(); return; }
     const name = prompt("Nom de la nouvelle scène :", `Scène ${scenes.length + 1}`);
     if (!name?.trim()) return;
-    // Save current state first if we have a scene
+    // Sauvegarde d'abord la scène courante pour ne rien perdre
     const updatedScenes = activeSceneId
       ? scenes.map(s => s.id === activeSceneId ? { ...saveCurrentScene(), id: activeSceneId } : s)
       : [...scenes];
     const newScene: VTTScene = {
       id: newId(), name: name.trim(),
-      tokens: [], drawings: [], grid: gridConfig, createdAt: Date.now(),
+      tokens: [], drawings: [], walls: [], lights: [], nightMode: false,
+      grid: gridConfig, createdAt: Date.now(),
     };
-    setScenes([...updatedScenes, newScene]);
+    persistScenes([...updatedScenes, newScene], newScene.id);
     loadScene(newScene);
+  };
+
+  /** Duplique une scène avec l'ensemble de son contenu. */
+  const duplicateScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
+    const source = sceneId === activeSceneId ? saveCurrentScene() : scenes.find(s => s.id === sceneId);
+    if (!source) return;
+    const copy: VTTScene = {
+      ...structuredClone(source),
+      id: newId(),
+      name: `${source.name} (copie)`,
+      createdAt: Date.now(),
+    };
+    persistScenes([...scenes, copy]);
+    toast({ title: "Scène dupliquée", description: copy.name });
   };
 
   const switchScene = (scene: VTTScene) => {
     if (!isGM) { denied(); return; }
-    // Save current scene state
-    if (activeSceneId) {
-      setScenes(prev => prev.map(s =>
-        s.id === activeSceneId ? { ...s, tokens, drawings: actions, grid: gridConfig, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
-      ));
-    }
-    loadScene(scene);
+    if (scene.id === activeSceneId) { setShowScenesPanel(false); return; }
+    // Sauvegarde l'état complet de la scène courante avant de basculer
+    const updated = activeSceneId
+      ? scenes.map(s => s.id === activeSceneId ? { ...saveCurrentScene(), id: activeSceneId } : s)
+      : [...scenes];
+    persistScenes(updated, scene.id);
+    const target = updated.find(s => s.id === scene.id) ?? scene;
+    loadScene(target);
     setShowScenesPanel(false);
   };
 
   const renameScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
     const scene = scenes.find(s => s.id === sceneId);
     if (!scene) return;
     const name = prompt("Nouveau nom :", scene.name);
     if (!name?.trim()) return;
-    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, name: name.trim() } : s));
+    persistScenes(scenes.map(s => s.id === sceneId ? { ...s, name: name.trim() } : s));
   };
 
   const deleteScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
     if (scenes.length <= 1) { toast({ title: "Impossible", description: "Il faut au moins une scène", variant: "destructive" }); return; }
-    if (!confirm("Supprimer cette scène ?")) return;
+    if (!confirm("Supprimer cette scène ? Son contenu (tokens, dessins, murs, lumières) sera perdu.")) return;
     const remaining = scenes.filter(s => s.id !== sceneId);
-    setScenes(remaining);
-    if (activeSceneId === sceneId) loadScene(remaining[0]);
+    if (activeSceneId === sceneId) {
+      persistScenes(remaining, remaining[0].id);
+      loadScene(remaining[0]);
+    } else {
+      persistScenes(remaining);
+    }
+    toast({ title: "Scène supprimée" });
   };
+
   const exportCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const link = document.createElement("a");
@@ -3535,7 +3675,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{scene.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {scene.tokens.length} jeton{scene.tokens.length !== 1 ? "s" : ""} • {scene.drawings.length} dessin{scene.drawings.length !== 1 ? "s" : ""}
+                        {(scene.tokens?.length ?? 0)} jeton{(scene.tokens?.length ?? 0) !== 1 ? "s" : ""} • {(scene.drawings?.length ?? 0)} dessin{(scene.drawings?.length ?? 0) !== 1 ? "s" : ""} • {(scene.walls?.length ?? 0)} mur{(scene.walls?.length ?? 0) !== 1 ? "s" : ""} • {(scene.lights?.length ?? 0)} lum.
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -3548,6 +3688,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => duplicateScene(scene.id)}
+                        className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Dupliquer" aria-label="Dupliquer"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
                       <button
                         onClick={() => renameScene(scene.id)}
                         className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -3595,8 +3742,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                       className="w-full h-7 text-xs gap-1"
                       onClick={() => {
                         const saved = saveCurrentScene();
-                        setScenes(prev => prev.map(s => s.id === activeSceneId ? { ...saved, id: activeSceneId } : s));
-                        toast({ title: "Scène sauvegardée ✓" });
+                        persistScenes(scenes.map(s => s.id === activeSceneId ? { ...saved, id: activeSceneId } : s), activeSceneId);
+                        toast({ title: "Scène sauvegardée ✓", description: "Contenu, murs et lumières conservés." });
                       }}
                     >
                       <Copy className="h-3.5 w-3.5" />
@@ -4791,6 +4938,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
       {/* Pop-ups PDF partagés (rendus via portail) */}
       <SharedPdfPopups documents={sharedDocs} isGM={isGM} onUnshare={unshareDocument} />
+
+      {/* Panneau Calques — état partagé avec le rendu du canvas */}
+      {isGM && layersOpen && (
+        <LayersPanel
+          layers={vttLayers}
+          activeLayer={activeVttLayer}
+          counts={layerCounts}
+          onChange={updateLayerConfig}
+          onSelect={setActiveVttLayer}
+          onReset={resetLayerConfig}
+          onClose={() => onToggleLayers?.()}
+        />
+      )}
     </div>
 
   );
