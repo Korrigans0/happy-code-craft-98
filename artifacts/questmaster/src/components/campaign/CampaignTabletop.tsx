@@ -2182,8 +2182,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     // ── Lumières dynamiques (composite screen-space) ──────────
-    const activeLights = lightsHook.lights.filter(l => l.enabled !== false);
-    const showLighting = lightsHook.nightMode || activeLights.length > 0;
+    const lLights = effectiveLayer(vttLayers, "lights", isGM);
+    const activeLights = lLights.visible ? lightsHook.lights.filter(l => l.enabled !== false) : [];
+    const showLighting = (lightsHook.nightMode && lLights.visible) || activeLights.length > 0;
     if (showLighting) {
       // Résoudre les positions monde pour chaque lumière (token → x/y du token)
       const resolved = activeLights.map(l => {
