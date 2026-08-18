@@ -82,13 +82,12 @@ Deno.serve(async (req) => {
   const brief = String(body.brief ?? "").slice(0, 2000);
   if (!campaignId || !KIND_LABELS[kind]) return json({ error: "Requête invalide." }, 400);
 
-  const { data: membership, error: memberError } = await supabase
+  const { data: membership } = await supabase
     .from("campaign_members")
     .select("role")
     .eq("campaign_id", campaignId)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (memberError) console.error("membership lookup failed", memberError.message, user.id, campaignId);
   if (membership?.role !== "gm") return json({ error: "Réservé au MJ de cette campagne." }, 403);
 
   const [{ data: campaign }, { data: entities }] = await Promise.all([
