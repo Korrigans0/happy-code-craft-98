@@ -2176,10 +2176,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ctx.restore();
     }
     if (fogLayer?.visible && lFog.visible) {
-      const tmp = document.createElement("canvas");
-      tmp.width = canvas.width;
-      tmp.height = canvas.height;
+      const tmp = getScratch("fog", canvas.width, canvas.height);
       const tCtx = tmp.getContext("2d")!;
+
 
       // Fond du brouillard
       tCtx.fillStyle = `rgba(0, 0, 0, ${(fogLayer.opacity / 100) * lFog.alpha})`;
