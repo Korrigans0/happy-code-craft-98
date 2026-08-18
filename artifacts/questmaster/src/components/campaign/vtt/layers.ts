@@ -92,3 +92,28 @@ export function getOrderedLayers(layers: LayersState, opts?: { forPlayer?: boole
     })
     .sort((a, b) => a.config.order - b.config.order);
 }
+
+/** Calques sur lesquels les outils de dessin peuvent créer des objets. */
+export const DRAWABLE_LAYERS: LayerId[] = ["decor", "objects", "effects", "gm_ui"];
+
+/** Mappe l'ancien nom de calque d'un dessin vers un LayerId canonique. */
+export function layerForDrawing(raw?: string): LayerId {
+  if (raw && (LAYER_ORDER as string[]).includes(raw)) return raw as LayerId;
+  return "effects"; // legacy "drawings" et valeurs inconnues
+}
+
+export interface EffectiveLayer {
+  visible: boolean;
+  alpha: number;
+  locked: boolean;
+}
+
+/**
+ * Résout l'état effectif d'un calque pour un rôle donné :
+ * un calque masqué (ou réservé au MJ) est invisible côté joueur.
+ */
+export function effectiveLayer(layers: LayersState, id: LayerId, isGM: boolean): EffectiveLayer {
+  const c = layers?.[id] ?? DEFAULT_LAYERS[id];
+  const visible = c.visible && (isGM || c.pjVisible);
+  return { visible, alpha: Math.min(1, Math.max(0, c.opacity)), locked: c.locked };
+}
