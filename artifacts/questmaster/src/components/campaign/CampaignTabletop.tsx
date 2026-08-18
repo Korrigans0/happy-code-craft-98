@@ -40,6 +40,11 @@ import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
 } from "./vtt/types";
+import LayersPanel from "./vtt/LayersPanel";
+import {
+  DEFAULT_LAYERS, normalizeLayers, effectiveLayer, layerForDrawing, DRAWABLE_LAYERS,
+  type LayersState, type LayerId, type LayerConfig,
+} from "./vtt/layers";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
