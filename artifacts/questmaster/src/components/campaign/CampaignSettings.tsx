@@ -615,14 +615,14 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
 
       
 
+      <CampaignThemeCard campaignId={campaign.id} theme={campaign.theme} />
+
       {/* ══ ZONE DE DANGER ═══════════════════════════════════════════════════ */}
       <Card className="bg-gradient-card border-destructive/40">
         <CardHeader>
           <CardTitle className="text-destructive">Zone de danger</CardTitle>
           <CardDescription>Actions irréversibles — impossible d'annuler</CardDescription>
         </CardHeader>
-      <CampaignThemeCard campaignId={campaign.id} theme={campaign.theme} />
-
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             La suppression efface définitivement la campagne, tous ses messages, notes, sessions,
