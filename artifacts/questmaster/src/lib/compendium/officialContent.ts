@@ -64,10 +64,41 @@ export function officialSourceLabel(system: string, lang: OfficialLang): string 
   return OFFICIAL_SOURCE_LABEL[system]?.[lang] ?? (lang === "fr" ? "Contenu officiel" : "Official content");
 }
 
-export async function fetchOfficialContent(
-  params: { system: string; kind: OfficialKind; search?: string; page?: number; lang?: OfficialLang },
-  signal?: AbortSignal,
-): Promise<OfficialPage> {
+interface OfficialParams {
+  system: string;
+  kind: OfficialKind;
+  search?: string;
+  page?: number;
+  lang?: OfficialLang;
+}
+
+// ── Cache mémoire ────────────────────────────────────────────
+// Les pages officielles sont immuables côté source : on les garde en mémoire
+// pour rendre la pagination et les allers-retours entre onglets instantanés.
+const PAGE_CACHE = new Map<string, { page: OfficialPage; at: number }>();
+const INFLIGHT = new Map<string, Promise<OfficialPage>>();
+const PAGE_TTL_MS = 15 * 60 * 1000;
+const MAX_CACHED_PAGES = 60;
+
+const paramsKey = (p: OfficialParams) =>
+  `${p.system}|${p.kind}|${(p.search ?? "").toLowerCase()}|${p.page ?? 1}|${p.lang ?? "fr"}`;
+
+function rememberPage(key: string, page: OfficialPage) {
+  if (PAGE_CACHE.size >= MAX_CACHED_PAGES) {
+    const oldest = [...PAGE_CACHE.entries()].sort((a, b) => a[1].at - b[1].at)[0];
+    if (oldest) PAGE_CACHE.delete(oldest[0]);
+  }
+  PAGE_CACHE.set(key, { page, at: Date.now() });
+}
+
+/** Page déjà en cache (sans requête réseau), sinon null. */
+export function getCachedOfficialPage(params: OfficialParams): OfficialPage | null {
+  const hit = PAGE_CACHE.get(paramsKey(params));
+  if (!hit || Date.now() - hit.at > PAGE_TTL_MS) return null;
+  return hit.page;
+}
+
+async function requestOfficialContent(params: OfficialParams, signal?: AbortSignal): Promise<OfficialPage> {
   const url = new URL(`${SUPABASE_URL}/functions/v1/official-compendium`);
   url.searchParams.set("system", params.system);
   url.searchParams.set("kind", params.kind);
@@ -89,4 +120,33 @@ export async function fetchOfficialContent(
     );
   }
   return { items: data.items ?? [], total: data.total ?? 0, pageSize: data.pageSize ?? 40 };
+}
+
+export async function fetchOfficialContent(
+  params: OfficialParams,
+  signal?: AbortSignal,
+): Promise<OfficialPage> {
+  const key = paramsKey(params);
+  const cached = getCachedOfficialPage(params);
+  if (cached) return cached;
+
+  // Déduplication : deux composants demandant la même page partagent la requête.
+  const existing = INFLIGHT.get(key);
+  if (existing) return existing;
+
+  const promise = requestOfficialContent(params, signal)
+    .then((page) => {
+      rememberPage(key, page);
+      return page;
+    })
+    .finally(() => INFLIGHT.delete(key));
+
+  INFLIGHT.set(key, promise);
+  return promise;
+}
+
+/** Précharge silencieusement une page (utilisé pour la page suivante). */
+export function prefetchOfficialContent(params: OfficialParams): void {
+  if (getCachedOfficialPage(params) || INFLIGHT.has(paramsKey(params))) return;
+  fetchOfficialContent(params).catch(() => {});
 }
