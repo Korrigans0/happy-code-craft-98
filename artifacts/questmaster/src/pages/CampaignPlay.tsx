@@ -291,17 +291,8 @@ const CampaignPlay = () => {
         {/* ── MAIN CONTENT ─────────────────────────────────── */}
         <div className="container mx-auto flex-1 px-4 py-4">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="flex h-full flex-col">
-            <TabsList
-              className="grid w-full bg-muted"
-              style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
-            >
-              {tabs.map(tab => (
-                <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
-                  <tab.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <CampaignNav groups={navGroups} activeTab={activeTab} onSelect={handleTabChange} />
+
 
             <div className="mt-4 flex-1">
               <TabsContent value="tabletop" className="m-0 h-full">
