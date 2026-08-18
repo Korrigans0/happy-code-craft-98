@@ -1,7 +1,7 @@
 import {
   Menu, X, User, BookOpen,
   Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle, Library as LibraryIcon,
-  Sparkles, LayoutDashboard, Hammer, Package,
+  Sparkles, LayoutDashboard, Hammer, Package, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
