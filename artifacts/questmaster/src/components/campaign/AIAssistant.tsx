@@ -78,6 +78,8 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
   const [history, setHistory] = useState<AiConversationSummary[]>([]);
   const [search, setSearch] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [generatorOpen, setGeneratorOpen] = useState(false);
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
