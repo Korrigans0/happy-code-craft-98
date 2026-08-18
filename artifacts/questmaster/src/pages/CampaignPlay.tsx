@@ -101,27 +101,54 @@ const CampaignPlay = () => {
   const isMobile = useIsMobile();
   const isMobilePlayer = isMobile && !isGM;
 
-  const tabs = useMemo(() => {
+  // Grouped navigation: few top-level entries, related sections in sub-menus.
+  const navGroups = useMemo<CampaignNavGroup[]>(() => {
     if (isMobilePlayer) {
       return [
-        { id: "tabletop", icon: Map, label: "Plateau" },
-        { id: "chat", icon: MessageSquare, label: "Chat" },
+        { id: "play", icon: Map, label: "Plateau", items: [{ id: "tabletop", icon: Map, label: "Plateau" }] },
+        { id: "chat", icon: MessageSquare, label: "Chat", items: [{ id: "chat", icon: MessageSquare, label: "Chat" }] },
       ];
     }
     return [
-      { id: "tabletop", icon: Map, label: "Partie" },
-      { id: "chat", icon: MessageSquare, label: "Chat" },
-      { id: "sessions", icon: CalendarDays, label: "Sessions" },
-      ...(isGM ? [{ id: "prep", icon: BookMarked, label: "Préparation" }] : []),
-      { id: "codex", icon: Library, label: "Codex" },
-      { id: "notes", icon: BookOpen, label: "Notes" },
-      ...(isGM ? [{ id: "history", icon: History, label: "Historique" }] : []),
-      { id: "members", icon: Users, label: "Joueurs" },
-      ...(isGM ? [{ id: "assistant", icon: Sparkles, label: "Assistant IA" }] : []),
-      ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
-      ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
+      { id: "play", icon: Map, label: "Partie", items: [{ id: "tabletop", icon: Map, label: "Partie" }] },
+      { id: "chat", icon: MessageSquare, label: "Chat", items: [{ id: "chat", icon: MessageSquare, label: "Chat" }] },
+      {
+        id: "table",
+        icon: Users,
+        label: "Table",
+        items: [
+          { id: "sessions", icon: CalendarDays, label: "Sessions", description: "Planning et rappels" },
+          { id: "members", icon: Users, label: "Joueurs", description: "Membres et personnages" },
+          ...(isGM ? [{ id: "history", icon: History, label: "Historique", description: "Journal de la campagne" }] : []),
+        ],
+      },
+      {
+        id: "content",
+        icon: Library,
+        label: "Contenu",
+        items: [
+          { id: "codex", icon: Library, label: "Codex", description: "Créatures, objets, sorts" },
+          { id: "notes", icon: BookOpen, label: "Notes", description: "Notes partagées et privées" },
+          ...(isGM ? [{ id: "prep", icon: BookMarked, label: "Préparation", description: "Scénarios et scènes" }] : []),
+        ],
+      },
+      ...(isGM
+        ? [{
+            id: "gm",
+            icon: Wand2,
+            label: "MJ",
+            items: [
+              { id: "assistant", icon: Sparkles, label: "Assistant IA", description: "Génération et aide de jeu" },
+              { id: "gmtools", icon: Wand2, label: "Outils MJ", description: "Générateurs et utilitaires" },
+              { id: "settings", icon: Settings, label: "Options", description: "Paramètres de campagne" },
+            ],
+          } as CampaignNavGroup]
+        : []),
     ];
   }, [isGM, isMobilePlayer]);
+
+  const tabs = useMemo(() => navGroups.flatMap((g) => g.items), [navGroups]);
+
 
   const handleTabChange = useCallback((v: string) => {
     setActiveTab(v);
