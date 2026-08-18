@@ -15,20 +15,45 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { profilesApi } from "@/lib/api";
 
-const navLinks = [
-  { to: "/", label: "Accueil", icon: Home },
-  { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { to: "/campaigns", label: "Campagnes", icon: Map },
-  { to: "/characters", label: "Personnages", icon: User },
-  { to: "/compendium", label: "Codex", icon: BookOpen },
-  { to: "/library", label: "Bibliothèque", icon: LibraryIcon },
-  { to: "/atelier", label: "Atelier", icon: Hammer },
-  { to: "/marketplace", label: "Boutique", icon: Package },
-  { to: "/systems", label: "Systèmes", icon: Sparkles },
-  { to: "/guide", label: "Guide", icon: HelpCircle },
-  { to: "/subscriptions", label: "Abonnements", icon: Crown },
-  { to: "/partners", label: "Partenaires", icon: Handshake },
+type NavItem = { to: string; label: string; icon: typeof Home; description?: string };
+type NavGroup = { id: string; label: string; icon: typeof Home; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  { id: "home", label: "Accueil", icon: Home, items: [{ to: "/", label: "Accueil", icon: Home }] },
+  {
+    id: "play",
+    label: "Jouer",
+    icon: Map,
+    items: [
+      { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, description: "Vue d'ensemble" },
+      { to: "/campaigns", label: "Campagnes", icon: Map, description: "Vos tables de jeu" },
+      { to: "/characters", label: "Personnages", icon: User, description: "Vos fiches" },
+    ],
+  },
+  {
+    id: "content",
+    label: "Contenu",
+    icon: LibraryIcon,
+    items: [
+      { to: "/compendium", label: "Codex", icon: BookOpen, description: "Créatures, objets, sorts" },
+      { to: "/library", label: "Bibliothèque", icon: LibraryIcon, description: "Vos ressources" },
+      { to: "/atelier", label: "Atelier", icon: Hammer, description: "Créations maison" },
+      { to: "/marketplace", label: "Boutique", icon: Package, description: "Packs communautaires" },
+    ],
+  },
+  { id: "systems", label: "Systèmes", icon: Sparkles, items: [{ to: "/systems", label: "Systèmes", icon: Sparkles }] },
+  {
+    id: "more",
+    label: "Plus",
+    icon: HelpCircle,
+    items: [
+      { to: "/guide", label: "Guide", icon: HelpCircle, description: "Prise en main" },
+      { to: "/subscriptions", label: "Abonnements", icon: Crown, description: "Offres et quotas" },
+      { to: "/partners", label: "Partenaires", icon: Handshake, description: "Nos partenaires" },
+    ],
+  },
 ];
+
 
 const Header = () => {
   const location = useLocation();
