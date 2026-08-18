@@ -2120,16 +2120,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
     // ── Fog (screen space composite) ─────────────────────────
     const fogLayer = layers.find(l => l.id === "fog");
-    wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
-    if (fogLayer?.visible) {
+    const lWalls = effectiveLayer(vttLayers, "walls", isGM);
+    if (lWalls.visible) {
+      ctx.save();
+      ctx.globalAlpha = lWalls.alpha;
+      wallsHook.drawWalls(ctx, zoom, panOffset, isGM);
+      ctx.restore();
+    }
+    if (fogLayer?.visible && lFog.visible) {
       const tmp = document.createElement("canvas");
       tmp.width = canvas.width;
       tmp.height = canvas.height;
       const tCtx = tmp.getContext("2d")!;
 
       // Fond du brouillard
-      tCtx.fillStyle = `rgba(0, 0, 0, ${fogLayer.opacity / 100})`;
+      tCtx.fillStyle = `rgba(0, 0, 0, ${(fogLayer.opacity / 100) * lFog.alpha})`;
       tCtx.fillRect(0, 0, tmp.width, tmp.height);
+
 
       // Découper les zones révélées (destination-out = effet gomme)
       tCtx.save();
