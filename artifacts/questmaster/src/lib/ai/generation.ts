@@ -80,6 +80,6 @@ export async function generateSessionRecap(
   const { data, error } = await supabase.functions.invoke("session-journal", {
     body: { sessionId, audience },
   });
-  if (error || !data?.recap) throw invokeError(error, data);
+  if (error || !data?.recap) throw await invokeError(error, data);
   return { recap: data.recap as string, messageCount: data.messageCount ?? 0 };
 }
