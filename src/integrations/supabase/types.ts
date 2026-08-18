@@ -1059,6 +1059,48 @@ export type Database = {
         }
         Relationships: []
       }
+      content_packages: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          install_count: number
+          is_published: boolean
+          owner_id: string
+          system: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          install_count?: number
+          is_published?: boolean
+          owner_id?: string
+          system?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          install_count?: number
+          is_published?: boolean
+          owner_id?: string
+          system?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -1378,6 +1420,48 @@ export type Database = {
         }
         Relationships: []
       }
+      homebrew_content: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          image_url: string | null
+          is_public: boolean
+          kind: string
+          name: string
+          owner_id: string
+          summary: string | null
+          system: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          kind: string
+          name: string
+          owner_id?: string
+          summary?: string | null
+          system?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          kind?: string
+          name?: string
+          owner_id?: string
+          summary?: string | null
+          system?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       macros: {
         Row: {
           actions: Json
@@ -1629,6 +1713,70 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_installs: {
+        Row: {
+          created_at: string
+          id: string
+          package_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_installs_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "content_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_items: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          package_id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          package_id: string
+          payload?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          package_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "content_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -1913,6 +2061,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cosmetics: {
+        Row: {
+          dice_skin: string
+          sfx_pack: string
+          token_frame: string
+          ui_theme: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          dice_skin?: string
+          sfx_pack?: string
+          token_frame?: string
+          ui_theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          dice_skin?: string
+          sfx_pack?: string
+          token_frame?: string
+          ui_theme?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2043,6 +2218,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      install_content_package: {
+        Args: { _package_id: string }
+        Returns: number
       }
       is_campaign_gm: {
         Args: { _campaign_id: string; _user_id: string }
