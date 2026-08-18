@@ -392,13 +392,48 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Résumé d'après-partie</Label>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label>Résumé d'après-partie</Label>
+                  {isGM && (
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!!recapLoading}
+                        onClick={() => writeRecap("players")}
+                      >
+                        {recapLoading === "players" ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Récit IA (joueurs)
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={!!recapLoading}
+                        onClick={() => writeRecap("gm")}
+                      >
+                        {recapLoading === "gm" ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Version MJ
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <Textarea
                   value={editingSession.recap || ""}
                   onChange={(e) => setEditingSession((s: any) => ({ ...s, recap: e.target.value }))}
                   placeholder="Ce que les joueurs ont accompli, à partager avec la table..."
                   rows={4}
                 />
+
                 <div className="flex items-center justify-between rounded-md border border-border/60 p-3">
                   <div>
                     <p className="text-sm text-foreground">Partager le résumé aux joueurs</p>
