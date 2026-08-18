@@ -19,8 +19,16 @@ export interface GeneratedEntity {
   tags: string[];
 }
 
-function invokeError(error: any, data: any): Error {
-  return new Error(data?.error || error?.message || "L'IA n'a pas pu répondre.");
+/** Edge functions answer errors with a JSON body; surface it instead of "non-2xx". */
+async function invokeError(error: any, data: any): Promise<Error> {
+  if (data?.error) return new Error(data.error);
+  try {
+    const body = await error?.context?.json?.();
+    if (body?.error) return new Error(body.error);
+  } catch {
+    /* body already consumed or not JSON */
+  }
+  return new Error(error?.message || "L'IA n'a pas pu répondre.");
 }
 
 /** Asks the model for a fully structured codex sheet of the given kind. */
@@ -32,7 +40,8 @@ export async function generateEntity(
   const { data, error } = await supabase.functions.invoke("mj-generate-entity", {
     body: { campaignId, kind, brief },
   });
-  if (error || !data?.entity) throw invokeError(error, data);
+  if (error || !data?.entity) throw await invokeError(error, data);
+
   const e = data.entity as Partial<GeneratedEntity>;
   return {
     name: (e.name ?? "Sans nom").slice(0, 120),
