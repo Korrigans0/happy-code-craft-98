@@ -1097,6 +1097,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }));
   };
 
+  const rotateTokenRef = useRef<(tokenId: string, deg: number) => void>(() => {});
   const rotateToken = (tokenId: string, deg: number) => {
     setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, rotation: (t.rotation + deg + 360) % 360 } : t));
   };
@@ -2420,6 +2421,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (scheduledRedrawRef.current != null) cancelAnimationFrame(scheduledRedrawRef.current);
   }, []);
 
+  rotateTokenRef.current = rotateToken;
+
   // ── Wheel zoom ──
   useEffect(() => {
     const container = containerRef.current; if (!container) return;
@@ -2429,7 +2432,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const target = e.target as HTMLElement | null;
       if (target && target.closest('[data-vtt-allow-scroll]')) return;
       e.preventDefault();
-      if (e.shiftKey && selectedTokenId) { rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
+      if (e.shiftKey && selectedTokenId) { rotateTokenRef.current(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
       const canvas = canvasRef.current; if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
@@ -2449,7 +2452,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     };
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [selectedTokenId, rotateToken]);
+  }, [selectedTokenId]);
 
   // ── Touch support ──
   useEffect(() => {
