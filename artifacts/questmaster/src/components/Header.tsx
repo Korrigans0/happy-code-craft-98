@@ -117,33 +117,74 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* ── Navigation desktop ── */}
+          {/* ── Navigation desktop (groupée) ── */}
           <nav className="hidden items-center gap-0.5 md:flex">
-            {navLinks.map((link) => {
-              const active = isActive(link.to);
+            {navGroups.map((group) => {
+              const activeItem = group.items.find((i) => isActive(i.to));
+              const active = Boolean(activeItem);
+              const baseClass = `relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                active ? "text-amber-400" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              }`;
+              const baseStyle = active ? { background: "hsl(43,75%,50%,0.10)" } : undefined;
+
+              if (group.items.length === 1) {
+                const item = group.items[0];
+                return (
+                  <Link key={group.id} to={item.to} className={baseClass} style={baseStyle}>
+                    <group.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
+                    {group.label}
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
+                        style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
+                    )}
+                  </Link>
+                );
+              }
+
               return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? "text-amber-400"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                  }`}
-                  style={active ? {
-                    background: "hsl(43,75%,50%,0.10)",
-                  } : undefined}
-                >
-                  <link.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
-                  {link.label}
-                  {active && (
-                    <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
-                      style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
-                  )}
-                </Link>
+                <DropdownMenu key={group.id}>
+                  <DropdownMenuTrigger className={baseClass} style={baseStyle}>
+                    <group.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
+                    {activeItem ? activeItem.label : group.label}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
+                        style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-60"
+                    style={{
+                      background: "hsl(228,68%,10%)",
+                      border: "1px solid hsl(43,75%,50%,0.2)",
+                      boxShadow: "0 20px 60px hsl(0,0%,0%,0.7)",
+                    }}
+                  >
+                    {group.items.map((item) => (
+                      <DropdownMenuItem key={item.to} asChild>
+                        <Link
+                          to={item.to}
+                          className={`flex items-start gap-2 cursor-pointer ${
+                            isActive(item.to) ? "text-amber-400" : "text-slate-300"
+                          }`}
+                        >
+                          <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/60" />
+                          <span className="flex flex-col">
+                            <span className="text-sm">{item.label}</span>
+                            {item.description && (
+                              <span className="text-xs text-slate-500">{item.description}</span>
+                            )}
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               );
             })}
           </nav>
+
 
           {/* ── Droite : profil + burger ── */}
           <div className="flex items-center gap-2">
