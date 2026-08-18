@@ -250,6 +250,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [vttLayers, setVttLayers] = useState<LayersState>(DEFAULT_LAYERS);
   const [activeVttLayer, setActiveVttLayer] = useState<LayerId>("effects");
   const activeDrawLayer = DRAWABLE_LAYERS.includes(activeVttLayer) ? activeVttLayer : "effects";
+  // Refs consultées dans les handlers d'événements (évite les closures obsolètes)
+  const drawLayerLockedRef = useRef(false);
+  const tokensLayerLockedRef = useRef(false);
 
 
   // ── UI state ──
@@ -2481,6 +2484,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
         // Text
         if (tool === "text") {
+          if (drawLayerLockedRef.current) { toast({ title: "Calque verrouillé", description: `Le calque « ${activeDrawLayer} » est verrouillé.`, variant: "destructive" }); mode = "none"; return; }
           const w = toWorld(t.clientX, t.clientY);
           const text = prompt("Texte à ajouter :");
           if (text) {
@@ -2492,7 +2496,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         }
 
         const tokensLayer = layers.find(l => l.id === "tokens");
-        if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "token")) {
+        if (tokensLayer?.visible && !tokensLayer.locked && !tokensLayerLockedRef.current && (tool === "move" || tool === "token")) {
           const w = toWorld(t.clientX, t.clientY);
           const hit = findTokenAt(w.x, w.y);
           if (hit) {
@@ -2505,6 +2509,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           setSelectedTokenId(null);
         }
         if (["line", "rect", "circle", "pencil", "eraser", "cone", "zone", "fogReveal"].includes(tool)) {
+          if (drawLayerLockedRef.current && (tool as string) !== "fogReveal") { toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour dessiner.", variant: "destructive" }); mode = "none"; return; }
           const w = toWorld(t.clientX, t.clientY);
           const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
           setCurrentAction({ id: newId(), type: tool, points: [w], color, size: brushSize, layer });
@@ -2832,7 +2837,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
 
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible && !tokensLayer.locked && (tool === "move" || tool === "select" || tool === "token")) {
+    if (tokensLayer?.visible && !tokensLayer.locked && !tokensLayerLockedRef.current && (tool === "move" || tool === "select" || tool === "token")) {
       const tokenHit = findTokenAt(coords.x, coords.y);
       if (tokenHit) {
         if (!perms.canMoveToken(tokenHit)) {
@@ -2905,6 +2910,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }
     if (tool === "token") return;
     if (tool === "text") {
+      if (drawLayerLockedRef.current) { toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour écrire.", variant: "destructive" }); return; }
       const text = prompt("Texte à ajouter :");
       if (text) {
         const action: DrawAction = { id: newId(), type: "text", points: [coords], color, size: brushSize, text, layer: activeDrawLayer };
@@ -2914,6 +2920,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       return;
     }
 
+    if (drawLayerLockedRef.current && (tool as string) !== "fogReveal") {
+      toast({ title: "Calque verrouillé", description: "Déverrouillez le calque actif pour dessiner.", variant: "destructive" });
+      return;
+    }
     const layer = (tool as string) === "fogReveal" ? "fog" : activeDrawLayer;
     setIsDrawing(true);
     setCurrentAction({ id: newId(), type: tool, points: [coords], color, size: brushSize, layer });
