@@ -13,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, MessageSquare, BookOpen, Users,
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
-  Volume2, ExternalLink, Wand2, X, Library, History, BookMarked, Eye, EyeOff,
+  Volume2, ExternalLink, Wand2, X, Library, History, BookMarked, Eye, EyeOff, Sparkles,
 } from "lucide-react";
 import LayersPanel from "@/components/campaign/vtt/LayersPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,6 +28,7 @@ import GMTools from "@/components/campaign/GMTools";
 import CampaignCodex from "@/components/campaign/codex/CampaignCodex";
 import CampaignHistory from "@/components/campaign/CampaignHistory";
 import CampaignPrep from "@/components/campaign/prep/CampaignPrep";
+import AIAssistant from "@/components/campaign/AIAssistant";
 import { parseTheme, themeStyle } from "@/lib/campaign/theme";
 
 interface Campaign {
@@ -116,6 +117,7 @@ const CampaignPlay = () => {
       { id: "notes", icon: BookOpen, label: "Notes" },
       ...(isGM ? [{ id: "history", icon: History, label: "Historique" }] : []),
       { id: "members", icon: Users, label: "Joueurs" },
+      ...(isGM ? [{ id: "assistant", icon: Sparkles, label: "Assistant IA" }] : []),
       ...(isGM ? [{ id: "gmtools", icon: Wand2, label: "Outils MJ" }] : []),
       ...(isGM ? [{ id: "settings", icon: Settings, label: "Options" }] : []),
     ];
@@ -362,6 +364,11 @@ const CampaignPlay = () => {
               <TabsContent value="members" className="m-0 h-full">
                 <CampaignMembers campaignId={id!} isGM={isGM} />
               </TabsContent>
+              {isGM && (
+                <TabsContent value="assistant" className="m-0 h-full">
+                  <AIAssistant campaignId={id!} system={campaign.system} />
+                </TabsContent>
+              )}
               {isGM && (
                 <TabsContent value="gmtools" className="m-0 h-full">
                   <GMTools />
