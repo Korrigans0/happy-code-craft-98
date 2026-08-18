@@ -15,7 +15,6 @@ import {
   Settings, Copy, ArrowLeft, Crown, Map, CalendarDays,
   Volume2, ExternalLink, Wand2, X, Library, History, BookMarked, Eye, EyeOff, Sparkles,
 } from "lucide-react";
-import LayersPanel from "@/components/campaign/vtt/LayersPanel";
 import CampaignNav, { type CampaignNavGroup } from "@/components/campaign/CampaignNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import CampaignChat from "@/components/campaign/CampaignChat";
