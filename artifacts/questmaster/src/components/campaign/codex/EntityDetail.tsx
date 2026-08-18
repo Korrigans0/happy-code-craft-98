@@ -133,7 +133,13 @@ export default function EntityDetail({
 
   const visibilityLabel =
     VISIBILITY_OPTIONS.find((v) => v.id === entity.visibility)?.label ?? entity.visibility;
-  const description = (entity.content as any)?.description as string | undefined;
+  const content = (entity.content ?? {}) as any;
+  const description = content.description as string | undefined;
+  // Structured sheets (AI-generated or hand-written) carry richer blocks.
+  const sections: { title: string; body: string }[] = Array.isArray(content.sections) ? content.sections : [];
+  const hooks: string[] = Array.isArray(content.hooks) ? content.hooks.filter(Boolean) : [];
+  const secret: string = typeof content.secret === "string" ? content.secret : "";
+
 
   return (
     <div className="space-y-4">
