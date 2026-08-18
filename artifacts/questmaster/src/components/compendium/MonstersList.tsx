@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCompendiumList } from "@/hooks/useCompendiumList";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
