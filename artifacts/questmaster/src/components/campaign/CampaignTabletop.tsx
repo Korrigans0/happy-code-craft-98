@@ -1642,10 +1642,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // il n'est rendu que si ce calque est visible pour le rôle courant.
     const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
-      const off = document.createElement("canvas");
-      off.width = canvas.width;
-      off.height = canvas.height;
+      const off = getScratch("drawings", canvas.width, canvas.height);
       const octx = off.getContext("2d");
+
       if (octx) {
         octx.translate(panOffset.x, panOffset.y);
         octx.scale(zoom, zoom);
