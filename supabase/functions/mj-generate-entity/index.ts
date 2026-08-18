@@ -82,11 +82,13 @@ Deno.serve(async (req) => {
   const brief = String(body.brief ?? "").slice(0, 2000);
   if (!campaignId || !KIND_LABELS[kind]) return json({ error: "Requête invalide." }, 400);
 
-  const { data: isGm, error: gmError } = await supabase.rpc("is_campaign_gm", {
-    _user_id: user.id,
-    _campaign_id: campaignId,
-  });
-  if (gmError || !isGm) return json({ error: "Réservé au MJ de cette campagne." }, 403);
+  const { data: membership } = await supabase
+    .from("campaign_members")
+    .select("role")
+    .eq("campaign_id", campaignId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (membership?.role !== "gm") return json({ error: "Réservé au MJ de cette campagne." }, 403);
 
   const [{ data: campaign }, { data: entities }] = await Promise.all([
     supabase

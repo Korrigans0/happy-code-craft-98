@@ -64,11 +64,13 @@ Deno.serve(async (req) => {
   if (!session) return json({ error: "Session introuvable." }, 404);
 
   const campaignId = session.campaign_id;
-  const { data: isGm, error: gmError } = await supabase.rpc("is_campaign_gm", {
-    _user_id: user.id,
-    _campaign_id: campaignId,
-  });
-  if (gmError || !isGm) return json({ error: "Réservé au MJ de cette campagne." }, 403);
+  const { data: membership } = await supabase
+    .from("campaign_members")
+    .select("role")
+    .eq("campaign_id", campaignId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (membership?.role !== "gm") return json({ error: "Réservé au MJ de cette campagne." }, 403);
 
   // Session window: from the previous session's end (or this session's creation) to its end.
   const { data: previous } = await supabase
