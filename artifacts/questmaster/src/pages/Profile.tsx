@@ -312,11 +312,15 @@ const Profile = () => {
               </CardContent>
             </Card>
           </div>
+          <div className="mt-8">
+            <CosmeticsPanel />
+          </div>
           {user && (
             <div className="mt-8">
               <ProfileAchievements userId={user.id} memberSince={profile?.created_at ?? null} />
             </div>
           )}
+
         </div>
       </main>
       <Footer />
