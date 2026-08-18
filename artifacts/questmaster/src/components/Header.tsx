@@ -309,28 +309,38 @@ const Header = () => {
           }}
         >
           <nav className="container mx-auto p-4 space-y-1">
-            {navLinks.map((link) => {
-              const active = isActive(link.to);
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                    active
-                      ? "text-amber-400"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                  }`}
-                  style={active ? {
-                    background: "hsl(43,75%,50%,0.10)",
-                    borderLeft: "3px solid hsl(43,75%,50%)",
-                  } : undefined}
-                >
-                  <link.icon className={`h-5 w-5 ${active ? "text-amber-400" : "text-slate-500"}`} />
-                  {link.label}
-                </Link>
-              );
-            })}
+            {navGroups.map((group) => (
+              <div key={group.id} className="space-y-1">
+                {group.items.length > 1 && (
+                  <p className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-[2px] text-amber-500/50">
+                    {group.label}
+                  </p>
+                )}
+                {group.items.map((link) => {
+                  const active = isActive(link.to);
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                        active
+                          ? "text-amber-400"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      }`}
+                      style={active ? {
+                        background: "hsl(43,75%,50%,0.10)",
+                        borderLeft: "3px solid hsl(43,75%,50%)",
+                      } : undefined}
+                    >
+                      <link.icon className={`h-5 w-5 ${active ? "text-amber-400" : "text-slate-500"}`} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+
 
             <div className="pt-2 border-t border-white/5">
               {user ? (
