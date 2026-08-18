@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
+import CampaignThemeCard from "@/components/campaign/CampaignThemeCard";
 import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
 
 import {
@@ -42,6 +43,7 @@ interface Campaign {
   schedule?: string | null;
   tone?: string | null;
   tags?: string[] | null;
+  theme?: unknown;
 }
 
 interface CampaignSettingsProps {
@@ -612,6 +614,8 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
       </Card>
 
       
+
+      <CampaignThemeCard campaignId={campaign.id} theme={campaign.theme} />
 
       {/* ══ ZONE DE DANGER ═══════════════════════════════════════════════════ */}
       <Card className="bg-gradient-card border-destructive/40">
