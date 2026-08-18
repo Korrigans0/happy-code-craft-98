@@ -2406,7 +2406,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     return () => ro.disconnect();
   }, [redrawCanvas]);
 
-  useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
+  // Redraw coalescé sur une frame : plusieurs mises à jour d'état (tokens,
+  // murs, lumières, sélection…) dans le même tick ne repeignent qu'une fois.
+  const scheduledRedrawRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (scheduledRedrawRef.current != null) return;
+    scheduledRedrawRef.current = requestAnimationFrame(() => {
+      scheduledRedrawRef.current = null;
+      redrawCanvasRef.current();
+    });
+  }, [redrawCanvas]);
+  useEffect(() => () => {
+    if (scheduledRedrawRef.current != null) cancelAnimationFrame(scheduledRedrawRef.current);
+  }, []);
 
   // ── Wheel zoom ──
   useEffect(() => {
