@@ -2019,7 +2019,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           ctx.textAlign = "center";
           ctx.fillText("👁️‍🗨️", cx, token.y - 22 / zoom);
           ctx.textAlign = "start";
-          ctx.globalAlpha = tokensLayer.opacity / 100;
+          ctx.globalAlpha = (tokensLayer.opacity / 100) * lTokens.alpha;
         }
 
         // Movement trail
