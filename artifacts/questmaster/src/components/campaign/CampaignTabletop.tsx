@@ -448,6 +448,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
 
+  // Offscreen buffers pooled across frames: allocating a canvas per frame
+  // (drawings / fog / lights) was the main source of GC pauses on big maps.
+  const scratchRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
+  const getScratch = useCallback((key: string, w: number, h: number) => {
+    let c = scratchRef.current.get(key);
+    if (!c) {
+      c = document.createElement("canvas");
+      scratchRef.current.set(key, c);
+    }
+    if (c.width !== w || c.height !== h) {
+      c.width = w;
+      c.height = h;
+    } else {
+      const cx = c.getContext("2d");
+      if (cx) {
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.globalAlpha = 1;
+        cx.globalCompositeOperation = "source-over";
+        cx.clearRect(0, 0, w, h);
+      }
+    }
+    return c;
+  }, []);
+
+
   // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
   const wallPreviewRafRef = useRef<number | null>(null);
   const wallPreviewFrameRef = useRef(0);
