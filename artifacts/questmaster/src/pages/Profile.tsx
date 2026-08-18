@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles } from 'lucide-react';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 import ProfileAchievements from '@/components/profile/ProfileAchievements';
+import CosmeticsPanel from '@/components/profile/CosmeticsPanel';
+
 import { OnboardingTour, resetOnboarding } from '@/components/onboarding/OnboardingTour';
 
 
