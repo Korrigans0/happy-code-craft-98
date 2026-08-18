@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { compendiumApi } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useCompendiumList } from "@/hooks/useCompendiumList";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Skull, Shield, Heart, Footprints } from "lucide-react";
@@ -24,39 +25,36 @@ interface MonstersListProps {
 }
 
 const MonstersList = ({ searchQuery, system }: MonstersListProps) => {
-  const [monsters, setMonsters] = useState<Monster[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: monsters, loading } = useCompendiumList<Monster>("monsters", system);
+  const search = useDebouncedValue(searchQuery, 220).toLowerCase();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sizeFilter, setSizeFilter] = useState<string>("all");
   const [crFilter, setCrFilter] = useState<string>("all");
   const [expandedMonster, setExpandedMonster] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMonsters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [system]);
+  const filteredMonsters = useMemo(
+    () =>
+      monsters.filter((monster) => {
+        const matchesSearch =
+          !search ||
+          monster.name.toLowerCase().includes(search) ||
+          monster.description.toLowerCase().includes(search);
+        const matchesType = typeFilter === "all" || monster.type === typeFilter;
+        const matchesSize = sizeFilter === "all" || monster.size === sizeFilter;
+        const matchesCr = crFilter === "all" || monster.challenge_rating === crFilter;
+        return matchesSearch && matchesType && matchesSize && matchesCr;
+      }),
+    [monsters, search, typeFilter, sizeFilter, crFilter],
+  );
 
-  const fetchMonsters = async () => {
-    setLoading(true);
-    try {
-      const data = await compendiumApi.getMonsters(system);
-      setMonsters((data as Monster[]) || []);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  };
-
-  const filteredMonsters = monsters.filter((monster) => {
-    const matchesSearch = monster.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      monster.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || monster.type === typeFilter;
-    const matchesSize = sizeFilter === "all" || monster.size === sizeFilter;
-    const matchesCr = crFilter === "all" || monster.challenge_rating === crFilter;
-    return matchesSearch && matchesType && matchesSize && matchesCr;
-  });
-
-  const types = [...new Set(monsters.map(m => m.type))];
-  const sizes = [...new Set(monsters.map(m => m.size))];
-  const crs = [...new Set(monsters.map(m => m.challenge_rating))];
+  const { types, sizes, crs } = useMemo(
+    () => ({
+      types: [...new Set(monsters.map((m) => m.type))],
+      sizes: [...new Set(monsters.map((m) => m.size))],
+      crs: [...new Set(monsters.map((m) => m.challenge_rating))],
+    }),
+    [monsters],
+  );
 
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {

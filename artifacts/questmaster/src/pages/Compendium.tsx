@@ -9,27 +9,38 @@
 //
 // Le filtre par système empêche toute contamination entre univers.
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, Swords, BookOpen, Globe, Skull, Sparkles, Map, Scroll, Users, Shield, Gem, Wand2 } from "lucide-react";
+import { Loader2, Search, Swords, BookOpen, Globe, Skull, Sparkles, Map, Scroll, Users, Shield, Gem, Wand2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import WACreaturesList from "@/components/compendium/WACreaturesList";
-import WACodex from "@/components/compendium/WACodex";
-import WAHistoire from "@/components/compendium/WAHistoire";
-import AetheriaBestiary from "@/components/compendium/AetheriaBestiary";
-import AetheriaMatchups from "@/components/compendium/AetheriaMatchups";
-import MonstersList from "@/components/compendium/MonstersList";
-import SpellsList from "@/components/compendium/SpellsList";
-import ItemsList from "@/components/compendium/ItemsList";
+// Chargement paresseux : seul le codex du système consulté est téléchargé,
+// ce qui allège fortement le bundle initial de la page.
+const WACreaturesList = lazy(() => import("@/components/compendium/WACreaturesList"));
+const WACodex = lazy(() => import("@/components/compendium/WACodex"));
+const WAHistoire = lazy(() => import("@/components/compendium/WAHistoire"));
+const AetheriaBestiary = lazy(() => import("@/components/compendium/AetheriaBestiary"));
+const AetheriaMatchups = lazy(() => import("@/components/compendium/AetheriaMatchups"));
+const MonstersList = lazy(() => import("@/components/compendium/MonstersList"));
+const SpellsList = lazy(() => import("@/components/compendium/SpellsList"));
+const ItemsList = lazy(() => import("@/components/compendium/ItemsList"));
+const GlyphesCodex = lazy(() => import("@/components/compendium/GlyphesCodex"));
+const OfficialContentBrowser = lazy(() => import("@/components/compendium/OfficialContentBrowser"));
+
 import CreateMonsterDialog from "@/components/compendium/CreateMonsterDialog";
 import CreateSpellDialog from "@/components/compendium/CreateSpellDialog";
 import CreateItemDialog from "@/components/compendium/CreateItemDialog";
-import GlyphesCodex from "@/components/compendium/GlyphesCodex";
-import OfficialContentBrowser from "@/components/compendium/OfficialContentBrowser";
 import { hasOfficialContent } from "@/lib/compendium/officialContent";
+import { invalidateCompendium } from "@/hooks/useCompendiumList";
+
+// Fallback commun pendant le chargement d'un module de codex.
+const CodexFallback = () => (
+  <div className="flex items-center justify-center py-16">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 import { useAuth } from "@/hooks/useAuth";
 import { RACES, FACTIONS, KINGDOMS, CONTINENTS, PRIMORDIAL_FORCES } from "@/lib/aetheria-data";
@@ -138,7 +149,10 @@ const SystemCodex = ({
     hasOfficialContent(system) ? "official" : "community",
   );
   const [refreshKey, setRefreshKey] = useState(0);
-  const triggerRefresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const triggerRefresh = useCallback(() => {
+    invalidateCompendium();
+    setRefreshKey((k) => k + 1);
+  }, []);
   const official = hasOfficialContent(system);
 
   return (
@@ -188,6 +202,7 @@ const SystemCodex = ({
 
       {(["monsters", "spells", "items"] as const).map((kind) => (
         <TabsContent key={kind} value={kind}>
+          <Suspense fallback={<CodexFallback />}>
           {official && source === "official" ? (
             <OfficialContentBrowser system={system} kind={kind} searchQuery={searchQuery} />
           ) : kind === "monsters" ? (
@@ -197,6 +212,7 @@ const SystemCodex = ({
           ) : (
             <ItemsList key={`i-${refreshKey}`} searchQuery={searchQuery} system={system} />
           )}
+          </Suspense>
         </TabsContent>
       ))}
     </Tabs>
@@ -231,12 +247,16 @@ const Compendium = () => {
 
   // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
   // Glyphes est rendu via un composant dédié ; on évite tout doublon avec le registre.
-  const visibleSystems = SYSTEM_LIST.some((s) => s.id === "Glyphes")
-    ? SYSTEM_LIST
-    : [
-      ...SYSTEM_LIST,
-      { id: "Glyphes", label: "Glyphes", emoji: "✨", featured: false, partner: false, custom: false, nouveau: true } as any,
-    ];
+  const visibleSystems = useMemo(
+    () =>
+      SYSTEM_LIST.some((s) => s.id === "Glyphes")
+        ? SYSTEM_LIST
+        : [
+            ...SYSTEM_LIST,
+            { id: "Glyphes", label: "Glyphes", emoji: "✨", featured: false, partner: false, custom: false, nouveau: true } as any,
+          ],
+    [],
+  );
 
 
   return (
@@ -302,9 +322,13 @@ const Compendium = () => {
                   <Swords className="h-3.5 w-3.5" /> Matchups
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="aetheria-bestiary"><AetheriaBestiary isGM={false} searchQuery={searchQuery} /></TabsContent>
+              <TabsContent value="aetheria-bestiary">
+                <Suspense fallback={<CodexFallback />}><AetheriaBestiary isGM={false} searchQuery={searchQuery} /></Suspense>
+              </TabsContent>
               <TabsContent value="aetheria-codex"><AetheriaLore /></TabsContent>
-              <TabsContent value="aetheria-matchups"><AetheriaMatchups /></TabsContent>
+              <TabsContent value="aetheria-matchups">
+                <Suspense fallback={<CodexFallback />}><AetheriaMatchups /></Suspense>
+              </TabsContent>
             </Tabs>
           )}
 
@@ -323,9 +347,11 @@ const Compendium = () => {
                   </TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent value="wa-bestiary"><WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} /></TabsContent>
-              <TabsContent value="wa-codex"><WACodex /></TabsContent>
-              <TabsContent value="wa-histoire"><WAHistoire /></TabsContent>
+              <TabsContent value="wa-bestiary">
+                <Suspense fallback={<CodexFallback />}><WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} /></Suspense>
+              </TabsContent>
+              <TabsContent value="wa-codex"><Suspense fallback={<CodexFallback />}><WACodex /></Suspense></TabsContent>
+              <TabsContent value="wa-histoire"><Suspense fallback={<CodexFallback />}><WAHistoire /></Suspense></TabsContent>
             </Tabs>
           )}
 
@@ -334,7 +360,9 @@ const Compendium = () => {
           )}
 
 
-          {system === "Glyphes" && <GlyphesCodex />}
+          {system === "Glyphes" && (
+            <Suspense fallback={<CodexFallback />}><GlyphesCodex /></Suspense>
+          )}
 
           {system === "Personnalisé" && (
             <div className="space-y-4">

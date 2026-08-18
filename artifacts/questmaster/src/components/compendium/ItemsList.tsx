@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { compendiumApi } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useCompendiumList } from "@/hooks/useCompendiumList";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Gem, Sparkles } from "lucide-react";
@@ -20,35 +21,27 @@ interface ItemsListProps {
 }
 
 const ItemsList = ({ searchQuery, system }: ItemsListProps) => {
-  const [items, setItems] = useState<MagicItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: items, loading } = useCompendiumList<MagicItem>("items", system);
+  const search = useDebouncedValue(searchQuery, 220).toLowerCase();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [rarityFilter, setRarityFilter] = useState<string>("all");
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [system]);
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        const matchesSearch =
+          !search ||
+          item.name.toLowerCase().includes(search) ||
+          item.description.toLowerCase().includes(search);
+        const matchesType = typeFilter === "all" || item.type === typeFilter;
+        const matchesRarity = rarityFilter === "all" || item.rarity === rarityFilter;
+        return matchesSearch && matchesType && matchesRarity;
+      }),
+    [items, search, typeFilter, rarityFilter],
+  );
 
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const data = await compendiumApi.getItems(system);
-      setItems((data as MagicItem[]) || []);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  };
-
-  const filteredItems = items.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || item.type === typeFilter;
-    const matchesRarity = rarityFilter === "all" || item.rarity === rarityFilter;
-    return matchesSearch && matchesType && matchesRarity;
-  });
-
-  const types = [...new Set(items.map(i => i.type))];
+  const types = useMemo(() => [...new Set(items.map((i) => i.type))], [items]);
   const rarities = ["Commune", "Peu commune", "Rare", "Très rare", "Légendaire", "Artefact"];
 
   const getRarityColor = (rarity: string) => {

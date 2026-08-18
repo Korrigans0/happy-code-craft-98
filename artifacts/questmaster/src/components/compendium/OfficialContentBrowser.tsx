@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   fetchOfficialContent,
+  getCachedOfficialPage,
+  prefetchOfficialContent,
   officialSourceLabel,
   type OfficialEntry,
   type OfficialKind,
@@ -129,6 +131,16 @@ const OfficialContentBrowser = ({ system, kind, searchQuery }: Props) => {
   useEffect(() => { setPage(1); }, [debounced, kind, system, lang]);
 
   const load = useCallback(async () => {
+    // Réponse immédiate si la page est déjà en cache mémoire.
+    const cached = getCachedOfficialPage({ system, kind, search: debounced, page, lang });
+    if (cached) {
+      setEntries(cached.items);
+      setTotal(cached.total);
+      setPageSize(cached.pageSize);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -136,11 +148,12 @@ const OfficialContentBrowser = ({ system, kind, searchQuery }: Props) => {
     setError(null);
     try {
       const res = await fetchOfficialContent({ system, kind, search: debounced, page, lang }, ctrl.signal);
+      if (ctrl.signal.aborted) return;
       setEntries(res.items);
       setTotal(res.total);
       setPageSize(res.pageSize);
     } catch (e) {
-      if ((e as Error).name === "AbortError") return;
+      if ((e as Error).name === "AbortError" || ctrl.signal.aborted) return;
       setError((e as Error).message);
       setEntries([]);
       setTotal(0);
@@ -150,6 +163,18 @@ const OfficialContentBrowser = ({ system, kind, searchQuery }: Props) => {
   }, [system, kind, debounced, page, lang]);
 
   useEffect(() => { load(); return () => abortRef.current?.abort(); }, [load]);
+
+  // Préchargement discret de la page suivante pour une pagination instantanée.
+  useEffect(() => {
+    if (loading || error) return;
+    const totalP = Math.max(1, Math.ceil(total / pageSize));
+    if (page >= totalP) return;
+    const timer = setTimeout(
+      () => prefetchOfficialContent({ system, kind, search: debounced, page: page + 1, lang }),
+      600,
+    );
+    return () => clearTimeout(timer);
+  }, [loading, error, total, pageSize, page, system, kind, debounced, lang]);
 
   // Selected entry must follow the language switch.
   useEffect(() => { setSelected(null); }, [lang]);
