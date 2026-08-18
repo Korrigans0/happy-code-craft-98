@@ -1,17 +1,34 @@
-import { Sword, Users, Calendar, Settings, Trash2, Play } from "lucide-react";
+import { Sword, Users, Calendar, Settings, Trash2, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
 interface CampaignCardProps {
+  id?: string;
   title: string;
   description: string;
   isActive: boolean;
   playersCount?: number;
   date: string;
+  /** Le MJ propriétaire peut gérer et supprimer la campagne. */
+  canManage?: boolean;
+  deleting?: boolean;
+  onDelete?: () => void;
 }
 
-const CampaignCard = ({ title, description, isActive, date }: CampaignCardProps) => {
+const CampaignCard = ({
+  id,
+  title,
+  description,
+  isActive,
+  date,
+  canManage = false,
+  deleting = false,
+  onDelete,
+}: CampaignCardProps) => {
+  const playHref = id ? `/campaigns/${id}` : "/campaigns";
+  const settingsHref = id ? `/campaigns/${id}?tab=settings` : "/campaigns";
+
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-gradient-card p-6 shadow-card transition-all duration-300 hover:border-primary/30">
       <div className="flex items-start gap-4">
@@ -48,17 +65,40 @@ const CampaignCard = ({ title, description, isActive, date }: CampaignCardProps)
 
           <div className="mt-4 flex items-center gap-2">
             <Button variant="join" size="sm" className="flex-1" asChild>
-              <Link to="/campaigns">
+              <Link to={playHref}>
                 <Play className="mr-1.5 h-3.5 w-3.5" />
                 Rejoindre
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canManage && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                  title="Paramètres de la campagne"
+                  aria-label="Paramètres de la campagne"
+                  asChild
+                >
+                  <Link to={settingsHref}>
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  title="Supprimer la campagne"
+                  aria-label="Supprimer la campagne"
+                  disabled={deleting}
+                  onClick={onDelete}
+                >
+                  {deleting
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Trash2 className="h-4 w-4" />}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
