@@ -4862,6 +4862,19 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
       {/* Pop-ups PDF partagés (rendus via portail) */}
       <SharedPdfPopups documents={sharedDocs} isGM={isGM} onUnshare={unshareDocument} />
+
+      {/* Panneau Calques — état partagé avec le rendu du canvas */}
+      {isGM && layersOpen && (
+        <LayersPanel
+          layers={vttLayers}
+          activeLayer={activeVttLayer}
+          counts={layerCounts}
+          onChange={updateLayerConfig}
+          onSelect={setActiveVttLayer}
+          onReset={resetLayerConfig}
+          onClose={() => onToggleLayers?.()}
+        />
+      )}
     </div>
 
   );
