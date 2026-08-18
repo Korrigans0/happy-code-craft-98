@@ -3246,16 +3246,33 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     mapImageUrl: layers.find(l => l.id === "map")?.imageUrl,
     tokens: [...tokens],
     drawings: [...actions],
+    walls: [...(wallsHookRef.current?.walls ?? [])],
+    lights: [...(lightsHookRef.current?.lights ?? [])],
+    nightMode: lightsHookRef.current?.nightMode ?? false,
     grid: gridConfig,
-    createdAt: Date.now(),
+    createdAt: scenes.find(s => s.id === activeSceneId)?.createdAt ?? Date.now(),
   });
+
+  /** Persiste la liste de scènes (et la scène active) pour tous les participants. */
+  const persistScenes = (updated: VTTScene[], activeId?: string | null) => {
+    setScenes(updated);
+    if (!isGM) return;
+    saveState({
+      scenes: updated,
+      ...(activeId !== undefined ? { active_scene_id: activeId } : {}),
+    } as any, { immediate: true });
+  };
 
   const loadScene = (scene: VTTScene) => {
     setActiveSceneId(scene.id);
     setGridConfig(normalizeGridConfig(scene.grid));
-    setTokens(scene.tokens);
-    setActions(scene.drawings);
+    hydratedGridRef.current = `${scene.id}:${JSON.stringify(normalizeGridConfig(scene.grid))}`;
+    setTokens(scene.tokens ?? []);
+    setActions(scene.drawings ?? []);
     setUndoneActions([]);
+    wallsHookRef.current?.receiveWalls(scene.walls ?? []);
+    lightsHookRef.current?.receiveLights(scene.lights ?? []);
+    lightsHookRef.current?.receiveNightMode(scene.nightMode ?? false);
     mapImageRef.current = null;
     setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: scene.mapImageUrl } : l));
     if (scene.mapImageUrl) {
@@ -3264,12 +3281,24 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       img.onload = () => { mapImageRef.current = img; };
       img.src = scene.mapImageUrl;
     }
-    // Synchronise immédiatement la carte côté serveur pour que les autres
-    // utilisateurs (et le rechargement) voient la même scène.
-    saveState({ map_image_url: scene.mapImageUrl ?? null }, { immediate: true });
+    // Synchronise immédiatement l'intégralité de la scène côté serveur pour que
+    // les autres utilisateurs (et le rechargement) voient exactement la même chose.
+    if (isGM) {
+      saveState({
+        map_image_url: scene.mapImageUrl ?? null,
+        active_scene_id: scene.id,
+        tokens: scene.tokens ?? [],
+        drawings: scene.drawings ?? [],
+        walls: scene.walls ?? [],
+        lights: scene.lights ?? [],
+        night_mode: scene.nightMode ?? false,
+        grid: normalizeGridConfig(scene.grid),
+      } as any, { immediate: true });
+    }
     setPanOffset({ x: 0, y: 0 });
     setZoom(1);
     setSelectedTokenId(null);
+    setSelectedTokenIds([]);
     toast({ title: `Scène chargée : ${scene.name}` });
   };
 
@@ -3277,45 +3306,70 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     if (!isGM) { denied(); return; }
     const name = prompt("Nom de la nouvelle scène :", `Scène ${scenes.length + 1}`);
     if (!name?.trim()) return;
-    // Save current state first if we have a scene
+    // Sauvegarde d'abord la scène courante pour ne rien perdre
     const updatedScenes = activeSceneId
       ? scenes.map(s => s.id === activeSceneId ? { ...saveCurrentScene(), id: activeSceneId } : s)
       : [...scenes];
     const newScene: VTTScene = {
       id: newId(), name: name.trim(),
-      tokens: [], drawings: [], grid: gridConfig, createdAt: Date.now(),
+      tokens: [], drawings: [], walls: [], lights: [], nightMode: false,
+      grid: gridConfig, createdAt: Date.now(),
     };
-    setScenes([...updatedScenes, newScene]);
+    persistScenes([...updatedScenes, newScene], newScene.id);
     loadScene(newScene);
+  };
+
+  /** Duplique une scène avec l'ensemble de son contenu. */
+  const duplicateScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
+    const source = sceneId === activeSceneId ? saveCurrentScene() : scenes.find(s => s.id === sceneId);
+    if (!source) return;
+    const copy: VTTScene = {
+      ...structuredClone(source),
+      id: newId(),
+      name: `${source.name} (copie)`,
+      createdAt: Date.now(),
+    };
+    persistScenes([...scenes, copy]);
+    toast({ title: "Scène dupliquée", description: copy.name });
   };
 
   const switchScene = (scene: VTTScene) => {
     if (!isGM) { denied(); return; }
-    // Save current scene state
-    if (activeSceneId) {
-      setScenes(prev => prev.map(s =>
-        s.id === activeSceneId ? { ...s, tokens, drawings: actions, grid: gridConfig, mapImageUrl: layers.find(l => l.id === "map")?.imageUrl } : s
-      ));
-    }
-    loadScene(scene);
+    if (scene.id === activeSceneId) { setShowScenesPanel(false); return; }
+    // Sauvegarde l'état complet de la scène courante avant de basculer
+    const updated = activeSceneId
+      ? scenes.map(s => s.id === activeSceneId ? { ...saveCurrentScene(), id: activeSceneId } : s)
+      : [...scenes];
+    persistScenes(updated, scene.id);
+    const target = updated.find(s => s.id === scene.id) ?? scene;
+    loadScene(target);
     setShowScenesPanel(false);
   };
 
   const renameScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
     const scene = scenes.find(s => s.id === sceneId);
     if (!scene) return;
     const name = prompt("Nouveau nom :", scene.name);
     if (!name?.trim()) return;
-    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, name: name.trim() } : s));
+    persistScenes(scenes.map(s => s.id === sceneId ? { ...s, name: name.trim() } : s));
   };
 
   const deleteScene = (sceneId: string) => {
+    if (!isGM) { denied(); return; }
     if (scenes.length <= 1) { toast({ title: "Impossible", description: "Il faut au moins une scène", variant: "destructive" }); return; }
-    if (!confirm("Supprimer cette scène ?")) return;
+    if (!confirm("Supprimer cette scène ? Son contenu (tokens, dessins, murs, lumières) sera perdu.")) return;
     const remaining = scenes.filter(s => s.id !== sceneId);
-    setScenes(remaining);
-    if (activeSceneId === sceneId) loadScene(remaining[0]);
+    if (activeSceneId === sceneId) {
+      persistScenes(remaining, remaining[0].id);
+      loadScene(remaining[0]);
+    } else {
+      persistScenes(remaining);
+    }
+    toast({ title: "Scène supprimée" });
   };
+
   const exportCanvas = () => {
     const canvas = canvasRef.current; if (!canvas) return;
     const link = document.createElement("a");
