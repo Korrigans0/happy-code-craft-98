@@ -3298,7 +3298,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setPanOffset({ x: 0, y: 0 });
     setZoom(1);
     setSelectedTokenId(null);
-    setSelectedTokenIds([]);
+    setSelectedTokenIds(new Set());
     toast({ title: `Scène chargée : ${scene.name}` });
   };
 
