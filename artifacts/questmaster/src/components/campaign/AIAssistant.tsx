@@ -38,7 +38,7 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   { label: "Faction", kind: "faction", prompt: "Crée une faction : idéal, méthodes, figures clés, ressources et rivalités." },
 ];
 
-export default function AIAssistant({ campaignId }: { campaignId: string }) {
+export default function AIAssistant({ campaignId, system }: { campaignId: string; system: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -131,7 +131,7 @@ export default function AIAssistant({ campaignId }: { campaignId: string }) {
       lastAnswer.match(/\*\*(.+?)\*\*/)?.[1]?.trim() ||
       "Création de l'assistant";
     try {
-      await codexApi.create(campaignId, "", {
+      await codexApi.create(campaignId, system, {
         kind: lastKind,
         name: name.slice(0, 120),
         summary: lastAnswer.replace(/[#*_`>]/g, "").slice(0, 200),
