@@ -18,6 +18,8 @@ import Campaigns from "./pages/Campaigns";
 import Characters from "./pages/Characters";
 import Compendium from "./pages/Compendium";
 import Library from "./pages/Library";
+import Atelier from "./pages/Atelier";
+import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 
 import Profile from "./pages/Profile";
@@ -36,6 +38,7 @@ import GlyphesCompendium from "./pages/systems/glyphes/Compendium";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
+import { useApplyCosmetics } from "@/hooks/useCosmetics";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
@@ -48,6 +51,11 @@ function TokenSyncer() {
       return data.session?.access_token ?? null;
     });
   }, []);
+  return null;
+}
+
+function CosmeticsApplier() {
+  useApplyCosmetics();
   return null;
 }
 
@@ -64,6 +72,7 @@ const AppRoutes = () => (
       <Toaster />
       <Sonner />
       <TokenSyncer />
+      <CosmeticsApplier />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Index />} />
@@ -78,6 +87,8 @@ const AppRoutes = () => (
         <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
         <Route path="/compendium" element={<Compendium />} />
         <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+        <Route path="/atelier" element={<ProtectedRoute><Atelier /></ProtectedRoute>} />
+        <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
         
         <Route path="/join/:code" element={<JoinCampaign />} />
         <Route path="/partners" element={<Partners />} />
