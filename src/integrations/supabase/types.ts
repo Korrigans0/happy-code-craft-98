@@ -655,6 +655,7 @@ export type Database = {
           summary: string | null
           system: string
           tags: string[]
+          theme: Json
           title: string
           tone: string | null
           updated_at: string
@@ -677,6 +678,7 @@ export type Database = {
           summary?: string | null
           system?: string
           tags?: string[]
+          theme?: Json
           title: string
           tone?: string | null
           updated_at?: string
@@ -699,6 +701,7 @@ export type Database = {
           summary?: string | null
           system?: string
           tags?: string[]
+          theme?: Json
           title?: string
           tone?: string | null
           updated_at?: string
