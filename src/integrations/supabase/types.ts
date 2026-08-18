@@ -115,6 +115,47 @@ export type Database = {
           },
         ]
       }
+      ai_conversations: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          messages: Json
+          title: string
+          transcript: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          transcript?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          transcript?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_audio_state: {
         Row: {
           campaign_id: string
