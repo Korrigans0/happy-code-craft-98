@@ -1794,9 +1794,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
     // ── Tokens layer ──────────────────────────────────────────
     const tokensLayer = layers.find(l => l.id === "tokens");
-    if (tokensLayer?.visible) {
+    if (tokensLayer?.visible && lTokens.visible) {
       ctx.save();
-      ctx.globalAlpha = tokensLayer.opacity / 100;
+      ctx.globalAlpha = (tokensLayer.opacity / 100) * lTokens.alpha;
+
 
       for (const __t of tokens) {
         // Apply slide animation to displayed position (does not mutate state)
