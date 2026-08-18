@@ -27,6 +27,29 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any>(null);
+  const [recapLoading, setRecapLoading] = useState<"players" | "gm" | null>(null);
+
+  // Writes the session journal from the real table log (chat + rolls + agenda + notes).
+  const writeRecap = useCallback(
+    async (audience: "players" | "gm") => {
+      if (!editingSession?.id) return;
+      setRecapLoading(audience);
+      try {
+        const { recap, messageCount } = await generateSessionRecap(editingSession.id, audience);
+        setEditingSession((s: any) => ({ ...s, recap }));
+        toast({
+          title: "Récit généré",
+          description: `Rédigé à partir de ${messageCount} message(s) de table. Relisez avant de partager.`,
+        });
+      } catch (e: any) {
+        toast({ title: "Récit IA", description: e.message, variant: "destructive" });
+      } finally {
+        setRecapLoading(null);
+      }
+    },
+    [editingSession?.id],
+  );
+
   const [newSession, setNewSession] = useState({
     title: "",
     description: "",
