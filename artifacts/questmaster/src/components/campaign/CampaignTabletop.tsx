@@ -3675,7 +3675,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{scene.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {scene.tokens.length} jeton{scene.tokens.length !== 1 ? "s" : ""} • {scene.drawings.length} dessin{scene.drawings.length !== 1 ? "s" : ""}
+                        {(scene.tokens?.length ?? 0)} jeton{(scene.tokens?.length ?? 0) !== 1 ? "s" : ""} • {(scene.drawings?.length ?? 0)} dessin{(scene.drawings?.length ?? 0) !== 1 ? "s" : ""} • {(scene.walls?.length ?? 0)} mur{(scene.walls?.length ?? 0) !== 1 ? "s" : ""} • {(scene.lights?.length ?? 0)} lum.
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -3688,6 +3688,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => duplicateScene(scene.id)}
+                        className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Dupliquer" aria-label="Dupliquer"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
                       <button
                         onClick={() => renameScene(scene.id)}
                         className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -3735,8 +3742,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                       className="w-full h-7 text-xs gap-1"
                       onClick={() => {
                         const saved = saveCurrentScene();
-                        setScenes(prev => prev.map(s => s.id === activeSceneId ? { ...saved, id: activeSceneId } : s));
-                        toast({ title: "Scène sauvegardée ✓" });
+                        persistScenes(scenes.map(s => s.id === activeSceneId ? { ...saved, id: activeSceneId } : s), activeSceneId);
+                        toast({ title: "Scène sauvegardée ✓", description: "Contenu, murs et lumières conservés." });
                       }}
                     >
                       <Copy className="h-3.5 w-3.5" />
