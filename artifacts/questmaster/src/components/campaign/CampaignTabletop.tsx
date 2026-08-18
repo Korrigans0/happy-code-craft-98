@@ -1610,7 +1610,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
         for (const action of visibleActions) {
           octx.save();
+          octx.globalAlpha = effectiveLayer(vttLayers, layerForDrawing(action.layer), isGM).alpha;
           octx.strokeStyle = action.color;
+
           octx.fillStyle = action.color;
           octx.lineWidth = action.size / zoom;
           octx.lineCap = "round";
