@@ -28,6 +28,7 @@ import GMTools from "@/components/campaign/GMTools";
 import CampaignCodex from "@/components/campaign/codex/CampaignCodex";
 import CampaignHistory from "@/components/campaign/CampaignHistory";
 import CampaignPrep from "@/components/campaign/prep/CampaignPrep";
+import { parseTheme, themeStyle } from "@/lib/campaign/theme";
 
 interface Campaign {
   id: string;
@@ -39,6 +40,7 @@ interface Campaign {
   invite_code?: string | null;
   discord_link?: string | null;
   created_at: string;
+  theme?: unknown;
 }
 
 const CampaignPlay = () => {
@@ -185,8 +187,10 @@ const CampaignPlay = () => {
     );
   }
 
+  const campaignTheme = parseTheme(campaign.theme);
+
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-dark">
+    <div className="flex min-h-screen flex-col bg-gradient-dark" style={themeStyle(campaignTheme)}>
       <Header />
       <main className="flex flex-1 flex-col">
 
@@ -217,7 +221,7 @@ const CampaignPlay = () => {
                   )}
                 </div>
                 <p className="hidden text-sm text-muted-foreground sm:block truncate">
-                  {campaign.description || "Pas de description"}
+                  {campaignTheme.tagline || campaign.description || "Pas de description"}
                 </p>
               </div>
             </div>

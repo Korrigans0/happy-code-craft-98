@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { BannerUpload } from "@/components/campaign/BannerUpload";
+import CampaignThemeCard from "@/components/campaign/CampaignThemeCard";
 import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
 
 import {
@@ -42,6 +43,7 @@ interface Campaign {
   schedule?: string | null;
   tone?: string | null;
   tags?: string[] | null;
+  theme?: unknown;
 }
 
 interface CampaignSettingsProps {
@@ -619,6 +621,8 @@ const CampaignSettings = ({ campaign }: CampaignSettingsProps) => {
           <CardTitle className="text-destructive">Zone de danger</CardTitle>
           <CardDescription>Actions irréversibles — impossible d'annuler</CardDescription>
         </CardHeader>
+      <CampaignThemeCard campaignId={campaign.id} theme={campaign.theme} />
+
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             La suppression efface définitivement la campagne, tous ses messages, notes, sessions,
