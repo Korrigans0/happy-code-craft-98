@@ -448,6 +448,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // always-fresh ref so the animation loop never captures a stale redrawCanvas
   const redrawCanvasRef = useRef<() => void>(() => {});
 
+  // Offscreen buffers pooled across frames: allocating a canvas per frame
+  // (drawings / fog / lights) was the main source of GC pauses on big maps.
+  const scratchRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
+  const getScratch = useCallback((key: string, w: number, h: number) => {
+    let c = scratchRef.current.get(key);
+    if (!c) {
+      c = document.createElement("canvas");
+      scratchRef.current.set(key, c);
+    }
+    if (c.width !== w || c.height !== h) {
+      c.width = w;
+      c.height = h;
+    } else {
+      const cx = c.getContext("2d");
+      if (cx) {
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.globalAlpha = 1;
+        cx.globalCompositeOperation = "source-over";
+        cx.clearRect(0, 0, w, h);
+      }
+    }
+    return c;
+  }, []);
+
+
   // Throttle le redraw de la preview de mur sur un seul frame (dessin fluide)
   const wallPreviewRafRef = useRef<number | null>(null);
   const wallPreviewFrameRef = useRef(0);
@@ -1072,6 +1097,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     }));
   };
 
+  const rotateTokenRef = useRef<(tokenId: string, deg: number) => void>(() => {});
   const rotateToken = (tokenId: string, deg: number) => {
     setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, rotation: (t.rotation + deg + 360) % 360 } : t));
   };
@@ -1617,10 +1643,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // il n'est rendu que si ce calque est visible pour le rôle courant.
     const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
-      const off = document.createElement("canvas");
-      off.width = canvas.width;
-      off.height = canvas.height;
+      const off = getScratch("drawings", canvas.width, canvas.height);
       const octx = off.getContext("2d");
+
       if (octx) {
         octx.translate(panOffset.x, panOffset.y);
         octx.scale(zoom, zoom);
@@ -2152,10 +2177,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ctx.restore();
     }
     if (fogLayer?.visible && lFog.visible) {
-      const tmp = document.createElement("canvas");
-      tmp.width = canvas.width;
-      tmp.height = canvas.height;
+      const tmp = getScratch("fog", canvas.width, canvas.height);
       const tCtx = tmp.getContext("2d")!;
+
 
       // Fond du brouillard
       tCtx.fillStyle = `rgba(0, 0, 0, ${(fogLayer.opacity / 100) * lFog.alpha})`;
@@ -2229,10 +2253,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         .filter(w => w.type === "solid" || (w.type === "door" && !w.isOpen))
         .map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }));
 
-      const tmp2 = document.createElement("canvas");
-      tmp2.width = canvas.width;
-      tmp2.height = canvas.height;
+      const tmp2 = getScratch("lights", canvas.width, canvas.height);
       const lCtx = tmp2.getContext("2d")!;
+
 
       // Voile de nuit : bleu nuit profond plutôt qu'un noir plat
       if (lightsHook.nightMode) {
@@ -2363,7 +2386,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, vttLayers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, vttLayers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure, getScratch]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
@@ -2384,7 +2407,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     return () => ro.disconnect();
   }, [redrawCanvas]);
 
-  useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
+  // Redraw coalescé sur une frame : plusieurs mises à jour d'état (tokens,
+  // murs, lumières, sélection…) dans le même tick ne repeignent qu'une fois.
+  const scheduledRedrawRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (scheduledRedrawRef.current != null) return;
+    scheduledRedrawRef.current = requestAnimationFrame(() => {
+      scheduledRedrawRef.current = null;
+      redrawCanvasRef.current();
+    });
+  }, [redrawCanvas]);
+  useEffect(() => () => {
+    if (scheduledRedrawRef.current != null) cancelAnimationFrame(scheduledRedrawRef.current);
+  }, []);
+
+  rotateTokenRef.current = rotateToken;
 
   // ── Wheel zoom ──
   useEffect(() => {
@@ -2395,22 +2432,27 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       const target = e.target as HTMLElement | null;
       if (target && target.closest('[data-vtt-allow-scroll]')) return;
       e.preventDefault();
-      if (e.shiftKey && selectedTokenId) { rotateToken(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
+      if (e.shiftKey && selectedTokenId) { rotateTokenRef.current(selectedTokenId, e.deltaY > 0 ? 15 : -15); return; }
       const canvas = canvasRef.current; if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom(prev => {
-        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev + delta));
-        if (next === prev) return prev;
-        const wx = (mx - panOffset.x) / prev, wy = (my - panOffset.y) / prev;
-        setPanOffset({ x: mx - wx * next, y: my - wy * next });
-        return next;
-      });
+      // Zoom exponentiel proportionnel au delta : un flick de trackpad émet
+      // des dizaines d'events, un pas fixe saturerait le zoom instantanément.
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const prev = zoomRef.current;
+      const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev * Math.exp(-dy * 0.0015)));
+      if (next === prev) return;
+      const pan = panOffsetRef.current;
+      const k = next / prev;
+      const nextPan = { x: mx - (mx - pan.x) * k, y: my - (my - pan.y) * k };
+      zoomRef.current = next;
+      panOffsetRef.current = nextPan;
+      setZoom(next);
+      setPanOffset(nextPan);
     };
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [selectedTokenId, panOffset]);
+  }, [selectedTokenId]);
 
   // ── Touch support ──
   useEffect(() => {
