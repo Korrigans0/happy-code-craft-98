@@ -574,6 +574,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       // ── Documents partagés (PDF pop-up) ──
       const incomingDocs = (state as any).shared_documents;
       if (has("shared_documents") && Array.isArray(incomingDocs)) setSharedDocs(incomingDocs as SharedDocument[]);
+      // ── Calques (persistés + diffusés en temps réel) ──
+      if (has("layers") && (state as any).layers) {
+        setVttLayers(normalizeLayers((state as any).layers));
+      }
+
 
     },
     debounceMs: 250,
