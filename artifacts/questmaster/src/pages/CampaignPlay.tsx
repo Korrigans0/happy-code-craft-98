@@ -307,10 +307,8 @@ const CampaignPlay = () => {
                     />
                   </div>
 
-                  {/* Panneau Calques flottant — ancré sous la toolbar */}
-                  {isGM && layersOpen && (
-                    <LayersPanel campaignId={id!} onClose={() => setLayersOpen(false)} />
-                  )}
+                  {/* Le panneau Calques est monté par CampaignTabletop (état partagé avec le rendu) */}
+
 
 
 
