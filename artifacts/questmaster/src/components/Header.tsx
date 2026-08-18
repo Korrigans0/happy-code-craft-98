@@ -1,7 +1,7 @@
 import {
   Menu, X, User, BookOpen,
   Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle, Library as LibraryIcon,
-  Sparkles, LayoutDashboard, Hammer, Package,
+  Sparkles, LayoutDashboard, Hammer, Package, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -15,20 +15,45 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { profilesApi } from "@/lib/api";
 
-const navLinks = [
-  { to: "/", label: "Accueil", icon: Home },
-  { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { to: "/campaigns", label: "Campagnes", icon: Map },
-  { to: "/characters", label: "Personnages", icon: User },
-  { to: "/compendium", label: "Codex", icon: BookOpen },
-  { to: "/library", label: "Bibliothèque", icon: LibraryIcon },
-  { to: "/atelier", label: "Atelier", icon: Hammer },
-  { to: "/marketplace", label: "Boutique", icon: Package },
-  { to: "/systems", label: "Systèmes", icon: Sparkles },
-  { to: "/guide", label: "Guide", icon: HelpCircle },
-  { to: "/subscriptions", label: "Abonnements", icon: Crown },
-  { to: "/partners", label: "Partenaires", icon: Handshake },
+type NavItem = { to: string; label: string; icon: typeof Home; description?: string };
+type NavGroup = { id: string; label: string; icon: typeof Home; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  { id: "home", label: "Accueil", icon: Home, items: [{ to: "/", label: "Accueil", icon: Home }] },
+  {
+    id: "play",
+    label: "Jouer",
+    icon: Map,
+    items: [
+      { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, description: "Vue d'ensemble" },
+      { to: "/campaigns", label: "Campagnes", icon: Map, description: "Vos tables de jeu" },
+      { to: "/characters", label: "Personnages", icon: User, description: "Vos fiches" },
+    ],
+  },
+  {
+    id: "content",
+    label: "Contenu",
+    icon: LibraryIcon,
+    items: [
+      { to: "/compendium", label: "Codex", icon: BookOpen, description: "Créatures, objets, sorts" },
+      { to: "/library", label: "Bibliothèque", icon: LibraryIcon, description: "Vos ressources" },
+      { to: "/atelier", label: "Atelier", icon: Hammer, description: "Créations maison" },
+      { to: "/marketplace", label: "Boutique", icon: Package, description: "Packs communautaires" },
+    ],
+  },
+  { id: "systems", label: "Systèmes", icon: Sparkles, items: [{ to: "/systems", label: "Systèmes", icon: Sparkles }] },
+  {
+    id: "more",
+    label: "Plus",
+    icon: HelpCircle,
+    items: [
+      { to: "/guide", label: "Guide", icon: HelpCircle, description: "Prise en main" },
+      { to: "/subscriptions", label: "Abonnements", icon: Crown, description: "Offres et quotas" },
+      { to: "/partners", label: "Partenaires", icon: Handshake, description: "Nos partenaires" },
+    ],
+  },
 ];
+
 
 const Header = () => {
   const location = useLocation();
@@ -92,33 +117,74 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* ── Navigation desktop ── */}
+          {/* ── Navigation desktop (groupée) ── */}
           <nav className="hidden items-center gap-0.5 md:flex">
-            {navLinks.map((link) => {
-              const active = isActive(link.to);
+            {navGroups.map((group) => {
+              const activeItem = group.items.find((i) => isActive(i.to));
+              const active = Boolean(activeItem);
+              const baseClass = `relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
+                active ? "text-amber-400" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              }`;
+              const baseStyle = active ? { background: "hsl(43,75%,50%,0.10)" } : undefined;
+
+              if (group.items.length === 1) {
+                const item = group.items[0];
+                return (
+                  <Link key={group.id} to={item.to} className={baseClass} style={baseStyle}>
+                    <group.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
+                    {group.label}
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
+                        style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
+                    )}
+                  </Link>
+                );
+              }
+
               return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? "text-amber-400"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                  }`}
-                  style={active ? {
-                    background: "hsl(43,75%,50%,0.10)",
-                  } : undefined}
-                >
-                  <link.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
-                  {link.label}
-                  {active && (
-                    <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
-                      style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
-                  )}
-                </Link>
+                <DropdownMenu key={group.id}>
+                  <DropdownMenuTrigger className={baseClass} style={baseStyle}>
+                    <group.icon className={`h-4 w-4 ${active ? "text-amber-400" : ""}`} />
+                    {activeItem ? activeItem.label : group.label}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full"
+                        style={{ background: "linear-gradient(90deg, transparent, hsl(43,75%,55%), transparent)" }} />
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-60"
+                    style={{
+                      background: "hsl(228,68%,10%)",
+                      border: "1px solid hsl(43,75%,50%,0.2)",
+                      boxShadow: "0 20px 60px hsl(0,0%,0%,0.7)",
+                    }}
+                  >
+                    {group.items.map((item) => (
+                      <DropdownMenuItem key={item.to} asChild>
+                        <Link
+                          to={item.to}
+                          className={`flex items-start gap-2 cursor-pointer ${
+                            isActive(item.to) ? "text-amber-400" : "text-slate-300"
+                          }`}
+                        >
+                          <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-500/60" />
+                          <span className="flex flex-col">
+                            <span className="text-sm">{item.label}</span>
+                            {item.description && (
+                              <span className="text-xs text-slate-500">{item.description}</span>
+                            )}
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               );
             })}
           </nav>
+
 
           {/* ── Droite : profil + burger ── */}
           <div className="flex items-center gap-2">
@@ -243,28 +309,38 @@ const Header = () => {
           }}
         >
           <nav className="container mx-auto p-4 space-y-1">
-            {navLinks.map((link) => {
-              const active = isActive(link.to);
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                    active
-                      ? "text-amber-400"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                  }`}
-                  style={active ? {
-                    background: "hsl(43,75%,50%,0.10)",
-                    borderLeft: "3px solid hsl(43,75%,50%)",
-                  } : undefined}
-                >
-                  <link.icon className={`h-5 w-5 ${active ? "text-amber-400" : "text-slate-500"}`} />
-                  {link.label}
-                </Link>
-              );
-            })}
+            {navGroups.map((group) => (
+              <div key={group.id} className="space-y-1">
+                {group.items.length > 1 && (
+                  <p className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-[2px] text-amber-500/50">
+                    {group.label}
+                  </p>
+                )}
+                {group.items.map((link) => {
+                  const active = isActive(link.to);
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                        active
+                          ? "text-amber-400"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      }`}
+                      style={active ? {
+                        background: "hsl(43,75%,50%,0.10)",
+                        borderLeft: "3px solid hsl(43,75%,50%)",
+                      } : undefined}
+                    >
+                      <link.icon className={`h-5 w-5 ${active ? "text-amber-400" : "text-slate-500"}`} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+
 
             <div className="pt-2 border-t border-white/5">
               {user ? (
