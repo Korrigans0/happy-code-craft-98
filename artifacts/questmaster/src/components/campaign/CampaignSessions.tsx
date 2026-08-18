@@ -13,7 +13,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import SessionAgenda from "./SessionAgenda";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck } from "lucide-react";
+import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck, Sparkles, Loader2 } from "lucide-react";
+import { generateSessionRecap } from "@/lib/ai/generation";
+
 
 
 interface CampaignSessionsProps {
@@ -25,6 +27,29 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<any>(null);
+  const [recapLoading, setRecapLoading] = useState<"players" | "gm" | null>(null);
+
+  // Writes the session journal from the real table log (chat + rolls + agenda + notes).
+  const writeRecap = useCallback(
+    async (audience: "players" | "gm") => {
+      if (!editingSession?.id) return;
+      setRecapLoading(audience);
+      try {
+        const { recap, messageCount } = await generateSessionRecap(editingSession.id, audience);
+        setEditingSession((s: any) => ({ ...s, recap }));
+        toast({
+          title: "Récit généré",
+          description: `Rédigé à partir de ${messageCount} message(s) de table. Relisez avant de partager.`,
+        });
+      } catch (e: any) {
+        toast({ title: "Récit IA", description: e.message, variant: "destructive" });
+      } finally {
+        setRecapLoading(null);
+      }
+    },
+    [editingSession?.id],
+  );
+
   const [newSession, setNewSession] = useState({
     title: "",
     description: "",
@@ -392,13 +417,48 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Résumé d'après-partie</Label>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label>Résumé d'après-partie</Label>
+                  {isGM && (
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={!!recapLoading}
+                        onClick={() => writeRecap("players")}
+                      >
+                        {recapLoading === "players" ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Récit IA (joueurs)
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={!!recapLoading}
+                        onClick={() => writeRecap("gm")}
+                      >
+                        {recapLoading === "gm" ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Version MJ
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <Textarea
                   value={editingSession.recap || ""}
                   onChange={(e) => setEditingSession((s: any) => ({ ...s, recap: e.target.value }))}
                   placeholder="Ce que les joueurs ont accompli, à partager avec la table..."
                   rows={4}
                 />
+
                 <div className="flex items-center justify-between rounded-md border border-border/60 p-3">
                   <div>
                     <p className="text-sm text-foreground">Partager le résumé aux joueurs</p>

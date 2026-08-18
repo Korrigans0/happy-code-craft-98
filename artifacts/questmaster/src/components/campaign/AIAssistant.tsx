@@ -28,12 +28,14 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { codexApi } from "@/lib/codex/api";
 import type { EntityKind } from "@/lib/codex/types";
+import AiEntityGenerator from "./AiEntityGenerator";
 import {
   aiConversationsApi,
   deriveTitle,
   type AiChatMessage,
   type AiConversationSummary,
 } from "@/lib/ai/conversations";
+
 
 const SUPABASE_URL =
   ((import.meta as any).env?.VITE_SUPABASE_URL as string | undefined) ||
@@ -76,6 +78,8 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
   const [history, setHistory] = useState<AiConversationSummary[]>([]);
   const [search, setSearch] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [generatorOpen, setGeneratorOpen] = useState(false);
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -390,6 +394,25 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
               <div className="mt-3 min-h-0 flex-1">{historyPanel}</div>
             </SheetContent>
           </Sheet>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary/40 text-primary"
+            onClick={() => setGeneratorOpen(true)}
+          >
+            <BookPlus className="mr-1 h-3.5 w-3.5" /> Fiche structurée
+          </Button>
+
+          <AiEntityGenerator
+            campaignId={campaignId}
+            system={system}
+            open={generatorOpen}
+            onOpenChange={setGeneratorOpen}
+            initialKind={lastKind}
+          />
+
+
 
           {QUICK_PROMPTS.map((q) => (
             <Button
