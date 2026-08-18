@@ -13,7 +13,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import SessionAgenda from "./SessionAgenda";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck } from "lucide-react";
+import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck, Sparkles, Loader2 } from "lucide-react";
+import { generateSessionRecap } from "@/lib/ai/generation";
+
 
 
 interface CampaignSessionsProps {
