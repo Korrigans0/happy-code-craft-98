@@ -134,7 +134,9 @@ export async function fetchOfficialContent(
   const existing = INFLIGHT.get(key);
   if (existing) return existing;
 
-  const promise = requestOfficialContent(params, signal)
+  // Le signal n'est volontairement pas transmis : la requête est partagée entre
+  // consommateurs, l'appelant filtre lui-même les réponses obsolètes.
+  const promise = requestOfficialContent(params)
     .then((page) => {
       rememberPage(key, page);
       return page;
