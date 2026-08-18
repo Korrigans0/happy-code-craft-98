@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { compendiumApi } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useCompendiumList } from "@/hooks/useCompendiumList";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,38 +25,35 @@ interface SpellsListProps {
 }
 
 const SpellsList = ({ searchQuery, system }: SpellsListProps) => {
-  const [spells, setSpells] = useState<Spell[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: spells, loading } = useCompendiumList<Spell>("spells", system);
+  const search = useDebouncedValue(searchQuery, 220).toLowerCase();
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [schoolFilter, setSchoolFilter] = useState<string>("all");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [expandedSpell, setExpandedSpell] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSpells();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [system]);
+  const filteredSpells = useMemo(
+    () =>
+      spells.filter((spell) => {
+        const matchesSearch =
+          !search ||
+          spell.name.toLowerCase().includes(search) ||
+          spell.description.toLowerCase().includes(search);
+        const matchesLevel = levelFilter === "all" || spell.level.toString() === levelFilter;
+        const matchesSchool = schoolFilter === "all" || spell.school === schoolFilter;
+        const matchesClass = classFilter === "all" || spell.classes.includes(classFilter);
+        return matchesSearch && matchesLevel && matchesSchool && matchesClass;
+      }),
+    [spells, search, levelFilter, schoolFilter, classFilter],
+  );
 
-  const fetchSpells = async () => {
-    setLoading(true);
-    try {
-      const data = await compendiumApi.getSpells(system);
-      setSpells((data as Spell[]) || []);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  };
-
-  const filteredSpells = spells.filter((spell) => {
-    const matchesSearch = spell.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      spell.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === "all" || spell.level.toString() === levelFilter;
-    const matchesSchool = schoolFilter === "all" || spell.school === schoolFilter;
-    const matchesClass = classFilter === "all" || spell.classes.includes(classFilter);
-    return matchesSearch && matchesLevel && matchesSchool && matchesClass;
-  });
-
-  const schools = [...new Set(spells.map(s => s.school))];
-  const classes = [...new Set(spells.flatMap(s => s.classes))];
+  const { schools, classes } = useMemo(
+    () => ({
+      schools: [...new Set(spells.map((s) => s.school))],
+      classes: [...new Set(spells.flatMap((s) => s.classes))],
+    }),
+    [spells],
+  );
 
   const getLevelLabel = (level: number) => {
     if (level === 0) return "Tour de magie";
