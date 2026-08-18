@@ -1548,11 +1548,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const viewRight = viewLeft + canvas.width / zoom;
     const viewBottom = viewTop + canvas.height / zoom;
 
+    // ── Calques canoniques : état effectif pour le rôle courant ──
+    const lBackground = effectiveLayer(vttLayers, "background", isGM);
+    const lTokens = effectiveLayer(vttLayers, "tokens", isGM);
+    const lFog = effectiveLayer(vttLayers, "fog", isGM);
+
     // ── Grille (calque dédié « grid », verrouillé) ────────────
     // Rendue avant la carte et les dessins : jamais affectée par la gomme,
     // le dessin libre ou le brouillard, qui vivent sur d'autres calques.
     const gridLayer = layers.find(l => l.id === "grid");
-    if (gridLayer?.visible !== false) {
+    if (gridLayer?.visible !== false && lBackground.visible) {
+      ctx.save();
+      ctx.globalAlpha = lBackground.alpha;
       drawGrid(
         ctx,
         grid,
@@ -1560,13 +1567,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         { minor: plateauColors.gridMinor, major: plateauColors.gridMajor },
         zoom,
       );
+      ctx.restore();
     }
 
     // ── Map layer ─────────────────────────────────────────────
     const mapLayer = layers.find(l => l.id === "map");
-    if (mapLayer?.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
+    if (mapLayer?.visible && lBackground.visible && mapImageRef.current && mapImageRef.current.naturalWidth > 0 && mapImageRef.current.naturalHeight > 0) {
       ctx.save();
-      ctx.globalAlpha = mapLayer.opacity / 100;
+      ctx.globalAlpha = (mapLayer.opacity / 100) * lBackground.alpha;
       const mScale = mapLayer.scale ?? 1;
       try {
         ctx.drawImage(
@@ -1581,7 +1589,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
-    // Rendu sur canvas offscreen pour isoler la gomme du fond/grille/carte.
+    // Chaque dessin porte un calque canonique (décor / objets / effets / MJ) :
+    // il n'est rendu que si ce calque est visible pour le rôle courant.
     const drawingsLayer = layers.find(l => l.id === "drawings");
     if (drawingsLayer?.visible) {
       const off = document.createElement("canvas");
@@ -1592,9 +1601,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         octx.translate(panOffset.x, panOffset.y);
         octx.scale(zoom, zoom);
 
-        const visibleActions = actions.filter(a =>
-          a.layer === "drawings" && (a.type as string) !== "fogReveal"
-        );
+        const visibleActions = actions.filter(a => {
+          if ((a.type as string) === "fogReveal") return false;
+          const eff = effectiveLayer(vttLayers, layerForDrawing(a.layer), isGM);
+          return eff.visible;
+        });
+
 
         for (const action of visibleActions) {
           octx.save();
