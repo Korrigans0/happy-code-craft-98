@@ -246,7 +246,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     { id: "drawings", name: "Dessins", type: "drawings", visible: true, locked: false, opacity: 100 },
     { id: "fog", name: "Brouillard", type: "fog", visible: false, locked: false, opacity: 80 },
   ]);
-  const [activeDrawLayer, setActiveDrawLayer] = useState("drawings");
+  // ── Calques canoniques VTT (persistés dans tabletop_state.layers) ──
+  const [vttLayers, setVttLayers] = useState<LayersState>(DEFAULT_LAYERS);
+  const [activeVttLayer, setActiveVttLayer] = useState<LayerId>("effects");
+  const activeDrawLayer = DRAWABLE_LAYERS.includes(activeVttLayer) ? activeVttLayer : "effects";
+
 
   // ── UI state ──
   const [snapToGrid, setSnapToGrid] = useState(true);
