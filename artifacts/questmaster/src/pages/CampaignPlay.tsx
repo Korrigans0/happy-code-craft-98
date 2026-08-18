@@ -366,7 +366,7 @@ const CampaignPlay = () => {
               </TabsContent>
               {isGM && (
                 <TabsContent value="assistant" className="m-0 h-full">
-                  <AIAssistant campaignId={id!} system={campaign.system} />
+                  <AIAssistant campaignId={id!} system={campaign.system ?? "custom"} />
                 </TabsContent>
               )}
               {isGM && (
