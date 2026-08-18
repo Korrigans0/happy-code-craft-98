@@ -2252,10 +2252,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         .filter(w => w.type === "solid" || (w.type === "door" && !w.isOpen))
         .map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }));
 
-      const tmp2 = document.createElement("canvas");
-      tmp2.width = canvas.width;
-      tmp2.height = canvas.height;
+      const tmp2 = getScratch("lights", canvas.width, canvas.height);
       const lCtx = tmp2.getContext("2d")!;
+
 
       // Voile de nuit : bleu nuit profond plutôt qu'un noir plat
       if (lightsHook.nightMode) {
