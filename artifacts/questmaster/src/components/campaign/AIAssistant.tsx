@@ -395,6 +395,25 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
             </SheetContent>
           </Sheet>
 
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary/40 text-primary"
+            onClick={() => setGeneratorOpen(true)}
+          >
+            <BookPlus className="mr-1 h-3.5 w-3.5" /> Fiche structurée
+          </Button>
+
+          <AiEntityGenerator
+            campaignId={campaignId}
+            system={system}
+            open={generatorOpen}
+            onOpenChange={setGeneratorOpen}
+            initialKind={lastKind}
+          />
+
+
+
           {QUICK_PROMPTS.map((q) => (
             <Button
               key={q.label}
