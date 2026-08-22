@@ -4372,6 +4372,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             />
           )}
 
+          {/* Générateur de carte procédurale — MJ uniquement */}
+          {isGM && (
+            <MapGeneratorDialog
+              open={mapGenOpen}
+              onOpenChange={setMapGenOpen}
+              cellSize={Math.round(cellPx)}
+              onApply={applyGeneratedMap}
+            />
+          )}
+
           {/* Raccourcis clavier — modal */}
           {shortcutsHelpOpen && (
             <div
