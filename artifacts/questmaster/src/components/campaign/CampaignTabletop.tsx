@@ -35,6 +35,8 @@ const DiceRoller3D = lazy(() => import("./DiceRoller3D"));
 import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
+import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
+import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
