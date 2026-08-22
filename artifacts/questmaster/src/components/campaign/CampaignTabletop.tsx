@@ -35,6 +35,8 @@ const DiceRoller3D = lazy(() => import("./DiceRoller3D"));
 import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
+import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
+import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
@@ -262,6 +264,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [diceOpen, setDiceOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [mapGenOpen, setMapGenOpen] = useState(false);
   const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
@@ -1404,6 +1407,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     reader.readAsDataURL(file);
     e.target.value = "";
   };
+
+  // ── Carte procédurale ──
+  const applyGeneratedMap = useCallback((map: GeneratedMap, o: { replaceWalls: boolean }) => {
+    if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
+    const img = new window.Image();
+    img.onload = () => {
+      mapImageRef.current = img;
+      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: map.dataUrl, scale: 1 } : l));
+      saveState({ map_image_url: map.dataUrl }, { immediate: true });
+    };
+    img.src = map.dataUrl;
+
+    if (map.walls.length) {
+      if (o.replaceWalls) wallsHook.clearAllWalls();
+      wallsHook.addWalls(map.walls);
+    } else if (o.replaceWalls) {
+      wallsHook.clearAllWalls();
+    }
+    toast({
+      title: "Carte générée",
+      description: `${map.cols}×${map.rows} cases${map.walls.length ? ` · ${map.walls.length} murs` : ""}.`,
+    });
+  }, [perms.canEditMap, saveState, wallsHook]);
+
+
 
   // ── Initiative helpers ──
   const addToInitiative = (entry: Omit<InitiativeEntry, "id">) => {
@@ -3836,6 +3864,15 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     </span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
                   </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-full gap-2 text-xs"
+                    onClick={() => setMapGenOpen(true)}
+                  >
+                    <Wand2 className="h-3.5 w-3.5 text-primary" />
+                    Générer une carte
+                  </Button>
                   {layers.find(l => l.id === "map")?.imageUrl && (
                     <>
                       <div className="space-y-1.5">
@@ -4334,6 +4371,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
               onUpdateToken={ctxToken ? updateToken : undefined}
               hasClipboard={hasClipboard}
+            />
+          )}
+
+          {/* Générateur de carte procédurale — MJ uniquement */}
+          {isGM && (
+            <MapGeneratorDialog
+              open={mapGenOpen}
+              onOpenChange={setMapGenOpen}
+              cellSize={Math.round(cellPx)}
+              onApply={applyGeneratedMap}
             />
           )}
 
