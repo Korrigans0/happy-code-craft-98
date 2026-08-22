@@ -1406,6 +1406,31 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     e.target.value = "";
   };
 
+  // ── Carte procédurale ──
+  const applyGeneratedMap = useCallback((map: GeneratedMap, o: { replaceWalls: boolean }) => {
+    if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
+    const img = new window.Image();
+    img.onload = () => {
+      mapImageRef.current = img;
+      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: map.dataUrl, scale: 1 } : l));
+      saveState({ map_image_url: map.dataUrl }, { immediate: true });
+    };
+    img.src = map.dataUrl;
+
+    if (map.walls.length) {
+      if (o.replaceWalls) wallsHook.clearAllWalls();
+      wallsHook.addWalls(map.walls);
+    } else if (o.replaceWalls) {
+      wallsHook.clearAllWalls();
+    }
+    toast({
+      title: "Carte générée",
+      description: `${map.cols}×${map.rows} cases${map.walls.length ? ` · ${map.walls.length} murs` : ""}.`,
+    });
+  }, [perms.canEditMap, saveState, wallsHook]);
+
+
+
   // ── Initiative helpers ──
   const addToInitiative = (entry: Omit<InitiativeEntry, "id">) => {
     setInitiative(prev => [...prev, { ...entry, id: newId() }]);
