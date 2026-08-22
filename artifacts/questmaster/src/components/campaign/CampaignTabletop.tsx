@@ -3862,6 +3862,15 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     </span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleMapUpload} />
                   </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-full gap-2 text-xs"
+                    onClick={() => setMapGenOpen(true)}
+                  >
+                    <Wand2 className="h-3.5 w-3.5 text-primary" />
+                    Générer une carte
+                  </Button>
                   {layers.find(l => l.id === "map")?.imageUrl && (
                     <>
                       <div className="space-y-1.5">
