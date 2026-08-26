@@ -148,12 +148,19 @@ const SystemCodex = ({
   const [source, setSource] = useState<"official" | "community">(
     hasOfficialContent(system) ? "official" : "community",
   );
+  // Changement de système : on revient toujours au codex officiel du nouveau
+  // système (on ne conserve jamais le mode « Communauté & MJ »).
+  useEffect(() => {
+    setSource(hasOfficialContent(system) ? "official" : "community");
+    setTab("monsters");
+  }, [system]);
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => {
     invalidateCompendium();
     setRefreshKey((k) => k + 1);
   }, []);
   const official = hasOfficialContent(system);
+
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
