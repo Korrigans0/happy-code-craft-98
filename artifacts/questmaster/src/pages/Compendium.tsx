@@ -21,6 +21,7 @@ import Footer from "@/components/Footer";
 const WACreaturesList = lazy(() => import("@/components/compendium/WACreaturesList"));
 const WACodex = lazy(() => import("@/components/compendium/WACodex"));
 const WAHistoire = lazy(() => import("@/components/compendium/WAHistoire"));
+const WAWeapons = lazy(() => import("@/components/compendium/WAWeapons"));
 const AetheriaBestiary = lazy(() => import("@/components/compendium/AetheriaBestiary"));
 const AetheriaMatchups = lazy(() => import("@/components/compendium/AetheriaMatchups"));
 const MonstersList = lazy(() => import("@/components/compendium/MonstersList"));
@@ -148,12 +149,19 @@ const SystemCodex = ({
   const [source, setSource] = useState<"official" | "community">(
     hasOfficialContent(system) ? "official" : "community",
   );
+  // Changement de système : on revient toujours au codex officiel du nouveau
+  // système (on ne conserve jamais le mode « Communauté & MJ »).
+  useEffect(() => {
+    setSource(hasOfficialContent(system) ? "official" : "community");
+    setTab("monsters");
+  }, [system]);
   const [refreshKey, setRefreshKey] = useState(0);
   const triggerRefresh = useCallback(() => {
     invalidateCompendium();
     setRefreshKey((k) => k + 1);
   }, []);
   const official = hasOfficialContent(system);
+
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
@@ -342,6 +350,9 @@ const Compendium = () => {
                   <TabsTrigger value="wa-codex" className="text-xs sm:text-sm flex items-center gap-1.5">
                     <BookOpen className="h-3.5 w-3.5" /> Codex
                   </TabsTrigger>
+                  <TabsTrigger value="wa-weapons" className="text-xs sm:text-sm flex items-center gap-1.5">
+                    <Swords className="h-3.5 w-3.5" /> Armes
+                  </TabsTrigger>
                   <TabsTrigger value="wa-histoire" className="text-xs sm:text-sm flex items-center gap-1.5">
                     <Globe className="h-3.5 w-3.5" /> Histoire
                   </TabsTrigger>
@@ -351,6 +362,9 @@ const Compendium = () => {
                 <Suspense fallback={<CodexFallback />}><WACreaturesList key={`wa-${refreshKey}`} searchQuery={searchQuery} /></Suspense>
               </TabsContent>
               <TabsContent value="wa-codex"><Suspense fallback={<CodexFallback />}><WACodex /></Suspense></TabsContent>
+              <TabsContent value="wa-weapons">
+                <Suspense fallback={<CodexFallback />}><WAWeapons searchQuery={searchQuery} /></Suspense>
+              </TabsContent>
               <TabsContent value="wa-histoire"><Suspense fallback={<CodexFallback />}><WAHistoire /></Suspense></TabsContent>
             </Tabs>
           )}
