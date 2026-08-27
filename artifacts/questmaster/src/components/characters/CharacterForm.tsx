@@ -87,9 +87,58 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     }
   }, [character]);
 
+  // Bornes de niveau propres au système (WA : 1–8).
+  const minLevel = systemDef.minLevel ?? 1;
+  const maxLevel = systemDef.maxLevel ?? 20;
+
+  // Worlds Awakening : les valeurs dérivées sont entièrement formulaires
+  // (PV, Def PHY, Def MAG, PM). On les recalcule à la source dès qu'une
+  // donnée d'entrée change, ce qui corrige les PV « bloqués ».
+  const isWA = (formData.system as string) === "Worlds Awakening";
+  useEffect(() => {
+    if (!isWA) return;
+    setFormData((prev) => {
+      const level = Math.min(WA_MAX_LEVEL, Math.max(1, prev.level || 1));
+      const con = prev.constitution ?? 0;
+      const sag = prev.wisdom ?? 0;
+      const magStat = waMagicStat(prev.class);
+      const magValue = magStat === "SAG" ? sag : (prev.intelligence ?? 0);
+      const maxHp = waMaxHp(prev.class, level, con);
+      const defPhy = waDefPhy(con, level);
+      const defMag = waDefMag(sag, level);
+      const pmMax = waMaxPm(magValue, level);
+      const prevHp = prev.hp ?? maxHp;
+      const next = {
+        ...prev,
+        level,
+        max_hp: maxHp,
+        hp: Math.min(prevHp, maxHp),
+        armor_class: defPhy,
+        initiative: defMag,
+        system_data: { ...(prev.system_data ?? {}), pm_max: pmMax, magic_stat: magStat },
+      };
+      const unchanged =
+        prev.level === next.level &&
+        prev.max_hp === next.max_hp &&
+        prev.hp === next.hp &&
+        prev.armor_class === next.armor_class &&
+        prev.initiative === next.initiative &&
+        (prev.system_data?.pm_max ?? null) === pmMax;
+      return unchanged ? prev : next;
+    });
+  }, [
+    isWA,
+    formData.class,
+    formData.level,
+    formData.constitution,
+    formData.wisdom,
+    formData.intelligence,
+  ]);
+
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
 
   const handleSubmit = () => {
     onSave(formData);
