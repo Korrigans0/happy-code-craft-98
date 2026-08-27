@@ -11,6 +11,8 @@ import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "
 import { toast } from "sonner";
 import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
 import { getSystem, SYSTEM_LIST } from "@/lib/systems";
+import { waMaxHp, waDefPhy, waDefMag, waMaxPm, waMagicStat, WA_MAX_LEVEL } from "@/lib/systems/wa-rules";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
@@ -87,9 +89,58 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     }
   }, [character]);
 
+  // Bornes de niveau propres au système (WA : 1–8).
+  const minLevel = systemDef.minLevel ?? 1;
+  const maxLevel = systemDef.maxLevel ?? 20;
+
+  // Worlds Awakening : les valeurs dérivées sont entièrement formulaires
+  // (PV, Def PHY, Def MAG, PM). On les recalcule à la source dès qu'une
+  // donnée d'entrée change, ce qui corrige les PV « bloqués ».
+  const isWA = (formData.system as string) === "Worlds Awakening";
+  useEffect(() => {
+    if (!isWA) return;
+    setFormData((prev) => {
+      const level = Math.min(WA_MAX_LEVEL, Math.max(1, prev.level || 1));
+      const con = prev.constitution ?? 0;
+      const sag = prev.wisdom ?? 0;
+      const magStat = waMagicStat(prev.class);
+      const magValue = magStat === "SAG" ? sag : (prev.intelligence ?? 0);
+      const maxHp = waMaxHp(prev.class, level, con);
+      const defPhy = waDefPhy(con, level);
+      const defMag = waDefMag(sag, level);
+      const pmMax = waMaxPm(magValue, level);
+      const prevHp = prev.hp ?? maxHp;
+      const next = {
+        ...prev,
+        level,
+        max_hp: maxHp,
+        hp: Math.min(prevHp, maxHp),
+        armor_class: defPhy,
+        initiative: defMag,
+        system_data: { ...(prev.system_data ?? {}), pm_max: pmMax, magic_stat: magStat },
+      };
+      const unchanged =
+        prev.level === next.level &&
+        prev.max_hp === next.max_hp &&
+        prev.hp === next.hp &&
+        prev.armor_class === next.armor_class &&
+        prev.initiative === next.initiative &&
+        (prev.system_data?.pm_max ?? null) === pmMax;
+      return unchanged ? prev : next;
+    });
+  }, [
+    isWA,
+    formData.class,
+    formData.level,
+    formData.constitution,
+    formData.wisdom,
+    formData.intelligence,
+  ]);
+
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
 
   const handleSubmit = () => {
     onSave(formData);
@@ -360,12 +411,19 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 <Input
                   id="level"
                   type="number"
-                  min={1}
-                  max={20}
+                  min={minLevel}
+                  max={maxLevel}
                   value={formData.level || 1}
-                  onChange={(e) => updateField("level", parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value) || minLevel;
+                    updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
+                  }}
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
+                </p>
               </div>
+
 
               {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
               {!character?.id && (
@@ -562,8 +620,12 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                   {WA_CLASS_META[formData.class || ""] && (
                     <p className="mt-1 text-xs text-muted-foreground">
                       Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie}
+                      {isWA && (
+                        <> — PV recalculés automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON). PM max : {(formData.system_data?.pm_max ?? 0) as number}.</>
+                      )}
                     </p>
                   )}
+
                 </div>
 
                 <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">

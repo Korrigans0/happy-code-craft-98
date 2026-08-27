@@ -136,6 +136,12 @@ export interface SystemDefinition {
   /** Unité de vitesse */
   speedUnit: string;
 
+  /** Niveau minimum autorisé à la création (défaut 1) */
+  minLevel?: number;
+  /** Niveau maximum autorisé par les règles du système (défaut 20) */
+  maxLevel?: number;
+
+
   /** Formule de dés de jet par défaut pour une stat (pour affichage) */
   defaultRollHint: string;
 
