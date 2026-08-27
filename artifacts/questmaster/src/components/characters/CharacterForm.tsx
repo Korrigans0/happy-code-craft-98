@@ -620,8 +620,12 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                   {WA_CLASS_META[formData.class || ""] && (
                     <p className="mt-1 text-xs text-muted-foreground">
                       Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie}
+                      {isWA && (
+                        <> — PV recalculés automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON). PM max : {(formData.system_data?.pm_max ?? 0) as number}.</>
+                      )}
                     </p>
                   )}
+
                 </div>
 
                 <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
