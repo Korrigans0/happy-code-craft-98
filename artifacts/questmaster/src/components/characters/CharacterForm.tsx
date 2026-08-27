@@ -360,12 +360,19 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 <Input
                   id="level"
                   type="number"
-                  min={1}
-                  max={20}
+                  min={minLevel}
+                  max={maxLevel}
                   value={formData.level || 1}
-                  onChange={(e) => updateField("level", parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value) || minLevel;
+                    updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
+                  }}
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
+                </p>
               </div>
+
 
               {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
               {!character?.id && (
