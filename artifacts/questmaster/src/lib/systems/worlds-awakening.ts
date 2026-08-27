@@ -56,6 +56,9 @@ export const WA_SYSTEM: SystemDefinition = {
   subclassesByClass: WA_TENUES,
   currency: "NX",
   speedUnit: "m",
+  minLevel: 1,
+  maxLevel: WA_MAX_LEVEL,
+
   defaultRollHint: "1d20 + mod",
   hasSpellcasting: false,
   hasTenues: true,
