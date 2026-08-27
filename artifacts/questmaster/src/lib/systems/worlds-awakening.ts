@@ -1,15 +1,23 @@
 import type { SystemDefinition, CalculationsAPI } from "./types";
 import { genericStatModifier } from "./types";
 import { WA_ASCENDANCES, WA_CLASSES, WA_TENUES } from "../wa-data";
+import { waMaxHp, waInitiative, WA_MAX_LEVEL } from "./wa-rules";
 
-// Worlds Awakening — système partenaire. Mécaniques identiques à Aetheria en v1
-// mais fiche dédiée (codex/univers distincts).
+// Worlds Awakening — système partenaire.
+// Règles officielles : PV = max des dés de vie au niveau 1, puis meilleur jet
+// du pool par niveau (nombre de jets selon CON). Def PHY/MAG = 10 + carac + niveau.
 const calculations: CalculationsAPI = {
   statModifier: genericStatModifier,
-  maxHp: ({ level, stats }) => 10 + (stats.CON ?? 0) * Math.max(1, level),
-  initiative: ({ stats }) => stats.DEX ?? 0,
-  attackBonus: ({ stats }) => stats.FOR ?? 0,
+  maxHp: ({ level, stats, subclass, systemData }) =>
+    waMaxHp(
+      (systemData?.class as string) ?? subclass,
+      level,
+      stats.CON ?? 0,
+    ),
+  initiative: ({ stats }) => waInitiative(stats.DEX ?? 0),
+  attackBonus: ({ stats, level }) => (stats.FOR ?? 0) + (level ?? 1),
 };
+
 
 export const WA_SYSTEM: SystemDefinition = {
   id: "Worlds Awakening",
