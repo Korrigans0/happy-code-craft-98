@@ -113,7 +113,10 @@ export const WA_EQUIPMENTS = [
   { name: "Carquois", bonus: "+1 Atq Distance", use: "Main Secondaire", price: "20 NX" },
   { name: "Encensoir sacré (G)", bonus: "+1 Régénération PM", use: "Main Principale", price: "60 NX" },
   { name: "Garde-Bras", bonus: "+1 Atq Contact", use: "Main Secondaire", price: "20 NX" },
+  { name: "Grimoire", bonus: "+1 Atq MAG", use: "Main Secondaire", price: "20 NX" },
+  { name: "Relique", bonus: "+1 Def MAG", use: "Main Secondaire", price: "20 NX" },
 ];
+
 
 // Configuration de système — délègue au registre multi-système.
 // `getSystemConfig(systemId)` retourne la config dérivée du SystemDefinition
