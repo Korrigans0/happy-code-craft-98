@@ -71,8 +71,17 @@ const GenericSystemSheet = ({ character, system, editable = false, onSave, onClo
               </div>
               <div>
                 <Label className="text-xs">Niveau</Label>
-                <Input type="number" min={1} value={local.level ?? 1}
-                  onChange={(e) => update("level", Number(e.target.value) || 1)} />
+                <Input
+                  type="number"
+                  min={system.minLevel ?? 1}
+                  max={system.maxLevel ?? 20}
+                  value={local.level ?? 1}
+                  onChange={(e) => {
+                    const min = system.minLevel ?? 1;
+                    const max = system.maxLevel ?? 20;
+                    update("level", Math.min(max, Math.max(min, Number(e.target.value) || min)));
+                  }}
+                />
               </div>
               <div>
                 <Label className="text-xs">Vit. ({system.speedUnit})</Label>
