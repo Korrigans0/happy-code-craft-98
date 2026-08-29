@@ -12,6 +12,7 @@ import { Heart, Brain, Sparkles, Dices } from "lucide-react";
 import { COC_SYSTEM } from "@/lib/systems/cthulhu7e";
 import { SheetHeader, SheetNotes, SheetInventory } from "./SheetSections";
 import { useAutosave } from "./useAutosave";
+import { readStats, legacyField } from "@/lib/systems/statBridge";
 
 interface Props {
   character: any;
@@ -29,9 +30,12 @@ const Cthulhu7eSheet = ({ character, editable = false, onSave, onClose, onEdit }
   const updateSysData = (patch: Record<string, any>) =>
     update("system_data", { ...sysData, ...patch });
 
-  const statsValues: Record<string, number> = sysData.stats ?? {};
-  const setStat = (key: string, v: number) =>
+  const statsValues: Record<string, number> = readStats(local, COC_SYSTEM);
+  const setStat = (key: string, v: number) => {
     updateSysData({ stats: { ...statsValues, [key]: v } });
+    const lf = legacyField(key);
+    if (lf) update(lf, v);
+  };
 
   const skillsState: Record<string, { value: number; used?: boolean }> = sysData.skills ?? {};
   const setSkill = (key: string, value: number) =>

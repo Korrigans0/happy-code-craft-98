@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
-import { getSystem, SYSTEM_LIST } from "@/lib/systems";
+import { getSystem, SYSTEM_LIST, getCalculations, DEFAULT_CALCULATIONS, type StatDef } from "@/lib/systems";
+import { readStat, readStats, writeStatPatch, readDefense } from "@/lib/systems/statBridge";
 import { waMaxHp, waDefPhy, waDefMag, waMaxPm, waMagicStat, WA_MAX_LEVEL } from "@/lib/systems/wa-rules";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -117,7 +118,12 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
         hp: Math.min(prevHp, maxHp),
         armor_class: defPhy,
         initiative: defMag,
-        system_data: { ...(prev.system_data ?? {}), pm_max: pmMax, magic_stat: magStat },
+        system_data: {
+          ...(prev.system_data ?? {}),
+          pm_max: pmMax,
+          magic_stat: magStat,
+          defenses: { ...((prev.system_data ?? {}).defenses ?? {}), phy_def: defPhy, mag_def: defMag },
+        },
       };
       const unchanged =
         prev.level === next.level &&
@@ -136,6 +142,54 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     formData.wisdom,
     formData.intelligence,
   ]);
+
+  // ── Caractéristiques & défenses pilotées par le système ────────────────────
+  // Les valeurs sont écrites dans system_data.stats (lu par toutes les fiches)
+  // ET dans les colonnes historiques quand une correspondance existe.
+  const setStat = (stat: StatDef, raw: number) => {
+    setFormData((prev) => ({ ...prev, ...writeStatPatch(prev, stat, raw) }));
+  };
+
+  const getDefense = (key: string, fallback: number) => readDefense(formData, key, fallback);
+
+  const setDefense = (key: string, value: number) => {
+    setFormData((prev) => {
+      const sysData = (prev.system_data as Record<string, any>) ?? {};
+      const next: Partial<Character> = {
+        ...prev,
+        system_data: { ...sysData, defenses: { ...(sysData.defenses ?? {}), [key]: value } },
+      };
+      // Miroir historique : CA / Déf. PHY -> armor_class, Déf. MAG -> initiative.
+      if (key === "ac" || key === "phy_def") next.armor_class = value;
+      if (key === "mag_def") next.initiative = value;
+      return next;
+    });
+  };
+
+  // PV conseillés par les calculs du système (hors WA, géré à part).
+  const suggestedMaxHp = (() => {
+    const calc = getCalculations(formData.system as string);
+    const stats = readStats(formData, systemDef);
+    const mods: Record<string, number> = {};
+    for (const s of systemDef.stats) mods[s.key] = calc.statModifier(s, stats[s.key]);
+    return Math.max(
+      1,
+      calc.maxHp({
+        level: formData.level ?? 1,
+        stats: mods,
+        subclass: formData.subclass,
+        systemData: (formData.system_data as Record<string, unknown>) ?? {},
+      }),
+    );
+  })();
+
+  const statModeLabel = (() => {
+    const modes = new Set(systemDef.stats.map((s) => s.mode));
+    if (modes.size !== 1) return "valeurs mixtes";
+    const m = systemDef.stats[0].mode;
+    return m === "score" ? "scores" : m === "percentage" ? "pourcentages" : "modificateurs";
+  })();
+
 
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -549,49 +603,66 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
             </div>
           </TabsContent>
 
-          {/* Stats — WA modifier-based */}
+          {/* Stats — pilotées par la définition du système actif */}
           <TabsContent value="stats" className="space-y-6">
             <div className="space-y-6">
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Bonus de caractéristiques</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Caractéristiques — {systemDef.label}
+                </h3>
                 <p className="text-xs text-muted-foreground">
-                  Les bonus proviennent de l'ascendance ({formData.race}) et de la classe ({formData.class}).
-                  {WA_ASCENDANCE_META[formData.race || ""]?.freePoints > 0 && (
-                    <> Vous avez <span className="font-bold text-primary">{WA_ASCENDANCE_META[formData.race || ""]?.freePoints ?? 0}</span> point(s) libre(s) à répartir.</>
+                  {isWA ? (
+                    <>
+                      Les bonus proviennent de l'ascendance ({formData.race}) et de la classe ({formData.class}).
+                      {WA_ASCENDANCE_META[formData.race || ""]?.freePoints > 0 && (
+                        <> Vous avez <span className="font-bold text-primary">{WA_ASCENDANCE_META[formData.race || ""]?.freePoints ?? 0}</span> point(s) libre(s) à répartir.</>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Valeurs bornées par les règles de {systemDef.shortLabel} ({statModeLabel}).
+                      Jet par défaut : {systemDef.defaultRollHint}.
+                    </>
                   )}
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-                {WA_STATS.map((stat) => {
-                  const ascBonus = WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat as string] ?? 0;
-                  const classBonus = WA_CLASS_BONUSES[formData.class || ""]?.[stat as string] ?? 0;
+                {systemDef.stats.map((stat) => {
+                  const ascBonus = isWA ? (WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat.key] ?? 0) : 0;
+                  const classBonus = isWA ? (WA_CLASS_BONUSES[formData.class || ""]?.[stat.key] ?? 0) : 0;
                   const totalBase = ascBonus + classBonus;
-                  const fieldMap: Record<string, keyof Character> = {
-                    FOR: "strength", DEX: "dexterity", CON: "constitution",
-                    INT: "intelligence", SAG: "wisdom", CHA: "charisma"
-                  };
-                  const labelMap: Record<string, string> = {
-                    FOR: "Force", DEX: "Dextérité", CON: "Constitution",
-                    INT: "Intelligence", SAG: "Sagesse", CHA: "Charisme"
-                  };
-                  const field = fieldMap[stat as string] as keyof Character;
-                  const currentVal = ((formData as Record<string, unknown>)[field as string] as number) ?? 0;
+                  const currentVal = readStat(formData, stat);
+                  const modifier = (systemDef.calculations ?? DEFAULT_CALCULATIONS).statModifier(stat, currentVal);
 
                   return (
-                    <div key={stat} className="flex flex-col items-center rounded-lg border border-border bg-card p-3">
-                      <Label className="mb-1 text-xs text-muted-foreground">{labelMap[stat as string]}</Label>
-                      <span className="text-[10px] text-muted-foreground">
-                        Base: {totalBase >= 0 ? `+${totalBase}` : totalBase}
-                      </span>
+                    <div key={stat.key} className="flex flex-col items-center rounded-lg border border-border bg-card p-3" title={stat.longLabel}>
+                      <Label className="mb-1 text-center text-xs text-muted-foreground">
+                        {stat.longLabel ?? stat.label}
+                      </Label>
+                      {isWA && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Base: {totalBase >= 0 ? `+${totalBase}` : totalBase}
+                        </span>
+                      )}
                       <Input
                         type="number"
-                        className="my-1 h-10 w-14 text-center text-lg font-bold"
+                        min={stat.min}
+                        max={stat.max}
+                        className="my-1 h-10 w-16 text-center text-lg font-bold"
                         value={currentVal}
-                        onChange={(e) => updateField(field, parseInt(e.target.value) || 0)}
+                        onChange={(e) => setStat(stat, parseInt(e.target.value))}
                       />
-                      <span className="text-xs font-semibold text-primary">
-                        {stat}
+                      <span className="text-xs font-semibold text-primary">{stat.label}</span>
+                      {stat.mode !== "modifier" && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {stat.mode === "percentage"
+                            ? `½ ${Math.floor(currentVal / 2)} • ⅕ ${Math.floor(currentVal / 5)}`
+                            : `mod. ${modifier >= 0 ? `+${modifier}` : modifier}`}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {stat.min} → {stat.max}
                       </span>
                     </div>
                   );
@@ -606,50 +677,51 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                     <Input
                       type="number"
                       className="h-10 w-20 text-center"
-                      value={formData.hp || 10}
-                      onChange={(e) => updateField("hp", parseInt(e.target.value) || 10)}
+                      value={formData.hp ?? 10}
+                      onChange={(e) => updateField("hp", parseInt(e.target.value) || 0)}
                     />
                     <span className="text-muted-foreground">/</span>
                     <Input
                       type="number"
                       className="h-10 w-20 text-center"
-                      value={formData.max_hp || 10}
-                      onChange={(e) => updateField("max_hp", parseInt(e.target.value) || 10)}
+                      value={formData.max_hp ?? 10}
+                      onChange={(e) => updateField("max_hp", parseInt(e.target.value) || 0)}
                     />
                   </div>
-                  {WA_CLASS_META[formData.class || ""] && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie}
-                      {isWA && (
-                        <> — PV recalculés automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON). PM max : {(formData.system_data?.pm_max ?? 0) as number}.</>
-                      )}
+                  {isWA ? (
+                    WA_CLASS_META[formData.class || ""] && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie} — PV recalculés
+                        automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON).
+                        PM max : {(formData.system_data?.pm_max ?? 0) as number}.
+                      </p>
+                    )
+                  ) : (
+                    <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>PV conseillés ({systemDef.shortLabel}) : {suggestedMaxHp}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]"
+                        onClick={() => setFormData((p) => ({ ...p, max_hp: suggestedMaxHp, hp: suggestedMaxHp }))}>
+                        Appliquer
+                      </Button>
                     </p>
                   )}
-
                 </div>
 
-                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-                  <Label className="text-blue-400">Def PHY</Label>
-                  <Input
-                    type="number"
-                    className="mt-2 h-10 w-20 text-center"
-                    value={formData.armor_class || 10}
-                    onChange={(e) => updateField("armor_class", parseInt(e.target.value) || 10)}
-                  />
-                </div>
-
-                <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
-                  <Label className="text-purple-400">Def MAG</Label>
-                  <Input
-                    type="number"
-                    className="mt-2 h-10 w-20 text-center"
-                    value={formData.initiative || 10}
-                    onChange={(e) => updateField("initiative", parseInt(e.target.value) || 10)}
-                  />
-                </div>
+                {systemDef.defenses.map((def) => (
+                  <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                    <Label className="text-blue-400">{def.label}</Label>
+                    <Input
+                      type="number"
+                      className="mt-2 h-10 w-20 text-center"
+                      value={getDefense(def.key, def.default)}
+                      onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
+                    />
+                    {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
+                  </div>
+                ))}
 
                 <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <Label className="text-primary">NX (Monnaie)</Label>
+                  <Label className="text-primary">{systemDef.currency} (Monnaie)</Label>
                   <Input
                     type="number"
                     className="mt-2 h-10 w-24 text-center"
@@ -661,11 +733,13 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
             </div>
           </TabsContent>
 
+
           {/* Equipment — WA manual with reference tables */}
           <TabsContent value="equipment" className="space-y-6">
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">
-                Notez vos armes, armures et équipements manuellement avec leurs bonus. Référez-vous aux tableaux ci-dessous.
+                Notez vos armes, armures et équipements avec leurs bonus
+                {isWA ? " — référez-vous aux tableaux de référence ci-dessous." : `. Monnaie du système : ${systemDef.currency}.`}
               </p>
             </div>
 
@@ -694,6 +768,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
               </div>
             </div>
 
+            {/* Tables de référence — spécifiques à Worlds Awakening */}
+            {isWA && (<>
             {/* Reference: Armes de Contact */}
             <details className="rounded-lg border border-border">
               <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
@@ -792,6 +868,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 </table>
               </div>
             </details>
+            </>)}
+
 
             <div className="space-y-2">
               <Label>Inventaire & Notes d'équipement</Label>

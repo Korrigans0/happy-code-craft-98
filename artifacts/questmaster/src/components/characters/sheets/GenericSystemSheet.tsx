@@ -10,6 +10,7 @@ import { Heart } from "lucide-react";
 import type { SystemDefinition } from "@/lib/systems";
 import { SheetHeader, SheetNotes, SheetInventory } from "./SheetSections";
 import { useAutosave } from "./useAutosave";
+import { readStats, legacyField } from "@/lib/systems/statBridge";
 
 interface GenericSystemSheetProps {
   character: any;
@@ -28,11 +29,13 @@ const GenericSystemSheet = ({ character, system, editable = false, onSave, onClo
   const sysData = (local.system_data as Record<string, any>) ?? {};
 
   // Stats lues dans system_data.stats (clés du système, ex: STR, DEX, POU…)
-  const statsValues: Record<string, number> = sysData.stats ?? {};
+  const statsValues: Record<string, number> = readStats(local, system);
   const updateSysData = (patch: Record<string, any>) => update("system_data", { ...sysData, ...patch });
 
-  const setStat = (key: string, value: number) => {
-    updateSysData({ stats: { ...statsValues, [key]: value } });
+  const setStat = (key: string, v: number) => {
+    updateSysData({ stats: { ...statsValues, [key]: v } });
+    const lf = legacyField(key);
+    if (lf) update(lf, v);
   };
 
   const calc = system.calculations;
@@ -68,8 +71,17 @@ const GenericSystemSheet = ({ character, system, editable = false, onSave, onClo
               </div>
               <div>
                 <Label className="text-xs">Niveau</Label>
-                <Input type="number" min={1} value={local.level ?? 1}
-                  onChange={(e) => update("level", Number(e.target.value) || 1)} />
+                <Input
+                  type="number"
+                  min={system.minLevel ?? 1}
+                  max={system.maxLevel ?? 20}
+                  value={local.level ?? 1}
+                  onChange={(e) => {
+                    const min = system.minLevel ?? 1;
+                    const max = system.maxLevel ?? 20;
+                    update("level", Math.min(max, Math.max(min, Number(e.target.value) || min)));
+                  }}
+                />
               </div>
               <div>
                 <Label className="text-xs">Vit. ({system.speedUnit})</Label>

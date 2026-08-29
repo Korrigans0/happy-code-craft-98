@@ -78,6 +78,16 @@ const Dnd5eSheet = ({ character, editable = false, onSave, onClose, onEdit }: Dn
     update("system_data", { ...sysData, [key]: value });
   };
 
+  // Écrit le score dans la colonne historique ET dans system_data.stats
+  // pour que toutes les vues (fiche générique, table de jeu) restent cohérentes.
+  const setScore = (key: string, field: string, raw: number) => {
+    const value = Math.min(30, Math.max(1, raw));
+    update(field as any, value);
+    update("system_data", { ...sysData, stats: { ...(sysData.stats ?? {}), [key]: value } });
+  };
+
+
+
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-background to-background/80">
       <SheetHeader
@@ -155,7 +165,7 @@ const Dnd5eSheet = ({ character, editable = false, onSave, onClose, onEdit }: Dn
                       <Input
                         type="number" min={1} max={30}
                         value={value}
-                        onChange={(e) => update(field as any, Number(e.target.value) || 10)}
+                        onChange={(e) => setScore(key, field, Number(e.target.value) || 10)}
                         className="mt-1 h-8 text-center text-lg font-bold"
                       />
                     ) : (
