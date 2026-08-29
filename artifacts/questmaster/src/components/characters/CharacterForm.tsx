@@ -767,6 +767,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
               </div>
             </div>
 
+            {/* Tables de référence — spécifiques à Worlds Awakening */}
+            {isWA && (<>
             {/* Reference: Armes de Contact */}
             <details className="rounded-lg border border-border">
               <summary className="cursor-pointer p-3 text-sm font-semibold text-foreground hover:bg-muted/50">
