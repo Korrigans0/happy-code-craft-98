@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
-import { getSystem, SYSTEM_LIST } from "@/lib/systems";
+import { getSystem, SYSTEM_LIST, getCalculations, DEFAULT_CALCULATIONS, type StatDef } from "@/lib/systems";
+import { readStat, readStats, writeStatPatch, readDefense } from "@/lib/systems/statBridge";
 import { waMaxHp, waDefPhy, waDefMag, waMaxPm, waMagicStat, WA_MAX_LEVEL } from "@/lib/systems/wa-rules";
 
 import { supabase } from "@/integrations/supabase/client";
