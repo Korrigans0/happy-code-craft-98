@@ -738,7 +738,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
           <TabsContent value="equipment" className="space-y-6">
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">
-                Notez vos armes, armures et équipements manuellement avec leurs bonus. Référez-vous aux tableaux ci-dessous.
+                Notez vos armes, armures et équipements avec leurs bonus
+                {isWA ? " — référez-vous aux tableaux de référence ci-dessous." : `. Monnaie du système : ${systemDef.currency}.`}
               </p>
             </div>
 
