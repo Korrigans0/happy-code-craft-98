@@ -549,49 +549,66 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
             </div>
           </TabsContent>
 
-          {/* Stats — WA modifier-based */}
+          {/* Stats — pilotées par la définition du système actif */}
           <TabsContent value="stats" className="space-y-6">
             <div className="space-y-6">
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
-                <h3 className="text-sm font-semibold text-foreground">Bonus de caractéristiques</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Caractéristiques — {systemDef.label}
+                </h3>
                 <p className="text-xs text-muted-foreground">
-                  Les bonus proviennent de l'ascendance ({formData.race}) et de la classe ({formData.class}).
-                  {WA_ASCENDANCE_META[formData.race || ""]?.freePoints > 0 && (
-                    <> Vous avez <span className="font-bold text-primary">{WA_ASCENDANCE_META[formData.race || ""]?.freePoints ?? 0}</span> point(s) libre(s) à répartir.</>
+                  {isWA ? (
+                    <>
+                      Les bonus proviennent de l'ascendance ({formData.race}) et de la classe ({formData.class}).
+                      {WA_ASCENDANCE_META[formData.race || ""]?.freePoints > 0 && (
+                        <> Vous avez <span className="font-bold text-primary">{WA_ASCENDANCE_META[formData.race || ""]?.freePoints ?? 0}</span> point(s) libre(s) à répartir.</>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Valeurs bornées par les règles de {systemDef.shortLabel} ({statModeLabel}).
+                      Jet par défaut : {systemDef.defaultRollHint}.
+                    </>
                   )}
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-                {WA_STATS.map((stat) => {
-                  const ascBonus = WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat as string] ?? 0;
-                  const classBonus = WA_CLASS_BONUSES[formData.class || ""]?.[stat as string] ?? 0;
+                {systemDef.stats.map((stat) => {
+                  const ascBonus = isWA ? (WA_ASCENDANCE_BONUSES[formData.race || ""]?.[stat.key] ?? 0) : 0;
+                  const classBonus = isWA ? (WA_CLASS_BONUSES[formData.class || ""]?.[stat.key] ?? 0) : 0;
                   const totalBase = ascBonus + classBonus;
-                  const fieldMap: Record<string, keyof Character> = {
-                    FOR: "strength", DEX: "dexterity", CON: "constitution",
-                    INT: "intelligence", SAG: "wisdom", CHA: "charisma"
-                  };
-                  const labelMap: Record<string, string> = {
-                    FOR: "Force", DEX: "Dextérité", CON: "Constitution",
-                    INT: "Intelligence", SAG: "Sagesse", CHA: "Charisme"
-                  };
-                  const field = fieldMap[stat as string] as keyof Character;
-                  const currentVal = ((formData as Record<string, unknown>)[field as string] as number) ?? 0;
+                  const currentVal = readStat(formData, stat);
+                  const modifier = (systemDef.calculations ?? DEFAULT_CALCULATIONS).statModifier(stat, currentVal);
 
                   return (
-                    <div key={stat} className="flex flex-col items-center rounded-lg border border-border bg-card p-3">
-                      <Label className="mb-1 text-xs text-muted-foreground">{labelMap[stat as string]}</Label>
-                      <span className="text-[10px] text-muted-foreground">
-                        Base: {totalBase >= 0 ? `+${totalBase}` : totalBase}
-                      </span>
+                    <div key={stat.key} className="flex flex-col items-center rounded-lg border border-border bg-card p-3" title={stat.longLabel}>
+                      <Label className="mb-1 text-center text-xs text-muted-foreground">
+                        {stat.longLabel ?? stat.label}
+                      </Label>
+                      {isWA && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Base: {totalBase >= 0 ? `+${totalBase}` : totalBase}
+                        </span>
+                      )}
                       <Input
                         type="number"
-                        className="my-1 h-10 w-14 text-center text-lg font-bold"
+                        min={stat.min}
+                        max={stat.max}
+                        className="my-1 h-10 w-16 text-center text-lg font-bold"
                         value={currentVal}
-                        onChange={(e) => updateField(field, parseInt(e.target.value) || 0)}
+                        onChange={(e) => setStat(stat, parseInt(e.target.value))}
                       />
-                      <span className="text-xs font-semibold text-primary">
-                        {stat}
+                      <span className="text-xs font-semibold text-primary">{stat.label}</span>
+                      {stat.mode !== "modifier" && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {stat.mode === "percentage"
+                            ? `½ ${Math.floor(currentVal / 2)} • ⅕ ${Math.floor(currentVal / 5)}`
+                            : `mod. ${modifier >= 0 ? `+${modifier}` : modifier}`}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {stat.min} → {stat.max}
                       </span>
                     </div>
                   );
@@ -606,50 +623,51 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                     <Input
                       type="number"
                       className="h-10 w-20 text-center"
-                      value={formData.hp || 10}
-                      onChange={(e) => updateField("hp", parseInt(e.target.value) || 10)}
+                      value={formData.hp ?? 10}
+                      onChange={(e) => updateField("hp", parseInt(e.target.value) || 0)}
                     />
                     <span className="text-muted-foreground">/</span>
                     <Input
                       type="number"
                       className="h-10 w-20 text-center"
-                      value={formData.max_hp || 10}
-                      onChange={(e) => updateField("max_hp", parseInt(e.target.value) || 10)}
+                      value={formData.max_hp ?? 10}
+                      onChange={(e) => updateField("max_hp", parseInt(e.target.value) || 0)}
                     />
                   </div>
-                  {WA_CLASS_META[formData.class || ""] && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie}
-                      {isWA && (
-                        <> — PV recalculés automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON). PM max : {(formData.system_data?.pm_max ?? 0) as number}.</>
-                      )}
+                  {isWA ? (
+                    WA_CLASS_META[formData.class || ""] && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Dé de vie : {WA_CLASS_META[formData.class || ""]?.hitDie} — PV recalculés
+                        automatiquement (max du DV au niv. 1, puis meilleur jet par niveau selon la CON).
+                        PM max : {(formData.system_data?.pm_max ?? 0) as number}.
+                      </p>
+                    )
+                  ) : (
+                    <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>PV conseillés ({systemDef.shortLabel}) : {suggestedMaxHp}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-[11px]"
+                        onClick={() => setFormData((p) => ({ ...p, max_hp: suggestedMaxHp, hp: suggestedMaxHp }))}>
+                        Appliquer
+                      </Button>
                     </p>
                   )}
-
                 </div>
 
-                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-                  <Label className="text-blue-400">Def PHY</Label>
-                  <Input
-                    type="number"
-                    className="mt-2 h-10 w-20 text-center"
-                    value={formData.armor_class || 10}
-                    onChange={(e) => updateField("armor_class", parseInt(e.target.value) || 10)}
-                  />
-                </div>
-
-                <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 p-4">
-                  <Label className="text-purple-400">Def MAG</Label>
-                  <Input
-                    type="number"
-                    className="mt-2 h-10 w-20 text-center"
-                    value={formData.initiative || 10}
-                    onChange={(e) => updateField("initiative", parseInt(e.target.value) || 10)}
-                  />
-                </div>
+                {systemDef.defenses.map((def) => (
+                  <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                    <Label className="text-blue-400">{def.label}</Label>
+                    <Input
+                      type="number"
+                      className="mt-2 h-10 w-20 text-center"
+                      value={getDefense(def.key, def.default)}
+                      onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
+                    />
+                    {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
+                  </div>
+                ))}
 
                 <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
-                  <Label className="text-primary">NX (Monnaie)</Label>
+                  <Label className="text-primary">{systemDef.currency} (Monnaie)</Label>
                   <Input
                     type="number"
                     className="mt-2 h-10 w-24 text-center"
@@ -660,6 +678,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
               </div>
             </div>
           </TabsContent>
+
 
           {/* Equipment — WA manual with reference tables */}
           <TabsContent value="equipment" className="space-y-6">
