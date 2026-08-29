@@ -118,7 +118,12 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
         hp: Math.min(prevHp, maxHp),
         armor_class: defPhy,
         initiative: defMag,
-        system_data: { ...(prev.system_data ?? {}), pm_max: pmMax, magic_stat: magStat },
+        system_data: {
+          ...(prev.system_data ?? {}),
+          pm_max: pmMax,
+          magic_stat: magStat,
+          defenses: { ...((prev.system_data ?? {}).defenses ?? {}), phy_def: defPhy, mag_def: defMag },
+        },
       };
       const unchanged =
         prev.level === next.level &&
