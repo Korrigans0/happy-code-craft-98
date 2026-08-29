@@ -155,7 +155,7 @@ const Dnd5eSheet = ({ character, editable = false, onSave, onClose, onEdit }: Dn
                       <Input
                         type="number" min={1} max={30}
                         value={value}
-                        onChange={(e) => update(field as any, Number(e.target.value) || 10)}
+                        onChange={(e) => setScore(key, field, Number(e.target.value) || 10)}
                         className="mt-1 h-8 text-center text-lg font-bold"
                       />
                     ) : (
