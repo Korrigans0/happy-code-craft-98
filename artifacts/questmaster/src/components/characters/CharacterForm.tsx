@@ -137,6 +137,54 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     formData.intelligence,
   ]);
 
+  // ── Caractéristiques & défenses pilotées par le système ────────────────────
+  // Les valeurs sont écrites dans system_data.stats (lu par toutes les fiches)
+  // ET dans les colonnes historiques quand une correspondance existe.
+  const setStat = (stat: StatDef, raw: number) => {
+    setFormData((prev) => ({ ...prev, ...writeStatPatch(prev, stat, raw) }));
+  };
+
+  const getDefense = (key: string, fallback: number) => readDefense(formData, key, fallback);
+
+  const setDefense = (key: string, value: number) => {
+    setFormData((prev) => {
+      const sysData = (prev.system_data as Record<string, any>) ?? {};
+      const next: Partial<Character> = {
+        ...prev,
+        system_data: { ...sysData, defenses: { ...(sysData.defenses ?? {}), [key]: value } },
+      };
+      // Miroir historique : CA / Déf. PHY -> armor_class, Déf. MAG -> initiative.
+      if (key === "ac" || key === "phy_def") next.armor_class = value;
+      if (key === "mag_def") next.initiative = value;
+      return next;
+    });
+  };
+
+  // PV conseillés par les calculs du système (hors WA, géré à part).
+  const suggestedMaxHp = (() => {
+    const calc = getCalculations(formData.system as string);
+    const stats = readStats(formData, systemDef);
+    const mods: Record<string, number> = {};
+    for (const s of systemDef.stats) mods[s.key] = calc.statModifier(s, stats[s.key]);
+    return Math.max(
+      1,
+      calc.maxHp({
+        level: formData.level ?? 1,
+        stats: mods,
+        subclass: formData.subclass,
+        systemData: (formData.system_data as Record<string, unknown>) ?? {},
+      }),
+    );
+  })();
+
+  const statModeLabel = (() => {
+    const modes = new Set(systemDef.stats.map((s) => s.mode));
+    if (modes.size !== 1) return "valeurs mixtes";
+    const m = systemDef.stats[0].mode;
+    return m === "score" ? "scores" : m === "percentage" ? "pourcentages" : "modificateurs";
+  })();
+
+
   const updateField = <K extends keyof Character>(field: K, value: Character[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
