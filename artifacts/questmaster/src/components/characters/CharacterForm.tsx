@@ -867,6 +867,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 </table>
               </div>
             </details>
+            </>)}
+
 
             <div className="space-y-2">
               <Label>Inventaire & Notes d'équipement</Label>
