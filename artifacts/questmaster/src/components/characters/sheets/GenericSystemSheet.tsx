@@ -10,6 +10,7 @@ import { Heart } from "lucide-react";
 import type { SystemDefinition } from "@/lib/systems";
 import { SheetHeader, SheetNotes, SheetInventory } from "./SheetSections";
 import { useAutosave } from "./useAutosave";
+import { readStats } from "@/lib/systems/statBridge";
 
 interface GenericSystemSheetProps {
   character: any;
@@ -28,7 +29,7 @@ const GenericSystemSheet = ({ character, system, editable = false, onSave, onClo
   const sysData = (local.system_data as Record<string, any>) ?? {};
 
   // Stats lues dans system_data.stats (clés du système, ex: STR, DEX, POU…)
-  const statsValues: Record<string, number> = sysData.stats ?? {};
+  const statsValues: Record<string, number> = readStats(local, system);
   const updateSysData = (patch: Record<string, any>) => update("system_data", { ...sysData, ...patch });
 
   const setStat = (key: string, value: number) => {

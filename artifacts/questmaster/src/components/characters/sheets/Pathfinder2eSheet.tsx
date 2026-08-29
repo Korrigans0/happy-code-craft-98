@@ -12,6 +12,7 @@ import { Heart, Shield, Footprints, Sparkles, Crown } from "lucide-react";
 import { PF2E_SYSTEM } from "@/lib/systems/pathfinder2e";
 import { SheetHeader, SheetNotes, SheetInventory } from "./SheetSections";
 import { useAutosave } from "./useAutosave";
+import { readStats } from "@/lib/systems/statBridge";
 
 interface Props {
   character: any;
@@ -40,7 +41,7 @@ const Pathfinder2eSheet = ({ character, editable = false, onSave, onClose, onEdi
     update("system_data", { ...sysData, ...patch });
 
   const level = local.level ?? 1;
-  const statsValues: Record<string, number> = sysData.stats ?? {};
+  const statsValues: Record<string, number> = readStats(local, PF2E_SYSTEM);
   const setStat = (key: string, v: number) =>
     updateSysData({ stats: { ...statsValues, [key]: v } });
 
