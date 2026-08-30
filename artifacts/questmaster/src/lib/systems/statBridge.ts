@@ -77,3 +77,20 @@ export function readDefense(character: any, key: string, fallback: number): numb
   if (key === "mag_def" && typeof character?.initiative === "number") return character.initiative;
   return fallback;
 }
+
+/**
+ * Patch d'initialisation des caractéristiques pour un nouveau personnage :
+ * valeurs par défaut du système, écrites dans `system_data.stats` ET dans les
+ * colonnes historiques. Évite les scores hors bornes (ex. 0 en D&D 5e).
+ */
+export function defaultStatsPatch(system: SystemDefinition): Record<string, any> {
+  const stats: Record<string, number> = {};
+  const patch: Record<string, any> = {};
+  for (const s of system.stats) {
+    stats[s.key] = s.default;
+    const field = legacyField(s.key);
+    if (field) patch[field] = s.default;
+  }
+  patch.system_data = { stats };
+  return patch;
+}
