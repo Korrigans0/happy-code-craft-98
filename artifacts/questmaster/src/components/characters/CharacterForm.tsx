@@ -11,7 +11,7 @@ import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "
 import { toast } from "sonner";
 import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
 import { getSystem, SYSTEM_LIST, getCalculations, DEFAULT_CALCULATIONS, type StatDef } from "@/lib/systems";
-import { readStat, readStats, writeStatPatch, readDefense } from "@/lib/systems/statBridge";
+import { readStat, readStats, writeStatPatch, readDefense, defaultStatsPatch } from "@/lib/systems/statBridge";
 import { waMaxHp, waDefPhy, waDefMag, waMaxPm, waMagicStat, WA_MAX_LEVEL } from "@/lib/systems/wa-rules";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -50,12 +50,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     bonds: "",
     flaws: "",
     appearance: "",
-    strength: 0,
-    dexterity: 0,
-    constitution: 0,
-    intelligence: 0,
-    wisdom: 0,
-    charisma: 0,
+    ...defaultStatsPatch(getSystem(initialSystem)),
     hp: 10,
     max_hp: 10,
     armor_class: 10,
@@ -92,7 +87,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
 
   // Bornes de niveau propres au système (WA : 1–8).
   const minLevel = systemDef.minLevel ?? 1;
-  const maxLevel = systemDef.maxLevel ?? 20;
+  // On ne rétrograde jamais un personnage existant déjà au-dessus du plafond.
+  const maxLevel = Math.max(systemDef.maxLevel ?? 20, character?.level ?? 0);
 
   // Worlds Awakening : les valeurs dérivées sont entièrement formulaires
   // (PV, Def PHY, Def MAG, PM). On les recalcule à la source dès qu'une
@@ -101,7 +97,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
   useEffect(() => {
     if (!isWA) return;
     setFormData((prev) => {
-      const level = Math.min(WA_MAX_LEVEL, Math.max(1, prev.level || 1));
+      const levelCap = Math.max(WA_MAX_LEVEL, character?.level ?? 0);
+      const level = Math.min(levelCap, Math.max(1, prev.level || 1));
       const con = prev.constitution ?? 0;
       const sag = prev.wisdom ?? 0;
       const magStat = waMagicStat(prev.class);
@@ -110,7 +107,9 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
       const defPhy = waDefPhy(con, level);
       const defMag = waDefMag(sag, level);
       const pmMax = waMaxPm(magValue, level);
-      const prevHp = prev.hp ?? maxHp;
+      // Nouveau personnage (ou PV déjà au maximum) : on démarre à pleine vie.
+      const wasFull = prev.hp == null || prev.max_hp == null || prev.hp >= prev.max_hp;
+      const prevHp = wasFull ? maxHp : prev.hp;
       const next = {
         ...prev,
         level,
@@ -490,6 +489,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                       // On réinitialise race/classe/sous-classe aux premières valeurs du nouveau système.
                       setFormData((prev) => ({
                         ...prev,
+                        ...defaultStatsPatch(getSystem(v)),
                         system: v,
                         race: cfg.races[0] || "",
                         class: cfg.classes[0] || "",
