@@ -686,6 +686,8 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                       className="h-10 w-20 text-center"
                       value={formData.max_hp ?? 10}
                       onChange={(e) => updateField("max_hp", parseInt(e.target.value) || 0)}
+                      disabled={isWA}
+                      title={isWA ? "PV max calculés automatiquement (règles Worlds Awakening)" : undefined}
                     />
                   </div>
                   {isWA ? (
@@ -715,8 +717,11 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                       className="mt-2 h-10 w-20 text-center"
                       value={getDefense(def.key, def.default)}
                       onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
+                      disabled={isWA}
+                      title={isWA ? "Défense calculée automatiquement (règles Worlds Awakening)" : undefined}
                     />
                     {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
+                    {isWA && <p className="mt-1 text-[10px] text-muted-foreground">Calculée automatiquement.</p>}
                   </div>
                 ))}
 
