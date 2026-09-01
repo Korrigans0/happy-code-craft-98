@@ -31,7 +31,11 @@ const calculations: CalculationsAPI = {
     const ability = (systemData?.spellcastingAbility as string) ?? "WIS";
     return 8 + proficiencyBonus(level) + mod((stats[ability] as number) ?? 10);
   },
+  // CA sans armure = 10 + mod. DEX (les armures se gèrent dans l'équipement).
+  defenses: ({ stats }) => ({ ac: 10 + mod(stats.DEX ?? 10) }),
+  derivedResources: ({ level }) => ({ hit_dice: Math.max(1, level) }),
 };
+
 
 // 18 compétences du SRD 5.1 (CC-BY-4.0 — noms communs, pas de prose protégée).
 const SKILLS = [
