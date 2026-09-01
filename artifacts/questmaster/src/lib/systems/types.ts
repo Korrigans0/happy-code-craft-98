@@ -155,6 +155,9 @@ export interface SystemDefinition {
   minLevel?: number;
   /** Niveau maximum autorisé par les règles du système (défaut 20) */
   maxLevel?: number;
+  /** false = le système n'a pas de niveaux (ex: L'Appel de Cthulhu). Défaut true. */
+  hasLevels?: boolean;
+
 
 
   /** Formule de dés de jet par défaut pour une stat (pour affichage) */
