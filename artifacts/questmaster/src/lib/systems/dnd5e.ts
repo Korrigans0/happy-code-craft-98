@@ -31,7 +31,11 @@ const calculations: CalculationsAPI = {
     const ability = (systemData?.spellcastingAbility as string) ?? "WIS";
     return 8 + proficiencyBonus(level) + mod((stats[ability] as number) ?? 10);
   },
+  // CA sans armure = 10 + mod. DEX (les armures se gèrent dans l'équipement).
+  defenses: ({ stats }) => ({ ac: 10 + mod(stats.DEX ?? 10) }),
+  derivedResources: ({ level }) => ({ hit_dice: Math.max(1, level) }),
 };
+
 
 // 18 compétences du SRD 5.1 (CC-BY-4.0 — noms communs, pas de prose protégée).
 const SKILLS = [
@@ -83,6 +87,8 @@ export const DND5E_SYSTEM: SystemDefinition = {
     { key: "slots_5",   label: "Slots niv. 5",  display: "slots",   min: 0 },
   ],
   skills: SKILLS,
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Race",
   races: [
     "Humain", "Elfe", "Nain", "Halfelin", "Demi-Elfe", "Demi-Orc",

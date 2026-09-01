@@ -10,7 +10,16 @@ const calculations: CalculationsAPI = {
   initiative: ({ stats }) => stats.DEX ?? 0,
   attackBonus: ({ stats }) => stats.FOR ?? 0,
   spellSaveDC: ({ stats }) => 10 + Math.max(stats.INT ?? 0, stats.SAG ?? 0),
+  // Défenses Aetheria : 10 + caractéristique + niveau.
+  defenses: ({ stats, level }) => ({
+    phy_def: 10 + (stats.CON ?? 0) + Math.max(1, level),
+    mag_def: 10 + (stats.SAG ?? 0) + Math.max(1, level),
+  }),
+  derivedResources: ({ stats, level }) => ({
+    pe: Math.max(0, 2 * ((stats.INT ?? 0) + Math.max(1, level))),
+  }),
 };
+
 
 export const AETHERIA_SYSTEM: SystemDefinition = {
   id: "Aetheria",
@@ -46,6 +55,8 @@ export const AETHERIA_SYSTEM: SystemDefinition = {
     { key: "histoire",     label: "Histoire",        stat: "INT" },
     { key: "medecine",     label: "Médecine",        stat: "SAG" },
   ],
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Ascendance",
   races: WA_ASCENDANCES,
   classLabel: "Classe",

@@ -18,7 +18,11 @@ const calculations: CalculationsAPI = {
     const ability = (systemData?.spellcastingAbility as string) ?? "WIS";
     return 10 + ((stats[ability] as number) ?? 0) + level + 2;
   },
+  // CA = 10 + mod. DEX + maîtrise d'armure (formé : niveau + 2).
+  defenses: ({ stats, level }) => ({ ac: 10 + (stats.DEX ?? 0) + Math.max(1, level) + 2 }),
+  derivedResources: () => ({ hero_points: 1 }),
 };
+
 
 export const PF2E_SYSTEM: SystemDefinition = {
   id: "Pathfinder 2e",
@@ -60,6 +64,8 @@ export const PF2E_SYSTEM: SystemDefinition = {
     { key: "survival",    label: "Survie",       stat: "WIS" },
     { key: "thievery",    label: "Vol",          stat: "DEX" },
   ],
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Ascendance",
   races: [
     "Humain", "Elfe", "Nain", "Gnome", "Goblin", "Halfelin",

@@ -2,11 +2,19 @@ import type { SystemDefinition, CalculationsAPI } from "./types";
 import { genericStatModifier } from "./types";
 
 // L'Appel de Cthulhu 7e — caractéristiques en pourcentage, jet 1d100 ≤ valeur.
+// PV = (CON + TAI) / 10 · Esquive = DEX / 2 · PM = POU / 5 · SAN de départ = POU.
+// Pas de niveaux : l'investigateur progresse par ses compétences.
 const calculations: CalculationsAPI = {
   statModifier: genericStatModifier,
   maxHp: ({ stats }) => Math.floor(((stats.CON ?? 50) + (stats.TAI ?? 50)) / 10),
   initiative: ({ stats }) => Math.floor((stats.DEX ?? 50) / 5),
+  defenses: ({ stats }) => ({ esquive: Math.floor((stats.DEX ?? 50) / 2) }),
+  derivedResources: ({ stats }) => ({
+    san: stats.POU ?? 50,
+    mp: Math.floor((stats.POU ?? 50) / 5),
+  }),
 };
+
 
 export const COC_SYSTEM: SystemDefinition = {
   id: "Call of Cthulhu",
@@ -77,6 +85,10 @@ export const COC_SYSTEM: SystemDefinition = {
     { key: "throw",        label: "Lancer",              stat: "DEX" },
     { key: "track",        label: "Pister",              stat: "INT" },
   ],
+  // Pas de progression par niveaux dans L'Appel de Cthulhu.
+  hasLevels: false,
+  minLevel: 1,
+  maxLevel: 1,
   raceLabel: "Nationalité",
   races: ["Américaine", "Britannique", "Française", "Allemande", "Italienne", "Autre"],
   classLabel: "Profession",

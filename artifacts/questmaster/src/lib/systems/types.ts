@@ -61,6 +61,10 @@ export interface ResourceDef {
 /**
  * Contexte passé aux calculs purs. Toutes les valeurs sont optionnelles : un
  * système consomme ce qui l'intéresse.
+ *
+ * IMPORTANT : `stats` contient les valeurs BRUTES saisies par le joueur
+ * (score D&D 10-20, pourcentage CoC 0-99, modificateur direct Aetheria/WA).
+ * Chaque système applique lui-même sa conversion (`statModifier`).
  */
 export interface CalcContext {
   level: number;
@@ -85,7 +89,18 @@ export interface CalculationsAPI {
   spellSaveDC?: (ctx: CalcContext) => number;
   /** Bonus de maîtrise (D&D / PF2) */
   proficiencyBonus?: (ctx: CalcContext) => number;
+  /**
+   * Valeurs de défense recommandées par les règles du système, indexées par
+   * `DefenseDef.key` (ex: { ac: 12 } ou { phy_def: 13, mag_def: 12 }).
+   */
+  defenses?: (ctx: CalcContext) => Record<string, number>;
+  /**
+   * Ressources dérivées recommandées (PM, Santé mentale, Chance, PE…),
+   * indexées par `ResourceDef.key`.
+   */
+  derivedResources?: (ctx: CalcContext) => Record<string, number>;
 }
+
 
 /** Identifiant du composant React à utiliser pour la fiche. */
 export type SheetComponentKey =
@@ -140,6 +155,9 @@ export interface SystemDefinition {
   minLevel?: number;
   /** Niveau maximum autorisé par les règles du système (défaut 20) */
   maxLevel?: number;
+  /** false = le système n'a pas de niveaux (ex: L'Appel de Cthulhu). Défaut true. */
+  hasLevels?: boolean;
+
 
 
   /** Formule de dés de jet par défaut pour une stat (pour affichage) */
