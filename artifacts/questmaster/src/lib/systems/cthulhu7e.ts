@@ -85,6 +85,10 @@ export const COC_SYSTEM: SystemDefinition = {
     { key: "throw",        label: "Lancer",              stat: "DEX" },
     { key: "track",        label: "Pister",              stat: "INT" },
   ],
+  // Pas de progression par niveaux dans L'Appel de Cthulhu.
+  hasLevels: false,
+  minLevel: 1,
+  maxLevel: 1,
   raceLabel: "Nationalité",
   races: ["Américaine", "Britannique", "Française", "Allemande", "Italienne", "Autre"],
   classLabel: "Profession",
