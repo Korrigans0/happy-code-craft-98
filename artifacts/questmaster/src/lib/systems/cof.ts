@@ -25,7 +25,12 @@ const calculations: CalculationsAPI = {
     const ability = (systemData?.spellcastingAbility as string) ?? "INT";
     return 10 + level + mod((stats[ability] as number) ?? 10);
   },
+  // DEF = 10 + mod. DEX (+ protection de l'armure, saisie dans l'équipement).
+  defenses: ({ stats }) => ({ def: 10 + mod(stats.DEX ?? 10) }),
+  // Points de récupération : 5 par jour, quel que soit le profil.
+  derivedResources: () => ({ recovery: 5 }),
 };
+
 
 // Compétences COF : le jeu privilégie les tests de caractéristique.
 // Ces entrées servent de raccourcis de jet sur la fiche.
