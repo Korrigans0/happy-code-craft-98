@@ -71,6 +71,8 @@ export const COF_SYSTEM: SystemDefinition = {
     { key: "chance",   label: "Points de chance", display: "counter", min: 0 },
   ],
   skills: SKILLS,
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Peuple",
   races: [
     "Humain", "Elfe", "Elfe sylvestre", "Demi-elfe", "Nain", "Halfelin",
