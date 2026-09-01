@@ -87,6 +87,8 @@ export const DND5E_SYSTEM: SystemDefinition = {
     { key: "slots_5",   label: "Slots niv. 5",  display: "slots",   min: 0 },
   ],
   skills: SKILLS,
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Race",
   races: [
     "Humain", "Elfe", "Nain", "Halfelin", "Demi-Elfe", "Demi-Orc",
