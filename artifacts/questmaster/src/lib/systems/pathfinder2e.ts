@@ -64,6 +64,8 @@ export const PF2E_SYSTEM: SystemDefinition = {
     { key: "survival",    label: "Survie",       stat: "WIS" },
     { key: "thievery",    label: "Vol",          stat: "DEX" },
   ],
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Ascendance",
   races: [
     "Humain", "Elfe", "Nain", "Gnome", "Goblin", "Halfelin",
