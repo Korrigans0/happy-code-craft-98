@@ -55,6 +55,8 @@ export const AETHERIA_SYSTEM: SystemDefinition = {
     { key: "histoire",     label: "Histoire",        stat: "INT" },
     { key: "medecine",     label: "Médecine",        stat: "SAG" },
   ],
+  minLevel: 1,
+  maxLevel: 20,
   raceLabel: "Ascendance",
   races: WA_ASCENDANCES,
   classLabel: "Classe",
