@@ -86,10 +86,11 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     }
   }, [character]);
 
-  // Bornes de niveau propres au système (WA : 1–8).
-  const minLevel = systemDef.minLevel ?? 1;
-  // On ne rétrograde jamais un personnage existant déjà au-dessus du plafond.
-  const maxLevel = Math.max(systemDef.maxLevel ?? 20, character?.level ?? 0);
+  // Bornes de niveau propres au système (WA : 1–8, CoC : pas de niveaux).
+  // Un personnage existant au-dessus du plafond n'est jamais rétrogradé.
+  const levelBounds = getLevelBounds(systemDef, character?.level);
+  const minLevel = levelBounds.min;
+  const maxLevel = levelBounds.max;
 
   // Worlds Awakening : les valeurs dérivées sont entièrement formulaires
   // (PV, Def PHY, Def MAG, PM). On les recalcule à la source dès qu'une
