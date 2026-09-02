@@ -165,22 +165,35 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     });
   };
 
-  // PV conseillés par les calculs du système (hors WA, géré à part).
-  const suggestedMaxHp = (() => {
-    const calc = getCalculations(formData.system as string);
-    const stats = readStats(formData, systemDef);
-    const mods: Record<string, number> = {};
-    for (const s of systemDef.stats) mods[s.key] = calc.statModifier(s, stats[s.key]);
-    return Math.max(
-      1,
-      calc.maxHp({
-        level: formData.level ?? 1,
-        stats: mods,
-        subclass: formData.subclass,
-        systemData: (formData.system_data as Record<string, unknown>) ?? {},
-      }),
-    );
-  })();
+  // Valeurs recommandées par les règles du système actif (PV, défenses,
+  // ressources dérivées, bonus). WA reste piloté par son effet dédié.
+  const derived = computeDerived(systemDef, formData);
+  const suggestedMaxHp = derived.maxHp;
+
+  /** Applique toutes les valeurs conseillées par les règles du système. */
+  const applyRecommended = () => {
+    setFormData((prev) => {
+      const sysData = (prev.system_data as Record<string, any>) ?? {};
+      const next: Partial<Character> = {
+        ...prev,
+        max_hp: derived.maxHp,
+        hp: Math.min(prev.hp ?? derived.maxHp, derived.maxHp) || derived.maxHp,
+        system_data: {
+          ...sysData,
+          defenses: { ...(sysData.defenses ?? {}), ...derived.defenses },
+          ...derived.resources,
+        },
+      };
+      // Miroirs historiques.
+      if (derived.defenses.ac != null) next.armor_class = derived.defenses.ac;
+      if (derived.defenses.def != null) next.armor_class = derived.defenses.def;
+      if (derived.defenses.phy_def != null) next.armor_class = derived.defenses.phy_def;
+      if (derived.defenses.mag_def != null) next.initiative = derived.defenses.mag_def;
+      else next.initiative = derived.initiative;
+      return next;
+    });
+    toast.success(`Valeurs recommandées appliquées (${systemDef.shortLabel})`);
+  };
 
   const statModeLabel = (() => {
     const modes = new Set(systemDef.stats.map((s) => s.mode));
@@ -196,8 +209,23 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
 
 
   const handleSubmit = () => {
-    onSave(formData);
+    // Dernier rempart : le personnage sauvegardé respecte toujours les règles
+    // du système (bornes de caractéristiques, niveau autorisé, PV cohérents).
+    const { patch, notices, errors } = validateCharacter(systemDef, formData);
+    if (errors.length > 0) {
+      toast.error(errors[0]);
+      return;
+    }
+    const corrected = { ...formData, ...patch };
+    if (notices.length > 0) {
+      setFormData(corrected);
+      toast.info(`Règles ${systemDef.shortLabel} appliquées : ${notices[0]}`, {
+        description: notices.length > 1 ? `${notices.length - 1} autre(s) ajustement(s).` : undefined,
+      });
+    }
+    onSave(corrected);
   };
+
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
