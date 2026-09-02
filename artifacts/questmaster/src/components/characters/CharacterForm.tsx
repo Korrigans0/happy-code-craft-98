@@ -489,23 +489,33 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="level">Niveau</Label>
-                <Input
-                  id="level"
-                  type="number"
-                  min={minLevel}
-                  max={maxLevel}
-                  value={formData.level || 1}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value) || minLevel;
-                    updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
-                  }}
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
-                </p>
-              </div>
+              {levelBounds.enabled ? (
+                <div className="space-y-2">
+                  <Label htmlFor="level">Niveau</Label>
+                  <Input
+                    id="level"
+                    type="number"
+                    min={minLevel}
+                    max={maxLevel}
+                    value={formData.level || 1}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || minLevel;
+                      updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Progression</Label>
+                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                    {systemDef.label} n'utilise pas de niveaux : la progression passe
+                    par les compétences de l'investigateur.
+                  </div>
+                </div>
+              )}
 
 
               {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
