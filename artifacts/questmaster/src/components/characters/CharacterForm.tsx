@@ -10,8 +10,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Save, Sword, Shield, BookOpen, User, Dices, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getSystemConfig, WA_ASCENDANCE_BONUSES, WA_CLASS_BONUSES, WA_ASCENDANCE_META, WA_CLASS_META, WA_STATS, WA_WEAPONS_CONTACT, WA_WEAPONS_RANGED, WA_WEAPONS_MAGIC, WA_EQUIPMENTS } from "@/lib/game-systems";
-import { getSystem, SYSTEM_LIST, getCalculations, DEFAULT_CALCULATIONS, type StatDef } from "@/lib/systems";
+import { getSystem, SYSTEM_LIST, DEFAULT_CALCULATIONS, type StatDef } from "@/lib/systems";
 import { readStat, readStats, writeStatPatch, readDefense, defaultStatsPatch } from "@/lib/systems/statBridge";
+import { computeDerived, validateCharacter, getLevelBounds } from "@/lib/systems/creationRules";
 import { waMaxHp, waDefPhy, waDefMag, waMaxPm, waMagicStat, WA_MAX_LEVEL } from "@/lib/systems/wa-rules";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -85,10 +86,11 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     }
   }, [character]);
 
-  // Bornes de niveau propres au système (WA : 1–8).
-  const minLevel = systemDef.minLevel ?? 1;
-  // On ne rétrograde jamais un personnage existant déjà au-dessus du plafond.
-  const maxLevel = Math.max(systemDef.maxLevel ?? 20, character?.level ?? 0);
+  // Bornes de niveau propres au système (WA : 1–8, CoC : pas de niveaux).
+  // Un personnage existant au-dessus du plafond n'est jamais rétrogradé.
+  const levelBounds = getLevelBounds(systemDef, character?.level);
+  const minLevel = levelBounds.min;
+  const maxLevel = levelBounds.max;
 
   // Worlds Awakening : les valeurs dérivées sont entièrement formulaires
   // (PV, Def PHY, Def MAG, PM). On les recalcule à la source dès qu'une
@@ -165,22 +167,35 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     });
   };
 
-  // PV conseillés par les calculs du système (hors WA, géré à part).
-  const suggestedMaxHp = (() => {
-    const calc = getCalculations(formData.system as string);
-    const stats = readStats(formData, systemDef);
-    const mods: Record<string, number> = {};
-    for (const s of systemDef.stats) mods[s.key] = calc.statModifier(s, stats[s.key]);
-    return Math.max(
-      1,
-      calc.maxHp({
-        level: formData.level ?? 1,
-        stats: mods,
-        subclass: formData.subclass,
-        systemData: (formData.system_data as Record<string, unknown>) ?? {},
-      }),
-    );
-  })();
+  // Valeurs recommandées par les règles du système actif (PV, défenses,
+  // ressources dérivées, bonus). WA reste piloté par son effet dédié.
+  const derived = computeDerived(systemDef, formData);
+  const suggestedMaxHp = derived.maxHp;
+
+  /** Applique toutes les valeurs conseillées par les règles du système. */
+  const applyRecommended = () => {
+    setFormData((prev) => {
+      const sysData = (prev.system_data as Record<string, any>) ?? {};
+      const next: Partial<Character> = {
+        ...prev,
+        max_hp: derived.maxHp,
+        hp: Math.min(prev.hp ?? derived.maxHp, derived.maxHp) || derived.maxHp,
+        system_data: {
+          ...sysData,
+          defenses: { ...(sysData.defenses ?? {}), ...derived.defenses },
+          ...derived.resources,
+        },
+      };
+      // Miroirs historiques.
+      if (derived.defenses.ac != null) next.armor_class = derived.defenses.ac;
+      if (derived.defenses.def != null) next.armor_class = derived.defenses.def;
+      if (derived.defenses.phy_def != null) next.armor_class = derived.defenses.phy_def;
+      if (derived.defenses.mag_def != null) next.initiative = derived.defenses.mag_def;
+      else next.initiative = derived.initiative;
+      return next;
+    });
+    toast.success(`Valeurs recommandées appliquées (${systemDef.shortLabel})`);
+  };
 
   const statModeLabel = (() => {
     const modes = new Set(systemDef.stats.map((s) => s.mode));
@@ -196,8 +211,23 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
 
 
   const handleSubmit = () => {
-    onSave(formData);
+    // Dernier rempart : le personnage sauvegardé respecte toujours les règles
+    // du système (bornes de caractéristiques, niveau autorisé, PV cohérents).
+    const { patch, notices, errors } = validateCharacter(systemDef, formData);
+    if (errors.length > 0) {
+      toast.error(errors[0]);
+      return;
+    }
+    const corrected = { ...formData, ...patch };
+    if (notices.length > 0) {
+      setFormData(corrected);
+      toast.info(`Règles ${systemDef.shortLabel} appliquées : ${notices[0]}`, {
+        description: notices.length > 1 ? `${notices.length - 1} autre(s) ajustement(s).` : undefined,
+      });
+    }
+    onSave(corrected);
   };
+
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -459,23 +489,33 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="level">Niveau</Label>
-                <Input
-                  id="level"
-                  type="number"
-                  min={minLevel}
-                  max={maxLevel}
-                  value={formData.level || 1}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value) || minLevel;
-                    updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
-                  }}
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
-                </p>
-              </div>
+              {levelBounds.enabled ? (
+                <div className="space-y-2">
+                  <Label htmlFor="level">Niveau</Label>
+                  <Input
+                    id="level"
+                    type="number"
+                    min={minLevel}
+                    max={maxLevel}
+                    value={formData.level || 1}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || minLevel;
+                      updateField("level", Math.min(maxLevel, Math.max(minLevel, v)));
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Niveaux {minLevel}–{maxLevel} ({systemDef.shortLabel})
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Progression</Label>
+                  <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                    {systemDef.label} n'utilise pas de niveaux : la progression passe
+                    par les compétences de l'investigateur.
+                  </div>
+                </div>
+              )}
 
 
               {/* Sélecteur de système — affiché uniquement à la création (pas lors de l'édition). */}
@@ -625,7 +665,21 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                     </>
                   )}
                 </p>
+                {!isWA && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] text-muted-foreground">
+                      Règles {systemDef.shortLabel} : PV {derived.maxHp} · Init. {derived.initiative}
+                      {derived.proficiencyBonus != null && ` · Maîtrise +${derived.proficiencyBonus}`}
+                      {derived.spellSaveDC != null && ` · DD sorts ${derived.spellSaveDC}`}
+                    </span>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-[11px]"
+                      onClick={applyRecommended}>
+                      Appliquer les valeurs recommandées
+                    </Button>
+                  </div>
+                )}
               </div>
+
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 {systemDef.stats.map((stat) => {
@@ -709,21 +763,38 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                   )}
                 </div>
 
-                {systemDef.defenses.map((def) => (
-                  <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-                    <Label className="text-blue-400">{def.label}</Label>
-                    <Input
-                      type="number"
-                      className="mt-2 h-10 w-20 text-center"
-                      value={getDefense(def.key, def.default)}
-                      onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
-                      disabled={isWA}
-                      title={isWA ? "Défense calculée automatiquement (règles Worlds Awakening)" : undefined}
-                    />
-                    {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
-                    {isWA && <p className="mt-1 text-[10px] text-muted-foreground">Calculée automatiquement.</p>}
-                  </div>
-                ))}
+                {systemDef.defenses.map((def) => {
+                  const recommended = derived.defenses[def.key];
+                  const current = getDefense(def.key, def.default);
+                  return (
+                    <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                      <Label className="text-blue-400">{def.label}</Label>
+                      <Input
+                        type="number"
+                        className="mt-2 h-10 w-20 text-center"
+                        value={current}
+                        onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
+                        disabled={isWA}
+                        title={isWA ? "Défense calculée automatiquement (règles Worlds Awakening)" : undefined}
+                      />
+                      {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
+                      {isWA ? (
+                        <p className="mt-1 text-[10px] text-muted-foreground">Calculée automatiquement.</p>
+                      ) : (
+                        recommended != null && recommended !== current && (
+                          <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <span>Règles {systemDef.shortLabel} : {recommended}</span>
+                            <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-[10px]"
+                              onClick={() => setDefense(def.key, recommended)}>
+                              Appliquer
+                            </Button>
+                          </p>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
+
 
                 <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
                   <Label className="text-primary">{systemDef.currency} (Monnaie)</Label>
