@@ -749,21 +749,38 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                   )}
                 </div>
 
-                {systemDef.defenses.map((def) => (
-                  <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
-                    <Label className="text-blue-400">{def.label}</Label>
-                    <Input
-                      type="number"
-                      className="mt-2 h-10 w-20 text-center"
-                      value={getDefense(def.key, def.default)}
-                      onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
-                      disabled={isWA}
-                      title={isWA ? "Défense calculée automatiquement (règles Worlds Awakening)" : undefined}
-                    />
-                    {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
-                    {isWA && <p className="mt-1 text-[10px] text-muted-foreground">Calculée automatiquement.</p>}
-                  </div>
-                ))}
+                {systemDef.defenses.map((def) => {
+                  const recommended = derived.defenses[def.key];
+                  const current = getDefense(def.key, def.default);
+                  return (
+                    <div key={def.key} className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                      <Label className="text-blue-400">{def.label}</Label>
+                      <Input
+                        type="number"
+                        className="mt-2 h-10 w-20 text-center"
+                        value={current}
+                        onChange={(e) => setDefense(def.key, parseInt(e.target.value) || 0)}
+                        disabled={isWA}
+                        title={isWA ? "Défense calculée automatiquement (règles Worlds Awakening)" : undefined}
+                      />
+                      {def.hint && <p className="mt-1 text-[10px] text-muted-foreground">{def.hint}</p>}
+                      {isWA ? (
+                        <p className="mt-1 text-[10px] text-muted-foreground">Calculée automatiquement.</p>
+                      ) : (
+                        recommended != null && recommended !== current && (
+                          <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <span>Règles {systemDef.shortLabel} : {recommended}</span>
+                            <Button type="button" variant="ghost" size="sm" className="h-5 px-1 text-[10px]"
+                              onClick={() => setDefense(def.key, recommended)}>
+                              Appliquer
+                            </Button>
+                          </p>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
+
 
                 <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
                   <Label className="text-primary">{systemDef.currency} (Monnaie)</Label>
