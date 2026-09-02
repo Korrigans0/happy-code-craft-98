@@ -665,7 +665,21 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
                     </>
                   )}
                 </p>
+                {!isWA && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] text-muted-foreground">
+                      Règles {systemDef.shortLabel} : PV {derived.maxHp} · Init. {derived.initiative}
+                      {derived.proficiencyBonus != null && ` · Maîtrise +${derived.proficiencyBonus}`}
+                      {derived.spellSaveDC != null && ` · DD sorts ${derived.spellSaveDC}`}
+                    </span>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-[11px]"
+                      onClick={applyRecommended}>
+                      Appliquer les valeurs recommandées
+                    </Button>
+                  </div>
+                )}
               </div>
+
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                 {systemDef.stats.map((stat) => {
