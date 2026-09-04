@@ -18,4 +18,5 @@ project_id = "snawpxrejmcxfbiiowxr"
     verify_jwt = false
   [functions.session-reminders]
     verify_jwt = true
-
+  [functions.report-bug]
+    verify_jwt = false

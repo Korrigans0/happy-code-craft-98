@@ -156,6 +156,57 @@ export type Database = {
           },
         ]
       }
+      bug_reports: {
+        Row: {
+          created_at: string
+          description: string
+          email_status: string
+          id: string
+          language: string | null
+          page_url: string | null
+          platform: string | null
+          problem_type: string
+          reporter_email: string | null
+          screen_size: string | null
+          screenshot_url: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          email_status?: string
+          id?: string
+          language?: string | null
+          page_url?: string | null
+          platform?: string | null
+          problem_type: string
+          reporter_email?: string | null
+          screen_size?: string | null
+          screenshot_url?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          email_status?: string
+          id?: string
+          language?: string | null
+          page_url?: string | null
+          platform?: string | null
+          problem_type?: string
+          reporter_email?: string | null
+          screen_size?: string | null
+          screenshot_url?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       campaign_audio_state: {
         Row: {
           campaign_id: string
