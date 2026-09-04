@@ -30,7 +30,6 @@ import JoinCampaign from "./pages/JoinCampaign";
 import Partners from "./pages/Partners";
 import Subscriptions from "./pages/Subscriptions";
 import Guide from "./pages/Guide";
-import Unsubscribe from "./pages/Unsubscribe";
 import OAuthConsent from "./pages/OAuthConsent";
 import SystemsIndex from "./pages/systems/Index";
 import GlyphesHub from "./pages/systems/glyphes/Hub";
@@ -95,7 +94,6 @@ const AppRoutes = () => (
         <Route path="/partners" element={<Partners />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/guide" element={<Guide />} />
-        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
