@@ -11,6 +11,7 @@ import CommandPalette from "@/components/CommandPalette";
 import MobileBanner from "@/components/MobileBanner";
 import SiteAmbientMusic from "@/components/SiteAmbientMusic";
 import CookieBanner from "@/components/CookieBanner";
+import BugReportButton from "@/components/BugReportButton";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
@@ -107,6 +108,7 @@ const AppRoutes = () => (
       <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />
+      <BugReportButton />
       <MobileBanner />
       <SiteAmbientMusic />
 
