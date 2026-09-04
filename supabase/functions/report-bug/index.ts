@@ -100,7 +100,11 @@ Deno.serve(async (req) => {
     if (uploadError) {
       console.error('Screenshot upload failed', uploadError)
     } else {
-      screenshotUrl = admin.storage.from('bug-screenshots').getPublicUrl(path).data.publicUrl
+      // Private bucket: share a long-lived signed link in the notification e-mail.
+      const { data: signed } = await admin.storage
+        .from('bug-screenshots')
+        .createSignedUrl(path, 60 * 60 * 24 * 365)
+      screenshotUrl = signed?.signedUrl ?? ''
     }
   }
 
