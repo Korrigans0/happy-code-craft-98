@@ -2,6 +2,7 @@
 // stores it, uploads an optional screenshot and e-mails the site owner.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { sendTemplateEmailWithLog } from '../_shared/transactional-email-templates/send-and-log.ts'
 
 const MAX_DESCRIPTION = 4000
 const MAX_SCREENSHOT_BYTES = 4 * 1024 * 1024 // 4 MB decoded
@@ -138,15 +139,8 @@ Deno.serve(async (req) => {
   }
 
   // Send the notification e-mail. Success is only reported when the mail is accepted.
-  const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${serviceKey}`,
-      apikey: serviceKey,
-    },
-    body: JSON.stringify({
-      templateName: 'bug-report',
+  try {
+    const result = await sendTemplateEmailWithLog('bug-report', '', {
       idempotencyKey: `bug-report-${inserted.id}`,
       templateData: {
         problemType: TYPE_LABELS[problemType],
@@ -161,12 +155,14 @@ Deno.serve(async (req) => {
         screenshotUrl,
         siteName: 'Aetheria VTT',
       },
-    }),
-  })
-
-  const payload = await res.json().catch(() => ({}))
-  if (!res.ok || payload?.success !== true) {
-    console.error('Bug report email failed', { status: res.status, payload })
+    })
+    if (!result.sent) {
+      console.warn('Bug report recipient is suppressed')
+      await admin.from('bug_reports').update({ email_status: 'failed' }).eq('id', inserted.id)
+      return json({ error: "Le signalement n'a pas pu être transmis" }, 502)
+    }
+  } catch (error) {
+    console.error('Bug report email failed', error)
     await admin.from('bug_reports').update({ email_status: 'failed' }).eq('id', inserted.id)
     return json({ error: "Le signalement n'a pas pu être transmis" }, 502)
   }

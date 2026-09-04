@@ -3,16 +3,7 @@ project_id = "snawpxrejmcxfbiiowxr"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
-  [functions.process-email-queue]
-    verify_jwt = true
-  [functions.send-transactional-email]
-    verify_jwt = true
   [functions.preview-transactional-email]
-    verify_jwt = false
-  [functions.handle-email-unsubscribe]
-    verify_jwt = false
-  [functions.handle-email-suppression]
-  [functions.handle-email-suppression]
     verify_jwt = false
   [functions.notify-session]
     verify_jwt = false
@@ -20,3 +11,5 @@ project_id = "snawpxrejmcxfbiiowxr"
     verify_jwt = true
   [functions.report-bug]
     verify_jwt = false
+  [functions.send-campaign-invitation]
+    verify_jwt = true
