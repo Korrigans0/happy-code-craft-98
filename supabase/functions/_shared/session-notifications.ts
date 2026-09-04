@@ -1,8 +1,9 @@
 // Shared helpers for session e-mail notifications (creation, reschedule, D-1 reminder).
-// All sending goes through the `send-transactional-email` function with the
-// service-role key, and every attempt is recorded in `session_email_notifications`
+// All sending goes through Lovable's managed email API, and every attempt is
+// recorded in `session_email_notifications`
 // so a given (session, user, kind) can only ever be delivered once.
 import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import { sendTemplateEmailWithLog } from './transactional-email-templates/send-and-log.ts'
 
 export const APP_TIMEZONE = 'Europe/Paris'
 export const SITE_URL = 'https://aetheriavtt.com'
@@ -92,17 +93,12 @@ async function sendEmail(
   idempotencyKey: string,
   templateData: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-transactional-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-    },
-    body: JSON.stringify({ templateName, recipientEmail, idempotencyKey, templateData }),
+  const result = await sendTemplateEmailWithLog(templateName, recipientEmail, {
+    idempotencyKey,
+    templateData,
   })
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`[${res.status}] ${body}`)
+  if (!result.sent) {
+    throw new Error('recipient_suppressed')
   }
 }
 
