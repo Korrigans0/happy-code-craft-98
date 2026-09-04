@@ -7,6 +7,7 @@ import {
   type SendTemplateEmailOptions,
   type SendTemplateEmailResult,
 } from './send-email.ts'
+import { TEMPLATES } from './registry.ts'
 
 function logClient() {
   return createClient(
@@ -46,11 +47,15 @@ export async function sendTemplateEmailWithLog(
   to: string,
   options: SendTemplateEmailOptions = {},
 ): Promise<SendTemplateEmailResult> {
+  const template = TEMPLATES[templateName]
+  const loggedRecipient =
+    (typeof template?.to === 'string' ? template.to : undefined) || to
+
   try {
     const result = await sendTemplateEmail(templateName, to, options)
     await writeLog({
       template_name: templateName,
-      recipient_email: to,
+      recipient_email: loggedRecipient,
       status: result.sent ? 'sent' : 'suppressed',
     })
     return result
@@ -58,7 +63,7 @@ export async function sendTemplateEmailWithLog(
     const message = error instanceof Error ? error.message : String(error)
     await writeLog({
       template_name: templateName,
-      recipient_email: to,
+      recipient_email: loggedRecipient,
       status: 'failed',
       error_message: message.slice(0, 500),
     })
