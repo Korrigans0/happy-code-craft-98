@@ -310,22 +310,12 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
     mutationFn: async (email: string) => {
       const c: any = campaign;
       if (!c?.invite_code) throw new Error("Aucun code d'invitation disponible pour cette campagne.");
-      const joinUrl = `${window.location.origin}/join/${c.invite_code}`;
       const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "campaign-invitation",
-          recipientEmail: email.trim(),
-          idempotencyKey: `campaign-invite-${campaignId}-${email.trim().toLowerCase()}`,
-          templateData: {
-            inviterName: (user as any)?.user_metadata?.display_name || (user?.email?.split("@")[0]) || "Un MJ",
-            campaignName: c?.name ?? "une campagne",
-            inviteCode: c.invite_code,
-            joinUrl,
-          },
-        },
+      const { data, error } = await supabase.functions.invoke("send-campaign-invitation", {
+        body: { campaignId, email: email.trim() },
       });
       if (error) throw new Error(error.message || "Envoi impossible");
+      if ((data as any)?.error) throw new Error((data as any).error);
     },
     onSuccess: () => {
       toast({ title: "Invitation envoyée", description: "L'aventurier a reçu son parchemin." });
