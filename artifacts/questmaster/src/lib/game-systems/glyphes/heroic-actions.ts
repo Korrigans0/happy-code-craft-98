@@ -272,8 +272,13 @@ export function isHeroicActionAvailable(action: HeroicAction, ctx: LoadoutContex
     if (!w || !weaponTags.includes(w as HeroicTag)) return false;
   }
   if (rangeTags.length > 0) {
-    const r = ctx.weaponRange === "jet" ? "distance" : ctx.weaponRange;
-    if (!r || !rangeTags.includes(r as HeroicTag)) return false;
+    const r: HeroicTag | null =
+      ctx.weaponRange === "jet" || ctx.weaponRange === "distance"
+        ? "distance"
+        : ctx.weaponRange === "melee"
+          ? "melee"
+          : null;
+    if (!r || !rangeTags.includes(r)) return false;
   }
   if (armorTags.length > 0) {
     const a = ctx.armor && ctx.armor !== "aucune" ? `armure-${ctx.armor}` : null;
