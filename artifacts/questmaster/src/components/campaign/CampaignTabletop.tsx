@@ -38,6 +38,7 @@ import GMPanel from "./vtt/GMPanel";
 import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
 import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
+const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
@@ -4673,7 +4674,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onClose={() => setGmPanelOpen(false)}
           />
         )}
-        {gmPanelOpen && !isGM && !isMobile && (
+        {gmPanelOpen && !isGM && !isMobile && campaignSystem !== "Glyphes" && (
           <PlayerPanel
             tokens={tokens}
             initiative={initiative}
@@ -4684,6 +4685,20 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onSpawnCharacter={spawnCharacter}
             onClose={() => setGmPanelOpen(false)}
           />
+        )}
+
+        {/* ── PANNEAU GLYPHES ── (épreuves, PA, héroïsme, journal des jets) */}
+        {gmPanelOpen && !isMobile && campaignSystem === "Glyphes" && (
+          <Suspense fallback={null}>
+            <GlyphesPanel
+              campaignId={campaignId}
+              authorName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+              selectedTokenId={selectedTokenId}
+              selectedTokenName={selectedToken?.name}
+              canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+              onClose={() => setGmPanelOpen(false)}
+            />
+          </Suspense>
         )}
 
       </div>
