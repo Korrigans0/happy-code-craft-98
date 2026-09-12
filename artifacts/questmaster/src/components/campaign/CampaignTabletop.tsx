@@ -38,6 +38,7 @@ import GMPanel from "./vtt/GMPanel";
 import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
 import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
+const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
