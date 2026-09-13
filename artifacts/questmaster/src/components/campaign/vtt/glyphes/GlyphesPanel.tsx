@@ -76,6 +76,19 @@ export default function GlyphesPanel({
             </Button>
           </div>
         )}
+
+        {state && selectedTokenId && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full"
+            disabled={!canEdit || targets.length === 0}
+            onClick={() => setAttackOpen(true)}
+          >
+            <Swords className="mr-2 h-4 w-4" />
+            {targets.length === 0 ? "Aucune cible sur la scène" : "Attaquer un jeton (2 PA)"}
+          </Button>
+        )}
       </div>
 
       <GlyphesRollLog campaignId={campaignId} className="min-h-0 flex-1" />
@@ -92,6 +105,24 @@ export default function GlyphesPanel({
           }
         }}
       />
+
+      {selectedTokenId && (
+        <GlyphesAttackDialog
+          open={attackOpen}
+          onOpenChange={setAttackOpen}
+          campaignId={campaignId}
+          authorName={authorName}
+          attackerName={selectedTokenName || "Jeton"}
+          attackerState={state}
+          targets={targets}
+          getTargetState={(id) => combat.getState(id)}
+          onApplyWounds={(id, wounds) =>
+            combat.update(id, { wounds: combat.getState(id).wounds + wounds })
+          }
+          onSpendTargetHeroism={(id, cost) => combat.spendHeroism(id, cost)}
+          onSpendActionPoints={(cost) => combat.spend(selectedTokenId, cost)}
+        />
+      )}
     </aside>
   );
 }
