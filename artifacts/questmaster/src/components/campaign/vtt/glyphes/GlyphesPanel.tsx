@@ -1,11 +1,13 @@
 // Panneau latéral Glyphes de la table de jeu : jeton sélectionné (PA,
-// héroïsme, blessures, approche, actions) + journal des jets partagé.
-import { useState } from "react";
+// héroïsme, blessures, approche, actions), attaque/réaction entre jetons
+// et journal des jets partagé.
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Dices } from "lucide-react";
+import { X, Dices, Swords } from "lucide-react";
 import GlyphesTokenPanel from "./GlyphesTokenPanel";
 import GlyphesRollLog from "./GlyphesRollLog";
 import GlyphesCheckDialog from "./GlyphesCheckDialog";
+import GlyphesAttackDialog, { type GlyphesTargetOption } from "./GlyphesAttackDialog";
 import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
 
 interface Props {
@@ -14,6 +16,8 @@ interface Props {
   selectedTokenId?: string | null;
   selectedTokenName?: string | null;
   canEdit: boolean;
+  /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
+  tokens?: GlyphesTargetOption[];
   onClose?: () => void;
 }
 
@@ -23,12 +27,18 @@ export default function GlyphesPanel({
   selectedTokenId,
   selectedTokenName,
   canEdit,
+  tokens = [],
   onClose,
 }: Props) {
   const combat = useGlyphesCombat(campaignId);
   const [checkOpen, setCheckOpen] = useState(false);
+  const [attackOpen, setAttackOpen] = useState(false);
 
   const state = selectedTokenId ? combat.getState(selectedTokenId) : null;
+  const targets = useMemo(
+    () => tokens.filter((t) => t.id !== selectedTokenId),
+    [tokens, selectedTokenId],
+  );
 
   return (
     <aside
