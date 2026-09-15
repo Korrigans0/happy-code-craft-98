@@ -5,9 +5,11 @@ import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import * as VisuallyHiddenPrimitive from "@radix-ui/react-visually-hidden";
 
-const VisuallyHidden = VisuallyHiddenPrimitive.Root;
+/** Titre requis par l'accessibilité, masqué visuellement. */
+const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
+  <span className="sr-only">{children}</span>
+);
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
