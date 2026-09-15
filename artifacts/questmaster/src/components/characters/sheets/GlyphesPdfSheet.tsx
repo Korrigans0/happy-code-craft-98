@@ -21,6 +21,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 const PDF_URL = "/glyphes/fiche-glyphes.pdf";
 const RENDER_SCALE = 1.6; // rendering scale for the background canvas
+const STANDARD_FONTS_URL = "/pdfjs/standard_fonts/";
+const CMAPS_URL = "/pdfjs/cmaps/";
 
 interface Props {
   character: any;
@@ -83,7 +85,12 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     (async () => {
       setLoading(true);
       try {
-        const loadingTask = pdfjsLib.getDocument({ url: PDF_URL });
+        const loadingTask = pdfjsLib.getDocument({
+          url: PDF_URL,
+          standardFontDataUrl: STANDARD_FONTS_URL,
+          cMapUrl: CMAPS_URL,
+          cMapPacked: true,
+        });
         const pdf = await loadingTask.promise;
         if (cancelled) return;
 
