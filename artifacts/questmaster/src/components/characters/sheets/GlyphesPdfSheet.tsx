@@ -61,20 +61,35 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
   );
   const [formData, setFormData] = useState<Record<string, any>>(initialForm);
 
-  // Autosave the form into character.system_data.pdf_form
-  useAutosave(
-    formData,
-    (val) => {
-      if (!editable) return;
-      onSave?.({
-        system_data: {
-          ...(character?.system_data ?? {}),
-          pdf_form: val,
-        },
-      });
-    },
-    800,
-  );
+  // Autosave the form into character.system_data.pdf_form.
+  // Debounced effect: every local change is persisted 800 ms after the last keystroke.
+  const saveRef = useRef<(val: Record<string, any>) => void>(() => {});
+  saveRef.current = (val) => {
+    if (!editable) return;
+    onSave?.({
+      system_data: {
+        ...(character?.system_data ?? {}),
+        pdf_form: val,
+      },
+    });
+  };
+  const skipFirstSave = useRef(true);
+
+  useEffect(() => {
+    // Ne pas ré-enregistrer l'état initial fraîchement chargé.
+    if (skipFirstSave.current) {
+      skipFirstSave.current = false;
+      return;
+    }
+    const t = setTimeout(() => saveRef.current(formData), 800);
+    return () => clearTimeout(t);
+  }, [formData]);
+
+  // Nouveau personnage : réinitialiser le formulaire et la garde d'initialisation.
+  useEffect(() => {
+    skipFirstSave.current = true;
+    setFormData(initialForm);
+  }, [initialForm]);
 
   // Load + render the PDF once
   useEffect(() => {
