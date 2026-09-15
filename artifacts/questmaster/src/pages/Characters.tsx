@@ -204,10 +204,18 @@ const Characters = () => {
       toast({ title: "Personnage créé ✓" });
       if (created?.id) {
         createdIdRef.current = created.id;
-        // On conserve l'état local de la fiche (frappe en cours) et on y
-        // attache seulement l'id pour que les autosaves suivants soient
-        // des mises à jour et non des doublons.
-        setSelectedCharacter((prev) => ({ ...(prev ?? ({} as Character)), id: created.id }));
+        // Conserver les valeurs locales saisies pendant la requête de création.
+        // Une création Glyphes reçoit ici son id : remplacer simplement la fiche
+        // par la réponse serveur réinitialiserait alors le formulaire PDF.
+        setSelectedCharacter((prev) => ({
+          ...created,
+          ...(prev ?? {}),
+          id: created.id,
+          system_data: {
+            ...(created.system_data ?? {}),
+            ...(prev?.system_data ?? {}),
+          },
+        } as Character));
         // Rejoue les modifications faites pendant la création.
         const pending = pendingPatchRef.current;
         pendingPatchRef.current = null;
@@ -272,6 +280,18 @@ const Characters = () => {
   // ── Handlers ───────────────────────────────────────────────
 
   const handleSave = useCallback((characterData: Partial<Character>) => {
+    // La fiche reste immédiatement cohérente pendant l'autosave et lors du
+    // passage entre les vues Complète / Compacte / Jeu.
+    setSelectedCharacter((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ...characterData,
+        system_data: characterData.system_data
+          ? { ...(prev.system_data ?? {}), ...characterData.system_data }
+          : prev.system_data,
+      } as Character;
+    });
     const id = selectedCharacter?.id ?? createdIdRef.current;
     if (id) {
       updateMutation.mutate({ ...characterData, id });

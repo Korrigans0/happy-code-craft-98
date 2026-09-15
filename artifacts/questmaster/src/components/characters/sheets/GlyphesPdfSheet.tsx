@@ -4,7 +4,7 @@
 // aux coordonnées exactes, sauvegarde les valeurs dans character.system_data.pdf_form,
 // et permet l'export du PDF rempli via pdf-lib.
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -54,12 +54,12 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const initialForm = useMemo(
+  // Le composant est remonté à chaque ouverture de personnage. Il ne faut pas
+  // réinitialiser cet état lorsque le nouveau personnage reçoit son id après
+  // sa première sauvegarde : c'était la cause des champs qui se vidaient.
+  const [formData, setFormData] = useState<Record<string, any>>(
     () => (character?.system_data?.pdf_form as Record<string, any>) || {},
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [character?.id],
   );
-  const [formData, setFormData] = useState<Record<string, any>>(initialForm);
 
   // Autosave the form into character.system_data.pdf_form.
   // Debounced effect: every local change is persisted 800 ms after the last keystroke.
@@ -84,12 +84,6 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     const t = setTimeout(() => saveRef.current(formData), 800);
     return () => clearTimeout(t);
   }, [formData]);
-
-  // Nouveau personnage : réinitialiser le formulaire et la garde d'initialisation.
-  useEffect(() => {
-    skipFirstSave.current = true;
-    setFormData(initialForm);
-  }, [initialForm]);
 
   // Load + render the PDF once
   useEffect(() => {
