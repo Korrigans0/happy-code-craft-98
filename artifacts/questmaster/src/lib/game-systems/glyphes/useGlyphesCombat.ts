@@ -47,40 +47,72 @@ function storageKey(campaignId?: string | null) {
   return `glyphes-combat-${campaignId ?? "local"}`;
 }
 
-export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
-  const [states, setStates] = useState<GlyphesCombatMap>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      return JSON.parse(window.localStorage.getItem(storageKey(campaignId)) || "{}");
-    } catch {
-      return {};
-    }
-  });
-  const skipBroadcast = useRef(false);
+/**
+ * Magasin partagé par onglet : plusieurs composants (table de jeu, panneau,
+ * tiroir mobile) utilisent le même état sans se désynchroniser.
+ */
+const stores = new Map<string, { state: GlyphesCombatMap; listeners: Set<(s: GlyphesCombatMap) => void> }>();
 
-  // Persistance locale
-  useEffect(() => {
-    if (!enabled) return;
-    try {
-      window.localStorage.setItem(storageKey(campaignId), JSON.stringify(states));
-    } catch {
-      /* quota */
+function getStore(key: string) {
+  let store = stores.get(key);
+  if (!store) {
+    let initial: GlyphesCombatMap = {};
+    if (typeof window !== "undefined") {
+      try {
+        initial = JSON.parse(window.localStorage.getItem(key) || "{}");
+      } catch {
+        initial = {};
+      }
     }
-  }, [states, campaignId, enabled]);
+    store = { state: initial, listeners: new Set() };
+    stores.set(key, store);
+  }
+  return store;
+}
+
+function setStore(key: string, updater: (prev: GlyphesCombatMap) => GlyphesCombatMap) {
+  const store = getStore(key);
+  store.state = updater(store.state);
+  try {
+    window.localStorage.setItem(key, JSON.stringify(store.state));
+  } catch {
+    /* quota */
+  }
+  store.listeners.forEach((l) => l(store!.state));
+}
+
+export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
+  const key = storageKey(campaignId);
+  const [states, setLocal] = useState<GlyphesCombatMap>(() => getStore(key).state);
+
+  // Abonnement au magasin partagé
+  useEffect(() => {
+    const store = getStore(key);
+    setLocal(store.state);
+    const listener = (s: GlyphesCombatMap) => setLocal(s);
+    store.listeners.add(listener);
+    return () => {
+      store.listeners.delete(listener);
+    };
+  }, [key]);
+
+  const setStates = useCallback(
+    (updater: (prev: GlyphesCombatMap) => GlyphesCombatMap) => setStore(key, updater),
+    [key],
+  );
 
   // Réception temps réel
   useEffect(() => {
     if (!enabled || !campaignId) return;
     const channel: any = getDiceChannel(campaignId);
     const handler = ({ payload }: { payload: { tokenId: string; state: GlyphesTokenState } }) => {
-      skipBroadcast.current = true;
-      setStates((prev) => ({ ...prev, [payload.tokenId]: payload.state }));
+      setStore(key, (prev) => ({ ...prev, [payload.tokenId]: payload.state }));
     };
     channel.on?.("broadcast", { event: EVENT }, handler);
     return () => {
       channel.off?.("broadcast", { event: EVENT }, handler);
     };
-  }, [campaignId, enabled]);
+  }, [campaignId, enabled, key]);
 
   const push = useCallback(
     (tokenId: string, state: GlyphesTokenState) => {
