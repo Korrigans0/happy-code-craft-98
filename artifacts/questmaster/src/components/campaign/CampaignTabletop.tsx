@@ -40,6 +40,8 @@ import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
 import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
+import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
+import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
