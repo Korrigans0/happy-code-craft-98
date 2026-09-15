@@ -47,7 +47,11 @@ export default function GlyphesPanel({
 
   return (
     <aside
-      className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card"
+      className={
+        variant === "sheet"
+          ? "flex h-full w-full min-w-0 flex-col bg-card"
+          : "flex h-full w-80 shrink-0 flex-col border-l border-border bg-card"
+      }
       aria-label="Panneau Glyphes"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
