@@ -122,7 +122,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           pageWrap.appendChild(canvas);
 
           const ctx = canvas.getContext("2d")!;
-          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+          await page.render({ canvasContext: ctx, viewport }).promise;
 
           nextPages.push({ widthCss: viewport.width, heightCss: viewport.height });
 
