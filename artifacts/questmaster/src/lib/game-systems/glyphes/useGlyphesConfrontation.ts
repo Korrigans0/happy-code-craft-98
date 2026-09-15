@@ -2,8 +2,9 @@
 // jeu et issue. Synchronisée en temps réel sur le canal de la campagne et
 // conservée localement pour survivre à un rechargement de page.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
+import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import {
   createConfrontation,
   nextRound,
