@@ -23,6 +23,8 @@ interface Props {
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
+  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). */
+  variant?: "sidebar" | "sheet";
 }
 
 export default function GlyphesPanel({
