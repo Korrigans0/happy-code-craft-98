@@ -4,7 +4,10 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import * as VisuallyHiddenPrimitive from "@radix-ui/react-visually-hidden";
+
+const VisuallyHidden = VisuallyHiddenPrimitive.Root;
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
