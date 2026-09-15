@@ -2,7 +2,7 @@
 // approche) — synchronisé en temps réel sur le canal de la campagne et
 // conservé localement pour survivre à un rechargement de page.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
 import { ACTION_POINTS_PER_TURN, type Approach } from "./actions";
 import { MAX_HEROISM } from "./heroic-actions";
