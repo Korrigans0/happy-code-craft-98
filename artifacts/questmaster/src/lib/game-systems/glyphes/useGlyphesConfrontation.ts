@@ -17,6 +17,10 @@ import {
 
 const EVENT = "glyphes-confrontation";
 
+/** Campagnes déjà chargées depuis le serveur (une seule lecture par onglet). */
+const hydrated = new Set<string>();
+const saveState = createDebouncedSaver();
+
 function storageKey(campaignId?: string | null) {
   return `glyphes-confrontation-${campaignId ?? "local"}`;
 }
