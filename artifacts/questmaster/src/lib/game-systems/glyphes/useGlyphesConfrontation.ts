@@ -48,6 +48,33 @@ export function useGlyphesConfrontation(campaignId?: string | null) {
     }
   }, [confrontation, campaignId]);
 
+  // Chargement de la confrontation enregistrée côté serveur
+  const ready = useRef(false);
+  useEffect(() => {
+    if (!campaignId) return;
+    const key = storageKey(campaignId);
+    if (hydrated.has(key)) {
+      ready.current = true;
+      return;
+    }
+    hydrated.add(key);
+    let cancelled = false;
+    void loadGlyphesState(campaignId).then((remote) => {
+      if (cancelled) return;
+      if (remote?.confrontation) setConfrontation(remote.confrontation as Confrontation);
+      ready.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId]);
+
+  // Enregistrement différé
+  useEffect(() => {
+    if (!campaignId || !ready.current) return;
+    saveState(campaignId, { confrontation });
+  }, [confrontation, campaignId]);
+
   useEffect(() => {
     if (!campaignId) return;
     const channel: any = getDiceChannel(campaignId);
