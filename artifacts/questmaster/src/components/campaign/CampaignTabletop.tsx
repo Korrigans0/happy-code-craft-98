@@ -40,6 +40,8 @@ import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
 import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
+import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
+import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
   CONDITIONS, AURA_COLORS, VTTScene, LightSource, LightPreset, Wall,
@@ -798,6 +800,20 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   });
   const campaignSystem = campaignInfo?.system ?? "Aetheria";
   const allowHomebrew = !!campaignInfo?.allow_homebrew_characters;
+
+  // ── Glyphes : points d'action dépensés automatiquement au déplacement ──
+  const isGlyphes = campaignSystem === "Glyphes";
+  const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
+  /** Distance en pieds entre deux points du monde (règle Glyphes : 15 ft = 1 PA). */
+  const glyphesDistanceFt = useCallback(
+    (a: { x: number; y: number }, b: { x: number; y: number }) => {
+      const meters = grid.type === "none"
+        ? distanceInUnits(grid, a, b)
+        : distanceInCells(grid, a, b) * grid.unitsPerCell;
+      return meters / 0.3048;
+    },
+    [grid],
+  );
 
   const { data: waCreatures = [] } = useQuery({
     queryKey: ["vtt-wa-creatures", campaignSystem],
@@ -3147,6 +3163,29 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           }
           if (isGM && selectedWallIds.size) wallsHook.moveWallsBy(Array.from(selectedWallIds), gdx, gdy);
           if (isGM && selectedLightIds.size) lightsHook.moveLightsBy(Array.from(selectedLightIds), gdx, gdy);
+        }
+      }
+      // Glyphes : le déplacement coûte 1 PA par tranche de 15 ft (fragmenté :
+      // on cumule la distance parcourue dans le tour et on facture la différence).
+      if (isGlyphes && dragStart && draggedNow) {
+        const ft = glyphesDistanceFt(dragStart, { x: draggedNow.x, y: draggedNow.y });
+        if (ft > 0.5) {
+          const st = glyphesCombat.getState(id);
+          const already = st.movedFt || 0;
+          const prevCost = movementCost(already);
+          const newCost = movementCost(already + ft);
+          const delta = Math.max(0, newCost - prevCost);
+          if (delta > st.actionPoints) {
+            toast({
+              title: "Points d'action insuffisants",
+              description: `Ce déplacement coûte ${delta} PA, il n'en reste que ${st.actionPoints}.`,
+              variant: "destructive",
+            });
+          }
+          glyphesCombat.update(id, {
+            movedFt: already + ft,
+            actionPoints: Math.max(0, st.actionPoints - delta),
+          });
         }
       }
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
