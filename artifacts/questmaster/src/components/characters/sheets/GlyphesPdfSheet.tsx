@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Loader2, Save, X } from "lucide-react";
 import { SheetHeader } from "./SheetSections";
 import { getSystem } from "@/lib/systems";
-import { useAutosave } from "./useAutosave";
+
 import { toast } from "sonner";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
