@@ -3991,7 +3991,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       </div>
 
       {/* ── MAIN AREA ──────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
 
         {/* ── LEFT VERTICAL TOOLBAR ── */}
         <div
