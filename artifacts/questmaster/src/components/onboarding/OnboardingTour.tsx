@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Sparkles, Sword, Map, Users, BookOpen, Dices, ChevronRight, ChevronLeft, X, PartyPopper,
@@ -165,9 +165,9 @@ export function OnboardingTour({ force = false, onClose }: Props) {
           <div className="mb-4 rounded-full bg-primary/10 p-4 ring-1 ring-primary/30">
             <Icon className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="font-display text-2xl font-bold text-foreground">
+          <DialogTitle className="font-display text-2xl font-bold text-foreground">
             {current.title}
-          </h2>
+          </DialogTitle>
           <div className="mt-4 text-foreground/90 space-y-2 text-left">
             {current.body}
           </div>

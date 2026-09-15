@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
+import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import { ACTION_POINTS_PER_TURN, type Approach } from "./actions";
 import { MAX_HEROISM } from "./heroic-actions";
 import { MAX_BODY } from "./character";
@@ -81,9 +82,37 @@ function setStore(key: string, updater: (prev: GlyphesCombatMap) => GlyphesComba
   store.listeners.forEach((l) => l(store!.state));
 }
 
+/** Campagnes déjà chargées depuis le serveur (une seule lecture par onglet). */
+const hydrated = new Set<string>();
+const saveState = createDebouncedSaver();
+
 export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   const key = storageKey(campaignId);
   const [states, setLocal] = useState<GlyphesCombatMap>(() => getStore(key).state);
+
+  // Chargement de l'état enregistré côté serveur (survit au changement d'appareil)
+  useEffect(() => {
+    if (!enabled || !campaignId || hydrated.has(key)) return;
+    hydrated.add(key);
+    let cancelled = false;
+    void loadGlyphesState(campaignId).then((remote) => {
+      if (cancelled || !remote?.tokens) return;
+      const tokens = remote.tokens as GlyphesCombatMap;
+      if (Object.keys(tokens).length === 0) return;
+      // Le serveur fait foi au chargement, le local complète les jetons absents.
+      setStore(key, (prev) => ({ ...prev, ...tokens }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, enabled, key]);
+
+  // Enregistrement différé
+  useEffect(() => {
+    if (!enabled || !campaignId || !hydrated.has(key)) return;
+    if (Object.keys(states).length === 0) return;
+    saveState(campaignId, { tokens: states as Record<string, unknown> });
+  }, [states, campaignId, enabled, key]);
 
   // Abonnement au magasin partagé
   useEffect(() => {

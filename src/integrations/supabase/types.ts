@@ -1432,6 +1432,41 @@ export type Database = {
         }
         Relationships: []
       }
+      glyphes_combat_state: {
+        Row: {
+          campaign_id: string
+          confrontation: Json | null
+          created_at: string
+          tokens: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          campaign_id: string
+          confrontation?: Json | null
+          created_at?: string
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          confrontation?: Json | null
+          created_at?: string
+          tokens?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "glyphes_combat_state_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       glyphes_content: {
         Row: {
           created_at: string

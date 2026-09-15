@@ -2,8 +2,9 @@
 // jeu et issue. Synchronisée en temps réel sur le canal de la campagne et
 // conservée localement pour survivre à un rechargement de page.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
+import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import {
   createConfrontation,
   nextRound,
@@ -15,6 +16,10 @@ import {
 } from "./confrontations";
 
 const EVENT = "glyphes-confrontation";
+
+/** Campagnes déjà chargées depuis le serveur (une seule lecture par onglet). */
+const hydrated = new Set<string>();
+const saveState = createDebouncedSaver();
 
 function storageKey(campaignId?: string | null) {
   return `glyphes-confrontation-${campaignId ?? "local"}`;
@@ -41,6 +46,33 @@ export function useGlyphesConfrontation(campaignId?: string | null) {
     } catch {
       /* quota */
     }
+  }, [confrontation, campaignId]);
+
+  // Chargement de la confrontation enregistrée côté serveur
+  const ready = useRef(false);
+  useEffect(() => {
+    if (!campaignId) return;
+    const key = storageKey(campaignId);
+    if (hydrated.has(key)) {
+      ready.current = true;
+      return;
+    }
+    hydrated.add(key);
+    let cancelled = false;
+    void loadGlyphesState(campaignId).then((remote) => {
+      if (cancelled) return;
+      if (remote?.confrontation) setConfrontation(remote.confrontation as Confrontation);
+      ready.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId]);
+
+  // Enregistrement différé
+  useEffect(() => {
+    if (!campaignId || !ready.current) return;
+    saveState(campaignId, { confrontation });
   }, [confrontation, campaignId]);
 
   useEffect(() => {
