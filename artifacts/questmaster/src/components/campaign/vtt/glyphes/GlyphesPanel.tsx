@@ -23,6 +23,8 @@ interface Props {
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
+  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). */
+  variant?: "sidebar" | "sheet";
 }
 
 export default function GlyphesPanel({
@@ -33,6 +35,7 @@ export default function GlyphesPanel({
   canEdit,
   tokens = [],
   onClose,
+  variant = "sidebar",
 }: Props) {
   const combat = useGlyphesCombat(campaignId);
   const [checkOpen, setCheckOpen] = useState(false);
@@ -44,7 +47,11 @@ export default function GlyphesPanel({
 
   return (
     <aside
-      className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card"
+      className={
+        variant === "sheet"
+          ? "flex h-full w-full min-w-0 flex-col bg-card"
+          : "flex h-full w-80 shrink-0 flex-col border-l border-border bg-card"
+      }
       aria-label="Panneau Glyphes"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
