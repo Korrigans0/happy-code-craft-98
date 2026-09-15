@@ -799,6 +799,20 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const campaignSystem = campaignInfo?.system ?? "Aetheria";
   const allowHomebrew = !!campaignInfo?.allow_homebrew_characters;
 
+  // ── Glyphes : points d'action dépensés automatiquement au déplacement ──
+  const isGlyphes = campaignSystem === "Glyphes";
+  const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
+  /** Distance en pieds entre deux points du monde (règle Glyphes : 15 ft = 1 PA). */
+  const glyphesDistanceFt = useCallback(
+    (a: { x: number; y: number }, b: { x: number; y: number }) => {
+      const meters = grid.type === "none"
+        ? distanceInUnits(grid, a, b)
+        : distanceInCells(grid, a, b) * grid.unitsPerCell;
+      return meters / 0.3048;
+    },
+    [grid],
+  );
+
   const { data: waCreatures = [] } = useQuery({
     queryKey: ["vtt-wa-creatures", campaignSystem],
     enabled: campaignSystem === "Worlds Awakening",
