@@ -35,6 +35,7 @@ export default function GlyphesPanel({
   canEdit,
   tokens = [],
   onClose,
+  variant = "sidebar",
 }: Props) {
   const combat = useGlyphesCombat(campaignId);
   const [checkOpen, setCheckOpen] = useState(false);
