@@ -4703,7 +4703,43 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           </Suspense>
         )}
 
+        {/* ── PANNEAU GLYPHES MOBILE ── (bouton flottant + tiroir plein écran) */}
+        {isMobile && campaignSystem === "Glyphes" && (
+          <>
+            <Button
+              size="icon"
+              className="absolute bottom-4 right-4 z-30 h-12 w-12 rounded-full shadow-lg"
+              onClick={() => setGlyphesSheetOpen(true)}
+              aria-label="Ouvrir le panneau Glyphes"
+              title="Panneau Glyphes"
+            >
+              <Dices className="h-5 w-5" />
+            </Button>
+            <Sheet open={glyphesSheetOpen} onOpenChange={setGlyphesSheetOpen}>
+              <SheetContent
+                side="bottom"
+                className="h-[85dvh] p-0 pb-[env(safe-area-inset-bottom)]"
+              >
+                <SheetTitle className="sr-only">Panneau Glyphes</SheetTitle>
+                <Suspense fallback={null}>
+                  <GlyphesPanel
+                    variant="sheet"
+                    campaignId={campaignId}
+                    authorName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+                    selectedTokenId={selectedTokenId}
+                    selectedTokenName={selectedToken?.name}
+                    canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+                    tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
+                    onClose={() => setGlyphesSheetOpen(false)}
+                  />
+                </Suspense>
+              </SheetContent>
+            </Sheet>
+          </>
+        )}
+
       </div>
+
 
       {/* Fiche personnage interactive du jeton */}
       <Dialog open={!!sheetToken} onOpenChange={(o) => !o && setSheetToken(null)}>
