@@ -4696,6 +4696,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               selectedTokenId={selectedTokenId}
               selectedTokenName={selectedToken?.name}
               canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+              tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
               onClose={() => setGmPanelOpen(false)}
             />
           </Suspense>
