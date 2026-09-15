@@ -268,6 +268,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [mapGenOpen, setMapGenOpen] = useState(false);
   const [gmPanelOpen, setGmPanelOpen] = useState(true);
+  const [glyphesSheetOpen, setGlyphesSheetOpen] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   // (showLayersPanel retiré — la gestion des calques se fait via le panneau flottant LayersPanel monté par CampaignPlay)
