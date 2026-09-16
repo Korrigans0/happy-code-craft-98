@@ -41,6 +41,7 @@ import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
 import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
+import { useGlyphesConfrontation } from "@/lib/game-systems/glyphes/useGlyphesConfrontation";
 import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
@@ -804,6 +805,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Glyphes : points d'action dépensés automatiquement au déplacement ──
   const isGlyphes = campaignSystem === "Glyphes";
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
+  const glyphesConfrontation = useGlyphesConfrontation(isGlyphes ? campaignId : null);
+  /** Les PA ne sont décomptés que pendant une confrontation en cours. */
+  const glyphesInCombat =
+    isGlyphes && glyphesConfrontation.confrontation?.outcome === "en-cours";
   /** Distance en pieds entre deux points du monde (règle Glyphes : 15 ft = 1 PA). */
   const glyphesDistanceFt = useCallback(
     (a: { x: number; y: number }, b: { x: number; y: number }) => {
