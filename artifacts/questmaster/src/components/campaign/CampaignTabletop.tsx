@@ -41,6 +41,7 @@ import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
 import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
+import { useGlyphesConfrontation } from "@/lib/game-systems/glyphes/useGlyphesConfrontation";
 import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
   Tool, DrawAction, TokenItem, MapLayer, InitiativeEntry, ContextMenuState,
@@ -804,6 +805,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Glyphes : points d'action dépensés automatiquement au déplacement ──
   const isGlyphes = campaignSystem === "Glyphes";
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
+  const glyphesConfrontation = useGlyphesConfrontation(isGlyphes ? campaignId : null);
+  /** Les PA ne sont décomptés que pendant une confrontation en cours. */
+  const glyphesInCombat =
+    isGlyphes && glyphesConfrontation.confrontation?.outcome === "en-cours";
   /** Distance en pieds entre deux points du monde (règle Glyphes : 15 ft = 1 PA). */
   const glyphesDistanceFt = useCallback(
     (a: { x: number; y: number }, b: { x: number; y: number }) => {
@@ -3167,7 +3172,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
       // Glyphes : le déplacement coûte 1 PA par tranche de 15 ft (fragmenté :
       // on cumule la distance parcourue dans le tour et on facture la différence).
-      if (isGlyphes && dragStart && draggedNow) {
+      if (
+        glyphesInCombat &&
+        dragStart &&
+        draggedNow &&
+        glyphesConfrontation.confrontation?.participants.some((p) => p.tokenId === id)
+      ) {
         const ft = glyphesDistanceFt(dragStart, { x: draggedNow.x, y: draggedNow.y });
         if (ft > 0.5) {
           const st = glyphesCombat.getState(id);
@@ -3176,16 +3186,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const newCost = movementCost(already + ft);
           const delta = Math.max(0, newCost - prevCost);
           if (delta > st.actionPoints) {
+            // Pas assez de PA : on prévient sans vider le compteur du jeton.
             toast({
               title: "Points d'action insuffisants",
               description: `Ce déplacement coûte ${delta} PA, il n'en reste que ${st.actionPoints}.`,
               variant: "destructive",
             });
+          } else {
+            glyphesCombat.update(id, {
+              movedFt: already + ft,
+              actionPoints: st.actionPoints - delta,
+            });
           }
-          glyphesCombat.update(id, {
-            movedFt: already + ft,
-            actionPoints: Math.max(0, st.actionPoints - delta),
-          });
         }
       }
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
@@ -4737,6 +4749,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               selectedTokenId={selectedTokenId}
               selectedTokenName={selectedToken?.name}
               canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+              canManageConfrontation={isGM}
               tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
               onClose={() => setGmPanelOpen(false)}
             />
@@ -4769,6 +4782,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     selectedTokenId={selectedTokenId}
                     selectedTokenName={selectedToken?.name}
                     canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+                    canManageConfrontation={isGM}
                     tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
                     onClose={() => setGlyphesSheetOpen(false)}
                   />

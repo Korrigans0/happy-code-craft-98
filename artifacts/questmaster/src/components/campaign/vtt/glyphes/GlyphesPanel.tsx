@@ -20,6 +20,8 @@ interface Props {
   selectedTokenId?: string | null;
   selectedTokenName?: string | null;
   canEdit: boolean;
+  /** Droit de piloter la confrontation (portée campagne, indépendante du jeton). */
+  canManageConfrontation?: boolean;
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
@@ -33,6 +35,7 @@ export default function GlyphesPanel({
   selectedTokenId,
   selectedTokenName,
   canEdit,
+  canManageConfrontation,
   tokens = [],
   onClose,
   variant = "sidebar",
@@ -122,7 +125,7 @@ export default function GlyphesPanel({
               <GlyphesConfrontationPanel
                 campaignId={campaignId}
                 authorName={authorName}
-                canEdit={canEdit}
+                canEdit={canManageConfrontation ?? canEdit}
                 tokens={tokens}
                 getTokenState={(id) => combat.getState(id)}
                 onHeroismChange={(id, heroism) => combat.update(id, { heroism })}
