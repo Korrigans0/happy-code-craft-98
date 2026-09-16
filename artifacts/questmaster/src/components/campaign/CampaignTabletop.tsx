@@ -3172,7 +3172,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
       // Glyphes : le déplacement coûte 1 PA par tranche de 15 ft (fragmenté :
       // on cumule la distance parcourue dans le tour et on facture la différence).
-      if (isGlyphes && dragStart && draggedNow) {
+      if (
+        glyphesInCombat &&
+        dragStart &&
+        draggedNow &&
+        glyphesConfrontation.confrontation?.participants.some((p) => p.tokenId === id)
+      ) {
         const ft = glyphesDistanceFt(dragStart, { x: draggedNow.x, y: draggedNow.y });
         if (ft > 0.5) {
           const st = glyphesCombat.getState(id);
@@ -3181,16 +3186,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const newCost = movementCost(already + ft);
           const delta = Math.max(0, newCost - prevCost);
           if (delta > st.actionPoints) {
+            // Pas assez de PA : on prévient sans vider le compteur du jeton.
             toast({
               title: "Points d'action insuffisants",
               description: `Ce déplacement coûte ${delta} PA, il n'en reste que ${st.actionPoints}.`,
               variant: "destructive",
             });
+          } else {
+            glyphesCombat.update(id, {
+              movedFt: already + ft,
+              actionPoints: st.actionPoints - delta,
+            });
           }
-          glyphesCombat.update(id, {
-            movedFt: already + ft,
-            actionPoints: Math.max(0, st.actionPoints - delta),
-          });
         }
       }
       // Snap to grid (and resolve collision) on release; the position-change effect tweens to it.
