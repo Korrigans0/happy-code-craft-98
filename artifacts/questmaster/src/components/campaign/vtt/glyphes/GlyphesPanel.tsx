@@ -20,6 +20,8 @@ interface Props {
   selectedTokenId?: string | null;
   selectedTokenName?: string | null;
   canEdit: boolean;
+  /** Droit de piloter la confrontation (portée campagne, indépendante du jeton). */
+  canManageConfrontation?: boolean;
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
