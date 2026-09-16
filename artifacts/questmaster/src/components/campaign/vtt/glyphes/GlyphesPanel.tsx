@@ -35,6 +35,7 @@ export default function GlyphesPanel({
   selectedTokenId,
   selectedTokenName,
   canEdit,
+  canManageConfrontation,
   tokens = [],
   onClose,
   variant = "sidebar",
@@ -124,7 +125,7 @@ export default function GlyphesPanel({
               <GlyphesConfrontationPanel
                 campaignId={campaignId}
                 authorName={authorName}
-                canEdit={canEdit}
+                canEdit={canManageConfrontation ?? canEdit}
                 tokens={tokens}
                 getTokenState={(id) => combat.getState(id)}
                 onHeroismChange={(id, heroism) => combat.update(id, { heroism })}
