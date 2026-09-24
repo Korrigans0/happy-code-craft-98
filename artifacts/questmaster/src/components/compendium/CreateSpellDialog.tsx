@@ -17,7 +17,7 @@ interface CreateSpellDialogProps {
 }
 
 // Aetheria et WA ont leurs propres listes de sorts, exclus ici.
-const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"];
+const SYSTEM_OPTIONS = ["D&D 5e", "Personnalisé"];
 
 const CreateSpellDialog = ({ onCreated, defaultSystem = "Personnalisé" }: CreateSpellDialogProps) => {
   const { user } = useAuth();

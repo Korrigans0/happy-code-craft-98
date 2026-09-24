@@ -1,5 +1,5 @@
 // GenericSystemSheet — fiche pilotée par SystemDefinition.
-// Utilisée pour les systèmes sans fiche React dédiée (Pathfinder 2e, CoC).
+// Utilisée pour les systèmes sans fiche React dédiée (ex. systèmes personnalisés).
 // Affiche stats, défenses, compétences, ressources selon la définition.
 
 import { useMemo } from "react";

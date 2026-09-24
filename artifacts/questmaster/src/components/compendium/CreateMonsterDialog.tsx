@@ -17,7 +17,7 @@ interface CreateMonsterDialogProps {
 }
 
 // Aetheria et Worlds Awakening sont exclus : ils possèdent leur propre bestiaire dédié.
-const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"];
+const SYSTEM_OPTIONS = ["D&D 5e", "Personnalisé"];
 
 const CreateMonsterDialog = ({ onCreated, defaultSystem = "Personnalisé" }: CreateMonsterDialogProps) => {
   const { user } = useAuth();

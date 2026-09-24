@@ -4,7 +4,6 @@
 // - Aetheria   : bestiaire + codex lore + matchups (composants existants)
 // - WA         : bestiaire WA + codex + histoire (composants existants)
 // - D&D 5e     : monstres + sorts + objets magiques (tables filtrées par system)
-// - Pathfinder : monstres + sorts + objets magiques (tables filtrées par system)
 // - Homebrew   : créations personnelles MJ (toutes tables, scope = custom_personal)
 //
 // Le filtre par système empêche toute contamination entre univers.
@@ -52,7 +51,7 @@ import PageAmbiance from "@/components/fantasy/PageAmbiance";
 const COMPENDIUM_SEO = (
   <SEO
     title="Compendium multi-systèmes — Aetheria VTT"
-    description="Codex cloisonné par système : Aetheria, D&D 5e, Pathfinder 2e, Worlds Awakening, Homebrew. Bestiaire, sorts, objets et règles."
+    description="Codex cloisonné par système : Aetheria, D&D 5e, Worlds Awakening, Glyphes, Homebrew. Bestiaire, sorts, objets et règles."
     path="/compendium"
     jsonLd={{
       "@context": "https://schema.org",
@@ -132,8 +131,8 @@ const AetheriaLore = () => (
   </div>
 );
 
-// ── Codex générique pour D&D / Pathfinder / Cthulhu / Homebrew ──────
-// Deux sources : le contenu OFFICIEL (SRD 5.1 / Archives of Nethys) pour les
+// ── Codex générique pour D&D / Homebrew ──────
+// Deux sources : le contenu OFFICIEL (SRD 5.1) pour les
 // systèmes ouverts, et le contenu communautaire/MJ stocké en base.
 // Cloisonnement strict : Aetheria et Glyphes n'utilisent jamais cette source.
 const SystemCodex = ({
@@ -253,7 +252,7 @@ const Compendium = () => {
     [setSearchParams],
   );
 
-  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, PF2e, Cthulhu, Glyphes, Homebrew).
+  // L'ordre d'affichage des systèmes (Aetheria phare, WA, D&D, Glyphes, Homebrew).
   // Glyphes est rendu via un composant dédié ; on évite tout doublon avec le registre.
   const visibleSystems = useMemo(
     () =>
@@ -369,7 +368,7 @@ const Compendium = () => {
             </Tabs>
           )}
 
-          {(system === "D&D 5e" || system === "Pathfinder 2e" || system === "COF" || system === "Call of Cthulhu") && (
+          {system === "D&D 5e" && (
             <SystemCodex system={system} searchQuery={searchQuery} canCreate={!!user} />
           )}
 

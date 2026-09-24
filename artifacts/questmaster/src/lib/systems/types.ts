@@ -1,6 +1,6 @@
 // Multi-system registry — type definitions
 //
-// Chaque système de jeu (Aetheria, D&D 5e, Pathfinder 2e, etc.) expose une
+// Chaque système de jeu (Aetheria, D&D 5e, Glyphes, etc.) expose une
 // SystemDefinition décrivant TOUT ce qui est spécifique au système :
 // stats, compétences, ressources, calculs, capacités UI, schéma de fiche.
 //
@@ -18,7 +18,7 @@ export interface StatDef {
   label: string;
   /** Libellé long (tooltip) */
   longLabel?: string;
-  /** Mode d'usage : modificateur direct, score (D&D), pourcentage (CoC) */
+  /** Mode d'usage : modificateur direct, score (D&D), pourcentage */
   mode: RollMode;
   /** Valeur par défaut à la création */
   default: number;
@@ -63,7 +63,7 @@ export interface ResourceDef {
  * système consomme ce qui l'intéresse.
  *
  * IMPORTANT : `stats` contient les valeurs BRUTES saisies par le joueur
- * (score D&D 10-20, pourcentage CoC 0-99, modificateur direct Aetheria/WA).
+ * (score D&D 10-20, pourcentage 0-99, modificateur direct Aetheria/WA).
  * Chaque système applique lui-même sa conversion (`statModifier`).
  */
 export interface CalcContext {
@@ -107,8 +107,6 @@ export type SheetComponentKey =
   | "aetheria"
   | "worlds-awakening"
   | "dnd5e"
-  | "pathfinder2e"
-  | "cthulhu7e"
   | "glyphes"
   | "homebrew";
 
@@ -155,7 +153,7 @@ export interface SystemDefinition {
   minLevel?: number;
   /** Niveau maximum autorisé par les règles du système (défaut 20) */
   maxLevel?: number;
-  /** false = le système n'a pas de niveaux (ex: L'Appel de Cthulhu). Défaut true. */
+  /** false = le système n'a pas de niveaux. Défaut true. */
   hasLevels?: boolean;
 
 

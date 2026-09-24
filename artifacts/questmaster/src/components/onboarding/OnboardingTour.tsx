@@ -22,7 +22,7 @@ const STEPS: Step[] = [
     body: (
       <>
         <p>
-          Aetheria VTT est votre table de jeu virtuelle pour <strong>Aetheria, D&amp;D 5e, Pathfinder 2e,
+          Aetheria VTT est votre table de jeu virtuelle pour <strong>Aetheria, D&amp;D 5e,
           Worlds Awakening</strong> et vos systèmes maison.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">

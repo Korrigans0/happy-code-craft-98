@@ -2,8 +2,6 @@
 //
 // Serves *official* game content for the non-proprietary systems:
 //  - D&D 5e        -> Open5e API (WotC SRD 5.1, OGL)
-//  - Pathfinder 2e -> Archives of Nethys elasticsearch (ORC / Paizo Community Use)
-//  - COF           -> built-in bilingual library (original text, CO-compatible)
 //
 // Aetheria and Glyphes are proprietary and are NEVER served from here.
 //
@@ -13,10 +11,8 @@
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { COF_ENTRIES, COF_SOURCE, type CofEntry } from "./cof-data.ts";
 
 const OPEN5E = "https://api.open5e.com/v1";
-const AON = "https://elasticsearch.aonprd.com/aon/_search";
 const PAGE_SIZE = 40;
 
 type Kind = "monsters" | "spells" | "items";
@@ -199,191 +195,6 @@ async function fetchDnd5e(kind: Kind, search: string, page: number, lang: Lang) 
   };
 }
 
-/* ─────────────────────── Pathfinder 2e (Nethys) ──────────────────────── */
-
-/** AoN stores rich markdown with custom pseudo-tags — flatten to readable text. */
-function cleanAonText(raw: string): string {
-  return (raw || "")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/?(?:title|row|column|center|sup|sub|b|i|u|span|div|table|tr|td|th|li|ul|ol)[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/[ \t]{2,}/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-const AON_CATEGORY: Record<Kind, string> = {
-  monsters: "creature",
-  spells: "spell",
-  items: "equipment",
-};
-
-function mapAonEntry(kind: Kind, src: Record<string, any>, id: string, lang: Lang): OfficialEntry {
-  const text = cleanAonText(src.markdown || src.text || "");
-  const meta: Record<string, string> = {};
-  const put = (k: string, v: unknown) => {
-    if (v == null || v === "") return;
-    meta[k] = Array.isArray(v) ? v.join(", ") : String(v);
-  };
-
-  if (kind === "monsters") {
-    put(T(lang, "Niveau", "Level"), src.level);
-    put(T(lang, "CA", "AC"), src.ac);
-    put(T(lang, "PV", "HP"), src.hp);
-    put(T(lang, "Perception", "Perception"), src.perception);
-    put(T(lang, "Vitesse", "Speed"), src.speed_raw ?? src.speed);
-    put(T(lang, "Bonus d'attaque", "Attack bonus"), src.attack_bonus);
-    put(T(lang, "Sauvegardes", "Saves"), [
-      src.fortitude_save != null ? `${T(lang, "Vig", "Fort")} +${src.fortitude_save}` : "",
-      src.reflex_save != null ? `${T(lang, "Réf", "Ref")} +${src.reflex_save}` : "",
-      src.will_save != null ? `${T(lang, "Vol", "Will")} +${src.will_save}` : "",
-    ].filter(Boolean).join(", "));
-    put(T(lang, "Immunités", "Immunities"), src.immunity);
-    put(T(lang, "Résistances", "Resistances"), src.resistance_raw ?? src.resistance);
-    put(T(lang, "Faiblesses", "Weaknesses"), src.weakness_raw ?? src.weakness);
-    put(T(lang, "Langues", "Languages"), src.language);
-    put(T(lang, "Sens", "Senses"), src.sense);
-    put(T(lang, "Famille", "Family"), src.creature_family);
-  } else if (kind === "spells") {
-    put(T(lang, "Niveau", "Level"), src.level);
-    put(T(lang, "Tradition", "Tradition"), src.tradition);
-    put(T(lang, "École", "School"), src.school);
-    put(T(lang, "Incantation", "Cast"), src.actions);
-    put(T(lang, "Composantes", "Components"), src.component);
-    put(T(lang, "Portée", "Range"), src.range_raw ?? src.range);
-    put(T(lang, "Cible", "Target"), src.target);
-    put(T(lang, "Sauvegarde", "Saving throw"), src.saving_throw);
-    put(T(lang, "Durée", "Duration"), src.duration_raw ?? src.duration);
-  } else {
-    put(T(lang, "Niveau", "Level"), src.level);
-    put(T(lang, "Prix", "Price"), src.price_raw ?? src.price);
-    put(T(lang, "Encombrement", "Bulk"), src.bulk_raw ?? src.bulk);
-    put(T(lang, "Catégorie", "Category"), src.item_category);
-    put(T(lang, "Utilisation", "Usage"), src.usage);
-    put(T(lang, "Rareté", "Rarity"), src.rarity);
-  }
-  put("Source", src.source);
-
-  return {
-    id: `pathfinder2e:${kind}:${id}`,
-    name: src.name,
-    kind,
-    subtitle: cleanAonText(src.summary || "").slice(0, 200),
-    tags: [
-      src.level != null ? `${T(lang, "Niv.", "Lvl")} ${src.level}` : "",
-      src.rarity || "",
-      ...(Array.isArray(src.trait) ? src.trait.slice(0, 4) : []),
-    ].filter(Boolean),
-    meta,
-    abilities: kind === "monsters" && src.strength != null
-      ? {
-        [T(lang, "FOR", "STR")]: src.strength,
-        DEX: src.dexterity,
-        CON: src.constitution,
-        INT: src.intelligence,
-        [T(lang, "SAG", "WIS")]: src.wisdom,
-        CHA: src.charisma,
-      }
-      : undefined,
-    description: text,
-    sections: Array.isArray(src.creature_ability) && src.creature_ability.length
-      ? [{ title: T(lang, "Capacités", "Abilities"), text: src.creature_ability.join(", ") }]
-      : [],
-    source: Array.isArray(src.source) ? src.source.join(", ") : (src.source ?? "Archives of Nethys"),
-    url: src.url ? `https://2e.aonprd.com${src.url}` : undefined,
-  };
-}
-
-async function fetchPathfinder(kind: Kind, search: string, page: number, lang: Lang) {
-  const must: unknown[] = [];
-  if (search) {
-    must.push({
-      multi_match: {
-        query: search,
-        fields: ["name^3", "text", "trait", "summary"],
-        type: "best_fields",
-        fuzziness: "AUTO",
-      },
-    });
-  }
-  const body = {
-    size: PAGE_SIZE,
-    from: (page - 1) * PAGE_SIZE,
-    query: {
-      bool: {
-        filter: [
-          { term: { category: AON_CATEGORY[kind] } },
-          { term: { exclude_from_search: false } },
-        ],
-        must: must.length ? must : [{ match_all: {} }],
-      },
-    },
-    sort: search ? ["_score"] : [{ "name.keyword": "asc" }],
-  };
-
-  const res = await fetch(AON, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`Nethys ${res.status}`);
-  const data = await res.json();
-  return {
-    total: data?.hits?.total?.value ?? 0,
-    items: (data?.hits?.hits ?? []).map((h: Record<string, any>) =>
-      mapAonEntry(kind, h._source ?? {}, h._id, lang)),
-    pageSize: PAGE_SIZE,
-  };
-}
-
-/* ──────────────────────────── COF (intégré) ──────────────────────────── */
-
-/** COF ability keys are stored in French — mirror them for the English view. */
-const COF_ABILITY_EN: Record<string, string> = { FOR: "STR", SAG: "WIS" };
-
-/** Accent- and case-insensitive comparison key (« Épée » matches « epee »). */
-const fold = (s: string) =>
-  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-function mapCof(e: CofEntry, lang: Lang): OfficialEntry {
-  const abilities = e.abilities && lang === "en"
-    ? Object.fromEntries(Object.entries(e.abilities).map(([k, v]) => [COF_ABILITY_EN[k] ?? k, v]))
-    : e.abilities;
-
-  return {
-    id: `cof:${e.kind}:${e.slug}`,
-    name: e.name[lang],
-    kind: e.kind,
-    subtitle: e.subtitle[lang],
-    tags: e.tags[lang],
-    meta: e.meta[lang],
-    abilities,
-    description: e.description[lang],
-    sections: e.sections[lang],
-    source: COF_SOURCE[lang],
-  };
-}
-
-function fetchCof(kind: Kind, search: string, page: number, lang: Lang) {
-  const needle = fold(search);
-  const all = COF_ENTRIES
-    .filter((e) => e.kind === kind)
-    .filter((e) =>
-      !needle ||
-      // Recherche dans les deux langues : un MJ francophone trouve « fireball ».
-      fold(`${e.name.fr} ${e.name.en} ${e.description[lang]} ${e.tags[lang].join(" ")}`).includes(needle))
-    .sort((a, b) => a.name[lang].localeCompare(b.name[lang], lang));
-
-  const start = (page - 1) * PAGE_SIZE;
-  return {
-    total: all.length,
-    items: all.slice(start, start + PAGE_SIZE).map((e) => mapCof(e, lang)),
-    pageSize: PAGE_SIZE,
-
-  };
-}
-
 /* ───────────────────── Traduction FR (cache + IA) ────────────────────── */
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -558,15 +369,8 @@ Deno.serve(async (req) => {
       return json({ error: "kind invalide" }, 400);
     }
 
-    if (system === "COF") return json(fetchCof(kind, search, page, lang));
-
     if (system === "D&D 5e") {
       const res = await fetchDnd5e(kind, search, page, lang);
-      return json({ ...res, items: await localize(res.items, lang) });
-    }
-
-    if (system === "Pathfinder 2e") {
-      const res = await fetchPathfinder(kind, search, page, lang);
       return json({ ...res, items: await localize(res.items, lang) });
     }
 

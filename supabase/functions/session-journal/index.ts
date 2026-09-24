@@ -17,9 +17,6 @@ const SYSTEM_LABELS: Record<string, string> = {
   wa: "Worlds Awakening",
   worlds_awakening: "Worlds Awakening",
   dnd5e: "Dungeons & Dragons 5e",
-  pathfinder2e: "Pathfinder 2e",
-  cthulhu: "L'Appel de Cthulhu 7e",
-  cof: "Chroniques Oubliées Fantasy",
   custom: "Système personnalisé (homebrew)",
 };
 

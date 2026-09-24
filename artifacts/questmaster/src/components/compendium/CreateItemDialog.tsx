@@ -18,7 +18,7 @@ interface CreateItemDialogProps {
 }
 
 // Aetheria et Worlds Awakening sont exclus : ils possèdent leur propre catalogue d'objets.
-const SYSTEM_OPTIONS = ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"];
+const SYSTEM_OPTIONS = ["D&D 5e", "Personnalisé"];
 
 const CreateItemDialog = ({ onCreated, defaultSystem = "Personnalisé" }: CreateItemDialogProps) => {
   const { user } = useAuth();

@@ -842,10 +842,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     },
   });
 
-  // Bestiaire générique (D&D, PF2e, Cthulhu, Personnalisé) — filtré strict par système
+  // Bestiaire générique (D&D, Personnalisé) — filtré strict par système
   const { data: systemMonsters = [] } = useQuery({
     queryKey: ["system-monsters-tabletop", campaignId, campaignSystem, allowHomebrew],
-    enabled: ["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"].includes(campaignSystem),
+    enabled: ["D&D 5e", "Personnalisé"].includes(campaignSystem),
     queryFn: async () => {
       let q = supabase.from("monsters").select("*").eq("system", campaignSystem);
       if (!allowHomebrew) {
