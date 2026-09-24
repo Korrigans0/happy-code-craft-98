@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles, ShieldAlert } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles, ShieldAlert, Crown, HardDrive } from 'lucide-react';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 import ProfileAchievements from '@/components/profile/ProfileAchievements';
 import CosmeticsPanel from '@/components/profile/CosmeticsPanel';
@@ -21,6 +21,11 @@ import CosmeticsPanel from '@/components/profile/CosmeticsPanel';
 import { OnboardingTour, resetOnboarding } from '@/components/onboarding/OnboardingTour';
 import LegalRequestForm from '@/components/legal/LegalRequestForm';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { useMediaLibrary, formatBytes } from '@/hooks/useMediaLibrary';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useSubscription, openCustomerPortal } from '@/hooks/useSubscription';
+import { PLAN_BY_ID, PERIOD_LABELS, formatEuro } from '@/lib/subscriptions';
 
 
 interface ProfileData {
@@ -44,6 +49,9 @@ const Profile = () => {
   const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
   const [replayTour, setReplayTour] = useState(false);
   const [deletionOpen, setDeletionOpen] = useState(false);
+  const limits = usePlanLimits();
+  const { usage } = useMediaLibrary();
+  const { data: subscription } = useSubscription();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -230,6 +238,16 @@ const Profile = () => {
             <p className="text-muted-foreground">Gérez vos informations personnelles</p>
           </div>
           <div className="space-y-6">
+            {limits && <Card className="border-primary/30 bg-gradient-card">
+              <CardHeader><CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5 text-primary" />Votre abonnement</CardTitle><CardDescription>Offre, échéance et quotas appliqués côté serveur.</CardDescription></CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p className="font-display text-xl font-bold text-primary">{PLAN_BY_ID[limits.tier].name}</p><p className="text-sm text-muted-foreground">{subscription?.billingPeriod ? `${PERIOD_LABELS[subscription.billingPeriod]} · ${formatEuro(PLAN_BY_ID[limits.tier].prices[subscription.billingPeriod].cents)}` : 'Offre gratuite'}{subscription?.currentPeriodEnd ? ` · échéance ${new Date(subscription.currentPeriodEnd).toLocaleDateString('fr-FR')}` : ''}</p><p className="text-xs text-muted-foreground">Statut : {subscription?.status ?? 'gratuit'}{subscription?.cancelAtPeriodEnd ? ' · résiliation programmée' : ''}</p></div><Button variant="outline" onClick={() => subscription?.tier === 'free' ? navigate('/subscriptions') : void openCustomerPortal().catch(() => toast({ title: 'Portail indisponible', variant: 'destructive' }))}>{subscription?.tier === 'free' ? 'Voir les offres' : 'Gérer mon abonnement'}</Button></div>
+                <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-lg bg-secondary/40 p-3"><p className="text-xs text-muted-foreground">Campagnes</p><p className="font-semibold">{limits.campaignsUsed} / {limits.limits.campaigns}</p></div><div className="rounded-lg bg-secondary/40 p-3"><p className="text-xs text-muted-foreground">Personnages</p><p className="font-semibold">{limits.charactersUsed} / {limits.limits.characters}</p></div><div className="rounded-lg bg-secondary/40 p-3"><p className="text-xs text-muted-foreground">Joueurs / campagne</p><p className="font-semibold">{limits.limits.playersPerCampaign}</p></div></div>
+                <div><div className="mb-2 flex items-center justify-between text-sm"><span className="flex items-center gap-2"><HardDrive className="h-4 w-4" />Stockage</span><span>{formatBytes(usage?.used_bytes ?? 0)} / {formatBytes(usage?.quota_bytes ?? limits.limits.storageGb * 1024 ** 3)}</span></div><Progress value={usage?.quota_bytes ? Math.min(100, usage.used_bytes / usage.quota_bytes * 100) : 0} /></div>
+                {usage && usage.used_bytes > limits.limits.storageGb * 1024 ** 3 && <p className="rounded border border-amber-400/30 bg-amber-400/10 p-3 text-sm">Votre utilisation dépasse le nouveau quota. Aucun fichier n’est supprimé ; réduisez votre stockage avant tout nouvel import.</p>}
+                {subscription?.tier !== 'free' && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => navigate('/subscriptions')}>Changer d’offre</Button><Button variant="outline" onClick={() => void openCustomerPortal().catch(() => toast({ title: 'Portail indisponible', variant: 'destructive' }))}>Résilier</Button></div>}
+              </CardContent>
+            </Card>}
             <Card className="bg-gradient-card border-border">
               <CardHeader>
                 <CardTitle className="text-foreground">Avatar</CardTitle>
