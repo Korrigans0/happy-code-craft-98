@@ -37,7 +37,7 @@ import GlyphesHub from "./pages/systems/glyphes/Hub";
 import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
 import GlyphesCompendium from "./pages/systems/glyphes/Compendium";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
-import { CookiesPolicy, CreditsLicenses, LegalNotices, PrivacyPolicy, TermsOfSale, TermsOfUse, Withdrawal } from "./pages/legal/LegalPages";
+import { CookiesPolicy, CreditsLicenses, LegalNotices, PrivacyPolicy, RefundPolicy, TermsOfSale, TermsOfUse, Withdrawal } from "./pages/legal/LegalPages";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
 import { useApplyCosmetics } from "@/hooks/useCosmetics";
@@ -103,6 +103,7 @@ const AppRoutes = () => (
         <Route path="/cookies" element={<CookiesPolicy />} />
         <Route path="/credits-licences" element={<CreditsLicenses />} />
         <Route path="/retractation" element={<Withdrawal />} />
+        <Route path="/politique-remboursement" element={<RefundPolicy />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
