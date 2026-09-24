@@ -11,6 +11,7 @@ import CommandPalette from "@/components/CommandPalette";
 import MobileBanner from "@/components/MobileBanner";
 import SiteAmbientMusic from "@/components/SiteAmbientMusic";
 import CookieBanner from "@/components/CookieBanner";
+import CookiePreferencesDialog from "@/components/CookiePreferencesDialog";
 import BugReportButton from "@/components/BugReportButton";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -36,6 +37,7 @@ import GlyphesHub from "./pages/systems/glyphes/Hub";
 import GlyphesNouvelEmpire from "./pages/systems/glyphes/NouvelEmpire";
 import GlyphesCompendium from "./pages/systems/glyphes/Compendium";
 import GlyphesComingSoon from "./pages/systems/glyphes/ComingSoon";
+import { CookiesPolicy, CreditsLicenses, LegalNotices, PrivacyPolicy, TermsOfSale, TermsOfUse, Withdrawal } from "./pages/legal/LegalPages";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { setTokenGetter } from "@/lib/api";
 import { useApplyCosmetics } from "@/hooks/useCosmetics";
@@ -94,6 +96,13 @@ const AppRoutes = () => (
         <Route path="/partners" element={<Partners />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/guide" element={<Guide />} />
+        <Route path="/mentions-legales" element={<LegalNotices />} />
+        <Route path="/cgu" element={<TermsOfUse />} />
+        <Route path="/cgv" element={<TermsOfSale />} />
+        <Route path="/confidentialite" element={<PrivacyPolicy />} />
+        <Route path="/cookies" element={<CookiesPolicy />} />
+        <Route path="/credits-licences" element={<CreditsLicenses />} />
+        <Route path="/retractation" element={<Withdrawal />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
@@ -106,6 +115,7 @@ const AppRoutes = () => (
       <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />
+      <CookiePreferencesDialog />
       <BugReportButton />
       <MobileBanner />
       <SiteAmbientMusic />

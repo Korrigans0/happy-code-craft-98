@@ -3,6 +3,7 @@ import { template as campaignInvitation } from './campaign-invitation.tsx'
 import { template as sessionScheduled } from './session-scheduled.tsx'
 import { template as sessionReminder } from './session-reminder.tsx'
 import { template as bugReport } from './bug-report.tsx'
+import { template as legalRequest } from './legal-request.tsx'
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -17,4 +18,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'session-scheduled': sessionScheduled,
   'session-reminder': sessionReminder,
   'bug-report': bugReport,
+  'legal-request': legalRequest,
 }
