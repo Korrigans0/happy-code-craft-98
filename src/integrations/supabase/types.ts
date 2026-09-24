@@ -2365,7 +2365,13 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       campaign_role: "gm" | "player"
       glyphes_content_kind: "creature" | "object" | "map"
-      subscription_tier: "free" | "gm_premium" | "premium_plus"
+      subscription_tier:
+        | "free"
+        | "gm_premium"
+        | "premium_plus"
+        | "premium_pj"
+        | "premium_mj"
+        | "premium_mixed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2496,7 +2502,14 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       campaign_role: ["gm", "player"],
       glyphes_content_kind: ["creature", "object", "map"],
-      subscription_tier: ["free", "gm_premium", "premium_plus"],
+      subscription_tier: [
+        "free",
+        "gm_premium",
+        "premium_plus",
+        "premium_pj",
+        "premium_mj",
+        "premium_mixed",
+      ],
     },
   },
 } as const
