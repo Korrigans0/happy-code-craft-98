@@ -111,29 +111,12 @@ const DND: DefaultMacro[] = [
   },
 ];
 
-const CTHULHU: DefaultMacro[] = [
-  {
-    name: "Test de caractéristique",
-    category: "Général",
-    color: "slate",
-    actions: [{ type: "roll", label: "Test (sous la valeur)", formula: "1d100" }],
-  },
-  {
-    name: "Jet de Santé Mentale",
-    category: "Défense",
-    color: "violet",
-    actions: [{ type: "roll", label: "SAN", formula: "1d100" }],
-  },
-];
-
 const BY_SYSTEM: Record<string, DefaultMacro[]> = {
   Aetheria: AETHERIA,
   "Worlds Awakening": AETHERIA,
   Glyphes: GLYPHES,
   "D&D 5e": DND,
   Dnd5e: DND,
-  "Pathfinder 2e": DND,
-  "Cthulhu 7e": CTHULHU,
 };
 
 /** Macros par défaut d'un système (toujours au moins les communes). */

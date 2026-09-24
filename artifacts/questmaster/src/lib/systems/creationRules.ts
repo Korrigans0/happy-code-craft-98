@@ -12,7 +12,7 @@ import { readStats, writeStatPatch, readDefense } from "./statBridge";
 export interface LevelBounds {
   min: number;
   max: number;
-  /** false = le système ignore la notion de niveau (ex: L'Appel de Cthulhu). */
+  /** false = le système ignore la notion de niveau. */
   enabled: boolean;
 }
 

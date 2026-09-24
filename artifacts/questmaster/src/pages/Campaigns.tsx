@@ -43,12 +43,9 @@ interface Campaign {
 const SYSTEM_COLORS: Record<string, string> = {
   "Aetheria":            "from-amber-900/80 to-amber-700/40",
   "D&D 5e":             "from-red-900/80 to-red-700/40",
-  "Pathfinder 2e":      "from-orange-900/80 to-orange-700/40",
-  "Call of Cthulhu":    "from-green-950/90 to-green-900/50",
   "Warhammer 4":        "from-stone-900/90 to-stone-700/40",
   "Savage Worlds":      "from-yellow-900/80 to-yellow-700/40",
   "Starfinder":         "from-blue-900/80 to-blue-700/40",
-  "Chroniques Oubliées":"from-purple-900/80 to-purple-700/40",
   "Symbaroum":          "from-emerald-950/90 to-emerald-900/50",
   "Autre":              "from-slate-900/80 to-slate-700/40",
 };
@@ -56,8 +53,6 @@ const SYSTEM_COLORS: Record<string, string> = {
 const DEFAULT_BANNERS: Record<string, string> = {
   "Aetheria":            "linear-gradient(135deg, #1a0a2e 0%, #0f1f3d 50%, #2d1b00 100%)",
   "D&D 5e":             "linear-gradient(135deg, #1a0000 0%, #2d0808 50%, #1a0a0a 100%)",
-  "Pathfinder 2e":      "linear-gradient(135deg, #1a0800 0%, #2d1200 50%, #1a0f00 100%)",
-  "Call of Cthulhu":    "linear-gradient(135deg, #000a04 0%, #001a08 50%, #000f02 100%)",
   "Warhammer 4":        "linear-gradient(135deg, #1a1a12 0%, #2d2d1a 50%, #12120a 100%)",
   "Starfinder":         "linear-gradient(135deg, #00001a 0%, #00082d 50%, #00051a 100%)",
 };

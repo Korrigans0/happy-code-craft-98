@@ -1,6 +1,5 @@
 // Client for the `official-compendium` edge function.
-// Serves official content for the open systems: D&D 5e (SRD 5.1), Pathfinder 2e
-// (Archives of Nethys) and COF (bibliothèque intégrée).
+// Serves official content for the open systems: D&D 5e (SRD 5.1).
 // Every kind of content is available in French and in English.
 
 const SUPABASE_URL =
@@ -39,7 +38,7 @@ export interface OfficialPage {
 }
 
 /** Systems that expose an official (open-licensed) content library. */
-export const OFFICIAL_SYSTEMS = ["D&D 5e", "Pathfinder 2e", "COF"] as const;
+export const OFFICIAL_SYSTEMS = ["D&D 5e"] as const;
 
 export function hasOfficialContent(system: string): boolean {
   return (OFFICIAL_SYSTEMS as readonly string[]).includes(system);
@@ -49,14 +48,6 @@ export const OFFICIAL_SOURCE_LABEL: Record<string, Record<OfficialLang, string>>
   "D&D 5e": {
     fr: "SRD 5.1 (Open5e — licence OGL)",
     en: "SRD 5.1 (Open5e — OGL licence)",
-  },
-  "Pathfinder 2e": {
-    fr: "Archives of Nethys (Paizo — Community Use / ORC)",
-    en: "Archives of Nethys (Paizo — Community Use / ORC)",
-  },
-  COF: {
-    fr: "Compendium COF intégré (contenu original Aetheria VTT)",
-    en: "Built-in COF compendium (original Aetheria VTT content)",
   },
 };
 

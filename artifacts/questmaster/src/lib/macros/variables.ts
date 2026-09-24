@@ -2,7 +2,7 @@
 // Résolution DYNAMIQUE : les valeurs sont lues sur la fiche au moment de
 // l'exécution, jamais figées à la création de la macro.
 //
-// Syntaxe : {FOR}, {NIV}, {DE:ESP} (Glyphes), {DEMI:FOR} / {CINQ:FOR} (CoC).
+// Syntaxe : {FOR}, {NIV}, {DE:ESP} (Glyphes), {DEMI:FOR} / {CINQ:FOR}.
 
 import { getSystem, type SystemDefinition } from "@/lib/systems";
 
@@ -168,7 +168,7 @@ export function listVariables(systemId?: string | null): VariableDoc[] {
     { token: "{ATQ}", label: "Bonus d'attaque" },
     { token: "{DDSORT}", label: "DD de sauvegarde des sorts" },
   );
-  if (system.id === "Dnd5e" || system.id === "D&D 5e" || system.id === "Pathfinder 2e") {
+  if (system.id === "Dnd5e" || system.id === "D&D 5e") {
     docs.push({ token: "{MAIT}", label: "Bonus de maîtrise" });
   }
 

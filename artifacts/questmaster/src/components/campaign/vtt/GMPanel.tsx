@@ -772,8 +772,8 @@ export default function GMPanel({
                   </>
                 )}
 
-                {/* Monstres génériques (D&D 5e / Pathfinder 2e / Cthulhu / Personnalisé) */}
-                {["D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Personnalisé"].includes(campaignSystem) && (() => {
+                {/* Monstres génériques (D&D 5e / Personnalisé) */}
+                {["D&D 5e", "Personnalisé"].includes(campaignSystem) && (() => {
                   const list = systemMonsters.filter((m: any) => m.name.toLowerCase().includes(bestiarySearch.toLowerCase()));
                   if (list.length === 0) return null;
                   return (

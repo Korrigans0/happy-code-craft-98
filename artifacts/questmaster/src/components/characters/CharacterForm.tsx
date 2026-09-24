@@ -86,7 +86,7 @@ const CharacterForm = ({ character, onSave, onCancel, gameSystem }: CharacterFor
     }
   }, [character]);
 
-  // Bornes de niveau propres au système (WA : 1–8, CoC : pas de niveaux).
+  // Bornes de niveau propres au système (WA : 1–8, certains systèmes : pas de niveaux).
   // Un personnage existant au-dessus du plafond n'est jamais rétrogradé.
   const levelBounds = getLevelBounds(systemDef, character?.level);
   const minLevel = levelBounds.min;

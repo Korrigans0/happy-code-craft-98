@@ -161,7 +161,7 @@ const Guide = () => {
               <strong>Joueur (PJ)</strong> : rejoins une campagne avec un code d'invitation, crée ta fiche, joue.
             </Step>
             <Step n={3} title="Lance ta première campagne">
-              MJ : depuis <em>Campagnes</em> → <strong>Nouvelle campagne</strong>, choisis ton système (Aetheria, D&D 5e, Pathfinder 2e, Cthulhu, Worlds Awakening, Personnalisé).
+              MJ : depuis <em>Campagnes</em> → <strong>Nouvelle campagne</strong>, choisis ton système (Aetheria, D&D 5e, Worlds Awakening, Glyphes, Personnalisé).
               <br />
               PJ : depuis <em>Campagnes</em> → bouton <strong>Rejoindre</strong>, colle le code fourni par ton MJ.
             </Step>
@@ -175,8 +175,6 @@ const Guide = () => {
               <li><strong className="text-amber-300">Aetheria</strong> — système maison, fiches dédiées, bestiaire complet, règles de tenues et d'affinités.</li>
               <li><strong className="text-amber-300">Worlds Awakening</strong> — système partenaire, fiches et bestiaire propres.</li>
               <li><strong className="text-amber-300">D&D 5e</strong> — bestiaire et codex SRD, fiche 6 caractéristiques.</li>
-              <li><strong className="text-amber-300">Pathfinder 2e</strong> — codex et créatures dédiés.</li>
-              <li><strong className="text-amber-300">L'Appel de Cthulhu 7e</strong> — bestiaire et fiche d'investigateur.</li>
               <li><strong className="text-amber-300">Personnalisé / Homebrew</strong> — créatures, sorts, objets entièrement libres, partage communautaire optionnel.</li>
             </ul>
             <p className="text-xs italic text-muted-foreground/80">

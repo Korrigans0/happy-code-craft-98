@@ -10,9 +10,6 @@ import SEO from "@/components/SEO";
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { SYSTEM_LIST } from "@/lib/systems";
 import dnd5eArt from "@/assets/systems/dnd5e.jpg";
-import pathfinderArt from "@/assets/systems/pathfinder2e.jpg";
-import cthulhuArt from "@/assets/systems/cthulhu.jpg";
-import cofArt from "@/assets/systems/cof.jpg";
 import waArt from "@/assets/systems/worlds-awakening.jpg";
 import customArt from "@/assets/systems/custom.jpg";
 import aetheriaArt from "@/assets/systems/aetheria.png.asset.json";
@@ -29,9 +26,6 @@ const ART_BY_ID: Record<string, string> = {
   Glyphes: glyphesArt.url,
   "Worlds Awakening": waArt,
   "D&D 5e": dnd5eArt,
-  "Pathfinder 2e": pathfinderArt,
-  "Call of Cthulhu": cthulhuArt,
-  COF: cofArt,
   "Personnalisé": customArt,
 };
 
@@ -39,8 +33,6 @@ const ACCENT_BY_ID: Record<string, string> = {
   Aetheria: "from-amber-500/30 via-amber-400/10 to-transparent",
   "Worlds Awakening": "from-purple-500/25 via-purple-400/5 to-transparent",
   "D&D 5e": "from-red-500/25 via-red-400/5 to-transparent",
-  "Pathfinder 2e": "from-orange-500/25 via-orange-400/5 to-transparent",
-  "Call of Cthulhu": "from-emerald-500/20 via-emerald-400/5 to-transparent",
   Glyphes: "from-indigo-500/25 via-indigo-400/5 to-transparent",
   Custom: "from-slate-500/20 via-slate-400/5 to-transparent",
 };
@@ -51,7 +43,7 @@ export default function SystemsIndex() {
     <div className="relative flex min-h-screen flex-col animate-fade-in bg-[hsl(228,70%,8%)]">
       <SEO
         title="Systèmes de jeu | Aetheria VTT"
-        description="Tous les systèmes JDR supportés par Aetheria VTT : Aetheria, Worlds Awakening, D&D 5e, Pathfinder 2e, L'Appel de Cthulhu, Glyphes et Homebrew."
+        description="Tous les systèmes JDR supportés par Aetheria VTT : Aetheria, Worlds Awakening, D&D 5e, Glyphes et Homebrew."
         path="/systems"
       />
       <Header />

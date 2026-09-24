@@ -72,7 +72,7 @@ interface Character {
   speed: number;
   gold: number;
   campaign?: string | null;
-  /** Système de jeu (Aetheria, D&D 5e, Pathfinder 2e, …). Ajouté avec le multi-système. */
+  /** Système de jeu (Aetheria, D&D 5e, Glyphes, …). Ajouté avec le multi-système. */
   system?: string | null;
   /** Données propres au système (jsonb côté DB). */
   system_data?: Record<string, unknown> | null;
@@ -160,7 +160,7 @@ const Characters = () => {
   const [isAetheriaFormOpen, setIsAetheriaFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  /** Système sélectionné lors de la création (Aetheria, D&D 5e, Pathfinder 2e, etc.). */
+  /** Système sélectionné lors de la création (Aetheria, D&D 5e, Glyphes, etc.). */
   const [pendingSystem, setPendingSystem] = useState<string>("Aetheria");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
@@ -325,7 +325,7 @@ const Characters = () => {
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
-    () => new Set(["Aetheria", "D&D 5e", "Pathfinder 2e", "Call of Cthulhu", "Glyphes"]),
+    () => new Set(["Aetheria", "D&D 5e", "Glyphes"]),
     [],
   );
 
