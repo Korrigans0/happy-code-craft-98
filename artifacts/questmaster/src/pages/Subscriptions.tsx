@@ -15,7 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, openCustomerPortal } from "@/hooks/useSubscription";
-import { getPaddle } from "@/lib/paddle";
+import { getPaddle, resolvePaddlePrice } from "@/lib/paddle";
+import PaymentTestModeBanner from "@/components/PaymentTestModeBanner";
 import { SUBSCRIPTION_PLANS, PERIOD_BILLING, PERIOD_LABELS, formatEuro, monthlyEquivalent, savingsPercent, type BillingPeriod, type SubscriptionPlan } from "@/lib/subscriptions";
 
 const comparison = [
@@ -52,12 +53,12 @@ export default function Subscriptions() {
   };
   const manage = async () => { try { setOpening(true); await openCustomerPortal(); } catch (e) { toast.error(e instanceof Error ? e.message : "Portail indisponible"); } finally { setOpening(false); } };
   const checkout = async () => {
-    if (!selected || !accepted || !user) return; const priceId = selected.prices[period].paddlePriceId; if (!priceId) return;
-    try { setOpening(true); const paddle = await getPaddle(); if (!paddle) throw new Error("Paiement indisponible"); paddle.Checkout.open({ items: [{ priceId, quantity: 1 }], customer: user.email ? { email: user.email } : undefined, customData: { user_id: user.id, plan: selected.id, billing_period: period }, settings: { successUrl: `${window.location.origin}/subscriptions?checkout=success` } }); setSelected(null); }
+    if (!selected || !accepted || !user) return; const externalPriceId = selected.prices[period].priceId; if (!externalPriceId) return;
+    try { setOpening(true); const [paddle, priceId] = await Promise.all([getPaddle(), resolvePaddlePrice(externalPriceId)]); if (!paddle) throw new Error("Paiement indisponible"); paddle.Checkout.open({ items: [{ priceId, quantity: 1 }], customer: user.email ? { email: user.email } : undefined, customData: { userId: user.id, plan: selected.id, billingPeriod: period }, settings: { successUrl: `${window.location.origin}/subscriptions?checkout=success` } }); setSelected(null); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Impossible d’ouvrir le paiement"); } finally { setOpening(false); }
   };
   const displayed = useMemo(() => SUBSCRIPTION_PLANS.map((plan) => ({ plan, price: plan.prices[period], saving: savingsPercent(plan, period) })), [period]);
-  return <div className="relative flex min-h-screen min-w-0 flex-col overflow-x-hidden"><PageAmbiance /><SEO title="Abonnements — Aétheria VTT" description="Comparez les offres Aétheria, Premium PJ, Premium MJ et Premium Mixte." path="/subscriptions" /><Header />
+  return <div className="relative flex min-h-screen min-w-0 flex-col overflow-x-hidden"><PaymentTestModeBanner /><PageAmbiance /><SEO title="Abonnements — Aétheria VTT" description="Comparez les offres Aétheria, Premium PJ, Premium MJ et Premium Mixte." path="/subscriptions" /><Header />
     <main className="relative flex-1"><section className="container mx-auto px-4 py-14 md:px-6 md:py-20">
       <div className="mx-auto mb-9 max-w-3xl text-center"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300"><Crown className="h-3.5 w-3.5" /> Offres Aétheria</div><h1 className="font-display text-4xl font-bold text-gradient-gold md:text-6xl">Choisissez votre voie</h1><p className="mt-4 text-slate-300">Quatre offres claires, sans fausse urgence et sans suppression automatique de vos créations.</p></div>
       {user && currentPlan && <div className="mx-auto mb-8 max-w-3xl rounded-xl border border-cyan-400/25 bg-cyan-400/5 p-4 text-center text-sm text-slate-200"><strong>Votre offre actuelle : {currentPlan.name}</strong>{subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd ? ` · Fin prévue le ${new Date(subscription.currentPeriodEnd).toLocaleDateString("fr-FR")}` : ""}</div>}
