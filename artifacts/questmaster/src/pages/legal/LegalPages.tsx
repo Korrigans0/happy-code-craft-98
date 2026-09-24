@@ -3,8 +3,9 @@ import type { ReactNode } from "react";
 import LegalLayout, { LegalList, LegalSection } from "@/components/legal/LegalLayout";
 import LegalRequestForm from "@/components/legal/LegalRequestForm";
 
-const identity = <address className="not-italic">Erwan Didier Valery Lesage<br />Entrepreneur individuel — Micro-entreprise<br />Nom commercial : Aétheria VTT<br />SIREN : 109 326 066<br />41 La Codelais, 22630 Saint-Judoce, France<br /><a className="text-primary underline" href="mailto:erwanlesagepro@gmail.com">erwanlesagepro@gmail.com</a><br /><a className="text-primary underline" href="tel:+33661549615">06 61 54 96 15</a></address>;
-const contact = <a className="text-primary underline" href="mailto:erwanlesagepro@gmail.com">erwanlesagepro@gmail.com</a>;
+const contactEmail = "korrigans125@gmail.com";
+const identity = <address className="not-italic">Erwan Didier Valery Lesage<br />Entrepreneur individuel — Micro-entreprise<br />Nom commercial : Aétheria VTT<br />SIREN : 109 326 066<br />41 La Codelais, 22630 Saint-Judoce, France<br /><a className="text-primary underline" href={`mailto:${contactEmail}`}>{contactEmail}</a><br /><a className="text-primary underline" href="tel:+33661549615">06 61 54 96 15</a></address>;
+const contact = <a className="text-primary underline" href={`mailto:${contactEmail}`}>{contactEmail}</a>;
 const paddleBuyerTerms = "https://www.paddle.com/legal/checkout-buyer-terms";
 const paddleRefunds = "https://paddle.net";
 

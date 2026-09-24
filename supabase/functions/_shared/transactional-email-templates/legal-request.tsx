@@ -13,7 +13,7 @@ interface Props {
   pageUrl?: string
 }
 
-const OWNER_EMAIL = 'erwanlesagepro@gmail.com'
+const OWNER_EMAIL = 'korrigans125@gmail.com'
 
 const Email = ({ typeLabel = 'Demande juridique', reference = '', name = '', email = '', subject = '', message = '', pageUrl = '' }: Props) => (
   <Html lang="fr" dir="ltr">

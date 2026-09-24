@@ -42,7 +42,7 @@ export default function LegalRequestForm({ type, compact = false }: { type: Requ
       body: { type, ...parsed.data, pageUrl: window.location.href },
     });
     setSending(false);
-    if (requestError || !data?.success) { setError("La demande n’a pas pu être transmise. Réessayez ou écrivez à erwanlesagepro@gmail.com."); return; }
+    if (requestError || !data?.success) { setError("La demande n’a pas pu être transmise. Réessayez ou écrivez à korrigans125@gmail.com."); return; }
     setSent(true);
     setValues({ name: "", email: "", subject: "", message: "", confirmed: false });
   };
