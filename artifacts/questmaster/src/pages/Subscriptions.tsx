@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { Check, Crown, Info, Minus, ShieldCheck, Star } from "lucide-react";
+import { Check, Crown, Minus, ShieldCheck, Star } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -71,7 +71,6 @@ export default function Subscriptions() {
         <ul className="my-6 flex-1 space-y-2.5">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-slate-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />{feature}</li>)}</ul>
         {plan.id === "free" ? <Button asChild variant="outline" className="min-h-11 w-full"><Link to={user ? "/dashboard" : "/sign-up"}>{user ? (subscription?.tier === "free" ? "Votre offre actuelle" : "Offre gratuite") : "Commencer gratuitement"}</Link></Button> : <Button className="min-h-11 w-full font-bold" disabled={opening || subscription?.tier === plan.id} onClick={() => selectPlan(plan)}>{subscription?.tier === plan.id ? "Votre offre actuelle" : !user ? "Créer un compte" : subscription?.tier === "free" ? `Passer à ${plan.name.replace("PREMIUM ", "Premium ")}` : "Changer d’offre"}</Button>}
       </article>)}</div>
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-slate-400"><Info className="h-4 w-4" />Paiements en mode test dans l’aperçu. La commercialisation réelle reste bloquée jusqu’à validation Paddle.</p>
     </section>
     <section className="container mx-auto px-4 py-12 md:px-6"><h2 className="mb-6 text-center font-display text-3xl font-bold text-slate-100">Comparez les offres</h2><div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/50"><Table className="min-w-[720px]"><TableHeader><TableRow><TableHead>Fonction</TableHead>{SUBSCRIPTION_PLANS.map((p) => <TableHead key={p.id} className="text-center">{p.name}</TableHead>)}</TableRow></TableHeader><TableBody>{comparison.map((row) => <TableRow key={row[0]}><TableCell className="font-medium">{row[0]}</TableCell>{row.slice(1).map((value, i) => <TableCell key={i} className="text-center">{typeof value === "boolean" ? value ? <Check className="mx-auto h-4 w-4 text-cyan-300" aria-label="Inclus" /> : <Minus className="mx-auto h-4 w-4 text-slate-600" aria-label="Non inclus" /> : value}</TableCell>)}</TableRow>)}</TableBody></Table></div></section>
     <section className="container mx-auto max-w-4xl px-4 py-12 md:px-6"><h2 className="mb-6 text-center font-display text-3xl font-bold text-slate-100">Questions fréquentes</h2><Accordion type="single" collapsible className="rounded-xl border border-white/10 bg-slate-950/45 px-5">{faq.map(([q, a], i) => <AccordionItem key={q} value={`faq-${i}`}><AccordionTrigger className="text-left text-slate-100">{q}</AccordionTrigger><AccordionContent className="text-slate-400">{a}</AccordionContent></AccordionItem>)}</Accordion></section></main><Footer />

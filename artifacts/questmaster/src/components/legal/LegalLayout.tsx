@@ -35,7 +35,7 @@ export default function LegalLayout({ title, description, path, children }: Lega
           </header>
           <div className="legal-content space-y-9 text-sm leading-7 text-foreground/90">{children}</div>
           <aside className="mt-12 border-l-2 border-primary/50 bg-card/40 p-4 text-xs leading-6 text-muted-foreground">
-            Ces documents sont conçus pour être relus avant le lancement commercial. Ils ne remplacent pas un conseil juridique personnalisé.
+            Ces informations présentent les règles applicables au service. Elles ne remplacent pas un conseil juridique personnalisé.
           </aside>
         </article>
       </main>
