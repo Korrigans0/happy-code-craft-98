@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Cookie, X } from "lucide-react";
-
-const STORAGE_KEY = "aetheria.cookie-consent";
+import { Cookie } from "lucide-react";
+import { openCookieSettings, readCookieConsent, saveCookieConsent } from "@/lib/cookieConsent";
 
 const CookieBanner = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) {
+      if (!readCookieConsent()) {
         const t = setTimeout(() => setVisible(true), 800);
         return () => clearTimeout(t);
       }
@@ -19,12 +18,8 @@ const CookieBanner = () => {
     return undefined;
   }, []);
 
-  const persist = (value: "accepted" | "rejected") => {
-    try {
-      localStorage.setItem(STORAGE_KEY, value);
-    } catch {
-      // ignore
-    }
+  const persist = (preferences: boolean) => {
+    saveCookieConsent(preferences);
     setVisible(false);
   };
 
@@ -40,32 +35,24 @@ const CookieBanner = () => {
         <Cookie className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         <div className="flex-1">
           <p className="text-sm text-foreground">
-            Nous utilisons uniquement des cookies <strong>essentiels</strong> (session,
-            préférences) pour faire fonctionner Aetheria VTT. Aucun traceur publicitaire,
-            conformément au RGPD.
+            Nous utilisons des stockages nécessaires au fonctionnement et, avec votre accord,
+            des préférences sur cet appareil. Aucun traceur statistique ou publicitaire n’est activé.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="gold" onClick={() => persist("accepted")}>
-              J'ai compris
+            <Button size="sm" variant="gold" onClick={() => persist(true)}>
+              Accepter
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => persist("rejected")}
-              className="text-muted-foreground"
+              onClick={() => persist(false)}
+              className="border border-border text-foreground"
             >
-              Refuser le non-essentiel
+              Refuser
             </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setVisible(false); openCookieSettings(); }}>Personnaliser</Button>
           </div>
         </div>
-        <button
-          type="button"
-          aria-label="Fermer"
-          onClick={() => persist("rejected")}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

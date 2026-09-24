@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLocation } from "react-router-dom";
 
 const STORAGE_KEY = "mobile_banner_shown";
+const LEGAL_PATHS = ["/mentions-legales", "/cgu", "/cgv", "/confidentialite", "/cookies", "/credits-licences", "/retractation"];
 
 const MobileBanner = () => {
   const isMobile = useIsMobile();
+  const { pathname } = useLocation();
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
@@ -20,7 +23,7 @@ const MobileBanner = () => {
     }
   }, [isMobile]);
 
-  if (!isMobile || !showBanner) return null;
+  if (!isMobile || !showBanner || LEGAL_PATHS.includes(pathname)) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center pb-8 px-4 bg-black/60 backdrop-blur-sm">

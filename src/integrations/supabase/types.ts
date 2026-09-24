@@ -1548,6 +1548,57 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_requests: {
+        Row: {
+          created_at: string
+          email_status: string
+          id: string
+          message: string
+          page_url: string | null
+          reference: string
+          request_type: string
+          requester_email: string
+          requester_name: string
+          status: string
+          subject: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_status?: string
+          id?: string
+          message: string
+          page_url?: string | null
+          reference: string
+          request_type: string
+          requester_email: string
+          requester_name: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_status?: string
+          id?: string
+          message?: string
+          page_url?: string | null
+          reference?: string
+          request_type?: string
+          requester_email?: string
+          requester_name?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       macros: {
         Row: {
           actions: Json
