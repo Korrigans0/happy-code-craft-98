@@ -2067,6 +2067,63 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          billing_period: string
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          last_payment_failed_at: string | null
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          refunded_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_period: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          last_payment_failed_at?: string | null
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          refunded_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_period?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          last_payment_failed_at?: string | null
+          paddle_customer_id?: string
+          paddle_subscription_id?: string
+          price_id?: string
+          product_id?: string
+          refunded_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -2339,6 +2396,10 @@ export type Database = {
           tier: Database["public"]["Enums"]["subscription_tier"]
           used_bytes: number
         }[]
+      }
+      has_active_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
