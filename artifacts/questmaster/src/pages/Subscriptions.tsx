@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Crown, Sparkles, Sword, User, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +7,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Plan {
   id: string;
@@ -103,10 +106,13 @@ const plans: Plan[] = [
 ];
 
 const Subscriptions = () => {
-  const handleSelect = (planName: string) => {
-    toast.info(`Bientôt disponible — ${planName}`, {
-      description: "Les abonnements seront activables prochainement.",
-    });
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const handleSelect = (plan: Plan) => { setTermsAccepted(false); setSelectedPlan(plan); };
+  const acknowledge = () => {
+    if (!selectedPlan || !termsAccepted) return;
+    toast.info(`Bientôt disponible — ${selectedPlan.name}`, { description: "Aucun paiement n’a été lancé. Vous serez informé lorsque les abonnements seront activés." });
+    setSelectedPlan(null);
   };
 
   return (
@@ -228,7 +234,7 @@ const Subscriptions = () => {
                   ) : (
                     <Button
                       className="w-full font-bold"
-                      onClick={() => handleSelect(p.name)}
+                      onClick={() => handleSelect(p)}
                       style={
                         p.highlight
                           ? {
@@ -258,6 +264,13 @@ const Subscriptions = () => {
       </main>
 
       <Footer />
+      <Dialog open={!!selectedPlan} onOpenChange={(open) => { if (!open) setSelectedPlan(null); }}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader><DialogTitle className="font-display">Résumé de l’offre</DialogTitle><DialogDescription>Vérifiez les informations essentielles avant toute future souscription.</DialogDescription></DialogHeader>
+          {selectedPlan && <div className="space-y-4 text-sm"><div className="border border-primary/30 bg-primary/5 p-4"><p className="font-display text-lg text-primary">{selectedPlan.name}</p><p className="mt-1 text-2xl font-bold">{selectedPlan.price} <span className="text-sm font-normal text-muted-foreground">{selectedPlan.period}</span></p><p className="mt-2 text-muted-foreground">Sans engagement · renouvellement mensuel annoncé · résiliation prévue depuis Compte → Abonnement → Gestion de l’abonnement.</p></div><ul className="grid gap-2 sm:grid-cols-2">{selectedPlan.features.map((feature) => <li key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{feature}</li>)}</ul><p className="border-l-2 border-primary pl-3 text-muted-foreground">Les paiements ne sont pas encore activés. Continuer ne déclenche aucun achat, débit ou renouvellement.</p><label className="flex cursor-pointer items-start gap-3"><Checkbox checked={termsAccepted} onCheckedChange={(checked) => setTermsAccepted(checked === true)} aria-label="Accepter les CGV et CGU" /><span>J’accepte les <Link to="/cgv" className="text-primary underline">Conditions Générales de Vente</Link> et les <Link to="/cgu" className="text-primary underline">Conditions Générales d’Utilisation</Link>.</span></label></div>}
+          <DialogFooter><Button variant="outline" onClick={() => setSelectedPlan(null)}>Annuler</Button><Button disabled={!termsAccepted} onClick={acknowledge}>Continuer</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

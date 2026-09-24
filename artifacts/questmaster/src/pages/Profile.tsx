@@ -13,12 +13,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles, ShieldAlert } from 'lucide-react';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 import ProfileAchievements from '@/components/profile/ProfileAchievements';
 import CosmeticsPanel from '@/components/profile/CosmeticsPanel';
 
 import { OnboardingTour, resetOnboarding } from '@/components/onboarding/OnboardingTour';
+import LegalRequestForm from '@/components/legal/LegalRequestForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 
 interface ProfileData {
@@ -41,6 +43,7 @@ const Profile = () => {
   const [cropOpen, setCropOpen] = useState(false);
   const [comparison, setComparison] = useState<{ before: string | null; after: string } | null>(null);
   const [replayTour, setReplayTour] = useState(false);
+  const [deletionOpen, setDeletionOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -313,6 +316,10 @@ const Profile = () => {
                 </Button>
               </CardContent>
             </Card>
+            <Card className="border-destructive/30 bg-card/80">
+              <CardHeader><CardTitle className="flex items-center gap-2 text-foreground"><ShieldAlert className="h-5 w-5 text-destructive" />Compte et données</CardTitle><CardDescription>Demander l’effacement de votre compte et de vos données associées.</CardDescription></CardHeader>
+              <CardContent className="space-y-3"><p className="text-sm text-muted-foreground">La suppression peut affecter vos campagnes, personnages, appartenances et fichiers. Les conséquences sur les campagnes partagées sont vérifiées avant exécution. Certaines données peuvent être conservées lorsqu’une obligation légale l’impose.</p><Button variant="destructive" onClick={() => setDeletionOpen(true)}><Trash2 className="h-4 w-4" />Demander la suppression du compte</Button></CardContent>
+            </Card>
           </div>
           <div className="mt-8">
             <CosmeticsPanel />
@@ -334,6 +341,7 @@ const Profile = () => {
         isUploading={isUploadingAvatar}
       />
       {replayTour && <OnboardingTour force onClose={() => setReplayTour(false)} />}
+      <Dialog open={deletionOpen} onOpenChange={setDeletionOpen}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"><DialogHeader><DialogTitle className="font-display">Confirmer votre demande</DialogTitle><DialogDescription>Cette demande n’efface pas instantanément le compte. Elle déclenche une vérification sécurisée avant suppression.</DialogDescription></DialogHeader><LegalRequestForm type="account-deletion" compact /></DialogContent></Dialog>
     </div>
   );
 };
