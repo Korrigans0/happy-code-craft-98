@@ -23,7 +23,7 @@ export function useSubscription() {
       const tier = isSubscriptionTier(rawTier) ? rawTier : "free";
       const row = subscriptionResult.data as any;
       return { tier, status: row?.status ?? (tier === "free" ? "gratuit" : "inconnu"), billingPeriod: row?.billing_period ?? null,
-        priceId: row?.paddle_price_id ?? null, currentPeriodStart: row?.current_period_start ?? null,
+        priceId: row?.price_id ?? null, currentPeriodStart: row?.current_period_start ?? null,
         currentPeriodEnd: row?.current_period_end ?? null, cancelAtPeriodEnd: !!row?.cancel_at_period_end,
         environment: row?.environment ?? null, customerId: row?.paddle_customer_id ?? null };
     },

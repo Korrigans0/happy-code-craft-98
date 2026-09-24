@@ -18,3 +18,6 @@ project_id = "snawpxrejmcxfbiiowxr"
     verify_jwt = false
   [functions.paddle-portal]
     verify_jwt = true
+
+  [functions.get-paddle-price]
+    verify_jwt = true
