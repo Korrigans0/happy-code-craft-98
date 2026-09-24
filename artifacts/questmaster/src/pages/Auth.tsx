@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { openCookieSettings, readCookieConsent } from "@/lib/cookieConsent";
 
 const Auth = () => {
   const { user, loading } = useAuth();
@@ -60,7 +61,7 @@ const Auth = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (remember) {
+        if (remember && readCookieConsent()?.preferences) {
           localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
         } else {
           localStorage.removeItem(REMEMBER_KEY);
@@ -119,7 +120,7 @@ const Auth = () => {
             />
           </div>
           {mode === "signin" && (
-            <label className="flex items-center gap-2 text-sm text-amber-100/80 cursor-pointer select-none">
+            <div className="space-y-1"><label className="flex items-center gap-2 text-sm text-amber-100/80 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={remember}
@@ -127,7 +128,7 @@ const Auth = () => {
                 className="h-4 w-4 accent-amber-500"
               />
               Se souvenir de mon email
-            </label>
+            </label>{remember && !readCookieConsent()?.preferences && <button type="button" className="text-xs text-primary underline" onClick={openCookieSettings}>Autoriser les préférences pour mémoriser l’e-mail</button>}</div>
           )}
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? "..." : mode === "signin" ? "Se connecter" : "Créer un compte"}

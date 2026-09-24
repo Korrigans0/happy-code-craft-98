@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import type { ReactNode } from "react";
 import LegalLayout, { LegalList, LegalSection } from "@/components/legal/LegalLayout";
 import LegalRequestForm from "@/components/legal/LegalRequestForm";
 
@@ -20,7 +21,7 @@ export function LegalNotices() {
   </LegalLayout>;
 }
 
-const cguArticles: Array<[string, React.ReactNode]> = [
+const cguArticles: Array<[string, ReactNode]> = [
   ["Article 1 — Objet", <p>Les présentes CGU encadrent l’accès et l’utilisation de la plateforme Aétheria VTT.</p>],
   ["Article 2 — Définitions", <p>« Service » désigne Aétheria VTT ; « utilisateur » toute personne accédant au Service ; « MJ » le gestionnaire d’une campagne ; « contenu utilisateur » tout élément créé, importé, stocké ou partagé.</p>],
   ["Article 3 — Accès au service", <p>Les pages publiques sont librement accessibles. Les campagnes, personnages, fichiers et fonctions personnelles nécessitent un compte. L’utilisateur doit disposer d’un équipement et d’une connexion compatibles.</p>],
