@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import type { SubscriptionTier } from "@/lib/subscriptions";
 
 const BUCKET = "gm-media";
 
@@ -41,7 +42,7 @@ export interface StorageUsage {
   used_bytes: number;
   quota_bytes: number;
   file_count: number;
-  tier: "free" | "gm_premium" | "premium_plus";
+  tier: SubscriptionTier;
 }
 
 const MAX_DIM: Record<MediaFileType, number> = {

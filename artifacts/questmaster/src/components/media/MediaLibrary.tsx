@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { AssetMetaDialog } from "./AssetMetaDialog";
 import { useMediaLibrary, formatBytes, type MediaAsset, type MediaFileType } from "@/hooks/useMediaLibrary";
+import { TIER_LABEL } from "@/lib/subscriptions";
 
 const TYPE_OPTIONS: { value: MediaFileType | "all"; label: string }[] = [
   { value: "all", label: "Tous types" },
@@ -35,12 +36,6 @@ const TYPE_OPTIONS: { value: MediaFileType | "all"; label: string }[] = [
   { value: "decor", label: "Décors" },
   { value: "document", label: "Documents" },
 ];
-
-const TIER_LABEL: Record<string, string> = {
-  free: "Gratuit",
-  gm_premium: "MJ Premium",
-  premium_plus: "Premium+",
-};
 
 interface Props {
   defaultType?: MediaFileType;

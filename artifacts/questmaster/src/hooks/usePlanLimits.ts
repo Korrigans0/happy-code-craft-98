@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getLimits, type SubscriptionTier, type PlanLimits } from "@/lib/plan-limits";
+import { isSubscriptionTier } from "@/lib/subscriptions";
 
 export interface PlanUsage {
   tier: SubscriptionTier;
@@ -38,8 +39,7 @@ export function usePlanLimits(): PlanUsage | null {
           .eq("user_id", userId),
       ]);
       const rawTier = (profile.data as { tier?: string } | null)?.tier;
-      const tier: SubscriptionTier =
-        rawTier === "gm_premium" || rawTier === "premium_plus" ? rawTier : "free";
+      const tier: SubscriptionTier = isSubscriptionTier(rawTier) ? rawTier : "free";
       const limits = getLimits(tier);
       const campaignsUsed = campaigns.count ?? 0;
       const charactersUsed = characters.count ?? 0;
