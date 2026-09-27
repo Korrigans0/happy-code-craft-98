@@ -25,6 +25,7 @@ import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
 
 import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 import CampaignPlay from "./pages/CampaignPlay";
 import NotFound from "./pages/NotFound";
 import JoinCampaign from "./pages/JoinCampaign";
@@ -83,6 +84,7 @@ const AppRoutes = () => (
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
         <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />

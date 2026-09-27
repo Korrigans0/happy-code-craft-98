@@ -1,7 +1,7 @@
 import {
   Menu, X, User, BookOpen,
   Home, LogIn, LogOut, UserCircle, Map, Handshake, Crown, HelpCircle, Library as LibraryIcon,
-  Sparkles, LayoutDashboard, Hammer, Package, ChevronDown,
+  Sparkles, LayoutDashboard, Hammer, Package, ChevronDown, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { profilesApi } from "@/lib/api";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type NavItem = { to: string; label: string; icon: typeof Home; description?: string };
 type NavGroup = { id: string; label: string; icon: typeof Home; items: NavItem[] };
@@ -60,6 +61,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const isAdmin = useIsAdmin();
 
   const { data: profile } = useQuery({
     queryKey: ["headerProfile", user?.id],
@@ -242,6 +244,14 @@ const Header = () => {
                       Mon Profil
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100">
+                        <ShieldCheck className="h-4 w-4 text-amber-500/60" />
+                        Administration
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/characters" className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-slate-100">
                       <User className="h-4 w-4 text-amber-500/60" />
@@ -353,6 +363,16 @@ const Header = () => {
                     <UserCircle className="h-5 w-5 text-slate-500" />
                     Mon Profil
                   </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all"
+                    >
+                      <ShieldCheck className="h-5 w-5 text-slate-500" />
+                      Administration
+                    </Link>
+                  )}
                   <button
                     onClick={() => { setMobileMenuOpen(false); handleSignOut(); }}
                     className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all mt-1"
