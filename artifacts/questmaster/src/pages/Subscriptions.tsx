@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription, openCustomerPortal } from "@/hooks/useSubscription";
 import { getPaddle, resolvePaddlePrice } from "@/lib/paddle";
 import PaymentTestModeBanner from "@/components/PaymentTestModeBanner";
+import PartnerKeyRedeem from "@/components/subscriptions/PartnerKeyRedeem";
 import { SUBSCRIPTION_PLANS, PERIOD_BILLING, PERIOD_LABELS, formatEuro, monthlyEquivalent, savingsPercent, type BillingPeriod, type SubscriptionPlan } from "@/lib/subscriptions";
 
 const comparison = [
@@ -48,7 +49,7 @@ export default function Subscriptions() {
   const selectPlan = (plan: SubscriptionPlan) => {
     if (!user) { navigate("/sign-up"); return; }
     if (plan.id === "free") return;
-    if (subscription?.tier !== "free") { void manage(); return; }
+    if (subscription && subscription.paidTier !== "free") { void manage(); return; }
     setAccepted(false); setSelected(plan);
   };
   const manage = async () => { try { setOpening(true); await openCustomerPortal(); } catch (e) { toast.error(e instanceof Error ? e.message : "Portail indisponible"); } finally { setOpening(false); } };
@@ -61,7 +62,7 @@ export default function Subscriptions() {
   return <div className="relative flex min-h-screen min-w-0 flex-col overflow-x-hidden"><PaymentTestModeBanner /><PageAmbiance /><SEO title="Abonnements — Aétheria VTT" description="Comparez les offres Aétheria, Premium PJ, Premium MJ et Premium Mixte." path="/subscriptions" /><Header />
     <main className="relative flex-1"><section className="container mx-auto px-4 py-14 md:px-6 md:py-20">
       <div className="mx-auto mb-9 max-w-3xl text-center"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300"><Crown className="h-3.5 w-3.5" /> Offres Aétheria</div><h1 className="font-display text-4xl font-bold text-gradient-gold md:text-6xl">Choisissez votre voie</h1><p className="mt-4 text-slate-300">Quatre offres claires, sans fausse urgence et sans suppression automatique de vos créations.</p></div>
-      {user && currentPlan && <div className="mx-auto mb-8 max-w-3xl rounded-xl border border-cyan-400/25 bg-cyan-400/5 p-4 text-center text-sm text-slate-200"><strong>Votre offre actuelle : {currentPlan.name}</strong>{subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd ? ` · Fin prévue le ${new Date(subscription.currentPeriodEnd).toLocaleDateString("fr-FR")}` : ""}</div>}
+      {user && currentPlan && <div className="mx-auto mb-8 max-w-3xl rounded-xl border border-cyan-400/25 bg-cyan-400/5 p-4 text-center text-sm text-slate-200"><strong>Votre offre actuelle : {currentPlan.name}</strong>{subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd ? ` · Fin prévue le ${new Date(subscription.currentPeriodEnd).toLocaleDateString("fr-FR")}` : ""}{subscription?.partnerExpiresAt ? ` · Clé partenaire valable jusqu’au ${new Date(subscription.partnerExpiresAt).toLocaleDateString("fr-FR")}` : ""}</div>}
       <Tabs value={period} onValueChange={(v) => setPeriod(v as BillingPeriod)} className="mb-10"><TabsList className="mx-auto grid h-auto w-full max-w-xl grid-cols-3 bg-slate-950/70 p-1"><TabsTrigger value="monthly">MENSUEL</TabsTrigger><TabsTrigger value="quarterly">TRIMESTRIEL</TabsTrigger><TabsTrigger value="annual" className="gap-2">ANNUEL <Badge className="hidden bg-amber-400 text-[9px] text-slate-950 sm:inline-flex">MEILLEURE ÉCONOMIE</Badge></TabsTrigger></TabsList></Tabs>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">{displayed.map(({ plan, price, saving }) => <article key={plan.id} className={`relative flex min-w-0 flex-col rounded-2xl border bg-[linear-gradient(160deg,rgba(16,30,53,.96),rgba(7,15,31,.98))] p-6 shadow-2xl ${plan.recommended ? "border-amber-400/60 xl:scale-[1.02]" : "border-cyan-300/20"}`}>
         {plan.recommended && <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950"><Star className="mr-1 h-3 w-3" />RECOMMANDÉ</Badge>}
@@ -71,6 +72,7 @@ export default function Subscriptions() {
         <ul className="my-6 flex-1 space-y-2.5">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-slate-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />{feature}</li>)}</ul>
         {plan.id === "free" ? <Button asChild variant="outline" className="min-h-11 w-full"><Link to={user ? "/dashboard" : "/sign-up"}>{user ? (subscription?.tier === "free" ? "Votre offre actuelle" : "Offre gratuite") : "Commencer gratuitement"}</Link></Button> : <Button className="min-h-11 w-full font-bold" disabled={opening || subscription?.tier === plan.id} onClick={() => selectPlan(plan)}>{subscription?.tier === plan.id ? "Votre offre actuelle" : !user ? "Créer un compte" : subscription?.tier === "free" ? `Passer à ${plan.name.replace("PREMIUM ", "Premium ")}` : "Changer d’offre"}</Button>}
       </article>)}</div>
+      {user && <PartnerKeyRedeem />}
     </section>
     <section className="container mx-auto px-4 py-12 md:px-6"><h2 className="mb-6 text-center font-display text-3xl font-bold text-slate-100">Comparez les offres</h2><div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/50"><Table className="min-w-[720px]"><TableHeader><TableRow><TableHead>Fonction</TableHead>{SUBSCRIPTION_PLANS.map((p) => <TableHead key={p.id} className="text-center">{p.name}</TableHead>)}</TableRow></TableHeader><TableBody>{comparison.map((row) => <TableRow key={row[0]}><TableCell className="font-medium">{row[0]}</TableCell>{row.slice(1).map((value, i) => <TableCell key={i} className="text-center">{typeof value === "boolean" ? value ? <Check className="mx-auto h-4 w-4 text-cyan-300" aria-label="Inclus" /> : <Minus className="mx-auto h-4 w-4 text-slate-600" aria-label="Non inclus" /> : value}</TableCell>)}</TableRow>)}</TableBody></Table></div></section>
     <section className="container mx-auto max-w-4xl px-4 py-12 md:px-6"><h2 className="mb-6 text-center font-display text-3xl font-bold text-slate-100">Questions fréquentes</h2><Accordion type="single" collapsible className="rounded-xl border border-white/10 bg-slate-950/45 px-5">{faq.map(([q, a], i) => <AccordionItem key={q} value={`faq-${i}`}><AccordionTrigger className="text-left text-slate-100">{q}</AccordionTrigger><AccordionContent className="text-slate-400">{a}</AccordionContent></AccordionItem>)}</Accordion></section></main><Footer />
