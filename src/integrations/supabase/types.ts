@@ -1918,6 +1918,75 @@ export type Database = {
           },
         ]
       }
+      partner_key_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          success: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      partner_keys: {
+        Row: {
+          activated_at: string | null
+          activated_by: string | null
+          created_at: string
+          created_by: string
+          disabled_at: string | null
+          duration_days: number
+          expires_at: string | null
+          id: string
+          key_hash: string
+          key_hint: string
+          plan: Database["public"]["Enums"]["subscription_tier"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activated_by?: string | null
+          created_at?: string
+          created_by: string
+          disabled_at?: string | null
+          duration_days?: number
+          expires_at?: string | null
+          id?: string
+          key_hash: string
+          key_hint: string
+          plan?: Database["public"]["Enums"]["subscription_tier"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          activated_by?: string | null
+          created_at?: string
+          created_by?: string
+          disabled_at?: string | null
+          duration_days?: number
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          key_hint?: string
+          plan?: Database["public"]["Enums"]["subscription_tier"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2371,6 +2440,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_disable_partner_key: { Args: { _key_id: string }; Returns: boolean }
+      admin_generate_partner_keys: {
+        Args: { _count: number }
+        Returns: {
+          id: string
+          partner_key: string
+        }[]
+      }
+      admin_list_partner_keys: {
+        Args: never
+        Returns: {
+          activated_at: string
+          activated_by: string
+          activated_email: string
+          activated_name: string
+          created_at: string
+          disabled_at: string
+          expires_at: string
+          id: string
+          key_hint: string
+          plan: Database["public"]["Enums"]["subscription_tier"]
+          status: string
+        }[]
+      }
       can_edit_entity: {
         Args: { _entity_id: string; _user_id: string }
         Returns: boolean
@@ -2383,7 +2476,18 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
+      effective_tier: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["subscription_tier"]
+      }
       generate_invite_code: { Args: never; Returns: string }
+      get_my_partner_grant: {
+        Args: never
+        Returns: {
+          effective_tier: Database["public"]["Enums"]["subscription_tier"]
+          partner_expires_at: string
+        }[]
+      }
       get_storage_quota: {
         Args: { _tier: Database["public"]["Enums"]["subscription_tier"] }
         Returns: number
@@ -2421,6 +2525,7 @@ export type Database = {
         Returns: boolean
       }
       join_campaign_by_invite_code: { Args: { _code: string }; Returns: string }
+      redeem_partner_key: { Args: { _key: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
