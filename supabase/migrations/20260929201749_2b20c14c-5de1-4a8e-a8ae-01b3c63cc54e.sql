@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.validate_character_pregen() FROM PUBLIC, anon, authenticated;
