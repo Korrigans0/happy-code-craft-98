@@ -829,17 +829,23 @@ export type Database = {
           initiative: number | null
           intelligence: number
           inventory: string | null
+          kind: string
           known_spells: string[] | null
           languages: string[] | null
           level: number
           max_hp: number
           name: string
           personality_traits: string | null
+          pregen_allow_multiple: boolean
+          pregen_available: boolean
+          pregen_campaign_id: string | null
           prepared_spells: string[] | null
           proficiency_bonus: number | null
           race: string
           saving_throws: string[] | null
           skills: string[] | null
+          source_character_id: string | null
+          source_package_id: string | null
           speed: number | null
           spell_attack_bonus: number | null
           spell_save_dc: number | null
@@ -881,17 +887,23 @@ export type Database = {
           initiative?: number | null
           intelligence?: number
           inventory?: string | null
+          kind?: string
           known_spells?: string[] | null
           languages?: string[] | null
           level?: number
           max_hp?: number
           name: string
           personality_traits?: string | null
+          pregen_allow_multiple?: boolean
+          pregen_available?: boolean
+          pregen_campaign_id?: string | null
           prepared_spells?: string[] | null
           proficiency_bonus?: number | null
           race: string
           saving_throws?: string[] | null
           skills?: string[] | null
+          source_character_id?: string | null
+          source_package_id?: string | null
           speed?: number | null
           spell_attack_bonus?: number | null
           spell_save_dc?: number | null
@@ -933,17 +945,23 @@ export type Database = {
           initiative?: number | null
           intelligence?: number
           inventory?: string | null
+          kind?: string
           known_spells?: string[] | null
           languages?: string[] | null
           level?: number
           max_hp?: number
           name?: string
           personality_traits?: string | null
+          pregen_allow_multiple?: boolean
+          pregen_available?: boolean
+          pregen_campaign_id?: string | null
           prepared_spells?: string[] | null
           proficiency_bonus?: number | null
           race?: string
           saving_throws?: string[] | null
           skills?: string[] | null
+          source_character_id?: string | null
+          source_package_id?: string | null
           speed?: number | null
           spell_attack_bonus?: number | null
           spell_save_dc?: number | null
@@ -971,6 +989,27 @@ export type Database = {
             columns: ["equipped_weapon_id"]
             isOneToOne: false
             referencedRelation: "magic_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_pregen_campaign_id_fkey"
+            columns: ["pregen_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_source_character_id_fkey"
+            columns: ["source_character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "characters_source_package_id_fkey"
+            columns: ["source_package_id"]
+            isOneToOne: false
+            referencedRelation: "content_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -2440,6 +2479,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _assign_pregen: {
+        Args: { _by_gm: boolean; _pregen_id: string; _user_id: string }
+        Returns: string
+      }
+      _copy_character: {
+        Args: { _overrides: Json; _src: Json }
+        Returns: string
+      }
+      add_library_pregen_to_campaign: {
+        Args: { _campaign_id: string; _homebrew_id: string }
+        Returns: string
+      }
       admin_disable_partner_key: { Args: { _key_id: string }; Returns: boolean }
       admin_generate_partner_keys: {
         Args: { _count: number }
@@ -2476,6 +2527,8 @@ export type Database = {
         Args: { _campaign_id: string; _user_id: string }
         Returns: boolean
       }
+      claim_pregen_character: { Args: { _pregen_id: string }; Returns: string }
+      duplicate_pregen: { Args: { _pregen_id: string }; Returns: string }
       effective_tier: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["subscription_tier"]
@@ -2501,6 +2554,14 @@ export type Database = {
           used_bytes: number
         }[]
       }
+      gm_assign_pregen: {
+        Args: { _pregen_id: string; _user_id: string }
+        Returns: string
+      }
+      gm_unassign_pregen: {
+        Args: { _pregen_id: string; _user_id: string }
+        Returns: undefined
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
@@ -2525,6 +2586,16 @@ export type Database = {
         Returns: boolean
       }
       join_campaign_by_invite_code: { Args: { _code: string }; Returns: string }
+      list_campaign_pregens: { Args: { _campaign_id: string }; Returns: Json }
+      publish_pregen_to_shop: {
+        Args: {
+          _description: string
+          _pregen_id: string
+          _tags: string[]
+          _title: string
+        }
+        Returns: string
+      }
       redeem_partner_key: { Args: { _key: string }; Returns: Json }
     }
     Enums: {
