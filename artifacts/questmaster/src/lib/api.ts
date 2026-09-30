@@ -392,12 +392,14 @@ export const campaignsApi = {
 
 // ============== CHARACTERS ==============
 export const charactersApi = {
+  /** Personnages du joueur (les modèles pré-tirés de MJ sont exclus). */
   list: async () => {
     const userId = await uid();
-    const r = await supabase
+    const r = await (supabase as any)
       .from("characters")
       .select("*")
       .eq("user_id", userId)
+      .eq("kind", "standard")
       .order("updated_at", { ascending: false });
     return unwrap(r) ?? [];
   },

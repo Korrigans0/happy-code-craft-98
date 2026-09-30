@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { charactersApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Search, Loader2, Swords, Globe } from "lucide-react";
@@ -176,6 +176,16 @@ const Characters = () => {
     pendingPatchRef.current = null;
   }, []);
 
+  // ── Mode « pré-tiré » : la même fiche est ouverte depuis une campagne ──
+  // ?pregen=<campaignId>&system=<system>[&edit=<characterId>]
+  const [searchParams] = useSearchParams();
+  const pregenCampaignId = searchParams.get("pregen");
+  const pregenSystem = searchParams.get("system");
+  const pregenEditId = searchParams.get("edit");
+  const pregenStartedRef = useRef(false);
+  const pregenOpenedRef = useRef(false);
+  const sawPregenOpenRef = useRef(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/sign-in');
@@ -304,10 +314,13 @@ const Characters = () => {
     }
     creatingRef.current = true;
     // Première sauvegarde : complète les colonnes obligatoires + le système.
-    createMutation.mutate(
-      buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Partial<Character>,
-    );
-  }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
+    const payload = buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Record<string, any>;
+    if (pregenCampaignId) {
+      payload.kind = "pregen";
+      payload.pregen_campaign_id = pregenCampaignId;
+    }
+    createMutation.mutate(payload as Partial<Character>);
+  }, [selectedCharacter, updateMutation, createMutation, pendingSystem, pregenCampaignId]);
 
   const handleNewCharacter = useCallback(() => {
     if (plan && !plan.canCreateCharacter) {
@@ -363,6 +376,31 @@ const Characters = () => {
       setIsFormOpen(true);
     }
   }, [SYSTEMS_WITH_DEDICATED_SHEET, resetEditSession]);
+
+  // Pré-tiré : ouvre directement la fiche existante (création ou édition).
+  useEffect(() => {
+    if (!pregenCampaignId || !user || pregenStartedRef.current) return;
+    pregenStartedRef.current = true;
+    if (pregenEditId) {
+      charactersApi.get(pregenEditId)
+        .then((c: any) => { handleEdit(c as Character); pregenOpenedRef.current = true; })
+        .catch(() => navigate(`/campaigns/${pregenCampaignId}?tab=members`));
+    } else {
+      handleSystemSelect(pregenSystem || "Aetheria");
+      pregenOpenedRef.current = true;
+    }
+  }, [pregenCampaignId, pregenEditId, pregenSystem, user, handleEdit, handleSystemSelect, navigate]);
+
+  // Pré-tiré : retour à la campagne quand la fiche est fermée.
+  useEffect(() => {
+    if (!pregenCampaignId || !pregenOpenedRef.current) return;
+    const anyOpen = isFormOpen || isAetheriaFormOpen || isSheetOpen || isSelectorOpen;
+    if (anyOpen) { sawPregenOpenRef.current = true; return; }
+    if (sawPregenOpenRef.current) {
+      queryClient.invalidateQueries({ queryKey: ["pregens", pregenCampaignId] });
+      navigate(`/campaigns/${pregenCampaignId}?tab=members`);
+    }
+  }, [pregenCampaignId, isFormOpen, isAetheriaFormOpen, isSheetOpen, isSelectorOpen, navigate, queryClient]);
 
   const handleDelete = useCallback((id: string) => {
     setCharacterToDelete(id);
@@ -426,6 +464,11 @@ const Characters = () => {
           {/* Header */}
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
+              {pregenCampaignId && (
+                <p className="mb-1 inline-block rounded-full border border-primary/40 bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary">
+                  Pré-tiré pour cette campagne
+                </p>
+              )}
               <h1 className="font-display text-3xl font-bold text-foreground">Mes Personnages</h1>
               <p className="text-muted-foreground">Créez et gérez vos héros d'aventure</p>
             </div>

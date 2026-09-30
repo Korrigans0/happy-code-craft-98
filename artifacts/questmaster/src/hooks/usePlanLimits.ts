@@ -36,7 +36,8 @@ export function usePlanLimits(): PlanUsage | null {
         supabase
           .from("characters")
           .select("id", { count: "exact", head: true })
-          .eq("user_id", userId),
+          .eq("user_id", userId)
+          .eq("kind", "standard"),
       ]);
       const rawTier = (profile.data as { tier?: string } | null)?.tier;
       const tier: SubscriptionTier = isSubscriptionTier(rawTier) ? rawTier : "free";
