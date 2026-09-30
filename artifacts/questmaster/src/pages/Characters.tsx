@@ -184,6 +184,7 @@ const Characters = () => {
   const pregenEditId = searchParams.get("edit");
   const pregenStartedRef = useRef(false);
   const pregenOpenedRef = useRef(false);
+  const sawPregenOpenRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -393,7 +394,9 @@ const Characters = () => {
   // Pré-tiré : retour à la campagne quand la fiche est fermée.
   useEffect(() => {
     if (!pregenCampaignId || !pregenOpenedRef.current) return;
-    if (!isFormOpen && !isAetheriaFormOpen && !isSheetOpen && !isSelectorOpen) {
+    const anyOpen = isFormOpen || isAetheriaFormOpen || isSheetOpen || isSelectorOpen;
+    if (anyOpen) { sawPregenOpenRef.current = true; return; }
+    if (sawPregenOpenRef.current) {
       queryClient.invalidateQueries({ queryKey: ["pregens", pregenCampaignId] });
       navigate(`/campaigns/${pregenCampaignId}?tab=members`);
     }
