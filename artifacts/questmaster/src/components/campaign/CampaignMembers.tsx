@@ -31,6 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send, Mail } from "lucide-react";
 import { filterCompatibleCharacters } from "@/lib/system-compatibility";
 import { getSystem } from "@/lib/systems";
+import PregenSection from "@/components/campaign/pregens/PregenSection";
 
 interface CampaignMembersProps {
   campaignId: string;
@@ -361,7 +362,14 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
         )}
       </div>
 
-
+      {campaign && (
+        <PregenSection
+          campaignId={campaignId}
+          campaignSystem={(campaign as any).system ?? "Aetheria"}
+          isGM={isGM}
+          members={members as any[]}
+        />
+      )}
 
       {isGM && pendingProposals.length > 0 && (
         <div className="space-y-2">
