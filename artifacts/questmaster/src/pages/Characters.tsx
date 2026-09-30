@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { charactersApi } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Search, Loader2, Swords, Globe } from "lucide-react";
@@ -176,6 +176,15 @@ const Characters = () => {
     pendingPatchRef.current = null;
   }, []);
 
+  // ── Mode « pré-tiré » : la même fiche est ouverte depuis une campagne ──
+  // ?pregen=<campaignId>&system=<system>[&edit=<characterId>]
+  const [searchParams] = useSearchParams();
+  const pregenCampaignId = searchParams.get("pregen");
+  const pregenSystem = searchParams.get("system");
+  const pregenEditId = searchParams.get("edit");
+  const pregenStartedRef = useRef(false);
+  const pregenOpenedRef = useRef(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/sign-in');
@@ -304,10 +313,13 @@ const Characters = () => {
     }
     creatingRef.current = true;
     // Première sauvegarde : complète les colonnes obligatoires + le système.
-    createMutation.mutate(
-      buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Partial<Character>,
-    );
-  }, [selectedCharacter, updateMutation, createMutation, pendingSystem]);
+    const payload = buildNewCharacterPayload(pendingSystem, characterData as Record<string, any>) as Record<string, any>;
+    if (pregenCampaignId) {
+      payload.kind = "pregen";
+      payload.pregen_campaign_id = pregenCampaignId;
+    }
+    createMutation.mutate(payload as Partial<Character>);
+  }, [selectedCharacter, updateMutation, createMutation, pendingSystem, pregenCampaignId]);
 
   const handleNewCharacter = useCallback(() => {
     if (plan && !plan.canCreateCharacter) {
