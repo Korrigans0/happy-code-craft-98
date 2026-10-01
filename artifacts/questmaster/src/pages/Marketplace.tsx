@@ -49,6 +49,8 @@ const Marketplace = () => {
   const [search, setSearch] = useState("");
   const [systemFilter, setSystemFilter] = useState("all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [category, setCategory] = useState<"all" | "pregens">("all");
+  const [pregenItems, setPregenItems] = useState<Record<string, Record<string, any>[]>>({});
 
   // Création de pack
   const [creating, setCreating] = useState(false);
@@ -67,6 +69,16 @@ const Marketplace = () => {
     const map = new Map<string, PackageRow>();
     for (const p of [...(pub.data ?? []), ...(mine.data ?? [])] as PackageRow[]) map.set(p.id, p);
     setPackages([...map.values()]);
+    const ids = [...map.keys()];
+    if (ids.length) {
+      const { data: pi } = await (supabase as any)
+        .from("package_items").select("package_id,payload").eq("kind", "pregen_character").in("package_id", ids);
+      const grouped: Record<string, Record<string, any>[]> = {};
+      for (const r of (pi ?? []) as { package_id: string; payload: Record<string, any> }[]) {
+        (grouped[r.package_id] ||= []).push(r.payload ?? {});
+      }
+      setPregenItems(grouped);
+    }
     setInstalled(((inst.data ?? []) as { package_id: string }[]).map((r) => r.package_id));
     setLoading(false);
   }, [user]);
@@ -158,12 +170,16 @@ const Marketplace = () => {
     return packages.filter((p) => {
       if (tab === "mine" ? p.owner_id !== user?.id : !p.is_published) return false;
       if (systemFilter !== "all" && p.system !== systemFilter) return false;
+      const pcs = pregenItems[p.id] ?? [];
+      if (category === "pregens" && pcs.length === 0) return false;
       if (!q) return true;
       return p.title.toLowerCase().includes(q)
+        || pcs.some((c) => [c.name, c.race, c.class, c.subclass, c.level ? `niveau ${c.level}` : ""]
+          .some((v) => String(v ?? "").toLowerCase().includes(q)))
         || (p.description ?? "").toLowerCase().includes(q)
         || p.tags.some((t) => t.toLowerCase().includes(q));
     });
-  }, [packages, tab, search, systemFilter, user]);
+  }, [packages, tab, search, systemFilter, user, category, pregenItems]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
@@ -204,8 +220,15 @@ const Marketplace = () => {
           </Tabs>
           <div className="relative min-w-[200px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Rechercher un pack…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input className="pl-9" placeholder={category === "pregens" ? "Nom, race, classe, niveau…" : "Rechercher un pack…"} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Select value={category} onValueChange={(v) => setCategory(v as "all" | "pregens")}>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Catégorie" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les catégories</SelectItem>
+              <SelectItem value="pregens">Personnages pré-tirés</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={systemFilter} onValueChange={setSystemFilter}>
             <SelectTrigger className="w-52"><SelectValue placeholder="Système" /></SelectTrigger>
             <SelectContent>
@@ -242,6 +265,12 @@ const Marketplace = () => {
                     <Badge variant="secondary">{SYSTEM_LIST.find((s) => s.id === p.system)?.shortLabel ?? p.system}</Badge>
                     {p.tags.slice(0, 3).map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
                   </div>
+                  {(pregenItems[p.id] ?? []).map((c, i) => (
+                    <p key={i} className="mt-2 text-xs text-muted-foreground">
+                      🧙 <span className="text-foreground">{c.name}</span>
+                      {" — "}{[c.class, c.subclass, c.race, c.level ? `Niveau ${c.level}` : null].filter(Boolean).join(" · ")}
+                    </p>
+                  ))}
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">{p.install_count} installation(s)</span>
                     <div className="flex gap-1">
@@ -258,7 +287,7 @@ const Marketplace = () => {
                       <Button size="sm" onClick={() => void install(p.id)} disabled={busyId === p.id || !user}>
                         {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           : isInstalled ? <Check className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                        {isInstalled ? "Réinstaller" : "Installer"}
+                        {pregenItems[p.id]?.length ? (isInstalled ? "Déjà dans ma bibliothèque" : "Ajouter à ma bibliothèque") : (isInstalled ? "Réinstaller" : "Installer")}
                       </Button>
                     </div>
                   </div>
