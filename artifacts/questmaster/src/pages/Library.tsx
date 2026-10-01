@@ -28,7 +28,7 @@ import { SYSTEM_LIST } from "@/lib/systems";
 import { MediaLibrary } from "@/components/media/MediaLibrary";
 import { LibraryPregens } from "@/components/library/LibraryPregens";
 
-type Kind = "monsters" | "spells" | "items" | "media";
+type Kind = "monsters" | "spells" | "items" | "media" | "pregens";
 
 interface Row {
   id: string;
