@@ -45,7 +45,7 @@ interface Row {
   rarity?: string;
 }
 
-type CompendiumKind = Exclude<Kind, "media">;
+type CompendiumKind = Exclude<Kind, "media" | "pregens">;
 const KIND_META: Record<CompendiumKind, { label: string; icon: typeof Skull; fetch: () => Promise<Row[]>; remove: (id: string) => Promise<unknown>; emptyHint: string }> = {
   monsters: {
     label: "Créatures",
