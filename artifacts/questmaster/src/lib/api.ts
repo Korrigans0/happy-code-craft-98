@@ -395,7 +395,7 @@ export const charactersApi = {
   /** Personnages du joueur (les modèles pré-tirés de MJ sont exclus). */
   list: async () => {
     const userId = await uid();
-    const r = await (supabase as any)
+    const r = await supabase
       .from("characters")
       .select("*")
       .eq("user_id", userId)
