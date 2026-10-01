@@ -42,7 +42,10 @@ export const LibraryPregens = ({ userId }: { userId: string }) => {
 
   const remove = async (id: string) => {
     const { error } = await db.from("homebrew_content").delete().eq("id", id);
-    if (error) return toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+    if (error) {
+      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      return;
+    }
     setRows((r) => r.filter((x) => x.id !== id));
   };
 
