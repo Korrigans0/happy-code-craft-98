@@ -314,11 +314,27 @@ export const campaignsApi = {
       .single();
     return unwrap(r);
   },
-  // Proposals: not in schema — degrade gracefully
-  getProposals: async (_id: string) => [],
-  submitProposal: async (_id: string, _characterId: string) => ({ ok: true }),
-  reviewProposal: async (_id: string, _proposalId: string, _status: "accepted" | "rejected") => ({ ok: true }),
-  cancelProposal: async (_id: string, _proposalId: string) => ({ ok: true }),
+  // Proposals: server-validated RPCs (player proposes, GM reviews)
+  getProposals: async (id: string) => {
+    const r = await (supabase.rpc as any)("list_campaign_proposals", { _campaign_id: id });
+    if (r.error) fail(r.error);
+    return (r.data ?? []) as any[];
+  },
+  submitProposal: async (id: string, characterId: string) => {
+    const r = await (supabase.rpc as any)("submit_character_proposal", { _campaign_id: id, _character_id: characterId });
+    if (r.error) fail(r.error);
+    return { ok: true };
+  },
+  reviewProposal: async (_id: string, proposalId: string, status: "accepted" | "rejected") => {
+    const r = await (supabase.rpc as any)("review_character_proposal", { _proposal_id: proposalId, _status: status });
+    if (r.error) fail(r.error);
+    return { ok: true };
+  },
+  cancelProposal: async (_id: string, proposalId: string) => {
+    const r = await (supabase.rpc as any)("cancel_character_proposal", { _proposal_id: proposalId });
+    if (r.error) fail(r.error);
+    return { ok: true };
+  },
   getMyCharacters: async () => charactersApi.list(),
   getCombat: async (id: string) => {
     const enc = await supabase
