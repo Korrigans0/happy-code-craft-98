@@ -2669,6 +2669,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_package_creators: {
+        Args: never
+        Returns: {
+          display_name: string
+          owner_id: string
+        }[]
+      }
       publish_pregen_to_shop: {
         Args: {
           _description: string
