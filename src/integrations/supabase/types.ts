@@ -2492,13 +2492,21 @@ export type Database = {
         Returns: string
       }
       admin_disable_partner_key: { Args: { _key_id: string }; Returns: boolean }
-      admin_generate_partner_keys: {
-        Args: { _count: number }
-        Returns: {
-          id: string
-          partner_key: string
-        }[]
-      }
+      admin_generate_partner_keys:
+        | {
+            Args: { _count: number }
+            Returns: {
+              id: string
+              partner_key: string
+            }[]
+          }
+        | {
+            Args: { _count: number; _duration_days?: number }
+            Returns: {
+              id: string
+              partner_key: string
+            }[]
+          }
       admin_list_partner_keys: {
         Args: never
         Returns: {
