@@ -801,6 +801,57 @@ export type Database = {
         }
         Relationships: []
       }
+      character_proposals: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_proposals_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_proposals_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
           alignment: string | null
@@ -2487,6 +2538,10 @@ export type Database = {
         Args: { _overrides: Json; _src: Json }
         Returns: string
       }
+      _is_campaign_manager: {
+        Args: { _campaign: string; _uid: string }
+        Returns: boolean
+      }
       add_library_pregen_to_campaign: {
         Args: { _campaign_id: string; _homebrew_id: string }
         Returns: string
@@ -2530,6 +2585,10 @@ export type Database = {
       can_view_entity: {
         Args: { _entity_id: string; _user_id: string }
         Returns: boolean
+      }
+      cancel_character_proposal: {
+        Args: { _proposal_id: string }
+        Returns: undefined
       }
       check_campaign_access: {
         Args: { _campaign_id: string; _user_id: string }
@@ -2595,6 +2654,21 @@ export type Database = {
       }
       join_campaign_by_invite_code: { Args: { _code: string }; Returns: string }
       list_campaign_pregens: { Args: { _campaign_id: string }; Returns: Json }
+      list_campaign_proposals: {
+        Args: { _campaign_id: string }
+        Returns: {
+          character_class: string
+          character_id: string
+          character_level: number
+          character_name: string
+          character_race: string
+          created_at: string
+          id: string
+          player_name: string
+          status: string
+          user_id: string
+        }[]
+      }
       publish_pregen_to_shop: {
         Args: {
           _description: string
@@ -2605,6 +2679,14 @@ export type Database = {
         Returns: string
       }
       redeem_partner_key: { Args: { _key: string }; Returns: Json }
+      review_character_proposal: {
+        Args: { _proposal_id: string; _status: string }
+        Returns: undefined
+      }
+      submit_character_proposal: {
+        Args: { _campaign_id: string; _character_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
