@@ -51,6 +51,12 @@ const Marketplace = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [category, setCategory] = useState<"all" | "pregens">("all");
   const [pregenItems, setPregenItems] = useState<Record<string, Record<string, any>[]>>({});
+  const [creators, setCreators] = useState<Record<string, string>>({});
+  const [raceFilter, setRaceFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [priceFilter, setPriceFilter] = useState("all");
+  const [creatorFilter, setCreatorFilter] = useState("all");
 
   // Création de pack
   const [creating, setCreating] = useState(false);
@@ -80,6 +86,12 @@ const Marketplace = () => {
       setPregenItems(grouped);
     }
     setInstalled(((inst.data ?? []) as { package_id: string }[]).map((r) => r.package_id));
+    if (user) {
+      const { data: cr } = await (supabase as any).rpc("list_package_creators");
+      const m: Record<string, string> = {};
+      for (const r of (cr ?? []) as { owner_id: string; display_name: string }[]) m[r.owner_id] = r.display_name;
+      setCreators(m);
+    }
     setLoading(false);
   }, [user]);
 
@@ -165,13 +177,38 @@ const Marketplace = () => {
     setPackages((prev) => prev.map((p) => (p.id === pack.id ? { ...p, is_published: !p.is_published } : p)));
   };
 
+  // Filter options derived from published pregens (no hardcoded lists).
+  const filterOptions = useMemo(() => {
+    const all = Object.values(pregenItems).flat();
+    const uniq = (vals: unknown[]) => [...new Set(vals.map((v) => String(v ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+    return {
+      races: uniq(all.map((c) => c.race)),
+      classes: uniq(all.map((c) => c.class)),
+      creators: [...new Set(packages.map((p) => p.owner_id))].map((id) => ({ id, name: creators[id] ?? "Créateur" })),
+    };
+  }, [pregenItems, packages, creators]);
+
+  const LEVEL_RANGES: Record<string, [number, number]> = { "1-4": [1, 4], "5-10": [5, 10], "11-16": [11, 16], "17+": [17, 999] };
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
     return packages.filter((p) => {
       if (tab === "mine" ? p.owner_id !== user?.id : !p.is_published) return false;
       if (systemFilter !== "all" && p.system !== systemFilter) return false;
-      const pcs = pregenItems[p.id] ?? [];
-      if (category === "pregens" && pcs.length === 0) return false;
+      // All packs are currently free: "Payant" yields no result.
+      if (priceFilter === "paid") return false;
+      if (creatorFilter !== "all" && p.owner_id !== creatorFilter) return false;
+      let pcs = pregenItems[p.id] ?? [];
+      if (category === "pregens") {
+        if (raceFilter !== "all") pcs = pcs.filter((c) => norm(c.race) === raceFilter.toLowerCase());
+        if (classFilter !== "all") pcs = pcs.filter((c) => norm(c.class) === classFilter.toLowerCase());
+        if (levelFilter !== "all") {
+          const [lo, hi] = LEVEL_RANGES[levelFilter];
+          pcs = pcs.filter((c) => Number(c.level) >= lo && Number(c.level) <= hi);
+        }
+        if (pcs.length === 0) return false;
+      }
       if (!q) return true;
       return p.title.toLowerCase().includes(q)
         || pcs.some((c) => [c.name, c.race, c.class, c.subclass, c.level ? `niveau ${c.level}` : ""]
@@ -179,7 +216,8 @@ const Marketplace = () => {
         || (p.description ?? "").toLowerCase().includes(q)
         || p.tags.some((t) => t.toLowerCase().includes(q));
     });
-  }, [packages, tab, search, systemFilter, user, category, pregenItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packages, tab, search, systemFilter, user, category, pregenItems, raceFilter, classFilter, levelFilter, priceFilter, creatorFilter]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-dark">
@@ -236,6 +274,46 @@ const Marketplace = () => {
               {SYSTEM_LIST.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={priceFilter} onValueChange={setPriceFilter}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Prix" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les prix</SelectItem>
+              <SelectItem value="free">Gratuit</SelectItem>
+              <SelectItem value="paid">Payant</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={creatorFilter} onValueChange={setCreatorFilter}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Créateur" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les créateurs</SelectItem>
+              {filterOptions.creators.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {category === "pregens" && (
+            <>
+              <Select value={raceFilter} onValueChange={setRaceFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Race" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les races</SelectItem>
+                  {filterOptions.races.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={classFilter} onValueChange={setClassFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Classe" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les classes</SelectItem>
+                  {filterOptions.classes.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Niveau" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les niveaux</SelectItem>
+                  {Object.keys(LEVEL_RANGES).map((k) => <SelectItem key={k} value={k}>Niveau {k}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
 
         {loading ? (
@@ -272,7 +350,9 @@ const Marketplace = () => {
                     </p>
                   ))}
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{p.install_count} installation(s)</span>
+                    <span className="text-xs text-muted-foreground">
+                      Gratuit · {creators[p.owner_id] ? `par ${creators[p.owner_id]} · ` : ""}{p.install_count} installation(s)
+                    </span>
                     <div className="flex gap-1">
                       {isMine && (
                         <>
