@@ -29,6 +29,13 @@ const STATUS_CLASS: Record<KeyStatus, string> = {
   disabled: "bg-slate-500/15 text-slate-400 border-slate-500/30",
 };
 const MAX_BATCH = 500;
+const KEY_DURATIONS = [
+  { days: 30, label: "1 mois" },
+  { days: 90, label: "3 mois" },
+  { days: 180, label: "6 mois" },
+  { days: 270, label: "9 mois" },
+  { days: 365, label: "1 an" },
+];
 const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 const rpc = (name: string, args?: Record<string, unknown>) => (supabase as any).rpc(name, args);
 
@@ -49,6 +56,7 @@ export default function Admin() {
   });
 
   const [count, setCount] = useState(10);
+  const [durationDays, setDurationDays] = useState(365);
   const [fresh, setFresh] = useState<string[]>([]);
   const [filter, setFilter] = useState<"all" | KeyStatus>("all");
   const [search, setSearch] = useState("");
@@ -63,8 +71,8 @@ export default function Admin() {
   });
 
   const generate = useMutation({
-    mutationFn: async (n: number) => {
-      const { data, error } = await rpc("admin_generate_partner_keys", { _count: n });
+    mutationFn: async ({ n, days }: { n: number; days: number }) => {
+      const { data, error } = await rpc("admin_generate_partner_keys", { _count: n, _duration_days: days });
       if (error) throw error;
       return (data ?? []).map((r: { partner_key: string }) => r.partner_key) as string[];
     },
@@ -100,11 +108,16 @@ export default function Admin() {
 
         <section className="mt-8 rounded-2xl border border-amber-400/20 bg-slate-950/60 p-5 md:p-6">
           <h2 className="flex items-center gap-2 font-display text-2xl font-bold text-slate-100"><KeyRound className="h-6 w-6 text-amber-300" /> Clés partenaires</h2>
-          <p className="mt-1 text-sm text-slate-400">Plan : Premium Mixte · 365 jours à partir de l’activation · usage unique. Les clés complètes ne sont affichées qu’une seule fois, à leur génération.</p>
+          <p className="mt-1 text-sm text-slate-400">Plan : Premium Mixte · durée choisie à la génération, décomptée à partir de l’activation · usage unique. Les clés complètes ne sont affichées qu’une seule fois, à leur génération.</p>
 
-          <form className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); generate.mutate(count); }}>
+          <form className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); generate.mutate({ n: count, days: durationDays }); }}>
             <label className="flex flex-col gap-1 text-sm text-slate-300">Nombre de clés
               <Input type="number" min={1} max={MAX_BATCH} value={count} onChange={(e) => setCount(Math.min(MAX_BATCH, Math.max(1, Number(e.target.value) || 1)))} className="min-h-11 w-full sm:w-32" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-300">Durée
+              <select value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value))} className="flex min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-40">
+                {KEY_DURATIONS.map((d) => <option key={d.days} value={d.days}>{d.label}</option>)}
+              </select>
             </label>
             <Button type="submit" className="min-h-11 font-bold" disabled={generate.isPending}>{generate.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}Générer des clés</Button>
           </form>
