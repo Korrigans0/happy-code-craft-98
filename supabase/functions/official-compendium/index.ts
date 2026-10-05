@@ -303,13 +303,14 @@ async function translateBatch(
 }
 
 /** Applies FR translations (cache-first) to upstream English entries. */
-async function localize(entries: OfficialEntry[], lang: Lang): Promise<OfficialEntry[]> {
+async function localize(entries: OfficialEntry[], lang: Lang, canTranslate: boolean): Promise<OfficialEntry[]> {
   if (lang !== "fr" || !entries.length) return entries;
 
   const cached = await readCache(entries.map((e) => e.id), lang);
   const missing = entries.filter((e) => !cached.has(e.id));
 
-  if (missing.length) {
+  // New AI translations are only produced for signed-in users; visitors get the cache.
+  if (missing.length && canTranslate) {
     // Small chunks keep the model response well inside its output budget.
     const chunks: OfficialEntry[][] = [];
     for (let i = 0; i < missing.length; i += 8) chunks.push(missing.slice(i, i + 8));
@@ -371,7 +372,13 @@ Deno.serve(async (req) => {
 
     if (system === "D&D 5e") {
       const res = await fetchDnd5e(kind, search, page, lang);
-      return json({ ...res, items: await localize(res.items, lang) });
+      const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+      let canTranslate = false;
+      if (token) {
+        const { data } = await admin().auth.getUser(token).catch(() => ({ data: { user: null } }));
+        canTranslate = !!data?.user;
+      }
+      return json({ ...res, items: await localize(res.items, lang, canTranslate) });
     }
 
     return json({ error: "Système non supporté pour le contenu officiel" }, 400);

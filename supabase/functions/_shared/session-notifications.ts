@@ -179,7 +179,7 @@ export async function dispatch(
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
-      console.error('session notification failed', { email: r.email, kind: opts.kind, message })
+      console.error('session notification failed', { userId: r.userId, kind: opts.kind, message })
       result.failed++
       result.details.push({ email: r.email, status: 'failed', error: message })
       if (claimId) {

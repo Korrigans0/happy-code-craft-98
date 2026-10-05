@@ -19,8 +19,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
-  // Only the cron job / service role may run this (verify_jwt = true handles the check).
+  // Only the cron job / service role may run this: verify_jwt checks the
+  // signature, and we additionally require the service_role claim.
   try {
+    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+    let role = ''
+    try { role = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role ?? '' } catch { role = '' }
+    if (role !== 'service_role' && token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+      return json({ error: 'Forbidden' }, 403)
+    }
     const admin = serviceClient()
     const now = new Date()
     const horizon = new Date(now.getTime() + 24 * 60 * 60 * 1000)
