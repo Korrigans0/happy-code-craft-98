@@ -27,7 +27,7 @@ export function usePlanLimits(): PlanUsage | null {
     staleTime: 30_000,
     queryFn: async (): Promise<PlanUsage | null> => {
       if (!userId) return null;
-      const [profile, campaigns, characters] = await Promise.all([
+      const [profile, campaigns, characters, grant] = await Promise.all([
         supabase.from("profiles").select("tier").eq("user_id", userId).maybeSingle(),
         supabase
           .from("campaigns")
@@ -38,9 +38,13 @@ export function usePlanLimits(): PlanUsage | null {
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
           .eq("kind", "standard"),
+        (supabase as any).rpc("get_my_partner_grant"),
       ]);
       const rawTier = (profile.data as { tier?: string } | null)?.tier;
-      const tier: SubscriptionTier = isSubscriptionTier(rawTier) ? rawTier : "free";
+      const paidTier: SubscriptionTier = isSubscriptionTier(rawTier) ? rawTier : "free";
+      // Partner key grants override the paid tier (effective_tier mirrors server quota triggers).
+      const grantRow = Array.isArray(grant.data) ? grant.data[0] : grant.data;
+      const tier: SubscriptionTier = isSubscriptionTier(grantRow?.effective_tier) ? grantRow.effective_tier : paidTier;
       const limits = getLimits(tier);
       const campaignsUsed = campaigns.count ?? 0;
       const charactersUsed = characters.count ?? 0;

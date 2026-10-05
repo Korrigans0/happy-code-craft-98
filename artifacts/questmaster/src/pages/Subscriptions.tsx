@@ -43,13 +43,17 @@ const faq = [
 ];
 
 export default function Subscriptions() {
-  const { user } = useAuth(); const navigate = useNavigate(); const { data: subscription } = useSubscription();
+  const { user } = useAuth(); const navigate = useNavigate(); const { data: subscription, isLoading: subscriptionLoading } = useSubscription();
   const [period, setPeriod] = useState<BillingPeriod>("monthly"); const [selected, setSelected] = useState<SubscriptionPlan | null>(null); const [accepted, setAccepted] = useState(false); const [opening, setOpening] = useState(false);
   const currentPlan = subscription ? SUBSCRIPTION_PLANS.find((p) => p.id === subscription.tier) : undefined;
+  // While the subscription lookup is pending/failed, treat the user as free so the
+  // button opens checkout instead of the (empty) billing portal.
+  const hasPaidSubscription = !!subscription && subscription.paidTier !== "free";
   const selectPlan = (plan: SubscriptionPlan) => {
     if (!user) { navigate("/sign-up"); return; }
     if (plan.id === "free") return;
-    if (subscription && subscription.paidTier !== "free") { void manage(); return; }
+    if (subscriptionLoading) { toast.info("Chargement de votre abonnement…"); return; }
+    if (hasPaidSubscription) { void manage(); return; }
     setAccepted(false); setSelected(plan);
   };
   const manage = async () => { try { setOpening(true); await openCustomerPortal(); } catch (e) { toast.error(e instanceof Error ? e.message : "Portail indisponible"); } finally { setOpening(false); } };
