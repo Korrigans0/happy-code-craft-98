@@ -18,7 +18,7 @@ export default function LegalLayout({ title, description, path, children }: Lega
   return (
     <div className="relative flex min-h-screen flex-col">
       <PageAmbiance imageOpacity={0.1} noSides />
-      <SEO title={`${title} — Aétheria VTT`} description={description} path={path} />
+      <SEO title={`${title} — Aetheria VTT`} description={description} path={path} />
       <Header />
       <main className="relative flex-1 py-10 md:py-16">
         <article className="container mx-auto max-w-4xl px-4 md:px-6">

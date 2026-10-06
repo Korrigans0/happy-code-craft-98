@@ -22,7 +22,7 @@ const Email = ({ typeLabel = 'Demande juridique', reference = '', name = '', ema
     <Body style={main}>
       <Container style={container}>
         <Section style={card}>
-          <Heading style={heading}>Demande juridique Aétheria VTT</Heading>
+          <Heading style={heading}>Demande juridique Aetheria VTT</Heading>
           <Text style={row}><strong>Type :</strong> {typeLabel}</Text>
           <Text style={row}><strong>Référence :</strong> {reference}</Text>
           <Text style={row}><strong>Demandeur :</strong> {name}</Text>

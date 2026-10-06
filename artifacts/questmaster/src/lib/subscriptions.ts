@@ -17,10 +17,10 @@ export const PERIOD_MONTHS: Record<BillingPeriod, number> = { monthly: 1, quarte
 export const PERIOD_BILLING: Record<BillingPeriod, string> = { monthly: "Facturé chaque mois", quarterly: "Facturé tous les 3 mois", annual: "Facturé annuellement" };
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
-  { id: "free", name: "AÉTHERIA", tagline: "Pour découvrir l’aventure", hue: 190, icon: Sparkles,
+  { id: "free", name: "AETHERIA", tagline: "Pour découvrir l’aventure", hue: 190, icon: Sparkles,
     quotas: { campaigns: 3, characters: 3, playersPerCampaign: 5, storageGb: 5 },
     prices: { monthly: { cents: 0, priceId: null, label: "à vie" }, quarterly: { cents: 0, priceId: null, label: "à vie" }, annual: { cents: 0, priceId: null, label: "à vie" } },
-    features: ["3 campagnes actives", "3 personnages actifs", "5 joueurs par campagne", "5 Go de stockage", "Table virtuelle et brouillard de guerre", "Codex Aétheria, Worlds Awakening, Glyphes et D&D 5e/SRD"] },
+    features: ["3 campagnes actives", "3 personnages actifs", "5 joueurs par campagne", "5 Go de stockage", "Table virtuelle et brouillard de guerre", "Codex Aetheria, Worlds Awakening, Glyphes et D&D 5e/SRD"] },
   { id: "premium_pj", name: "PREMIUM PJ", tagline: "Pour les joueurs passionnés", hue: 270, icon: User,
     quotas: { campaigns: 3, characters: 20, playersPerCampaign: 5, storageGb: 10 },
     prices: {
