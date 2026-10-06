@@ -367,8 +367,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     const sides = parseInt(match[2]);
     const modifier = match[3] ? parseInt(match[3]) : 0;
 
-    if (count > 20 || sides > 100) {
-      toast({ title: "Limite dépassée", description: "Max 20 dés de 100 faces", variant: "destructive" });
+    if (count < 1 || count > 20 || sides < 2 || sides > 100) {
+      toast({ title: "Format invalide", description: "Le nombre de dés doit être compris entre 1 et 20 et le nombre de faces entre 2 et 100.", variant: "destructive" });
       return;
     }
 

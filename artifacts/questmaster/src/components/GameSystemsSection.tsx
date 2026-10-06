@@ -62,7 +62,7 @@ const GameSystemsSection = () => {
             </div>
             <h3 className="font-display text-xl font-bold text-foreground">Glyphes</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Dark fantasy modulaire en trois époques : Nouvel Empire (médiéval), Présent et Futur. Magie des glyphes, Brume, factions.
+              Dark fantasy modulaire en trois époques : Nouvel Empire (médiéval), Expédition et Odyssée. Magie des glyphes, Brume, factions.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {["3 époques", "Dark fantasy", "Modulaire"].map((tag) => (

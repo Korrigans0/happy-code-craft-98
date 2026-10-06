@@ -323,7 +323,8 @@ const Characters = () => {
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem, pregenCampaignId]);
 
   const handleNewCharacter = useCallback(() => {
-    if (plan && !plan.canCreateCharacter) {
+    // Pregens are excluded from the standard character quota (enforced server-side too).
+    if (!pregenCampaignId && plan && !plan.canCreateCharacter) {
       toast({
         title: "Limite atteinte",
         description: "Le plan gratuit est limité à 3 personnages. Passez Premium pour en créer plus.",

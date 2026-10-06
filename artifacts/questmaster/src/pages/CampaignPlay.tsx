@@ -168,9 +168,13 @@ const CampaignPlay = () => {
   useEffect(() => {
     const requested = searchParams.get("tab");
     if (!requested) return;
-    if (!tabs.some((t) => t.id === requested)) return;
+    if (!tabs.some((t) => t.id === requested)) {
+      setActiveTab("tabletop");
+      setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete("tab"); return next; }, { replace: true });
+      return;
+    }
     setActiveTab((current) => (current === requested ? current : requested));
-  }, [searchParams, tabs]);
+  }, [searchParams, tabs, setSearchParams]);
 
 
   if (authLoading || campaignLoading || membershipLoading) {
