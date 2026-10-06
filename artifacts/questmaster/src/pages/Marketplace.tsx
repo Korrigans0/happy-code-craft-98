@@ -141,7 +141,8 @@ const Marketplace = () => {
     const { data, error } = await (supabase as any).rpc("install_content_package", { _package_id: id });
     setBusyId(null);
     if (error) {
-      toast({ title: "Installation impossible", description: error.message, variant: "destructive" });
+      console.error("install_content_package", error);
+      toast({ title: "Installation impossible", description: "Ce pack n'est plus disponible ou une erreur est survenue. Réessayez plus tard.", variant: "destructive" });
       return;
     }
     setInstalled((prev) => [...new Set([...prev, id])]);
@@ -152,7 +153,8 @@ const Marketplace = () => {
   const removePackage = async (id: string) => {
     const { error } = await (supabase as any).from("content_packages").delete().eq("id", id);
     if (error) {
-      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      console.error(error);
+      toast({ title: "Suppression impossible", description: "Le pack n'a pas pu être supprimé. Réessayez.", variant: "destructive" });
       return;
     }
     setPackages((prev) => prev.filter((p) => p.id !== id));
@@ -162,7 +164,8 @@ const Marketplace = () => {
     const { error } = await (supabase as any)
       .from("content_packages").update({ is_published: !pack.is_published }).eq("id", pack.id);
     if (error) {
-      toast({ title: "Modification impossible", description: error.message, variant: "destructive" });
+      console.error(error);
+      toast({ title: "Modification impossible", description: "La publication n'a pas pu être modifiée. Réessayez.", variant: "destructive" });
       return;
     }
     setPackages((prev) => prev.map((p) => (p.id === pack.id ? { ...p, is_published: !p.is_published } : p)));
@@ -355,10 +358,10 @@ const Marketplace = () => {
                           </Button>
                         </>
                       )}
-                      <Button size="sm" onClick={() => void install(p.id)} disabled={busyId === p.id || !user}>
+                      <Button size="sm" onClick={() => void install(p.id)} disabled={busyId === p.id || !user || isInstalled}>
                         {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           : isInstalled ? <Check className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                        {pregenItems[p.id]?.length ? (isInstalled ? "Déjà dans ma bibliothèque" : "Ajouter à ma bibliothèque") : (isInstalled ? "Réinstaller" : "Installer")}
+                        {pregenItems[p.id]?.length ? (isInstalled ? "Déjà dans ma bibliothèque" : "Ajouter à ma bibliothèque") : (isInstalled ? "Déjà installé" : "Installer")}
                       </Button>
                     </div>
                   </div>
