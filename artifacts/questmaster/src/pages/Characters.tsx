@@ -335,7 +335,7 @@ const Characters = () => {
     resetEditSession();
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, [plan, resetEditSession]);
+  }, [plan, resetEditSession, pregenCampaignId]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(
