@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { HOMEBREW_KINDS, HomebrewKind, HomebrewRow, KIND_BY_ID, emptyData } from "@/lib/homebrew";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Draft {
   id?: string;
@@ -56,7 +57,7 @@ const Atelier = () => {
       .select("*")
       .eq("owner_id", user.id)
       .order("updated_at", { ascending: false });
-    if (error) toast({ title: "Chargement impossible", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Chargement impossible", description: toFriendlyMessage(error), variant: "destructive" });
     setRows((data ?? []) as HomebrewRow[]);
     setLoading(false);
   }, [user, toast]);
@@ -92,7 +93,7 @@ const Atelier = () => {
     const { error } = await query;
     setSaving(false);
     if (error) {
-      toast({ title: "Enregistrement impossible", description: error.message, variant: "destructive" });
+      toast({ title: "Enregistrement impossible", description: toFriendlyMessage(error), variant: "destructive" });
       return;
     }
     toast({ title: draft.id ? "Création mise à jour" : "Création enregistrée" });
@@ -103,7 +104,7 @@ const Atelier = () => {
   const remove = async (id: string) => {
     const { error } = await (supabase as any).from("homebrew_content").delete().eq("id", id);
     if (error) {
-      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      toast({ title: "Suppression impossible", description: toFriendlyMessage(error), variant: "destructive" });
       return;
     }
     setRows((prev) => prev.filter((r) => r.id !== id));

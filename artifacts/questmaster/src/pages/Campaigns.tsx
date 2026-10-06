@@ -26,6 +26,7 @@ import PlanLimitBanner from "@/components/PlanLimitBanner";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { toast } from "@/hooks/use-toast";
 import { sanitizeInviteCode } from "@/lib/inviteCode";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 
 interface Campaign {
@@ -155,7 +156,7 @@ const Campaigns = () => {
       setJoinCode("");
       navigate(`/campaigns/${campaignId}`);
     },
-    onError: (err: Error) => toast({ title: "Code invalide", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Code invalide", description: toFriendlyMessage(err), variant: "destructive" }),
   });
 
   const filteredCampaigns = campaigns

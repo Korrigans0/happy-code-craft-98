@@ -15,6 +15,7 @@ import SessionAgenda from "./SessionAgenda";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Calendar, CheckCircle, Clock, Edit, Trash2, Play, Bell, MailCheck, Sparkles, Loader2 } from "lucide-react";
 import { generateSessionRecap } from "@/lib/ai/generation";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 
 
@@ -42,7 +43,7 @@ const CampaignSessions = ({ campaignId, isGM }: CampaignSessionsProps) => {
           description: `Rédigé à partir de ${messageCount} message(s) de table. Relisez avant de partager.`,
         });
       } catch (e: any) {
-        toast({ title: "Récit IA", description: e.message, variant: "destructive" });
+        toast({ title: "Récit IA", description: toFriendlyMessage(e), variant: "destructive" });
       } finally {
         setRecapLoading(null);
       }

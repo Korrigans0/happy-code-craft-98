@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, KeyRound, CheckCircle2, XCircle } from "lucide-react";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ const ResetPassword = () => {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(error), variant: "destructive" });
     } else {
       toast({ title: "Mot de passe mis à jour ✓", description: "Vous pouvez vous connecter." });
       navigate("/sign-in");

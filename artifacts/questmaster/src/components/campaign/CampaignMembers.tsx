@@ -32,6 +32,7 @@ import { Crown, User, UserMinus, Sword, Clock, CheckCircle, XCircle, Send, Mail 
 import { filterCompatibleCharacters } from "@/lib/system-compatibility";
 import { getSystem } from "@/lib/systems";
 import PregenSection from "@/components/campaign/pregens/PregenSection";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface CampaignMembersProps {
   campaignId: string;
@@ -245,7 +246,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       toast({ title: "Personnage assigné" });
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -258,7 +259,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       toast({ title: "Membre retiré" });
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -273,7 +274,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       toast({ title: "Proposition envoyée", description: "Le MJ sera notifié de votre proposition." });
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -286,7 +287,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       toast({ title: "Proposition annulée" });
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -303,7 +304,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       });
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -324,7 +325,7 @@ const CampaignMembers = ({ campaignId, isGM }: CampaignMembersProps) => {
       setInviteEmail("");
     },
     onError: (err: Error) => {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 

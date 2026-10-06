@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { pregensApi, PREGEN_KIND } from "@/lib/pregens";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Row { id: string; name: string; system: string; summary: string | null; image_url: string | null; data: Record<string, any> }
 interface CampaignOpt { id: string; title: string; system: string }
@@ -43,7 +44,7 @@ export const LibraryPregens = ({ userId }: { userId: string }) => {
   const remove = async (id: string) => {
     const { error } = await db.from("homebrew_content").delete().eq("id", id);
     if (error) {
-      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      toast({ title: "Suppression impossible", description: toFriendlyMessage(error), variant: "destructive" });
       return;
     }
     setRows((r) => r.filter((x) => x.id !== id));
@@ -59,7 +60,7 @@ export const LibraryPregens = ({ userId }: { userId: string }) => {
       setTarget(null);
       navigate(`/campaigns/${cid}?tab=members`);
     } catch (e: any) {
-      toast({ title: "Ajout impossible", description: e?.message, variant: "destructive" });
+      toast({ title: "Ajout impossible", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setBusy(false);
     }

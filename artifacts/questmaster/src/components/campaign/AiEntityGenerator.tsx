@@ -23,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 import { codexApi } from "@/lib/codex/api";
 import { ENTITY_KINDS, type EntityKind } from "@/lib/codex/types";
 import { generateEntity, toEntityInput, type GeneratedEntity } from "@/lib/ai/generation";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Props {
   campaignId: string;
@@ -56,7 +57,7 @@ export default function AiEntityGenerator({
       const gen = await generateEntity(campaignId, kind, brief);
       setResult(gen);
     } catch (e: any) {
-      toast({ title: "Génération", description: e.message, variant: "destructive" });
+      toast({ title: "Génération", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ export default function AiEntityGenerator({
       setBrief("");
       onOpenChange(false);
     } catch (e: any) {
-      toast({ title: "Échec de l'ajout", description: e.message, variant: "destructive" });
+      toast({ title: "Échec de l'ajout", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setSaving(false);
     }

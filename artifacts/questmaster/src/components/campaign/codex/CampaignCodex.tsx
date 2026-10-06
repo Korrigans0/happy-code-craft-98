@@ -14,6 +14,7 @@ import type { CampaignEntity, EntityKind } from "@/lib/codex/types";
 import EntityFormDialog from "./EntityFormDialog";
 import EntityDetail from "./EntityDetail";
 import { BookOpen, Plus, Search, ArrowLeft } from "lucide-react";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Props {
   campaignId: string;
@@ -91,7 +92,7 @@ export default function CampaignCodex({ campaignId, system, isGM }: Props) {
       setSelectedId(entity.id);
       toast({ title: "Fiche enregistrée" });
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const counts = useMemo(() => {

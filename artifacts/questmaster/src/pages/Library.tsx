@@ -27,6 +27,7 @@ import { compendiumApi } from "@/lib/api";
 import { SYSTEM_LIST } from "@/lib/systems";
 import { MediaLibrary } from "@/components/media/MediaLibrary";
 import { LibraryPregens } from "@/components/library/LibraryPregens";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 type Kind = "monsters" | "spells" | "items" | "media" | "pregens";
 
@@ -157,7 +158,7 @@ const LibraryTab = ({ kind }: { kind: CompendiumKind }) => {
       setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
       toast({ title: "Supprimé", description: `« ${name} » a été retiré de votre bibliothèque.` });
     } catch (e: any) {
-      toast({ title: "Suppression refusée", description: e?.message ?? "Erreur inconnue.", variant: "destructive" });
+      toast({ title: "Suppression refusée", description: toFriendlyMessage(e), variant: "destructive" });
     }
   };
 

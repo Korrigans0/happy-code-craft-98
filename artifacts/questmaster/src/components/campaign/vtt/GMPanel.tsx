@@ -20,6 +20,7 @@ import { campaignsApi } from "@/lib/api";
 import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
@@ -965,7 +966,7 @@ function PdfTab({ campaignId, currentUserId }: { campaignId: string; currentUser
     if (sErr) console.warn("[PdfTab] storage remove", sErr);
     const { error } = await supabase.from("campaign_pdfs" as never).delete().eq("id", pdf.id);
     if (error) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(error), variant: "destructive" });
     } else {
       setPdfs(prev => prev.filter(p => p.id !== pdf.id));
     }
