@@ -9,6 +9,10 @@ Aetheria VTT permet aux maîtres du jeu et aux joueurs de gérer des parties de 
 - [Accueil](/): Présentation d'Aetheria VTT et de ses fonctionnalités.
 - [Compendium](/compendium): Bestiaire, classes, races, sorts et règles d'Aetheria & Worlds Awakening.
 - [Lanceur de dés](/dice): Outil de lancer de dés 3D pour le jeu de rôle.
+- [Systèmes](/systems): Systèmes de jeu disponibles (Aetheria, Worlds Awakening, Glyphes, D&D 5e).
+- [Glyphes](/systems/glyphes): Nouvel Empire, Expédition et Odyssée.
+- [Abonnements](/subscriptions): Offres Aetheria, Premium PJ, Premium MJ et Premium Mixte.
+- [Guide](/guide): Prise en main d'Aetheria VTT.
 
 ## Optional
 

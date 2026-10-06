@@ -74,6 +74,7 @@ import {
   strokeHexAt, hexesInRadius, formatDistance,
 } from "@/lib/vtt/grid";
 import GridSettingsPanel from "./vtt/GridSettingsPanel";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 // ── Constants ──────────────────────────────────────────────
 const GRID_SIZE = 40;
@@ -433,7 +434,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       toast({ title: "Fiche enregistrée" });
     },
     onError: (err: any) => {
-      toast({ title: "Erreur", description: err?.message ?? "Sauvegarde impossible", variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(err), variant: "destructive" });
     },
   });
 
@@ -1185,7 +1186,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       if (error) throw error;
       setGmNotesContent((data as any)?.content ?? "");
     } catch (e: any) {
-      toast({ title: "Impossible de charger les notes", description: e.message, variant: "destructive" });
+      toast({ title: "Impossible de charger les notes", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setGmNotesLoading(false);
     }
@@ -1205,7 +1206,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       toast({ title: "Notes MJ enregistrées" });
       setGmNotesToken(null);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setGmNotesSaving(false);
     }

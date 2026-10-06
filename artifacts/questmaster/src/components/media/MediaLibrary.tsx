@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AssetMetaDialog } from "./AssetMetaDialog";
 import { useMediaLibrary, formatBytes, type MediaAsset, type MediaFileType } from "@/hooks/useMediaLibrary";
 import { TIER_LABEL } from "@/lib/subscriptions";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 const TYPE_OPTIONS: { value: MediaFileType | "all"; label: string }[] = [
   { value: "all", label: "Tous types" },
@@ -105,7 +106,7 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
       setSelected(new Set());
       toast({ title: "Médias rangés" });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" });
     }
   };
 
@@ -447,7 +448,7 @@ export function MediaLibrary({ defaultType, campaignId, onPick }: Props) {
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           onClick={async () => {
                             try { await remove(a); toast({ title: "Supprimé" }); }
-                            catch (e: any) { toast({ title: "Erreur", description: e?.message, variant: "destructive" }); }
+                            catch (e: any) { toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }); }
                           }}
                         >
                           Supprimer

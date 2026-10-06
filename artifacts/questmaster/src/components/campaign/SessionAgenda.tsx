@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { prepApi } from "@/lib/prep/api";
 import { PREP_SCENE_STATUS, statusMeta, type PrepScene, type PrepSceneStatus } from "@/lib/prep/types";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Props {
   campaignId: string;
@@ -62,7 +63,7 @@ export default function SessionAgenda({ campaignId, sessionId }: Props) {
       setSearch("");
       toast({ title: "Scènes ajoutées à l'ordre du jour" });
     },
-    onError: (e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const detach = useMutation({

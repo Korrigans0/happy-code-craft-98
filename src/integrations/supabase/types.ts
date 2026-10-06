@@ -2595,6 +2595,17 @@ export type Database = {
         Returns: boolean
       }
       claim_pregen_character: { Args: { _pregen_id: string }; Returns: string }
+      create_content_package: {
+        Args: {
+          _description: string
+          _homebrew_ids: string[]
+          _is_published: boolean
+          _system: string
+          _tags: string[]
+          _title: string
+        }
+        Returns: string
+      }
       duplicate_pregen: { Args: { _pregen_id: string }; Returns: string }
       effective_tier: {
         Args: { _user_id: string }

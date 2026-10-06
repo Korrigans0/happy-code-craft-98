@@ -14,6 +14,7 @@ import {
 } from "@/lib/codex/types";
 import type { CampaignEntity, EntityLink, PermissionLevel } from "@/lib/codex/types";
 import { Link2, Lock, History, Copy, Pencil, Trash2, Plus, RotateCcw } from "lucide-react";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Props {
   entity: CampaignEntity;
@@ -61,7 +62,7 @@ export default function EntityDetail({
       qc.invalidateQueries({ queryKey: ["entity-gm-notes", entity.id] });
       toast({ title: "Notes privées enregistrées" });
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   // ── Relations ─────────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ export default function EntityDetail({
       setLinkTarget("");
       qc.invalidateQueries({ queryKey: ["codex-links", entity.campaign_id] });
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const removeLink = useMutation({
@@ -93,7 +94,7 @@ export default function EntityDetail({
     mutationFn: ({ userId, level }: { userId: string; level: PermissionLevel }) =>
       codexApi.setPermission(entity.id, entity.campaign_id, userId, level),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["entity-permissions", entity.id] }),
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   // ── Revisions ─────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ export default function EntityDetail({
       qc.invalidateQueries({ queryKey: ["entity-revisions", entity.id] });
       toast({ title: "Version restaurée" });
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const duplicate = useMutation({
@@ -119,7 +120,7 @@ export default function EntityDetail({
       qc.invalidateQueries({ queryKey: ["codex", entity.campaign_id] });
       onSelect(created.id);
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const remove = useMutation({
@@ -128,7 +129,7 @@ export default function EntityDetail({
       qc.invalidateQueries({ queryKey: ["codex", entity.campaign_id] });
       onDeleted();
     },
-    onError: (e: Error) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const visibilityLabel =

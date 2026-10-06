@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import type { Macro, MacroDraft } from "@/lib/macros/types";
 import { getDefaultMacros } from "@/lib/macros/defaults";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 function normalize(row: any): Macro {
   return {
@@ -58,7 +59,7 @@ export function useMacros(campaignId?: string) {
       toast({ title: "Macro créée" });
     },
     onError: (e: any) =>
-      toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+      toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const updateMacro = useMutation({
@@ -74,7 +75,7 @@ export function useMacros(campaignId?: string) {
     },
     onSuccess: invalidate,
     onError: (e: any) =>
-      toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+      toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const deleteMacro = useMutation({
@@ -128,7 +129,7 @@ export function useMacros(campaignId?: string) {
       }));
       const { error } = await supabase.from("macros").insert(rows);
       if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        toast({ title: "Erreur", description: toFriendlyMessage(error), variant: "destructive" });
         return;
       }
       invalidate();

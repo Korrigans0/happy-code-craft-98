@@ -101,7 +101,7 @@ export default function Admin() {
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden">
-      <SEO title="Administration — Aétheria VTT" description="Espace d’administration" path="/admin" />
+      <SEO title="Administration — Aetheria VTT" description="Espace d’administration" path="/admin" />
       <Header />
       <main className="container mx-auto flex-1 px-4 py-10 md:px-6">
         <h1 className="flex items-center gap-3 font-display text-3xl font-bold text-gradient-gold md:text-4xl"><ShieldCheck className="h-8 w-8 text-amber-400" /> Administration</h1>

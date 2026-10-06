@@ -35,6 +35,7 @@ import {
   type AiChatMessage,
   type AiConversationSummary,
 } from "@/lib/ai/conversations";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 
 const SUPABASE_URL =
@@ -96,7 +97,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       try {
         setHistory(await aiConversationsApi.list(campaignId, term));
       } catch (e: any) {
-        toast({ title: "Historique", description: e.message, variant: "destructive" });
+        toast({ title: "Historique", description: toFriendlyMessage(e), variant: "destructive" });
       }
     },
     [campaignId],
@@ -127,7 +128,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
         setMessages(conv.messages);
       })
       .catch((e: any) => {
-        if (!cancelled) toast({ title: "Conversation", description: e.message, variant: "destructive" });
+        if (!cancelled) toast({ title: "Conversation", description: toFriendlyMessage(e), variant: "destructive" });
       })
       .finally(() => {
         if (!cancelled) {
@@ -172,7 +173,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       }
       void refreshHistory(search);
     } catch (e: any) {
-      toast({ title: "Sauvegarde de la conversation", description: e.message, variant: "destructive" });
+      toast({ title: "Sauvegarde de la conversation", description: toFriendlyMessage(e), variant: "destructive" });
     }
   }
 
@@ -245,7 +246,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       await persist([...next, { role: "assistant", content: answer }]);
     } catch (e: any) {
       setMessages((prev) => prev.slice(0, -1));
-      toast({ title: "Assistant IA", description: e.message, variant: "destructive" });
+      toast({ title: "Assistant IA", description: toFriendlyMessage(e), variant: "destructive" });
     } finally {
       setStreaming(false);
       inputRef.current?.focus();
@@ -272,7 +273,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       });
       toast({ title: "Ajouté au Codex", description: `« ${name.slice(0, 60)} » créé en visibilité MJ.` });
     } catch (e: any) {
-      toast({ title: "Échec de l'ajout", description: e.message, variant: "destructive" });
+      toast({ title: "Échec de l'ajout", description: toFriendlyMessage(e), variant: "destructive" });
     }
   }
 
@@ -283,7 +284,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       await aiConversationsApi.rename(id, title.trim());
       void refreshHistory(search);
     } catch (e: any) {
-      toast({ title: "Renommage", description: e.message, variant: "destructive" });
+      toast({ title: "Renommage", description: toFriendlyMessage(e), variant: "destructive" });
     }
   }
 
@@ -294,7 +295,7 @@ export default function AIAssistant({ campaignId, system }: { campaignId: string
       void refreshHistory(search);
       toast({ title: "Conversation supprimée" });
     } catch (e: any) {
-      toast({ title: "Suppression", description: e.message, variant: "destructive" });
+      toast({ title: "Suppression", description: toFriendlyMessage(e), variant: "destructive" });
     }
   }
 

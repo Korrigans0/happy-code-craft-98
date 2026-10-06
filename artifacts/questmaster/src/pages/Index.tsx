@@ -17,7 +17,7 @@ const Index = () => {
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "Aetheria VTT",
-          url: "https://aetheria-vtt.lovable.app/",
+          url: "https://aetheriavtt.com/",
           description: "Table virtuelle immersive Aetheria & Worlds Awakening.",
         }}
       />

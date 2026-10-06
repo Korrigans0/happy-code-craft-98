@@ -57,12 +57,12 @@ const COMPENDIUM_SEO = (
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: "Compendium Aetheria VTT",
-      url: "https://aetheria-vtt.lovable.app/compendium",
+      url: "https://aetheriavtt.com/compendium",
     }}
   />
 );
 
-// ── Codex Aetheria : placeholder lore (inchangé) ───────────
+// ── Codex Aetheria : lore ───────────
 const AetheriaLore = () => (
   <div className="space-y-6">
     <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-5 flex items-start gap-4">

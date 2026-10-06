@@ -90,6 +90,7 @@ interface Character {
 // Aetheria reste le système phare (mis en avant), les autres ouvrent le
 // CharacterForm générique avec leur configuration propre.
 import { SYSTEM_LIST } from "@/lib/systems";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface SystemSelectorProps {
   onSelect: (systemId: string) => void;
@@ -243,7 +244,7 @@ const Characters = () => {
       pendingPatchRef.current = null;
       toast({
         title: "Erreur",
-        description: err?.message
+        description: toFriendlyMessage(err)
           ? `Impossible de créer le personnage : ${err.message}`
           : "Impossible de créer le personnage.",
         variant: "destructive",
@@ -264,7 +265,7 @@ const Characters = () => {
     onError: (err: any) => {
       toast({
         title: "Erreur",
-        description: err?.message
+        description: toFriendlyMessage(err)
           ? `Impossible de mettre à jour : ${err.message}`
           : "Impossible de mettre à jour.",
         variant: "destructive",
@@ -323,7 +324,8 @@ const Characters = () => {
   }, [selectedCharacter, updateMutation, createMutation, pendingSystem, pregenCampaignId]);
 
   const handleNewCharacter = useCallback(() => {
-    if (plan && !plan.canCreateCharacter) {
+    // Pregens are excluded from the standard character quota (enforced server-side too).
+    if (!pregenCampaignId && plan && !plan.canCreateCharacter) {
       toast({
         title: "Limite atteinte",
         description: "Le plan gratuit est limité à 3 personnages. Passez Premium pour en créer plus.",
@@ -334,7 +336,7 @@ const Characters = () => {
     resetEditSession();
     setSelectedCharacter(null);
     setIsSelectorOpen(true);
-  }, [plan, resetEditSession]);
+  }, [plan, resetEditSession, pregenCampaignId]);
 
   // Systèmes disposant d'une fiche dédiée utilisée pour création ET édition.
   const SYSTEMS_WITH_DEDICATED_SHEET = useMemo(

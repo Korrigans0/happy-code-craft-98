@@ -34,6 +34,7 @@ const POSTGRES_MAP: Array<[RegExp, string]> = [
   [/violates not-null/i, "Un champ obligatoire est manquant."],
   [/violates check constraint/i, "Une des valeurs saisies n'est pas valide."],
   [/permission denied|row-level security|new row violates/i, "Vous n'avez pas l'autorisation d'effectuer cette action."],
+  [/DICE_INVALID/, "Jet de dés invalide : résultat refusé par le serveur."],
   [/does not exist|no rows/i, "Élément introuvable."],
 ];
 

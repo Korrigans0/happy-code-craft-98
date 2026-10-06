@@ -1,4 +1,12 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /campaigns
+Disallow: /characters
+Disallow: /library
+Disallow: /atelier
+Disallow: /join/
 
-Sitemap: https://aetheria-vtt.lovable.app/sitemap.xml
+Sitemap: https://aetheriavtt.com/sitemap.xml

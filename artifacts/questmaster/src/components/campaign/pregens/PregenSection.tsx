@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { pregensApi, type PregenEntry } from "@/lib/pregens";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface PregenSectionProps {
   campaignId: string;
@@ -109,7 +110,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
     queryClient.invalidateQueries({ queryKey: ["campaignCharacters", campaignId] });
     queryClient.invalidateQueries({ queryKey: ["myCharacters"] });
   };
-  const onError = (e: any) => toast({ title: "Action impossible", description: e?.message, variant: "destructive" });
+  const onError = (e: any) => toast({ title: "Action impossible", description: toFriendlyMessage(e), variant: "destructive" });
 
   const run = useMutation({
     mutationFn: async (fn: () => Promise<unknown>) => fn(),

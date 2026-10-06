@@ -18,6 +18,7 @@ import {
   Search, Heart, Zap, Shield, ChevronDown, ChevronRight,
   Skull, Swords, Globe, Lock, Trash2, ShieldCheck,
 } from "lucide-react";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface AetheriaCreature {
   id: string;
@@ -273,7 +274,7 @@ export default function AetheriaBestiary({ campaignId, isGM = false, searchQuery
       toast({ title: "Créature supprimée" });
     },
     onError: (e: Error) =>
-      toast({ title: "Suppression refusée", description: e.message, variant: "destructive" }),
+      toast({ title: "Suppression refusée", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const { myCreatures, publicCreatures } = useMemo(() => {

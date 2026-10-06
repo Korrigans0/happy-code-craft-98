@@ -23,6 +23,7 @@ import Library from "./pages/Library";
 import Atelier from "./pages/Atelier";
 import Marketplace from "./pages/Marketplace";
 import Dashboard from "./pages/Dashboard";
+import DiceRoller from "./pages/DiceRoller";
 
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
@@ -90,6 +91,7 @@ const AppRoutes = () => (
         <Route path="/campaigns/:id" element={<ProtectedRoute><CampaignPlay /></ProtectedRoute>} />
         <Route path="/characters" element={<ProtectedRoute><Characters /></ProtectedRoute>} />
         <Route path="/compendium" element={<Compendium />} />
+        <Route path="/dice" element={<DiceRoller />} />
         <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
         <Route path="/atelier" element={<ProtectedRoute><Atelier /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />

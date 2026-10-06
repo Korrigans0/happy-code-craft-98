@@ -114,31 +114,22 @@ const Marketplace = () => {
       return;
     }
     setSaving(true);
-    const { data: pack, error } = await (supabase as any).from("content_packages").insert({
-      owner_id: user.id,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      system: form.system,
-      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      is_published: form.is_published,
-    }).select().single();
-    if (error || !pack) {
-      setSaving(false);
-      toast({ title: "Création impossible", description: error?.message ?? "Erreur inconnue", variant: "destructive" });
-      return;
-    }
-    const items = myContent.filter((c) => picked.includes(c.id)).map((c) => ({
-      package_id: pack.id,
-      kind: c.kind,
-      name: c.name,
-      payload: { ...(c.data ?? {}), summary: c.summary ?? "", image_url: c.image_url ?? "" },
-    }));
-    const { error: itemsError } = await (supabase as any).from("package_items").insert(items);
+    // Atomic server-side creation: pack + items in one transaction (full rollback on error).
+    const { error } = await (supabase as any).rpc("create_content_package", {
+      _title: form.title.trim(),
+      _description: form.description.trim() || null,
+      _system: form.system,
+      _tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+      _is_published: form.is_published,
+      _homebrew_ids: picked,
+    });
     setSaving(false);
-    if (itemsError) {
-      toast({ title: "Contenu non ajouté", description: itemsError.message, variant: "destructive" });
+    if (error) {
+      console.error("create_content_package", error);
+      toast({ title: "Création impossible", description: "Le pack n'a pas pu être créé. Aucun contenu n'a été publié, réessayez.", variant: "destructive" });
       return;
     }
+    const items = picked;
     toast({ title: "Pack créé", description: `${items.length} élément(s) empaqueté(s).` });
     setCreating(false);
     setTab("mine");
@@ -150,7 +141,8 @@ const Marketplace = () => {
     const { data, error } = await (supabase as any).rpc("install_content_package", { _package_id: id });
     setBusyId(null);
     if (error) {
-      toast({ title: "Installation impossible", description: error.message, variant: "destructive" });
+      console.error("install_content_package", error);
+      toast({ title: "Installation impossible", description: "Ce pack n'est plus disponible ou une erreur est survenue. Réessayez plus tard.", variant: "destructive" });
       return;
     }
     setInstalled((prev) => [...new Set([...prev, id])]);
@@ -161,7 +153,8 @@ const Marketplace = () => {
   const removePackage = async (id: string) => {
     const { error } = await (supabase as any).from("content_packages").delete().eq("id", id);
     if (error) {
-      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      console.error(error);
+      toast({ title: "Suppression impossible", description: "Le pack n'a pas pu être supprimé. Réessayez.", variant: "destructive" });
       return;
     }
     setPackages((prev) => prev.filter((p) => p.id !== id));
@@ -171,7 +164,8 @@ const Marketplace = () => {
     const { error } = await (supabase as any)
       .from("content_packages").update({ is_published: !pack.is_published }).eq("id", pack.id);
     if (error) {
-      toast({ title: "Modification impossible", description: error.message, variant: "destructive" });
+      console.error(error);
+      toast({ title: "Modification impossible", description: "La publication n'a pas pu être modifiée. Réessayez.", variant: "destructive" });
       return;
     }
     setPackages((prev) => prev.map((p) => (p.id === pack.id ? { ...p, is_published: !p.is_published } : p)));
@@ -364,10 +358,10 @@ const Marketplace = () => {
                           </Button>
                         </>
                       )}
-                      <Button size="sm" onClick={() => void install(p.id)} disabled={busyId === p.id || !user}>
+                      <Button size="sm" onClick={() => void install(p.id)} disabled={busyId === p.id || !user || isInstalled}>
                         {busyId === p.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           : isInstalled ? <Check className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                        {pregenItems[p.id]?.length ? (isInstalled ? "Déjà dans ma bibliothèque" : "Ajouter à ma bibliothèque") : (isInstalled ? "Réinstaller" : "Installer")}
+                        {pregenItems[p.id]?.length ? (isInstalled ? "Déjà dans ma bibliothèque" : "Ajouter à ma bibliothèque") : (isInstalled ? "Déjà installé" : "Installer")}
                       </Button>
                     </div>
                   </div>

@@ -1,0 +1,1 @@
+ALTER FUNCTION public.create_content_package(text, text, text, text[], boolean, uuid[]) SECURITY INVOKER;

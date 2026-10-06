@@ -22,6 +22,7 @@ import { resolveVariables } from "@/lib/macros/variables";
 import { rollFormula, formatRoll, DiceError } from "@/lib/macros/engine";
 import { broadcastDiceRoll, detectCrit } from "@/lib/vtt/diceBroadcast";
 import { useAuth } from "@/hooks/useAuth";
+import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface Props {
   campaignId: string;
@@ -53,7 +54,7 @@ const MacroBar = ({ campaignId, isGM, system }: Props) => {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["campaignMessages", campaignId] }),
     onError: (e: any) =>
-      toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+      toast({ title: "Erreur", description: toFriendlyMessage(e), variant: "destructive" }),
   });
 
   const categories = useMemo(() => {
