@@ -1,0 +1,84 @@
+.adventure-experiment {
+  --scene-ink: 230 60% 3%;
+  --scene-light: 210 30% 94%;
+  --scene-gold: var(--primary);
+  --scene-rose: var(--magic-rose);
+  --scene-violet: var(--magic-violet);
+  --scene-emerald: var(--magic-emerald);
+  --scene-cyan: 185 85% 65%;
+  --scene-color: var(--scene-gold);
+  color: hsl(var(--scene-light));
+  background: hsl(var(--scene-ink));
+  position: relative;
+  height: 320svh;
+  isolation: isolate;
+}
+.adventure-experiment[data-tone="rose"] { --scene-color: var(--scene-rose); }
+.adventure-experiment[data-tone="violet"] { --scene-color: var(--scene-violet); }
+.adventure-experiment[data-tone="emerald"] { --scene-color: var(--scene-emerald); }
+.adventure-experiment[data-tone="cyan"] { --scene-color: var(--scene-cyan); }
+.adventure-stage { position: sticky; top: 64px; height: calc(100svh - 64px); min-height: 680px; overflow: hidden; perspective: 1200px; }
+.adventure-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 50%; opacity: .8; transform: scale(1.02) translate3d(calc(var(--pointer-x, 0) * -8px), calc(var(--pointer-y, 0) * -5px), 0); transition: transform 1s ease-out; }
+.adventure-shade { position: absolute; inset: 0; background: linear-gradient(to bottom, hsl(var(--scene-ink)) 0%, hsl(var(--scene-ink) / .12) 28%, hsl(var(--scene-ink) / .08) 52%, hsl(var(--scene-ink) / .85) 78%, hsl(var(--scene-ink)) 100%); }
+.adventure-heading { position: absolute; z-index: 3; top: 34px; left: 20px; right: 20px; text-align: center; }
+.adventure-heading p { color: hsl(var(--primary)); font-size: 11px; text-transform: uppercase; margin-bottom: 12px; }
+.adventure-heading h2 { font-size: 36px; line-height: 1.2; color: hsl(var(--scene-light)); }
+.adventure-heading .adventure-intro { text-transform: none; color: hsl(var(--foreground)); font-size: 13px; margin-top: 12px; }
+.adventure-orbit { position: absolute; inset: 165px 0 190px; max-width: 1250px; margin: auto; transform-style: preserve-3d; transform: rotateY(calc(var(--pointer-x, 0) * 2deg)) rotateX(calc(var(--pointer-y, 0) * -2deg)); transition: transform .7s ease-out; }
+.adventure-object { position: absolute; width: 220px; text-align: center; transform: translate(-50%, -50%); color: hsl(var(--foreground)); transition: opacity .6s ease, filter .6s ease; text-decoration: none; }
+.adventure-object:nth-child(1) { left: 20%; top: 27%; --object-tone: var(--scene-gold); }
+.adventure-object:nth-child(2) { left: 80%; top: 25%; --object-tone: var(--scene-rose); }
+.adventure-object:nth-child(3) { left: 12%; top: 79%; --object-tone: var(--scene-violet); }
+.adventure-object:nth-child(4) { left: 87%; top: 78%; --object-tone: var(--scene-emerald); }
+.adventure-object:nth-child(5) { left: 50%; top: 73%; --object-tone: var(--scene-cyan); width: 150px; }
+.adventure-object img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 12px hsl(var(--object-tone) / .2)); animation: adventure-levitate 7s ease-in-out infinite; transition: scale .65s ease, filter .65s ease; }
+.adventure-object:nth-child(even) img { animation-delay: -3s; }
+.adventure-object[data-active="true"] img, .adventure-object:hover img, .adventure-object:focus-visible img { scale: 1.13; filter: drop-shadow(0 0 22px hsl(var(--object-tone) / .5)); }
+.adventure-object span { display: inline-flex; align-items: center; gap: 8px; font-family: 'Cinzel', serif; font-size: 13px; padding: 6px 10px; background: hsl(var(--scene-ink) / .8); border-bottom: 1px solid hsl(var(--object-tone) / .35); }
+.adventure-object[data-active="true"] span { color: hsl(var(--object-tone)); border-color: hsl(var(--object-tone)); }
+.adventure-detail { position: absolute; left: 20px; right: 20px; bottom: 105px; text-align: center; z-index: 4; }
+.adventure-detail .adventure-number { color: hsl(var(--scene-color)); font-size: 11px; }
+.adventure-detail h3 { margin: 8px 0; font-size: 30px; line-height: 1.1; }
+.adventure-detail p { font-size: 13px; max-width: 460px; margin: 0 auto 8px; color: hsl(var(--foreground)); }
+.adventure-detail a { color: hsl(var(--scene-color)); }
+.adventure-footer { position: absolute; z-index: 5; bottom: 18px; left: 20px; right: 20px; max-width: 720px; margin: auto; }
+.adventure-progress { height: 1px; background: hsl(var(--border)); margin: 8px 0 6px; }
+.adventure-progress div { height: 2px; width: calc((var(--journey, 0) * .8 + .2) * 100%); background: hsl(var(--scene-color)); box-shadow: 0 0 12px hsl(var(--scene-color) / .5); transition: background .6s; }
+.adventure-controls { display: flex; justify-content: center; align-items: center; gap: 6px; }
+.adventure-controls button { border-radius: 50%; width: 40px; height: 40px; color: hsl(var(--foreground)); }
+.adventure-controls button[aria-pressed="true"] { color: hsl(var(--scene-color)); background: hsl(var(--scene-color) / .12); }
+.adventure-hint { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 10px; color: hsl(var(--foreground)); }
+.adventure-comparison { position: absolute; right: 18px; top: 16px; z-index: 6; }
+.adventure-comparison button { font-size: 10px; color: hsl(var(--foreground)); }
+.adventure-dust { position: absolute; inset: 0; pointer-events: none; }
+.adventure-dust i { position: absolute; left: var(--dust-x); top: var(--dust-y); height: 2px; width: 2px; background: hsl(var(--scene-cyan)); box-shadow: 0 0 6px hsl(var(--scene-cyan)); animation: adventure-dust 8s ease-in-out infinite; animation-delay: var(--dust-delay); }
+@keyframes adventure-levitate { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes adventure-dust { 0%, 100% { opacity: .15; transform: translateY(8px); } 50% { opacity: .8; transform: translateY(-12px); } }
+.adventure-experiment[data-paused="true"] *, .adventure-experiment[data-simple="true"] * { animation: none; }
+.adventure-experiment[data-simple="true"] { height: auto; }
+.adventure-experiment[data-simple="true"] .adventure-stage { position: relative; }
+@media (max-width: 767px) {
+  .adventure-experiment { height: 330svh; }
+  .adventure-stage { min-height: 510px; height: calc(100svh - 112px); }
+  .adventure-heading { top: 52px; left: 16px; right: 16px; }
+  .adventure-heading h2 { font-size: 24px; max-width: 320px; margin: auto; }
+  .adventure-heading p { margin-bottom: 8px; font-size: 9px; }
+  .adventure-heading .adventure-intro { font-size: 11px; max-width: 270px; margin: 8px auto; }
+  .adventure-background { object-fit: cover; object-position: center; opacity: .7; }
+  .adventure-orbit { inset: 150px 0 200px; }
+  .adventure-object:nth-child(n) { left: 50%; top: 57%; width: 160px; visibility: hidden; opacity: 0; }
+  .adventure-object[data-active="true"]:nth-child(n) { visibility: visible; opacity: 1; }
+  .adventure-object span { display: none; }
+  .adventure-detail { bottom: 119px; left: 18px; right: 18px; }
+  .adventure-detail h3 { font-size: 27px; }
+  .adventure-detail p { font-size: 12px; max-width: 310px; line-height: 1.6; }
+  .adventure-footer { bottom: 15px; }
+  .adventure-controls { gap: 0; }
+  .adventure-comparison { top: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adventure-experiment { height: auto; }
+  .adventure-stage { position: relative; }
+  .adventure-experiment * { animation: none; transition: none; }
+  .adventure-orbit, .adventure-background { transform: none; }
+}
