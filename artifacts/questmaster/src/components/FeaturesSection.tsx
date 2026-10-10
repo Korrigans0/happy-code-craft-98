@@ -1,33 +1,21 @@
-import { Link } from "react-router-dom";
-import { Sparkles, Sword, User, BookOpen, Crown, Handshake } from "lucide-react";
-import cardCampaigns from "@/assets/card-campaigns.jpg";
-import cardCharacters from "@/assets/card-characters.jpg";
-import cardCodex from "@/assets/card-codex.jpg";
-import cardVtt from "@/assets/card-vtt.jpg";
-import cardUniverse from "@/assets/card-universe.jpg";
+import { lazy, Suspense, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Sparkles, WandSparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { adventureDestinations as features } from "./experimental/adventure-destinations";
 
-interface Feature {
-  icon: typeof Sparkles;
-  title: string;
-  subtitle: string;
-  href: string;
-  image: string;
-  hue: number;
-  cta: string;
-}
-
-// Chaque carte mène à une page unique pour éviter les doublons de navigation.
-const features: Feature[] = [
-  { icon: Sword, title: "Campagnes", subtitle: "Plateau, tokens, murs et lumières dynamiques en temps réel.", href: "/campaigns", image: cardCampaigns, hue: 43, cta: "Lancer" },
-  { icon: User, title: "Personnages", subtitle: "Fiches Aetheria complètes, évolutives et illustrées.", href: "/characters", image: cardCharacters, hue: 320, cta: "Créer" },
-  { icon: BookOpen, title: "Codex", subtitle: "Bestiaire, races, classes et lore vivant.", href: "/compendium", image: cardCodex, hue: 270, cta: "Explorer" },
-  { icon: Crown, title: "Abonnements", subtitle: "Choisissez la formule adaptée à votre aventure.", href: "/subscriptions", image: cardVtt, hue: 155, cta: "Découvrir" },
-  { icon: Handshake, title: "Partenaires", subtitle: "Worlds Awakening, Vaeloria et l'écosystème Aetheria.", href: "/partners", image: cardUniverse, hue: 190, cta: "Voir" },
-];
+const AdventureScene = lazy(() => import("./experimental/AdventureScene"));
 
 const FeaturesSection = () => {
+  const [params] = useSearchParams();
+  const experimentEnabled = params.get("experience") === "aventures";
+  const [showCurrent, setShowCurrent] = useState(false);
+  if (experimentEnabled && !showCurrent) {
+    return <Suspense fallback={<section className="min-h-96 flex items-center justify-center text-primary" aria-busy="true">Tout pour vos aventures</section>}><AdventureScene onCompare={() => setShowCurrent(true)} /></Suspense>;
+  }
   return (
     <section className="relative py-16 md:py-24">
+      {experimentEnabled && <div className="flex justify-center mb-6"><Button variant="outline" onClick={() => setShowCurrent(false)}><WandSparkles />Version immersive</Button></div>}
       <div className="container relative mx-auto px-4 md:px-6">
         <div className="mb-12 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1.5 text-xs font-medium text-amber-300 backdrop-blur">
