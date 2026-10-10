@@ -25,7 +25,7 @@ export function useAdventureScene(count: number) {
       const stage = stageRef.current;
       if (!track || !stage) return;
       const travel = track.offsetHeight - stage.offsetHeight;
-      const progress = Math.max(0, Math.min(1, -track.getBoundingClientRect().top / Math.max(1, travel)));
+      const progress = Math.max(0, Math.min(1, (64 - track.getBoundingClientRect().top) / Math.max(1, travel)));
       setActive(Math.min(count - 1, Math.floor(progress * count)));
       stage.style.setProperty("--journey", String(progress));
     };
@@ -46,8 +46,8 @@ export function useAdventureScene(count: number) {
     const stage = stageRef.current;
     if (!track || !stage || simplified) return;
     const travel = track.offsetHeight - stage.offsetHeight;
-    const top = window.scrollY + track.getBoundingClientRect().top + travel * ((index + 0.25) / count);
-    window.scrollTo({ top, behavior: "auto" });
+    const top = window.scrollY + track.getBoundingClientRect().top - 64 + travel * ((index + 0.25) / count);
+    window.scrollTo({ top, behavior: "instant" });
   };
 
   return { trackRef, stageRef, active, setActive, select, simplified, paused, setPaused };
