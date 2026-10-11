@@ -3,8 +3,8 @@
 ## Prototype visuel aventures (demande actuelle)
 - [x] Identifier la section et isoler une variante sans changer les routes ni le fonctionnement
 - [x] Créer les artefacts, la scène, le défilement et les commandes tactiles
-- [ ] Vérifier comparaison, liens, desktop, mobile, réduction des mouvements et erreurs de compilation
-- [ ] Fournir le bilan ciblé du prototype
+- [x] Vérifier comparaison, liens, desktop, mobile, réduction des mouvements et erreurs de compilation
+- [x] Fournir le bilan ciblé du prototype
 
 - [x] Auditer les traitements, services, cookies, abonnements et parcours réels
 - [x] Créer les pages juridiques publiques version 1.0

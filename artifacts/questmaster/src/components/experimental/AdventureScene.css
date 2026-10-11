@@ -66,13 +66,13 @@
   .adventure-heading .adventure-intro { font-size: 11px; max-width: 270px; margin: 8px auto; }
   .adventure-background { object-fit: cover; object-position: center; opacity: .7; }
   .adventure-orbit { inset: 150px 0 200px; }
-  .adventure-object:nth-child(n) { left: 50%; top: 57%; width: 160px; visibility: hidden; opacity: 0; }
+  .adventure-object:nth-child(n) { left: 50%; top: 68%; width: 130px; visibility: hidden; opacity: 0; }
   .adventure-object[data-active="true"]:nth-child(n) { visibility: visible; opacity: 1; }
   .adventure-object span { display: none; }
   .adventure-detail { bottom: 119px; left: 18px; right: 18px; }
   .adventure-detail h3 { font-size: 27px; }
   .adventure-detail p { font-size: 12px; max-width: 310px; line-height: 1.6; }
-  .adventure-footer { bottom: 15px; }
+  .adventure-footer { bottom: 35px; }
   .adventure-controls { gap: 0; }
   .adventure-comparison { top: 8px; }
 }
