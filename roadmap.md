@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Prototype visuel aventures (demande actuelle)
+- [ ] Agrandir les artefacts et ajouter le transfert magique réversible, puis vérifier ordinateur et mobile
 - [x] Identifier la section et isoler une variante sans changer les routes ni le fonctionnement
 - [x] Créer les artefacts, la scène, le défilement et les commandes tactiles
 - [x] Vérifier comparaison, liens, desktop, mobile, réduction des mouvements et erreurs de compilation

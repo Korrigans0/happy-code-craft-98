@@ -6,6 +6,7 @@
   --scene-violet: var(--magic-violet);
   --scene-emerald: var(--magic-emerald);
   --scene-cyan: 185 85% 65%;
+  --energy-core: 190 60% 98%;
   --scene-color: var(--scene-gold);
   color: hsl(var(--scene-light));
   background: hsl(var(--scene-ink));
@@ -25,15 +26,29 @@
 .adventure-heading h2 { font-size: 36px; line-height: 1.2; color: hsl(var(--scene-light)); }
 .adventure-heading .adventure-intro { text-transform: none; color: hsl(var(--foreground)); font-size: 13px; margin-top: 12px; }
 .adventure-orbit { position: absolute; inset: 165px 0 190px; max-width: 1250px; margin: auto; transform-style: preserve-3d; transform: rotateY(calc(var(--pointer-x, 0) * 2deg)) rotateX(calc(var(--pointer-y, 0) * -2deg)); transition: transform .7s ease-out; }
-.adventure-object { position: absolute; width: 220px; text-align: center; transform: translate(-50%, -50%); color: hsl(var(--foreground)); transition: opacity .6s ease, filter .6s ease; text-decoration: none; }
+.adventure-object { position: absolute; width: clamp(280px, 27vw, 350px); text-align: center; transform: translate(-50%, -50%); color: hsl(var(--foreground)); transition: opacity .6s ease, filter .6s ease; text-decoration: none; }
 .adventure-object:nth-child(1) { left: 20%; top: 27%; --object-tone: var(--scene-gold); }
 .adventure-object:nth-child(2) { left: 80%; top: 25%; --object-tone: var(--scene-rose); }
 .adventure-object:nth-child(3) { left: 12%; top: 79%; --object-tone: var(--scene-violet); }
 .adventure-object:nth-child(4) { left: 87%; top: 78%; --object-tone: var(--scene-emerald); }
-.adventure-object:nth-child(5) { left: 50%; top: 73%; --object-tone: var(--scene-cyan); width: 150px; }
+.adventure-object:nth-child(5) { left: 50%; top: 58%; --object-tone: var(--scene-cyan); width: 240px; }
 .adventure-object img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 12px hsl(var(--object-tone) / .2)); animation: adventure-levitate 7s ease-in-out infinite; transition: scale .65s ease, filter .65s ease; }
 .adventure-object:nth-child(even) img { animation-delay: -3s; }
-.adventure-object[data-active="true"] img, .adventure-object:hover img, .adventure-object:focus-visible img { scale: 1.13; filter: drop-shadow(0 0 22px hsl(var(--object-tone) / .5)); }
+.adventure-object img { filter: drop-shadow(0 18px 16px hsl(var(--scene-ink) / .8)) drop-shadow(0 0 18px hsl(var(--object-tone) / .22)); }
+.adventure-object:not([data-active="true"]) img { opacity: .72; }
+.adventure-object[data-arrived="true"] img, .adventure-object:hover img, .adventure-object:focus-visible img { scale: 1.1; opacity: 1; filter: drop-shadow(0 18px 18px hsl(var(--scene-ink) / .8)) drop-shadow(0 0 32px hsl(var(--object-tone) / .7)); }
+.adventure-energy { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 2; }
+.adventure-energy path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.energy-aura { stroke: hsl(var(--scene-color)); stroke-width: 20; filter: blur(9px); opacity: .7; }
+.energy-cyan { stroke: hsl(var(--scene-cyan)); stroke-width: 6; filter: drop-shadow(0 0 8px hsl(var(--scene-cyan))); }
+.energy-core { stroke: hsl(var(--energy-core)); stroke-width: 2; }
+.energy-branch { stroke: hsl(var(--scene-violet)); stroke-width: 2; filter: drop-shadow(0 0 5px hsl(var(--scene-violet))); }
+.energy-spark { fill: hsl(var(--scene-gold)); filter: drop-shadow(0 0 5px hsl(var(--scene-gold))); }
+.energy-head { fill: hsl(var(--energy-core)); filter: drop-shadow(0 0 14px hsl(var(--scene-cyan))); }
+.adventure-impact { position: absolute; inset: 12%; border: 2px solid hsl(var(--object-tone) / .7); border-radius: 50%; pointer-events: none; box-shadow: 0 0 28px hsl(var(--object-tone) / .5), inset 0 0 20px hsl(var(--scene-cyan) / .3); animation: adventure-impact .8s ease-out both; }
+.adventure-reveal { animation: adventure-reveal .45s ease-out both; }
+@keyframes adventure-impact { from { opacity: .9; transform: scale(.7) rotate(-8deg); filter: blur(0); } to { opacity: 0; transform: scale(1.4) rotate(8deg); filter: blur(4px); } }
+@keyframes adventure-reveal { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .adventure-object span { display: inline-flex; align-items: center; gap: 8px; font-family: 'Cinzel', serif; font-size: 13px; padding: 6px 10px; background: hsl(var(--scene-ink) / .8); border-bottom: 1px solid hsl(var(--object-tone) / .35); }
 .adventure-object[data-active="true"] span { color: hsl(var(--object-tone)); border-color: hsl(var(--object-tone)); }
 .adventure-detail { position: absolute; left: 20px; right: 20px; bottom: 105px; text-align: center; z-index: 4; }
@@ -59,15 +74,21 @@
 .adventure-experiment[data-simple="true"] .adventure-stage { position: relative; }
 @media (max-width: 767px) {
   .adventure-experiment { height: 330svh; }
-  .adventure-stage { min-height: 510px; height: calc(100svh - 112px); }
+  .adventure-stage { min-height: 600px; height: calc(100svh - 112px); }
   .adventure-heading { top: 52px; left: 16px; right: 16px; }
   .adventure-heading h2 { font-size: 24px; max-width: 320px; margin: auto; }
   .adventure-heading p { margin-bottom: 8px; font-size: 9px; }
   .adventure-heading .adventure-intro { font-size: 11px; max-width: 270px; margin: 8px auto; }
   .adventure-background { object-fit: cover; object-position: center; opacity: .7; }
-  .adventure-orbit { inset: 150px 0 200px; }
-  .adventure-object:nth-child(n) { left: 50%; top: 68%; width: 130px; visibility: hidden; opacity: 0; }
-  .adventure-object[data-active="true"]:nth-child(n) { visibility: visible; opacity: 1; }
+  .adventure-orbit { inset: 185px 0 230px; }
+  .adventure-object:nth-child(n) { width: 66px; opacity: .5; }
+  .adventure-object:nth-child(1) { left: 13%; top: 12%; }
+  .adventure-object:nth-child(2) { left: 87%; top: 12%; }
+  .adventure-object:nth-child(3) { left: 13%; top: 95%; }
+  .adventure-object:nth-child(4) { left: 87%; top: 95%; }
+  .adventure-object:nth-child(5) { left: 50%; top: 105%; }
+  .adventure-object[data-active="true"]:nth-child(n) { left: 50%; top: 38%; width: 208px; opacity: 1; z-index: 1; }
+  .energy-branch:nth-of-type(even), .energy-spark:nth-of-type(even) { display: none; }
   .adventure-object span { display: none; }
   .adventure-detail { bottom: 119px; left: 18px; right: 18px; }
   .adventure-detail h3 { font-size: 27px; }
@@ -80,5 +101,6 @@
   .adventure-experiment { height: auto; }
   .adventure-stage { position: relative; }
   .adventure-experiment * { animation: none; transition: none; }
+  .adventure-impact { display: none; }
   .adventure-orbit, .adventure-background { transform: none; }
 }
