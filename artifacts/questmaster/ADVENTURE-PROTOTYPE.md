@@ -16,6 +16,12 @@ Ouvrir l’accueil avec `?experience=aventures#aventures-experimentales`. Les bo
 
 ## Technologies et limites
 
+### Amélioration du parcours magique
+
+Artefacts agrandis d’environ 60 %, éclair SVG courbe à cœur blanc/cyan, branches violettes, étincelles dorées et halo teinté par destination. Un seul transfert de 760 ms est joué par changement de sélection ; une interruption repart de la position lumineuse courante. Les arrivées renforcent le halo et déclenchent une onde dissipative. Sur mobile, l’artefact actif est imposant et les autres restent visibles en miniature. En mode de mouvements réduits, aucun éclair n’est animé. Aucun ajout de dépendance ni modification des liens.
+
+Vérification supplémentaire Playwright : transfert, absence de répétition à l’arrêt, interruptions et retours, arrivée sur l’objet cible, écran mobile sans débordement horizontal, comparaison et réduction des mouvements ; aucune erreur JavaScript, compilation automatique réussie.
+
 React, TypeScript, CSS avec perspective et transformations, requestAnimationFrame et composants Button existants. Aucune dépendance installée ; aucune scène WebGL ni modèle 3D. Le cristal, les brumes et les lumières de fond sont illustrés, pas des volumes calculés. Les artefacts flottent et réagissent à la souris ; le défilement change la destination et l’éclairage de sélection. Sur mobile, une destination est présentée à la fois, avec des commandes tactiles directes. Les appareils déclarant au plus 2 Go de mémoire et la préférence de mouvements réduits utilisent une scène fixe et les mêmes commandes, sans particules ni lévitation. Cette détection matérielle n’est pas disponible dans tous les navigateurs. Les performances sur téléphones physiques restent à mesurer.
 
 ## Vérifications

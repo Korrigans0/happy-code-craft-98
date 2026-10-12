@@ -1,4 +1,4 @@
-import { type CSSProperties, type PointerEvent } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDown, ArrowLeft, ArrowRight, Pause, Play, Columns2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import partners from "@/assets/experimental/partners.png";
 import { adventureDestinations } from "./adventure-destinations";
 import { useAdventureScene } from "./useAdventureScene";
 import "./AdventureScene.css";
+import { AdventureEnergy } from "./AdventureEnergy";
 
 const artifacts = [campaigns, characters, codex, subscriptions, partners];
 const dust = Array.from({ length: 18 }, (_, i) => ({
@@ -20,6 +21,10 @@ const dust = Array.from({ length: 18 }, (_, i) => ({
 export default function AdventureScene({ onCompare }: { onCompare: () => void }) {
   const { trackRef, stageRef, active, setActive, select, simplified, paused, setPaused } = useAdventureScene(adventureDestinations.length);
   const selected = adventureDestinations[active];
+  const orbitRef = useRef<HTMLElement>(null);
+  const [arrived, setArrived] = useState(0);
+  const [impact, setImpact] = useState(0);
+  const onArrival = useCallback((index: number) => { setArrived(index); setImpact(value => value + 1); }, []);
 
   const parallax = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || simplified || paused) return;
@@ -43,17 +48,19 @@ export default function AdventureScene({ onCompare }: { onCompare: () => void })
           <h2 id="adventure-title">Tout pour vos aventures</h2>
           <p className="adventure-intro">Des outils puissants pour des expériences inoubliables</p>
         </header>
-        <nav className="adventure-orbit" aria-label="Destinations Aetheria">
+        <nav ref={orbitRef} className="adventure-orbit" aria-label="Destinations Aetheria">
           {adventureDestinations.map((item, index) => (
-            <Link key={item.href} to={item.href} className="adventure-object" data-active={active === index} onPointerEnter={(event) => { if (event.pointerType === "mouse") setActive(index); }} onFocus={() => setActive(index)} aria-label={`${item.title} — ${item.subtitle}`}>
+            <Link key={item.href} to={item.href} className="adventure-object" data-active={active === index} data-arrived={arrived === index && active === index} onPointerEnter={(event) => { if (event.pointerType === "mouse") setActive(index); }} onFocus={() => setActive(index)} aria-label={`${item.title} — ${item.subtitle}`}>
               <img src={artifacts[index]} alt="" loading="lazy" decoding="async" width={816} height={816} />
+              {arrived === index && active === index && <i key={impact} className="adventure-impact" aria-hidden="true" />}
               <span><item.icon size={14} />{item.title}</span>
             </Link>
           ))}
+          <AdventureEnergy orbitRef={orbitRef} active={active} simplified={simplified} paused={paused} onArrival={onArrival} />
         </nav>
         <div className="adventure-detail" aria-live="polite" aria-atomic="true">
           <span className="adventure-number">0{active + 1} / 05</span>
-          <h3>{selected.title}</h3>
+          <h3 key={active} className="adventure-reveal">{selected.title}</h3>
           <p>{selected.subtitle}</p>
           <Button asChild variant="link" size="sm"><Link to={selected.href}>{selected.cta}<ArrowRight /></Link></Button>
         </div>
