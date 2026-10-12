@@ -1,5 +1,5 @@
 .adventure-experiment {
-  --scene-ink: 230 60% 3%;
+  --scene-ink: var(--background);
   --scene-light: 210 30% 94%;
   --scene-gold: var(--primary);
   --scene-rose: var(--magic-rose);

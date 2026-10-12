@@ -43,10 +43,10 @@ export default function AdventureScene({ onCompare }: { onCompare: () => void })
         <img className="adventure-background" src={sanctum} alt="" width={1536} height={1024} loading="lazy" />
         <div className="adventure-shade" aria-hidden="true" />
         <div className="adventure-wash adventure-wash--top" aria-hidden="true">
-          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to bottom, hsl(${item.hue} 90% 55% / .45) 0%, hsl(${item.hue} 90% 55% / .2) 18%, transparent 46%)` }} />)}
+          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to bottom, transparent 0%, hsl(${item.hue} 85% 60% / .34) 13%, hsl(${item.hue} 85% 60% / .12) 26%, transparent 48%)` }} />)}
         </div>
         <div className="adventure-wash adventure-wash--bottom" aria-hidden="true">
-          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to top, hsl(${item.hue} 90% 55% / .42) 0%, hsl(${item.hue} 90% 55% / .18) 20%, transparent 48%)` }} />)}
+          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to top, transparent 0%, hsl(${item.hue} 85% 60% / .32) 14%, hsl(${item.hue} 85% 60% / .11) 28%, transparent 52%)` }} />)}
         </div>
         {!simplified && <div className="adventure-dust" aria-hidden="true">{dust.map((style, i) => <i key={i} style={style} />)}</div>}
         <div className="adventure-comparison"><Button variant="ghost" size="sm" onClick={onCompare}><Columns2 />Version classique</Button></div>
