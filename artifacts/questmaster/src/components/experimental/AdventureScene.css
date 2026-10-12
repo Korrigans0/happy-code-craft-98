@@ -29,8 +29,8 @@
 .adventure-object { position: absolute; width: clamp(280px, 27vw, 350px); text-align: center; transform: translate(-50%, -50%); color: hsl(var(--foreground)); transition: opacity .6s ease, filter .6s ease; text-decoration: none; }
 .adventure-object:nth-child(1) { left: 20%; top: 27%; --object-tone: var(--scene-gold); }
 .adventure-object:nth-child(2) { left: 80%; top: 25%; --object-tone: var(--scene-rose); }
-.adventure-object:nth-child(3) { left: 12%; top: 79%; --object-tone: var(--scene-violet); }
-.adventure-object:nth-child(4) { left: 87%; top: 78%; --object-tone: var(--scene-emerald); }
+.adventure-object:nth-child(3) { left: 17%; top: 77%; --object-tone: var(--scene-violet); }
+.adventure-object:nth-child(4) { left: 83%; top: 77%; --object-tone: var(--scene-emerald); }
 .adventure-object:nth-child(5) { left: 50%; top: 58%; --object-tone: var(--scene-cyan); width: 240px; }
 .adventure-object img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 0 12px hsl(var(--object-tone) / .2)); animation: adventure-levitate 7s ease-in-out infinite; transition: scale .65s ease, filter .65s ease; }
 .adventure-object:nth-child(even) img { animation-delay: -3s; }
@@ -70,6 +70,7 @@
 @keyframes adventure-levitate { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
 @keyframes adventure-dust { 0%, 100% { opacity: .15; transform: translateY(8px); } 50% { opacity: .8; transform: translateY(-12px); } }
 .adventure-experiment[data-paused="true"] *, .adventure-experiment[data-simple="true"] * { animation: none; }
+.adventure-experiment[data-paused="true"] .adventure-impact, .adventure-experiment[data-simple="true"] .adventure-impact { display: none; }
 .adventure-experiment[data-simple="true"] { height: auto; }
 .adventure-experiment[data-simple="true"] .adventure-stage { position: relative; }
 @media (max-width: 767px) {
