@@ -2,7 +2,12 @@
 
 ## Accès et comparaison
 
-Ouvrir l’accueil avec `?experience=aventures#aventures-experimentales`. Les boutons « Version actuelle » et « Version immersive » permettent de comparer sans changer de route. Sans ce paramètre, la section originale reste affichée. Aucune publication automatique.
+La scène immersive est désormais la section « Tout pour vos aventures » de l’accueil, sans paramètre à ajouter. Le bouton « Version classique » (ou `?experience=classique`) rouvre la présentation en cartes, et « Version immersive » revient à la scène : aucune route nouvelle, aucun lien modifié.
+
+## Fondu des couleurs
+
+Le défilement module cinq poids `--mix-0` à `--mix-4` sur la scène : chaque destination culmine au centre de sa portion de parcours et rencontre la suivante à mi-force sur la frontière. Les voiles haut et bas superposent un dégradé par destination, dont l’opacité suit ce poids, et la teinte de scène `--scene-color` est recalculée par moyenne circulaire des teintes. Le passage or → magenta → violet → émeraude → cyan est donc continu, sans à-coup, y compris quand une sélection au survol ou au clic reprend directement la couleur.
+
 
 ## Fichiers
 

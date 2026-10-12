@@ -1,6 +1,12 @@
 # Roadmap
 
-## Prototype visuel aventures (demande actuelle)
+## Section aventures de l'accueil (demande actuelle)
+- [x] Remplacer la présentation actuelle par la scène immersive sur la page d'accueil
+- [x] Ajouter un fondu continu des couleurs en haut et en bas de la scène
+- [x] Conserver un retour à la version classique et vérifier ordinateur, mobile et liens
+- [x] Publier le site pour rendre la section et le fichier Google accessibles en ligne
+
+## Prototype visuel aventures (demande précédente)
 - [x] Agrandir les artefacts et ajouter le transfert magique réversible, puis vérifier ordinateur et mobile
 - [x] Identifier la section et isoler une variante sans changer les routes ni le fonctionnement
 - [x] Créer les artefacts, la scène, le défilement et les commandes tactiles

@@ -14,12 +14,13 @@ import "./AdventureScene.css";
 import { AdventureEnergy } from "./AdventureEnergy";
 
 const artifacts = [campaigns, characters, codex, subscriptions, partners];
+const artifactHues = adventureDestinations.map((item) => item.hue);
 const dust = Array.from({ length: 18 }, (_, i) => ({
   "--dust-x": `${(i * 37 + 11) % 100}%`, "--dust-y": `${(i * 19 + 7) % 100}%`, "--dust-delay": `${i * -.7}s`,
 } as CSSProperties));
 
 export default function AdventureScene({ onCompare }: { onCompare: () => void }) {
-  const { trackRef, stageRef, active, setActive, select, simplified, paused, setPaused } = useAdventureScene(adventureDestinations.length);
+  const { trackRef, stageRef, active, setActive, select, simplified, paused, setPaused } = useAdventureScene(artifactHues);
   const selected = adventureDestinations[active];
   const orbitRef = useRef<HTMLElement>(null);
   const [arrived, setArrived] = useState(0);
@@ -34,15 +35,21 @@ export default function AdventureScene({ onCompare }: { onCompare: () => void })
   };
 
   return (
-    <section ref={trackRef} id="aventures-experimentales" className="adventure-experiment" data-tone={selected.tone} data-simple={simplified} data-paused={paused} aria-labelledby="adventure-title">
+    <section ref={trackRef} id="aventures" className="adventure-experiment" data-tone={selected.tone} data-simple={simplified} data-paused={paused} aria-labelledby="adventure-title">
       <div ref={stageRef} className="adventure-stage" onPointerMove={parallax} onPointerLeave={(event) => {
         event.currentTarget.style.setProperty("--pointer-x", "0");
         event.currentTarget.style.setProperty("--pointer-y", "0");
       }}>
         <img className="adventure-background" src={sanctum} alt="" width={1536} height={1024} loading="lazy" />
         <div className="adventure-shade" aria-hidden="true" />
+        <div className="adventure-wash adventure-wash--top" aria-hidden="true">
+          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to bottom, transparent 0%, hsl(${item.hue} 85% 60% / .34) 13%, hsl(${item.hue} 85% 60% / .12) 26%, transparent 48%)` }} />)}
+        </div>
+        <div className="adventure-wash adventure-wash--bottom" aria-hidden="true">
+          {adventureDestinations.map((item) => <i key={item.href} style={{ background: `linear-gradient(to top, transparent 0%, hsl(${item.hue} 85% 60% / .32) 14%, hsl(${item.hue} 85% 60% / .11) 28%, transparent 52%)` }} />)}
+        </div>
         {!simplified && <div className="adventure-dust" aria-hidden="true">{dust.map((style, i) => <i key={i} style={style} />)}</div>}
-        <div className="adventure-comparison"><Button variant="ghost" size="sm" onClick={onCompare}><Columns2 />Version actuelle</Button></div>
+        <div className="adventure-comparison"><Button variant="ghost" size="sm" onClick={onCompare}><Columns2 />Version classique</Button></div>
         <header className="adventure-heading">
           <p>Conçu pour vos aventures</p>
           <h2 id="adventure-title">Tout pour vos aventures</h2>
