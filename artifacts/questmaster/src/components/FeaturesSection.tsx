@@ -8,14 +8,13 @@ const AdventureScene = lazy(() => import("./experimental/AdventureScene"));
 
 const FeaturesSection = () => {
   const [params] = useSearchParams();
-  const experimentEnabled = params.get("experience") === "aventures";
-  const [showCurrent, setShowCurrent] = useState(false);
-  if (experimentEnabled && !showCurrent) {
-    return <Suspense fallback={<section className="min-h-96 flex items-center justify-center text-primary" aria-busy="true">Tout pour vos aventures</section>}><AdventureScene onCompare={() => setShowCurrent(true)} /></Suspense>;
+  const [showClassic, setShowClassic] = useState(params.get("experience") === "classique");
+  if (!showClassic) {
+    return <Suspense fallback={<section className="min-h-96 flex items-center justify-center text-primary" aria-busy="true">Tout pour vos aventures</section>}><AdventureScene onCompare={() => setShowClassic(true)} /></Suspense>;
   }
   return (
     <section className="relative py-16 md:py-24">
-      {experimentEnabled && <div className="flex justify-center mb-6"><Button variant="outline" onClick={() => setShowCurrent(false)}><WandSparkles />Version immersive</Button></div>}
+      <div className="flex justify-center mb-6"><Button variant="outline" onClick={() => setShowClassic(false)}><WandSparkles />Version immersive</Button></div>
       <div className="container relative mx-auto px-4 md:px-6">
         <div className="mb-12 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1.5 text-xs font-medium text-amber-300 backdrop-blur">
