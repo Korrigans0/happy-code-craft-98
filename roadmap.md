@@ -1,5 +1,13 @@
 # Roadmap
 
+## Affichage des blessures sous les jetons Glyphes
+- [x] Remplacer la barre de points de vie par les blessures « 0 / 3 » sous un jeton Glyphes
+- [x] Conserver la barre de points de vie pour les autres systèmes
+- [x] Ramener les états de combat enregistrés avant la règle à 3 blessures maximum
+- [x] Vérifier dans le navigateur : 2/3 puis 0/3 sur la campagne Glyphes, 10/10 conservé sur Worlds Awakening
+- [ ] Publier pour rendre la correction visible sur aetheriavtt.com
+
+
 ## Double-clic sur les jetons Glyphes
 - [x] Ouvrir directement la fiche existante du personnage lié, sans ancien panneau intermédiaire
 - [x] Conserver les permissions, la synchronisation et le comportement des autres systèmes
