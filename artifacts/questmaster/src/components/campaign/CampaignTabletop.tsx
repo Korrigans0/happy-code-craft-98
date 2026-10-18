@@ -40,7 +40,7 @@ import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
 import type { GeneratedMap } from "@/lib/vtt/mapGenerator";
 import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
-import { useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
+import { defaultTokenState, MAX_WOUNDS, useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
 import { useGlyphesConfrontation } from "@/lib/game-systems/glyphes/useGlyphesConfrontation";
 import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
@@ -2055,8 +2055,25 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
         ctx.restore();
 
-        // HP bar
-        if (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0) {
+        // Barre sous le jeton : blessures (0 / 3) pour Glyphes, PV pour les autres systèmes
+        const glyphesState = isGlyphes ? glyphesCombat.states[token.id] ?? defaultTokenState() : null;
+        if (glyphesState) {
+          const barWidth = token.size - 4;
+          const barHeight = 4;
+          const barX = token.x + 2;
+          const barY = token.y + token.size + 4;
+          const maxWounds = glyphesState.maxWounds || MAX_WOUNDS;
+          const woundRatio = maxWounds > 0 ? Math.max(0, Math.min(1, glyphesState.wounds / maxWounds)) : 0;
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillRect(barX, barY, barWidth, barHeight);
+          ctx.fillStyle = glyphesState.wounds >= maxWounds ? "#dc2626" : "#ef4444";
+          ctx.fillRect(barX, barY, barWidth * woundRatio, barHeight);
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.font = `bold ${8 / zoom}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.fillText(`${glyphesState.wounds}/${maxWounds}`, cx, barY + barHeight + 10 / zoom);
+          ctx.textAlign = "start";
+        } else if (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0) {
           const barWidth = token.size - 4;
           const barHeight = 4;
           const barX = token.x + 2;
@@ -2078,7 +2095,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const barWidth = token.size - 4;
           const barHeight = 3;
           const barX = token.x + 2;
-          const hpOffset = (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0) ? 9 : 0;
+          const hpOffset = (isGlyphes || (token.hp !== undefined && token.maxHp !== undefined && token.maxHp > 0)) ? 9 : 0;
           const barY = token.y + token.size + 4 + hpOffset;
           const peRatio = Math.max(0, token.pe / token.maxPe);
           ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -2099,7 +2116,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const gap = 2 / zoom;
           const totalW = badgeCount * (badgeSize + gap) - gap;
           let bx = cx - totalW / 2;
-          const baseY = token.y + token.size + (token.hp !== undefined ? 20 / zoom : 6 / zoom);
+          const baseY = token.y + token.size + ((isGlyphes || token.hp !== undefined) ? 20 / zoom : 6 / zoom);
 
           for (let i = 0; i < badgeCount; i++) {
             const condId = token.conditions![i];
@@ -2473,7 +2490,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }
     }
 
-  }, [actions, currentAction, panOffset, zoom, tokens, layers, vttLayers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure, getScratch]);
+  }, [actions, currentAction, panOffset, zoom, tokens, layers, vttLayers, selectedTokenId, selectedTokenIds, selectedDrawingIds, selectedWallIds, selectedLightIds, marquee, draggedToken, dragStart, isGM, gridColor, gridMajorColor, plateauMode, wallsHook.walls, wallsHook.drawWalls, wallsHook.selectedWallId, lightsHook.lights, lightsHook.nightMode, formatMeasure, getScratch, isGlyphes, glyphesCombat.states]);
 
   // keep the ref always pointing at the latest redrawCanvas (no stale closure in animation loops)
   redrawCanvasRef.current = redrawCanvas;
