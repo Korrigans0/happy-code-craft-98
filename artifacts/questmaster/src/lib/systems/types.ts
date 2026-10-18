@@ -32,6 +32,8 @@ export interface DefenseDef {
   /** Description courte (ex: "Classe d'armure", "Esquive") */
   hint?: string;
   default: number;
+  /** Valeur maximale autorisée (ex: blessures limitées à 3 pour Glyphes). */
+  max?: number;
 }
 
 /** Compétence liée à une stat principale (ex: "Athlétisme" lié à FOR). */

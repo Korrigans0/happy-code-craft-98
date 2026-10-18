@@ -172,14 +172,27 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
           <div>
             <h3 className="mb-2 font-display text-sm font-semibold flex items-center gap-2"><Shield className="h-4 w-4" /> Défense</h3>
             <div className="grid grid-cols-3 gap-2">
-              {["blessure", "resilience", "esquive"].map((k) => (
-                <div key={k} className="rounded-lg border border-border bg-card p-2 text-center">
-                  <div className="text-xs capitalize text-muted-foreground">{k}</div>
-                  <Input type="number" value={sysData[`def_${k}`] ?? 0}
-                    onChange={(e) => setSysData({ [`def_${k}`]: Number(e.target.value) || 0 })}
-                    disabled={!editable} className="mt-1 h-8 text-center text-lg font-bold" />
-                </div>
-              ))}
+              {/* Blessure : plafonnée à 3 (règles Glyphes). */}
+              {(["blessure", "resilience", "esquive"] as const).map((k) => {
+                const max = k === "blessure" ? 3 : undefined;
+                return (
+                  <div key={k} className="rounded-lg border border-border bg-card p-2 text-center">
+                    <div className="text-xs capitalize text-muted-foreground">{k}{max ? ` (max ${max})` : ""}</div>
+                    <Input type="number" value={sysData[`def_${k}`] ?? 0} min={0} max={max}
+                      onChange={(e) => {
+                        let v = Number(e.target.value);
+                        if (Number.isNaN(v)) v = 0;
+                        if (max !== undefined) v = Math.max(0, Math.min(max, v));
+                        else v = Math.max(0, v);
+                        setSysData({ [`def_${k}`]: v });
+                      }}
+                      disabled={!editable} className="mt-1 h-8 text-center text-lg font-bold" />
+                    {max !== undefined && (
+                      <p className="text-[10px] text-muted-foreground">sur {max}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-2">
               <Label className="text-xs">Protections</Label>
