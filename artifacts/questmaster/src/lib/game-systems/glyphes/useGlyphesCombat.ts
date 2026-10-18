@@ -7,7 +7,8 @@ import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
 import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import { ACTION_POINTS_PER_TURN, type Approach } from "./actions";
 import { MAX_HEROISM } from "./heroic-actions";
-import { MAX_BODY } from "./character";
+// Nombre maximal de blessures avant qu'un jeton tombe au combat (règle Glyphes : 3).
+export const MAX_WOUNDS = 3;
 
 export interface GlyphesTokenState {
   actionPoints: number;
@@ -33,7 +34,7 @@ export function defaultTokenState(partial?: Partial<GlyphesTokenState>): Glyphes
     maxActionPoints: ACTION_POINTS_PER_TURN,
     heroism: 0,
     wounds: 0,
-    maxWounds: MAX_BODY,
+    maxWounds: MAX_WOUNDS,
     resilience: 4,
     armor: "aucune",
     hasShield: false,
