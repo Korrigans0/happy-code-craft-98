@@ -75,6 +75,7 @@ import {
 } from "@/lib/vtt/grid";
 import GridSettingsPanel from "./vtt/GridSettingsPanel";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { getDirectTokenSheetId } from "@/lib/vtt/tokenSheetTarget";
 
 // ── Constants ──────────────────────────────────────────────
 const GRID_SIZE = 40;
@@ -1170,9 +1171,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // ── Voir fiche ──
   const openTokenSheet = (token: TokenItem) => {
     if (!perms.canSelectToken(token)) return;
-    if (isGlyphes && token.creatureType === "character" && token.creatureId) {
+    const characterId = getDirectTokenSheetId(isGlyphes, perms.canSelectToken(token), token);
+    if (characterId) {
       setSheetToken(null);
-      setFullSheetCharId(token.creatureId);
+      setFullSheetCharId(characterId);
       return;
     }
     setSheetToken(token);
