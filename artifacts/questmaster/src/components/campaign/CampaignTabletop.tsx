@@ -75,6 +75,7 @@ import {
 } from "@/lib/vtt/grid";
 import GridSettingsPanel from "./vtt/GridSettingsPanel";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { getDirectTokenSheetId } from "@/lib/vtt/tokenSheetTarget";
 
 // ── Constants ──────────────────────────────────────────────
 const GRID_SIZE = 40;
@@ -1168,7 +1169,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   };
 
   // ── Voir fiche ──
-  const openTokenSheet = (token: TokenItem) => { setSheetToken(token); };
+  const openTokenSheet = (token: TokenItem) => {
+    if (!perms.canSelectToken(token)) return;
+    const characterId = getDirectTokenSheetId(isGlyphes, perms.canSelectToken(token), token);
+    if (characterId) {
+      setSheetToken(null);
+      setFullSheetCharId(characterId);
+      return;
+    }
+    setSheetToken(token);
+  };
 
   // ── Notes MJ (privées, RLS GM-only) ──
   const openGmNotes = async (token: TokenItem) => {
@@ -5058,7 +5068,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                   type="button"
                   variant="default"
                   className="w-full"
-                  onClick={() => setFullSheetCharId(tok.creatureId!)}
+                  onClick={() => {
+                    if (!tok.creatureId) return;
+                    setSheetToken(null);
+                    setFullSheetCharId(tok.creatureId);
+                  }}
                 >
                   Ouvrir la fiche complète
                 </Button>

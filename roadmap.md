@@ -1,5 +1,10 @@
 # Roadmap
 
+## Double-clic sur les jetons Glyphes
+- [x] Ouvrir directement la fiche existante du personnage lié, sans ancien panneau intermédiaire
+- [x] Conserver les permissions, la synchronisation et le comportement des autres systèmes
+- [ ] Vérifier le double-clic réel : la campagne Glyphes accessible ne contient aucun jeton
+
 ## Section aventures de l'accueil (demande actuelle)
 - [x] Remplacer la présentation actuelle par la scène immersive sur la page d'accueil
 - [x] Ajouter un fondu continu des couleurs en haut et en bas de la scène
