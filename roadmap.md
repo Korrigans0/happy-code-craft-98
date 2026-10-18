@@ -2,7 +2,7 @@
 
 ## Défilement des actions héroïques Glyphes
 - [x] Donner à la liste une zone de défilement à la molette sans déplacer ou zoomer la carte
-- [ ] Vérifier l’accès à la dernière action dans le panneau
+- [x] Vérifier l’accès à la dernière action dans le panneau connecté : liste de 1065 px défilant dans une zone de 192 px
 
 ## Portrait Glyphes
 - [x] Réutiliser l’import et le recadrage d’avatar pour la fiche PDF
