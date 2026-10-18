@@ -25,8 +25,8 @@ interface Props {
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
-  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). */
-  variant?: "sidebar" | "sheet";
+  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). "embedded" : contenu seul, intégré dans un autre panneau. */
+  variant?: "sidebar" | "sheet" | "embedded";
   /** Opacité du fond du panneau latéral (0 à 1). */
   opacity?: number;
 }
@@ -51,8 +51,8 @@ export default function GlyphesPanel({
   const state = selectedTokenId ? combat.getState(selectedTokenId) : null;
   const targets = useMemo(() => tokens.filter((t) => t.id !== selectedTokenId), [tokens, selectedTokenId]);
 
-  return (
-    <aside
+  const body = (
+    <>
       className={
         variant === "sheet"
           ? "flex h-full w-full min-w-0 flex-col bg-card"
