@@ -17,6 +17,8 @@ import { getSystem } from "@/lib/systems";
 
 import { toast } from "sonner";
 import { PDF_BOXES } from "@/lib/game-systems/glyphes/sheetSync";
+import { PORTRAIT_RECT, portraitPlacement, portraitPng } from "@/lib/game-systems/glyphes/portrait";
+import { GlyphesPortraitUpload } from "./GlyphesPortraitUpload";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -519,6 +521,11 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           // field missing / different type — ignore
         }
       }
+      if (character?.avatar_url) {
+        const image = await pdfDoc.embedPng(await portraitPng(character.avatar_url));
+        const page = pdfDoc.getPages()[0];
+        if (page) page.drawImage(image, portraitPlacement(image.width, image.height, page.getHeight()));
+      }
       const bytes = await pdfDoc.save();
       // Copy into a fresh ArrayBuffer (avoid SharedArrayBuffer typing on Blob)
       const ab = new ArrayBuffer(bytes.byteLength);
@@ -536,7 +543,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     } finally {
       setExporting(false);
     }
-  }, [formData, character?.name]);
+  }, [formData, character?.name, character?.avatar_url]);
 
   return (
     <div
@@ -598,6 +605,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           </Button>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {editable && <GlyphesPortraitUpload onChange={url => onSave?.({ avatar_url: url })} />}
           <Button
             size="sm"
             variant="outline"
@@ -649,6 +657,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
                   editable={!!editable}
                   onChange={setField}
                   containerRef={containerRef}
+                  portraitUrl={character?.avatar_url}
                 />
               ))}
             </div>
@@ -672,6 +681,7 @@ const PageOverlay = ({
   editable,
   onChange,
   containerRef,
+  portraitUrl,
 }: {
   pageIndex: number;
   pageSize: { widthCss: number; heightCss: number };
@@ -680,6 +690,7 @@ const PageOverlay = ({
   editable: boolean;
   onChange: (name: string, value: any) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  portraitUrl?: string | null;
 }) => {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
 
@@ -711,6 +722,11 @@ const PageOverlay = ({
 
   return (
     <>
+      {pageIndex === 0 && portraitUrl && <FieldPortal host={host}>
+        <img src={portraitUrl} alt="Portrait du personnage" draggable={false}
+          className="pointer-events-none absolute rounded-[12px] object-contain"
+          style={{ left: PORTRAIT_RECT.x * RENDER_SCALE, top: PORTRAIT_RECT.top * RENDER_SCALE, width: PORTRAIT_RECT.width * RENDER_SCALE, height: PORTRAIT_RECT.height * RENDER_SCALE }} />
+      </FieldPortal>}
       {widgets.map((w) => {
         const style: React.CSSProperties = {
           position: "absolute",
