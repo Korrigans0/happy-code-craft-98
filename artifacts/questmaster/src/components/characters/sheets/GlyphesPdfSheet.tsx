@@ -16,6 +16,7 @@ import { SheetHeader } from "./SheetSections";
 import { getSystem } from "@/lib/systems";
 
 import { toast } from "sonner";
+import { PDF_BOXES } from "@/lib/game-systems/glyphes/sheetSync";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
