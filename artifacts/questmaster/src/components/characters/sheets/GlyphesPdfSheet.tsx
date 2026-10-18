@@ -25,6 +25,38 @@ const RENDER_SCALE = 1.6; // rendering scale for the background canvas
 const STANDARD_FONTS_URL = "/pdfjs/standard_fonts/";
 const CMAPS_URL = "/pdfjs/cmaps/";
 
+// Horizontal breathing room kept around the rendered page.
+const PAGE_GUTTER = 24;
+// The page is never shrunk below, nor enlarged beyond, these ratios.
+const MIN_PAGE_FIT = 0.2;
+const MAX_PAGE_FIT = 1.6;
+
+/**
+ * Ratio applied to a rendered page so it always fits the width the sheet has
+ * available (full screen on desktop, narrow on mobile) without being cut off.
+ */
+function computeFit(availWidth: number, renderedWidth: number): number {
+  if (!renderedWidth || availWidth <= 0) return 1;
+  const raw = availWidth / renderedWidth;
+  if (!Number.isFinite(raw)) return 1;
+  return Math.min(MAX_PAGE_FIT, Math.max(MIN_PAGE_FIT, raw));
+}
+
+/**
+ * Width the sheet really has. The page container can be wider than the panel
+ * once a page overflows it, so the panel and the window are taken into account
+ * as well and the smallest value wins.
+ */
+function availableSheetWidth(container: HTMLElement): number {
+  const panel = container.closest<HTMLElement>('[role="dialog"]');
+  const candidates = [
+    panel ? panel.clientWidth : 0,
+    container.clientWidth,
+    window.innerWidth,
+  ].filter((w) => w > 0);
+  return candidates.length ? Math.min(...candidates) : window.innerWidth;
+}
+
 interface Props {
   character: any;
   editable?: boolean;
@@ -128,25 +160,47 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           const page = await pdf.getPage(p);
           const viewport = page.getViewport({ scale: RENDER_SCALE });
 
+          // The page is rendered at RENDER_SCALE then scaled with a CSS transform so
+          // it always fits the width the sheet has. The field overlay is mounted
+          // inside the scaled element, so input positions stay exact.
+          const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, viewport.width);
+
           const pageWrap = document.createElement("div");
           pageWrap.style.position = "relative";
           pageWrap.style.margin = "0 auto 24px";
-          pageWrap.style.width = `${viewport.width}px`;
-          pageWrap.style.height = `${viewport.height}px`;
+          pageWrap.style.width = `${viewport.width * fit}px`;
+          pageWrap.style.height = `${viewport.height * fit}px`;
+          pageWrap.style.overflow = "hidden";
           pageWrap.style.boxShadow = "0 4px 24px rgba(0,0,0,.5)";
-          pageWrap.style.background = "#fff";
-          pageWrap.dataset.pageIndex = String(p - 1);
           container.appendChild(pageWrap);
 
+          const pageInner = document.createElement("div");
+          pageInner.style.position = "absolute";
+          pageInner.style.top = "0";
+          pageInner.style.left = "0";
+          pageInner.style.width = `${viewport.width}px`;
+          pageInner.style.height = `${viewport.height}px`;
+          pageInner.style.transformOrigin = "top left";
+          pageInner.style.transform = `scale(${fit})`;
+          pageInner.style.background = "#fff";
+          pageInner.dataset.pageIndex = String(p - 1);
+          pageWrap.appendChild(pageInner);
+
+          // The bitmap is rendered at the final on-screen size so it stays sharp
+          // when enlarged; when shrunk, the 1.6 bitmap is simply downscaled.
+          const bitmapViewport = fit > 1 ? page.getViewport({ scale: RENDER_SCALE * fit }) : viewport;
+
           const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          canvas.width = Math.round(bitmapViewport.width);
+          canvas.height = Math.round(bitmapViewport.height);
           canvas.style.display = "block";
+          canvas.style.width = `${viewport.width}px`;
+          canvas.style.height = `${viewport.height}px`;
           canvas.style.pointerEvents = "none";
-          pageWrap.appendChild(canvas);
+          pageInner.appendChild(canvas);
 
           const ctx = canvas.getContext("2d")!;
-          await page.render({ canvasContext: ctx, viewport }).promise;
+          await page.render({ canvasContext: ctx, viewport: bitmapViewport }).promise;
 
           nextPages.push({ widthCss: viewport.width, heightCss: viewport.height });
 
@@ -212,6 +266,37 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
       cancelled = true;
     };
   }, []);
+
+  // Keep the page fitted to the sheet when its width changes (resized window,
+  // device rotation): only the transform and the reserved box are updated.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || pages.length === 0 || typeof ResizeObserver === "undefined") return;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const apply = () => {
+      const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, pages[0].widthCss);
+      container.querySelectorAll<HTMLElement>("[data-page-index]").forEach((inner) => {
+        const pg = pages[Number(inner.dataset.pageIndex)] ?? pages[0];
+        inner.style.transform = `scale(${fit})`;
+        const wrap = inner.parentElement;
+        if (wrap) {
+          wrap.style.width = `${pg.widthCss * fit}px`;
+          wrap.style.height = `${pg.heightCss * fit}px`;
+        }
+      });
+    };
+
+    const observer = new ResizeObserver(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(apply, 120);
+    });
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [pages]);
 
   const setField = useCallback(
     (name: string, value: any) => {
