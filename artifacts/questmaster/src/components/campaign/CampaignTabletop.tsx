@@ -428,7 +428,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 hp: typeof updated.hp === "number" ? updated.hp : t.hp,
                 maxHp: typeof updated.max_hp === "number" ? updated.max_hp : t.maxHp,
                 ac: typeof updated.armor_class === "number" ? updated.armor_class : t.ac,
-                imageUrl: updated.avatar_url ?? t.imageUrl,
+                imageUrl: "avatar_url" in updated ? updated.avatar_url ?? undefined : t.imageUrl,
               }
             : t
         )));
@@ -807,6 +807,35 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Glyphes : points d'action dépensés automatiquement au déplacement ──
   const isGlyphes = campaignSystem === "Glyphes";
+  // Listen even when no sheet is open; row access remains enforced by RLS.
+  const linkedPortraitIds = [...new Set(tokens.filter(t => t.creatureType === "character" && t.creatureId).map(t => t.creatureId))].sort().join(",");
+  useEffect(() => {
+    if (!isGlyphes || !linkedPortraitIds) return;
+    let active = true;
+    const ids = new Set(linkedPortraitIds.split(","));
+    const mirror = (character: { id: string; avatar_url?: string | null }) => {
+      if (!active || !ids.has(character.id) || !("avatar_url" in character)) return;
+      setTokens(prev => {
+        const imageUrl = character.avatar_url ?? undefined;
+        if (!prev.some(t => t.creatureType === "character" && t.creatureId === character.id && t.imageUrl !== imageUrl)) return prev;
+        return prev.map(t => t.creatureType === "character" && t.creatureId === character.id ? { ...t, imageUrl } : t);
+      });
+      queryClient.invalidateQueries({ queryKey: ["vtt-linked-character", character.id] });
+    };
+    const channel = supabase.channel(`glyphes-portraits-${campaignId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "characters" }, payload => {
+        const row = payload.new;
+        if (typeof row.id === "string") mirror({ id: row.id, avatar_url: row.avatar_url });
+      }).subscribe();
+    const refresh = () => {
+      if (document.hidden) return;
+      ids.forEach(id => { charactersApi.get(id).then(mirror).catch(() => { /* A removed or inaccessible sheet cannot provide a portrait. */ }); });
+    };
+    refresh();
+    // REST-written rows may not be published to realtime on older projects.
+    const timer = setInterval(refresh, 5000);
+    return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
+  }, [isGlyphes, linkedPortraitIds, campaignId, queryClient]);
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
   // La fiche Glyphes liée se remplit automatiquement avec les actions de la table.
   useGlyphesSheetSync(isGlyphes, tokens, glyphesCombat.states, (t) => perms.canSelectToken(t as any));
@@ -5114,7 +5143,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     if (typeof charPatch.max_hp === "number") tokPatch.maxHp = charPatch.max_hp;
                     if (typeof charPatch.armor_class === "number") tokPatch.ac = charPatch.armor_class;
                     if (charPatch.name) tokPatch.name = charPatch.name;
-                    if (charPatch.avatar_url) tokPatch.imageUrl = charPatch.avatar_url;
+                    if ("avatar_url" in charPatch) tokPatch.imageUrl = charPatch.avatar_url ?? undefined;
                     if (Object.keys(tokPatch).length > 0) updateToken(linkedTok.id, tokPatch);
                     // Fiche Glyphes → état de combat du jeton (blessures, héroïsme, résilience)
                     if (isGlyphes && charPatch.system_data) {

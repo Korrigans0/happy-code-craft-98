@@ -1,4 +1,5 @@
 # Agents
+- Glyphes portraits use character.avatar_url and the existing character-avatars storage/cropper; share PDF-space portrait coordinates between preview and export to keep placement consistent.
 - Resolve direct token-sheet navigation in the pure tokenSheetTarget helper and reuse the existing full-sheet dialog; this keeps system routing testable without duplicating permissions, saving or realtime logic.
 - Use the canvas native double-click event for token-sheet opening independently of movement locks; selection permissions still apply, so locking movement cannot disable authorized sheet access.
 - The immersive adventure scene is the default « Tout pour vos aventures » section, lazy-loaded with the classic card grid kept reachable through the « Version classique » button or ?experience=classique; this keeps the new presentation reversible without adding routes.
