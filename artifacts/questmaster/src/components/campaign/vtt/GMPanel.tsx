@@ -247,8 +247,13 @@ export default function GMPanel({
 
   return (
     <div
-      className="relative flex h-full shrink-0 flex-col border-l border-border backdrop-blur-sm"
-      style={{ backgroundColor: `hsl(var(--card) / ${opacity})`, width: panelWidth }}
+      className="absolute right-0 top-0 bottom-0 z-30 flex flex-col border-l border-border"
+      style={{
+        backgroundColor: `hsl(var(--card) / ${opacity})`,
+        backdropFilter: opacity > 0.05 ? `blur(${Math.round(opacity * 8)}px)` : undefined,
+        textShadow: opacity < 0.6 ? "0 1px 2px hsl(var(--background) / 0.9)" : undefined,
+        width: panelWidth,
+      }}
     >
       {/* Poignée de redimensionnement (bord gauche) */}
       <div
