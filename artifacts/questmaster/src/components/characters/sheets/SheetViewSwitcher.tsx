@@ -52,6 +52,15 @@ export default function SheetViewSwitcher({
   const [delta, setDelta] = useState(1);
 
   const system = useMemo(() => getSystem(character?.system), [character?.system]);
+
+  // Glyphes : uniquement la vue Complète — pas d'onglet Compacte ni Jeu.
+  // Vues disponibles par système ; Glyphes est limité à "full".
+  const availableViews = VIEWS.filter(
+    (v) => system?.id !== "Glyphes" || v.id === "full",
+  );
+  const activeView: SheetViewMode = availableViews.some((v) => v.id === view)
+    ? view
+    : "full";
   const sysData: Record<string, any> = character?.system_data ?? {};
   const statValues: Record<string, number> = sysData.stats ?? {};
   const defenseValues: Record<string, number> = sysData.defenses ?? {};
