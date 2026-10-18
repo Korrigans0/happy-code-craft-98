@@ -8,7 +8,7 @@ import AetheriaCharacterSheet from "../AetheriaCharacterSheet";
 import Dnd5eSheet from "./Dnd5eSheet";
 import HomebrewSheet from "./HomebrewSheet";
 import GenericSystemSheet from "./GenericSystemSheet";
-import GlyphesSheet from "./GlyphesSheet";
+import GlyphesPdfSheet from "./GlyphesPdfSheet";
 
 interface SheetRouterProps {
   character: any;
@@ -58,7 +58,7 @@ const SheetRouter = ({ character, editable, onSave, onClose, onEdit }: SheetRout
       );
     case "glyphes":
       return (
-        <GlyphesSheet
+        <GlyphesPdfSheet
           character={character}
           editable={editable}
           onSave={onSave}
