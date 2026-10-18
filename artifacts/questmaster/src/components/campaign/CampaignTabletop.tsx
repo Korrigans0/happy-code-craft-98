@@ -1168,7 +1168,15 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   };
 
   // ── Voir fiche ──
-  const openTokenSheet = (token: TokenItem) => { setSheetToken(token); };
+  const openTokenSheet = (token: TokenItem) => {
+    if (!perms.canSelectToken(token)) return;
+    if (isGlyphes && token.creatureType === "character" && token.creatureId) {
+      setSheetToken(null);
+      setFullSheetCharId(token.creatureId);
+      return;
+    }
+    setSheetToken(token);
+  };
 
   // ── Notes MJ (privées, RLS GM-only) ──
   const openGmNotes = async (token: TokenItem) => {
@@ -5058,7 +5066,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                   type="button"
                   variant="default"
                   className="w-full"
-                  onClick={() => setFullSheetCharId(tok.creatureId!)}
+                  onClick={() => {
+                    if (!tok.creatureId) return;
+                    setSheetToken(null);
+                    setFullSheetCharId(tok.creatureId);
+                  }}
                 >
                   Ouvrir la fiche complète
                 </Button>
