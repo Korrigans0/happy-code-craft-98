@@ -116,6 +116,34 @@ export default function GMPanel({
   const initShort = isGlyphes ? "Épr" : "Init";
   const TAB_ITEMS = buildTabItems(isGlyphes);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
+  // Largeur étirable du panneau (poignée sur le bord gauche), persistée par campagne.
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = parseInt(localStorage.getItem(`vtt-panel-width-${campaignId}`) || "", 10);
+    return !isNaN(saved) ? Math.min(560, Math.max(220, saved)) : 288;
+  });
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const onResizeStart = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startWidth: panelWidth };
+    const onMove = (ev: PointerEvent) => {
+      if (!dragRef.current) return;
+      // Le panneau est ancré à droite : glisser vers la gauche l'élargit.
+      const next = dragRef.current.startWidth + (dragRef.current.startX - ev.clientX);
+      setPanelWidth(Math.min(560, Math.max(220, next)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setPanelWidth(w => {
+        try { localStorage.setItem(`vtt-panel-width-${campaignId}`, String(w)); } catch {}
+        return w;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [panelWidth, campaignId]);
   const [chatInput, setChatInput] = useState("");
   const [isSecret, setIsSecret] = useState(false);
   const [bestiarySearch, setBestiarySearch] = useState("");
