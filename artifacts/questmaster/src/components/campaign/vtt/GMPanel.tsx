@@ -12,7 +12,7 @@ import {
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
   RotateCcw, MousePointerClick, ListPlus,
-  ArrowUp, ArrowDown, FileText, Upload, Loader2, Music,
+  ArrowUp, ArrowDown, FileText, Upload, Loader2, Music, Sparkles,
 } from "lucide-react";
 import AudioTab from "./AudioTab";
 import type { useCampaignAudio } from "@/hooks/useCampaignAudio";
@@ -73,9 +73,11 @@ interface GMPanelProps {
   audio?: ReturnType<typeof useCampaignAudio>;
   /** Opacité du fond du panneau (0 à 1). */
   opacity?: number;
+  /** Contenu du panneau Glyphes fusionné (système Glyphes uniquement). */
+  glyphesPanel?: React.ReactNode;
 }
 
-type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf" | "audio";
+type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf" | "audio" | "glyphes";
 
 // Glyphes system utilise "Épreuve d'initiative" (jet de SOU) au lieu du concept classique.
 // On adapte uniquement le vocabulaire côté UI ; l'ordre de tour reste basé sur la valeur numérique.
@@ -87,6 +89,8 @@ const buildTabItems = (isGlyphes: boolean): { id: Tab; icon: React.ReactNode; la
   { id: "notes",      icon: <BookOpen className="h-4 w-4" />,      label: "Notes" },
   { id: "pdf",        icon: <FileText className="h-4 w-4" />,      label: "PDF" },
   { id: "audio",      icon: <Music className="h-4 w-4" />,         label: "Audio" },
+  // Onglet Glyphes (fusionné dans ce panneau) : ajouté en fin de barre, filtré si absent.
+  ...(isGlyphes ? [{ id: "glyphes" as Tab, icon: <Sparkles className="h-4 w-4" />, label: "Glyphes" }] : []),
 ];
 
 function parseRollCommand(input: string): { formula: string; label?: string } | null {
