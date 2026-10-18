@@ -22,6 +22,17 @@ describe("Glyphes sheet sync", () => {
     expect(diffSystemData(synced, base)).toBeNull();
   });
 
+  it("ticks the PDF wound and heroism boxes", () => {
+    const form = diffSystemData({}, { ...base, wounds: 2, heroism: 1 })!.pdf_form as Record<string, boolean>;
+    expect([form["36"], form["37"], form["Case à cocher71"]]).toEqual([true, true, false]);
+    expect(form["35"]).toBe(true);
+    expect(form["26"]).toBe(false);
+  });
+
+  it("reads PDF boxes back to the token", () => {
+    expect(systemDataToCombat({ pdf_form: { "36": true, "37": true, "35": true } })).toEqual({ wounds: 2, heroism: 1 });
+  });
+
   it("maps sheet edits back to the token", () => {
     expect(systemDataToCombat({ def_blessure: 5, heroisme: 9, def_resilience: 2 })).toEqual({ wounds: 3, heroism: 5, resilience: 2 });
   });
