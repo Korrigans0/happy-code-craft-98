@@ -119,8 +119,8 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
   const corps = clamp(local.hp ?? 5, 0, 5);
   const wounds = clamp(sysData.def_blessure ?? 0, 0, MAX_WOUNDS);
 
-  const StatInput = ({ k, label }: { k: string; label: string }) => (
-    <div className="flex items-center gap-2">
+  const statInput = (k: string, label: string) => (
+    <div key={k} className="flex items-center gap-2">
       <span className="w-10 text-sm font-semibold">{label}</span>
       <select disabled={!editable} value={stats[k] ?? 0} onChange={(e) => setStat(k, Number(e.target.value))}
         className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm">
@@ -129,7 +129,7 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
     </div>
   );
 
-  const LineList = ({ k, n, placeholder }: { k: string; n: number; placeholder?: string }) => (
+  const lineList = (k: string, n: number, placeholder?: string) => (
     <div className="space-y-1">
       {toList(sysData[k], n).map((v, i) => (
         <Input key={i} value={v} disabled={!editable} placeholder={placeholder}
@@ -138,7 +138,7 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
     </div>
   );
 
-  const ActionTable = ({ k, title }: { k: string; title: string }) => {
+  const actionTable = (k: string, title: string) => {
     const names = toList(sysData[k], 7);
     const costs = toList(sysData[`${k}_cout`], 7);
     return (
@@ -190,11 +190,11 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
               <Box>
                 <Title right={<Boxes value={clamp(sysData.protection ?? 0, 0, 3)} groups={[3]} disabled={!editable}
                   onChange={(v) => setSysData({ protection: v })} />}>Protection</Title>
-                <LineList k="protections_list" n={2} />
+                {lineList("protections_list", 2)}
               </Box>
               <Box>
                 <Title>Armes</Title>
-                <LineList k="armes_list" n={2} />
+                {lineList("armes_list", 2)}
               </Box>
             </div>
 
@@ -212,8 +212,8 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
               <Title right={<Boxes value={clamp(sysData.heroisme ?? 0, 0, 10)} groups={HEROISM_GROUPS} disabled={!editable}
                 onChange={(v) => setSysData({ heroisme: v })} />}>Héroïsme</Title>
               <div className="space-y-4">
-                <ActionTable k="actions_heroiques" title="Actions héroïques" />
-                <ActionTable k="actions_legendaires" title="Actions légendaires" />
+                {actionTable("actions_heroiques", "Actions héroïques")}
+                {actionTable("actions_legendaires", "Actions légendaires")}
               </div>
             </Box>
           </div>
@@ -224,13 +224,13 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
               <Title>Sens</Title>
               <div className="grid grid-cols-3 items-center gap-2 text-center">
                 <span />
-                <SenseField name="Vue" />
+                {senseField("Vue")}
                 <span />
-                <SenseField name="Instinct" />
-                <SenseField name="Sens" />
-                <SenseField name="Ouïe" />
+                {senseField("Instinct")}
+                {senseField("Sens")}
+                {senseField("Ouïe")}
                 <span />
-                <SenseField name="Flux" />
+                {senseField("Flux")}
                 <span />
               </div>
             </Box>
@@ -239,7 +239,7 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
               <Box>
                 <Title right={<Boxes value={corps} groups={[5]} disabled={!editable}
                   onChange={(v) => { update("hp", v); if ((local.max_hp ?? 0) !== 5) update("max_hp", 5); }} />}>Corps</Title>
-                <div className="space-y-2">{BODY_STATS.map((s) => <StatInput key={s.key} k={s.key} label={s.label} />)}</div>
+                <div className="space-y-2">{BODY_STATS.map((s) => statInput(s.key, s.label))}</div>
               </Box>
               <Box>
                 <Title right={<Boxes value={wounds} groups={[MAX_WOUNDS]} disabled={!editable}
@@ -255,11 +255,11 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
               <Box>
                 <Title right={<Boxes value={clamp(sysData.ame ?? 5, 0, 5)} groups={[5]} disabled={!editable}
                   onChange={(v) => setSysData({ ame: v })} />}>Âme</Title>
-                <div className="space-y-2">{SOUL_STATS.map((s) => <StatInput key={s.key} k={s.key} label={s.label} />)}</div>
+                <div className="space-y-2">{SOUL_STATS.map((s) => statInput(s.key, s.label))}</div>
               </Box>
               <Box>
                 <Title>Blessures graves</Title>
-                <LineList k="blessures_graves" n={6} />
+                {lineList("blessures_graves", 6)}
               </Box>
             </div>
 
@@ -352,7 +352,7 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
     </div>
   );
 
-  function SenseField({ name }: { name: (typeof SENSES)[number] }) {
+  function senseField(name: (typeof SENSES)[number]) {
     return (
       <div>
         <div className="text-xs font-semibold">{name}</div>
