@@ -105,12 +105,13 @@ export default function SheetViewSwitcher({
     }
   };
 
-  const header = (
+  // Barre d'onglets masquée quand une seule vue est disponible (Glyphes).
+  const header = availableViews.length > 1 ? (
     <div className="flex items-center gap-1 border-b border-border/60 bg-muted/30 px-3 py-2">
-      {VIEWS.map((v) => (
+      {availableViews.map((v) => (
         <Button
           key={v.id}
-          variant={view === v.id ? "default" : "ghost"}
+          variant={activeView === v.id ? "default" : "ghost"}
           size="sm"
           className="h-8 flex-1 text-xs"
           onClick={() => setView(v.id)}
@@ -120,7 +121,7 @@ export default function SheetViewSwitcher({
         </Button>
       ))}
     </div>
-  );
+  ) : null;
 
   const identity = (
     <div className="flex items-center gap-3">
