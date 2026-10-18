@@ -31,7 +31,7 @@ export const GLYPHES_SYSTEM: SystemDefinition = {
     { key: "SOC", label: "SOC", longLabel: "Social — tromperie, charme, persuasion.", mode: "modifier", default: 0, min: 0, max: 5 },
   ],
   defenses: [
-    { key: "blessure", label: "Blessure", hint: "Seuil avant dégâts graves", default: 0 },
+    { key: "blessure", label: "Blessure", hint: "Seuil avant dégâts graves (max 3)", default: 0, max: 3 },
     { key: "resilience", label: "Résilience", hint: "Encaisse les dégâts", default: 0 },
     { key: "esquive", label: "Esquive", hint: "Évitement actif", default: 0 },
   ],
