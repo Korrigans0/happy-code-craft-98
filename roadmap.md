@@ -1,5 +1,9 @@
 # Roadmap
 
+## Défilement des actions héroïques Glyphes
+- [x] Donner à la liste une zone de défilement à la molette sans déplacer ou zoomer la carte
+- [ ] Vérifier l’accès à la dernière action dans le panneau
+
 ## Portrait Glyphes
 - [x] Réutiliser l’import et le recadrage d’avatar pour la fiche PDF
 - [x] Afficher le portrait dans la case du PDF et l’intégrer à l’export

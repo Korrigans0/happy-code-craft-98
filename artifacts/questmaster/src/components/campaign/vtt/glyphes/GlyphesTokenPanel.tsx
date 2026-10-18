@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Heart, Shield, Sparkles, Swords } from "lucide-react";
 import {
   ACTIONS,
@@ -253,7 +252,13 @@ export default function GlyphesTokenPanel({
         <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
           <Swords className="h-3 w-3" /> Actions héroïques disponibles
         </p>
-        <ScrollArea className="max-h-40">
+        <div
+          role="region"
+          aria-label="Actions héroïques disponibles"
+          tabIndex={0}
+          className="max-h-48 overflow-y-auto overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onWheel={event => event.stopPropagation()}
+        >
           <div className="space-y-1 pr-2">
             {heroicActions.length === 0 && (
               <p className="text-[11px] text-muted-foreground">
@@ -280,7 +285,7 @@ export default function GlyphesTokenPanel({
               </button>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {error && <p className="text-[11px] text-destructive">{error}</p>}
