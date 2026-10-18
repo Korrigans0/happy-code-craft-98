@@ -247,9 +247,16 @@ export default function GMPanel({
 
   return (
     <div
-      className="flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
-      style={{ backgroundColor: `hsl(var(--card) / ${opacity})` }}
+      className="relative flex h-full shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      style={{ backgroundColor: `hsl(var(--card) / ${opacity})`, width: panelWidth }}
     >
+      {/* Poignée de redimensionnement (bord gauche) */}
+      <div
+        onPointerDown={onResizeStart}
+        className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-ew-resize touch-none hover:bg-primary/40 transition-colors"
+        title="Glisser pour ajuster la largeur du panneau"
+        aria-label="Redimensionner le panneau"
+      />
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="font-display text-sm font-semibold text-gradient-gold">
