@@ -166,6 +166,34 @@ export default function GlyphesPanel({
           />
         </>
       )}
+    </>
+  );
+
+  if (variant === "embedded") return body;
+
+  return (
+    <aside
+      className={
+        variant === "sheet"
+          ? "flex h-full w-full min-w-0 flex-col bg-card"
+          : "flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      }
+      style={
+        variant === "sidebar"
+          ? { backgroundColor: `hsl(var(--card) / ${opacity})` }
+          : undefined
+      }
+      aria-label="Panneau Glyphes"
+    >
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <span className="font-display text-sm font-semibold text-foreground">✨ Glyphes</span>
+        {variant === "sheet" && onClose && (
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fermer">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {body}
     </aside>
   );
 }
