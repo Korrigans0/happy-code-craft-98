@@ -61,6 +61,20 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     () => (character?.system_data?.pdf_form as Record<string, any>) || {},
   );
 
+  // Cases remplies automatiquement par la table (blessures, héroïsme) : suivre la base en direct.
+  const remoteForm = (character?.system_data?.pdf_form as Record<string, any>) || {};
+  const remoteBoxes = JSON.stringify([...PDF_BOXES.wounds, ...PDF_BOXES.heroism].map((n) => !!remoteForm[n]));
+  useEffect(() => {
+    const values: boolean[] = JSON.parse(remoteBoxes);
+    const names = [...PDF_BOXES.wounds, ...PDF_BOXES.heroism];
+    setFormData((prev) => {
+      if (names.every((n, i) => !!prev[n] === values[i])) return prev;
+      const next = { ...prev };
+      names.forEach((n, i) => { next[n] = values[i]; });
+      return next;
+    });
+  }, [remoteBoxes]);
+
   // Autosave the form into character.system_data.pdf_form.
   // Debounced effect: every local change is persisted 800 ms after the last keystroke.
   const saveRef = useRef<(val: Record<string, any>) => void>(() => {});
