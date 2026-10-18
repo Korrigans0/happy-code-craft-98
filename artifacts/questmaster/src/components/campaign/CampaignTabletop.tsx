@@ -272,7 +272,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [fullscreen, setFullscreen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [mapGenOpen, setMapGenOpen] = useState(false);
-  const [gmPanelOpen, setGmPanelOpen] = useState(true);
   const [glyphesSheetOpen, setGlyphesSheetOpen] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
@@ -4040,15 +4039,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
         <Separator orientation="vertical" className="h-5 mx-0.5" />
 
-        {/* GM Panel toggle */}
-        {!isMobilePlayer && (
-        <Button variant={gmPanelOpen ? "default" : "ghost"} size="icon" className="h-7 w-7"
-          onClick={() => setGmPanelOpen(o => !o)}
-          title={gmPanelOpen ? "Fermer le panneau" : "Ouvrir le panneau MJ"}>
-          {gmPanelOpen ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRight className="h-3.5 w-3.5" />}
-        </Button>
-        )}
-
         {/* Fullscreen toggle */}
         <Button variant={fullscreen ? "default" : "ghost"} size="icon" className="h-7 w-7"
           onClick={() => setFullscreen(f => !f)} title={fullscreen ? "Quitter plein écran (F)" : "Plein écran (F)"}>
@@ -4594,115 +4584,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
           {/* Selected token panel (floating bottom) */}
-          {selectedToken && !gmPanelOpen && (
-            <div className="absolute bottom-12 left-2 w-52 rounded-lg border border-border bg-card/95 p-2.5 shadow-lg backdrop-blur-sm space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-full border border-primary/40" style={{ backgroundColor: selectedToken.color }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{selectedToken.name}</p>
-                </div>
-                <button onClick={() => setSelectedTokenId(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              {selectedToken.hp !== undefined && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">PV</span>
-                    <span className="font-bold text-red-400">{selectedToken.hp}/{selectedToken.maxHp}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full transition-all" style={{
-                      width: `${Math.max(0, (selectedToken.hp / (selectedToken.maxHp || 1)) * 100)}%`,
-                      backgroundColor: (selectedToken.hp / (selectedToken.maxHp || 1)) > 0.5 ? "#22c55e" : (selectedToken.hp / (selectedToken.maxHp || 1)) > 0.25 ? "#f59e0b" : "#ef4444",
-                    }} />
-                  </div>
-                  <div className="grid grid-cols-4 gap-0.5">
-                    <button className="rounded bg-destructive/20 text-destructive text-xs py-0.5 hover:bg-destructive/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, -5)}>-5</button>
-                    <button className="rounded bg-destructive/20 text-destructive text-xs py-0.5 hover:bg-destructive/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, -1)}>-1</button>
-                    <button className="rounded bg-green-500/20 text-green-400 text-xs py-0.5 hover:bg-green-500/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, 1)}>+1</button>
-                    <button className="rounded bg-green-500/20 text-green-400 text-xs py-0.5 hover:bg-green-500/40 transition-colors" onClick={() => updateTokenHp(selectedToken.id, 5)}>+5</button>
-                  </div>
-                </div>
-              )}
-              {/* PE / Mana bar */}
-              {selectedToken.maxPe !== undefined && selectedToken.maxPe > 0 && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">PE / Mana</span>
-                    <span className="font-bold text-blue-400">{selectedToken.pe ?? 0}/{selectedToken.maxPe}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-blue-500 transition-all" style={{
-                      width: `${Math.max(0, ((selectedToken.pe ?? 0) / selectedToken.maxPe) * 100)}%`,
-                    }} />
-                  </div>
-                  <div className="grid grid-cols-4 gap-0.5">
-                    <button className="rounded bg-blue-900/30 text-blue-400 text-xs py-0.5 hover:bg-blue-900/60 transition-colors"
-                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.max(0, (t.pe ?? 0) - 5) } : t))}>-5</button>
-                    <button className="rounded bg-blue-900/30 text-blue-400 text-xs py-0.5 hover:bg-blue-900/60 transition-colors"
-                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.max(0, (t.pe ?? 0) - 1) } : t))}>-1</button>
-                    <button className="rounded bg-blue-500/20 text-blue-300 text-xs py-0.5 hover:bg-blue-500/40 transition-colors"
-                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.min(t.maxPe ?? 0, (t.pe ?? 0) + 1) } : t))}>+1</button>
-                    <button className="rounded bg-blue-500/20 text-blue-300 text-xs py-0.5 hover:bg-blue-500/40 transition-colors"
-                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: Math.min(t.maxPe ?? 0, (t.pe ?? 0) + 5) } : t))}>+5</button>
-                  </div>
-                </div>
-              )}
-              {/* Set PE max via a small inline input if no maxPe defined */}
-              {selectedToken.maxPe === undefined && (isGM || true) && (
-                <button
-                  className="text-[10px] text-muted-foreground hover:text-blue-400 transition-colors"
-                  onClick={() => {
-                    const v = prompt("Points d'Énergie maximum (laisser vide pour désactiver) :");
-                    if (v === null) return;
-                    const n = parseInt(v);
-                    if (!v.trim()) {
-                      setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: undefined, maxPe: undefined } : t));
-                    } else if (!isNaN(n) && n >= 0) {
-                      setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, pe: n, maxPe: n } : t));
-                    }
-                  }}
-                >
-                  + Ajouter PE / Mana
-                </button>
-              )}
-              <div className="grid grid-cols-4 gap-0.5">
-                <button className="rounded border border-border text-xs py-0.5 hover:bg-muted transition-colors" onClick={() => rotateToken(selectedToken.id, -15)}>-15°</button>
-                <button className="rounded border border-border text-xs py-0.5 hover:bg-muted transition-colors" onClick={() => rotateToken(selectedToken.id, 15)}>+15°</button>
-                {[1, 2, 3, 4].map(n => (
-                  <button key={n} className={`rounded text-xs py-0.5 transition-colors ${selectedToken.sizeUnits === n ? "bg-primary text-primary-foreground" : "border border-border hover:bg-muted"}`}
-                    onClick={() => resizeToken(selectedToken.id, n)}>{n}×</button>
-                ))}
-              </div>
-              {/* Vision dynamique (mode nuit) */}
-              <div className="mt-1 rounded border border-border/60 bg-background/40 p-1.5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">👁 Vision</span>
-                  <span className="text-[10px] font-mono text-amber-300">{selectedToken.visionRadius ?? 0} m</span>
-                </div>
-                <div className="grid grid-cols-5 gap-0.5">
-                  {[0, 3, 6, 9, 18].map(v => (
-                    <button
-                      key={v}
-                      className={`rounded text-[10px] py-0.5 transition-colors ${
-                        (selectedToken.visionRadius ?? 0) === v
-                          ? "bg-primary text-primary-foreground"
-                          : "border border-border hover:bg-muted"
-                      }`}
-                      onClick={() => setTokens(prev => prev.map(t => t.id === selectedToken.id ? { ...t, visionRadius: v } : t))}
-                    >
-                      {v === 0 ? "—" : `${v}m`}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-1 text-[9px] text-muted-foreground">
-                  Effet visible en 🌙 Mode nuit. La vision est bloquée par les murs.
-                </p>
-              </div>
-            </div>
-          )}
-
           {diceOpen && (
             <Suspense fallback={null}>
               <DiceRoller3D
@@ -4717,7 +4598,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         </div>
 
         {/* ── GM PANEL ── */}
-        {gmPanelOpen && isGM && (
+        {isGM && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
@@ -4752,10 +4633,9 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onNextTurn={nextTurn}
             audio={audio}
             onResetInitiative={resetInitiative}
-            onClose={() => setGmPanelOpen(false)}
           />
         )}
-        {gmPanelOpen && !isGM && !isMobile && campaignSystem !== "Glyphes" && (
+        {!isGM && !isMobile && campaignSystem !== "Glyphes" && (
           <PlayerPanel
             tokens={tokens}
             initiative={initiative}
@@ -4764,12 +4644,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             campaignSystem={campaignSystem}
             ownCharacters={userCharacters}
             onSpawnCharacter={spawnCharacter}
-            onClose={() => setGmPanelOpen(false)}
           />
         )}
 
         {/* ── PANNEAU GLYPHES ── (épreuves, PA, héroïsme, journal des jets) */}
-        {gmPanelOpen && !isMobile && campaignSystem === "Glyphes" && (
+        {!isMobile && campaignSystem === "Glyphes" && (
           <Suspense fallback={null}>
             <GlyphesPanel
               campaignId={campaignId}
@@ -4779,7 +4658,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
               canManageConfrontation={isGM}
               tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
-              onClose={() => setGmPanelOpen(false)}
             />
           </Suspense>
         )}
