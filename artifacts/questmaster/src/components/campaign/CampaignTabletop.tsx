@@ -1667,10 +1667,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const lFog = effectiveLayer(vttLayers, "fog", isGM);
 
     // ── Grille (calque dédié « grid », verrouillé) ────────────
-    // Rendue avant la carte et les dessins : jamais affectée par la gomme,
-    // le dessin libre ou le brouillard, qui vivent sur d'autres calques.
+    // Rendue avant ou après la carte selon l'option « au-dessus de l'image » :
+    // jamais affectée par la gomme, le dessin libre ou le brouillard,
+    // qui vivent sur d'autres calques.
     const gridLayer = layers.find(l => l.id === "grid");
-    if (gridLayer?.visible !== false && lBackground.visible) {
+    const gridVisible = gridLayer?.visible !== false && lBackground.visible && grid.showLines !== false;
+    if (gridVisible && !grid.aboveMap) {
       ctx.save();
       ctx.globalAlpha = lBackground.alpha;
       drawGrid(
