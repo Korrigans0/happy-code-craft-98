@@ -2166,7 +2166,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             // Étiquette de mesure au-dessus du jeton, centrée, avec contour sombre.
             ctx.font = `bold ${12 / zoom}px 'Lora', serif`;
             ctx.textAlign = "center";
-            const labelY = token.y - 10 / zoom;
+            const labelY = token.y - 26 / zoom;
             ctx.lineWidth = 3 / zoom;
             ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
             ctx.strokeText(trailLabel, cx, labelY);
