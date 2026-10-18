@@ -1,5 +1,10 @@
 # Roadmap
 
+## Portrait Glyphes
+- [ ] Réutiliser l’import et le recadrage d’avatar pour la fiche PDF
+- [ ] Afficher le portrait dans la case du PDF et l’intégrer à l’export
+- [ ] Synchroniser les jetons liés et vérifier import, sauvegarde et export
+
 ## Fiche Glyphes plein écran avec zoom
 - [x] Ouvrir la fiche en plein écran et supprimer le bouton de fermeture en doublon
 - [x] Ajuster la page PDF à la largeur disponible sur ordinateur et téléphone
