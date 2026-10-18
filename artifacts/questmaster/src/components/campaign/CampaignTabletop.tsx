@@ -2163,9 +2163,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(cx, cy); ctx.stroke();
           ctx.setLineDash([]);
           if (dist > 1) {
-            ctx.fillStyle = "#f59e0b";
+            // Étiquette de mesure au-dessus du jeton, centrée, avec contour sombre.
             ctx.font = `bold ${12 / zoom}px 'Lora', serif`;
-            ctx.fillText(trailLabel, cx + 12 / zoom, cy - 8 / zoom);
+            ctx.textAlign = "center";
+            const labelY = token.y - 10 / zoom;
+            ctx.lineWidth = 3 / zoom;
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.strokeText(trailLabel, cx, labelY);
+            ctx.fillStyle = "#f59e0b";
+            ctx.fillText(trailLabel, cx, labelY);
+            ctx.textAlign = "start";
           }
           ctx.restore();
         }
