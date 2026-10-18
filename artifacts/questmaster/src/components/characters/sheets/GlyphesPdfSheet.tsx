@@ -152,6 +152,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
 
         // Clear previous canvases (StrictMode re-run)
         container.innerHTML = "";
+        pagesRef.current = [];
 
         const nextPages: { widthCss: number; heightCss: number }[] = [];
         const nextWidgets: FieldWidget[] = [];
@@ -160,16 +161,13 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           const page = await pdf.getPage(p);
           const viewport = page.getViewport({ scale: RENDER_SCALE });
 
-          // The page is rendered at RENDER_SCALE then scaled with a CSS transform so
-          // it always fits the width the sheet has. The field overlay is mounted
-          // inside the scaled element, so input positions stay exact.
-          const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, viewport.width);
-
+          // The page is kept at RENDER_SCALE in the DOM and scaled with a CSS
+          // transform so it always fits the width the sheet has and follows the
+          // zoom. The field overlay is mounted inside the scaled element, so
+          // input positions stay exact at every zoom level.
           const pageWrap = document.createElement("div");
           pageWrap.style.position = "relative";
           pageWrap.style.margin = "0 auto 24px";
-          pageWrap.style.width = `${viewport.width * fit}px`;
-          pageWrap.style.height = `${viewport.height * fit}px`;
           pageWrap.style.overflow = "hidden";
           pageWrap.style.boxShadow = "0 4px 24px rgba(0,0,0,.5)";
           container.appendChild(pageWrap);
@@ -181,26 +179,27 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           pageInner.style.width = `${viewport.width}px`;
           pageInner.style.height = `${viewport.height}px`;
           pageInner.style.transformOrigin = "top left";
-          pageInner.style.transform = `scale(${fit})`;
           pageInner.style.background = "#fff";
           pageInner.dataset.pageIndex = String(p - 1);
           pageWrap.appendChild(pageInner);
 
-          // The bitmap is rendered at the final on-screen size so it stays sharp
-          // when enlarged; when shrunk, the 1.6 bitmap is simply downscaled.
-          const bitmapViewport = fit > 1 ? page.getViewport({ scale: RENDER_SCALE * fit }) : viewport;
-
           const canvas = document.createElement("canvas");
-          canvas.width = Math.round(bitmapViewport.width);
-          canvas.height = Math.round(bitmapViewport.height);
           canvas.style.display = "block";
           canvas.style.width = `${viewport.width}px`;
           canvas.style.height = `${viewport.height}px`;
           canvas.style.pointerEvents = "none";
           pageInner.appendChild(canvas);
 
-          const ctx = canvas.getContext("2d")!;
-          await page.render({ canvasContext: ctx, viewport: bitmapViewport }).promise;
+          pagesRef.current.push({
+            page,
+            widthCss: viewport.width,
+            heightCss: viewport.height,
+            wrap: pageWrap,
+            inner: pageInner,
+            canvas,
+            ctx: canvas.getContext("2d")!,
+            bitmapScale: 0,
+          });
 
           nextPages.push({ widthCss: viewport.width, heightCss: viewport.height });
 
@@ -252,8 +251,10 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
         }
 
         if (cancelled) return;
+        layoutPages();
         setPages(nextPages);
         setWidgets(nextWidgets);
+        void applyBitmaps();
       } catch (err) {
         console.error("[GlyphesPdfSheet] load error", err);
         toast.error("Impossible de charger la fiche PDF");
@@ -275,16 +276,8 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     const apply = () => {
-      const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, pages[0].widthCss);
-      container.querySelectorAll<HTMLElement>("[data-page-index]").forEach((inner) => {
-        const pg = pages[Number(inner.dataset.pageIndex)] ?? pages[0];
-        inner.style.transform = `scale(${fit})`;
-        const wrap = inner.parentElement;
-        if (wrap) {
-          wrap.style.width = `${pg.widthCss * fit}px`;
-          wrap.style.height = `${pg.heightCss * fit}px`;
-        }
-      });
+      layoutPages();
+      scheduleBitmaps();
     };
 
     const observer = new ResizeObserver(() => {
@@ -296,7 +289,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
       observer.disconnect();
       if (timer) clearTimeout(timer);
     };
-  }, [pages]);
+  }, [pages, layoutPages, scheduleBitmaps]);
 
   const setField = useCallback(
     (name: string, value: any) => {
