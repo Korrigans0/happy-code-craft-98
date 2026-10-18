@@ -27,6 +27,8 @@ interface Props {
   onClose?: () => void;
   /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). */
   variant?: "sidebar" | "sheet";
+  /** Opacité du fond du panneau latéral (0 à 1). */
+  opacity?: number;
 }
 
 export default function GlyphesPanel({
@@ -39,6 +41,7 @@ export default function GlyphesPanel({
   tokens = [],
   onClose,
   variant = "sidebar",
+  opacity = 0.8,
 }: Props) {
   const combat = useGlyphesCombat(campaignId);
   const [checkOpen, setCheckOpen] = useState(false);
@@ -53,7 +56,12 @@ export default function GlyphesPanel({
       className={
         variant === "sheet"
           ? "flex h-full w-full min-w-0 flex-col bg-card"
-          : "flex h-full w-80 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm"
+          : "flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      }
+      style={
+        variant === "sidebar"
+          ? { backgroundColor: `hsl(var(--card) / ${opacity})` }
+          : undefined
       }
       aria-label="Panneau Glyphes"
     >
