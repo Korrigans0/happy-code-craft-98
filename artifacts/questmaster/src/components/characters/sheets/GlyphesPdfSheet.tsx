@@ -347,7 +347,16 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
   }, [formData, character?.name]);
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background">
+    <div
+      className="flex flex-col h-full min-h-0 bg-background"
+      onKeyDown={(e) => {
+        // Keyboard shortcuts, ignored while typing in a field.
+        if ((e.target as HTMLElement)?.closest("input, textarea, select")) return;
+        if (e.key === "+" || e.key === "=") changeZoom(zoomRef.current * ZOOM_STEP);
+        else if (e.key === "-" || e.key === "_") changeZoom(zoomRef.current / ZOOM_STEP);
+        else if (e.key === "0") changeZoom(1);
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-card/40 p-3 backdrop-blur">
         <div className="min-w-0 flex-1 basis-full sm:basis-auto">
           <SheetHeader
@@ -357,6 +366,44 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
             onEdit={onEdit}
             onChange={(k, v) => onSave?.({ [k]: v })}
           />
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border/50 bg-card/40 px-1 py-0.5">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(zoomRef.current / ZOOM_STEP)}
+            disabled={zoom <= ZOOM_MIN}
+            aria-label="Dézoomer"
+            title="Dézoomer"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[3.5rem] text-center text-xs tabular-nums text-muted-foreground">
+            {Math.round(zoom * 100)} %
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(zoomRef.current * ZOOM_STEP)}
+            disabled={zoom >= ZOOM_MAX}
+            aria-label="Zoomer"
+            title="Zoomer"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(1)}
+            disabled={zoom <= ZOOM_MIN}
+            aria-label="Ajuster à la largeur"
+            title="Ajuster à la largeur"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
@@ -394,7 +441,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
             </div>
           )}
 
-          <div ref={containerRef} />
+          <div ref={containerRef} style={{ cursor: zoom > 1 ? "grab" : undefined }} />
 
           {/* Overlay inputs positioned on top of each rendered page. We portal
               them inside the correct pageWrap after render via absolute wrapper. */}
