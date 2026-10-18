@@ -26,6 +26,8 @@ export interface GridConfig {
   pixelsPerUnit: number;
   /** Affiche le tracé de la grille (n'affecte pas le snap). */
   showLines: boolean;
+  /** Trace la grille PAR-DESSUS l'image de carte posée par le MJ (au lieu de dessous). */
+  aboveMap?: boolean;
   /** Active l'accrochage des jetons. */
   snapEnabled: boolean;
 }
@@ -40,6 +42,7 @@ export const DEFAULT_GRID_CONFIG: GridConfig = {
   unitLabel: "m",
   pixelsPerUnit: 40 / 1.5,
   showLines: true,
+  aboveMap: false,
   snapEnabled: true,
 };
 
