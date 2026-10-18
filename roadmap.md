@@ -19,9 +19,11 @@
 
 
 ## Double-clic sur les jetons Glyphes
+- [x] Remplacer la détection chronométrée par le double-clic natif et conserver l’accès aux fiches lorsque le déplacement est verrouillé
+- [x] Afficher les erreurs de chargement au lieu d’une fiche vide
 - [x] Ouvrir directement la fiche existante du personnage lié, sans ancien panneau intermédiaire
 - [x] Conserver les permissions, la synchronisation et le comportement des autres systèmes
-- [ ] Vérifier le double-clic réel : la campagne Glyphes accessible ne contient aucun jeton
+- [ ] Vérifier le double-clic réel dans la campagne Glyphes connectée
 
 ## Section aventures de l'accueil (demande actuelle)
 - [x] Remplacer la présentation actuelle par la scène immersive sur la page d'accueil

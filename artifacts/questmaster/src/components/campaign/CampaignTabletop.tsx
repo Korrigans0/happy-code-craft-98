@@ -368,8 +368,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Click vs drag tracking (simple click on token = open sheet) ──
   const clickStartRef = useRef<{ x: number; y: number; t: number; tokenId: string; denied: boolean } | null>(null);
-  // Double-click detection to open a character sheet (single click only selects)
-  const lastTokenClickRef = useRef<{ tokenId: string; t: number } | null>(null);
+  // Native double-click dispatch is independent of movement/selection state.
+  const lastTokenReleaseRef = useRef<{ tokenId: string; dragged: boolean } | null>(null);
   const didDragRef = useRef(false);
 
   // ── Voir fiche dialog ──
@@ -386,13 +386,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const queryClient = useQueryClient();
   const [fullSheetCharId, setFullSheetCharId] = useState<string | null>(null);
 
-  const { data: fullSheetCharacter } = useQuery({
+  const { data: fullSheetCharacter, isLoading: fullSheetLoading, isError: fullSheetError } = useQuery({
     queryKey: ["vtt-linked-character", fullSheetCharId],
     enabled: !!fullSheetCharId,
     queryFn: async () => {
       if (!fullSheetCharId) return null;
-      try { return await charactersApi.get(fullSheetCharId); }
-      catch { return null; }
+      return await charactersApi.get(fullSheetCharId);
     },
   });
 
@@ -2946,6 +2945,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   };
 
   // ── Mouse events ──
+  const handleTokenDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0 || isSpacePressed || e.shiftKey || e.ctrlKey || e.metaKey) return;
+    if (!["move", "select", "token"].includes(tool)) return;
+    if (!layers.find(l => l.id === "tokens")?.visible || vttLayers.tokens?.visible === false) return;
+    const coords = getCanvasCoords(e);
+    const token = findTokenAt(coords.x, coords.y);
+    if (!token || (lastTokenReleaseRef.current?.tokenId === token.id && lastTokenReleaseRef.current.dragged)) return;
+    e.preventDefault();
+    if (!perms.canSelectToken(token)) {
+      denied("Cette fiche ne vous appartient pas");
+      return;
+    }
+    openTokenSheet(token);
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 2) return; // handled by onContextMenu
     const coords = getCanvasCoords(e);
@@ -3178,30 +3192,17 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const pendingClick = clickStartRef.current;
     const wasClick =
       !!pendingClick && !didDragRef.current && Date.now() - pendingClick.t < 500;
+    lastTokenReleaseRef.current = pendingClick
+      ? { tokenId: pendingClick.tokenId, dragged: didDragRef.current }
+      : null;
     clickStartRef.current = null;
     didDragRef.current = false;
     if (wasClick && pendingClick) {
-      const tok = tokens.find(t => t.id === pendingClick.tokenId);
       // Reset any pending drag/pan state cleanly
       setDraggedToken(null);
       setDragStart(null);
       setIsDrawing(false);
       setLastPanPoint(null);
-      const prevClick = lastTokenClickRef.current;
-      const isDoubleClick =
-        !!prevClick && prevClick.tokenId === pendingClick.tokenId && Date.now() - prevClick.t < 400;
-      lastTokenClickRef.current = isDoubleClick ? null : { tokenId: pendingClick.tokenId, t: Date.now() };
-      if (tok && isDoubleClick) {
-        if (pendingClick.denied) {
-          toast({
-            title: "Accès refusé",
-            description: "Cette fiche ne vous appartient pas",
-            variant: "destructive",
-          });
-        } else if (perms.canSelectToken(tok)) {
-          openTokenSheet(tok);
-        }
-      }
       return;
     }
     if (draggedToken) {
@@ -4420,6 +4421,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onDoubleClick={handleTokenDoubleClick}
             onContextMenu={handleContextMenu}
             className="block h-full w-full"
             style={{ touchAction: "none" }}
@@ -5091,6 +5093,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             <DialogTitle>Fiche personnage</DialogTitle>
             <DialogDescription>Fiche complète liée au jeton sélectionné</DialogDescription>
           </DialogHeader>
+          {fullSheetLoading && <p role="status" className="p-4 text-muted-foreground">Chargement de la fiche…</p>}
+          {fullSheetError && <p role="alert" className="p-4 text-destructive">Impossible de charger cette fiche. Vérifiez que le personnage existe et que vous y avez accès.</p>}
           {fullSheetCharacter && (() => {
             const linkedTok = tokens.find(t => t.creatureType === "character" && t.creatureId === fullSheetCharacter.id) ?? null;
             const canEditSheet = isGM || (user?.id && fullSheetCharacter.user_id === user.id);
