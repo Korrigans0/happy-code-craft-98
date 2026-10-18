@@ -273,7 +273,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [mapGenOpen, setMapGenOpen] = useState(false);
   const [glyphesSheetOpen, setGlyphesSheetOpen] = useState(false);
-  const [panelOpacity, setPanelOpacity] = useState(80);
+  const [panelOpacity, setPanelOpacity] = useState(25);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   // (showLayersPanel retiré — la gestion des calques se fait via le panneau flottant LayersPanel monté par CampaignPlay)
@@ -4620,11 +4620,25 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           <DiceBroadcastOverlay campaignId={campaignId} />
         </div>
 
-        {/* ── GM PANEL ── */}
+        {/* ── GM PANEL ── (panneau Glyphes fusionné en onglet pour le système Glyphes) */}
         {isGM && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
+            glyphesPanel={campaignSystem === "Glyphes" ? (
+              <Suspense fallback={null}>
+                <GlyphesPanel
+                  variant="embedded"
+                  campaignId={campaignId}
+                  authorName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+                  selectedTokenId={selectedTokenId}
+                  selectedTokenName={selectedToken?.name}
+                  canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+                  canManageConfrontation={isGM}
+                  tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
+                />
+              </Suspense>
+            ) : undefined}
             currentUserId={user?.id || ""}
             userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
             tokens={tokens}
