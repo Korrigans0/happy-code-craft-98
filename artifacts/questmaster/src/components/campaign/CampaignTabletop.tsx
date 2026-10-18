@@ -827,8 +827,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         const row = payload.new;
         if (typeof row.id === "string") mirror({ id: row.id, avatar_url: row.avatar_url });
       }).subscribe();
-    ids.forEach(id => { charactersApi.get(id).then(mirror).catch(() => { /* A removed or inaccessible sheet cannot provide a portrait. */ }); });
-    return () => { active = false; supabase.removeChannel(channel); };
+    const refresh = () => {
+      if (document.hidden) return;
+      ids.forEach(id => { charactersApi.get(id).then(mirror).catch(() => { /* A removed or inaccessible sheet cannot provide a portrait. */ }); });
+    };
+    refresh();
+    // REST-written rows may not be published to realtime on older projects.
+    const timer = setInterval(refresh, 5000);
+    return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
   }, [isGlyphes, linkedPortraitIds, campaignId, queryClient]);
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
   // La fiche Glyphes liée se remplit automatiquement avec les actions de la table.
