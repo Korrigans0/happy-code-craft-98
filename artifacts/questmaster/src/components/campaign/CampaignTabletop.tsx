@@ -2062,7 +2062,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           const barHeight = 4;
           const barX = token.x + 2;
           const barY = token.y + token.size + 4;
-          const maxWounds = glyphesState.maxWounds || MAX_WOUNDS;
+          const maxWounds = Math.min(MAX_WOUNDS, glyphesState.maxWounds || MAX_WOUNDS);
           const woundRatio = maxWounds > 0 ? Math.max(0, Math.min(1, glyphesState.wounds / maxWounds)) : 0;
           ctx.fillStyle = "rgba(0,0,0,0.6)";
           ctx.fillRect(barX, barY, barWidth, barHeight);
