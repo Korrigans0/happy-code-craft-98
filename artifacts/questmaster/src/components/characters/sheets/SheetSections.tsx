@@ -19,8 +19,8 @@ interface SheetHeaderProps {
 
 export function SheetHeader({ character, system, onClose, onEdit, editable, onChange }: SheetHeaderProps) {
   return (
-    <div className="flex items-center justify-between border-b border-border p-4 bg-card/40 backdrop-blur">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border p-4 bg-card/40 backdrop-blur">
+      <div className="flex min-w-0 flex-1 basis-full items-center gap-3 sm:basis-auto">
         {character.avatar_url ? (
           <img
             src={character.avatar_url}

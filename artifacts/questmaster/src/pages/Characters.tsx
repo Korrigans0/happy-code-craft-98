@@ -591,7 +591,7 @@ const Characters = () => {
 
       {/* ── FICHE DE VISUALISATION (routeur multi-système) ── */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="right" className="w-full p-0 sm:max-w-3xl">
+        <SheetContent side="right" className="w-full max-w-none p-0 sm:max-w-none" hideCloseButton>
           {selectedCharacter && (
             <SheetViewSwitcher
               character={selectedCharacter}
