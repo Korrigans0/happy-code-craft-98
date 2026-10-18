@@ -1702,6 +1702,21 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ctx.restore();
     }
 
+    // ── Grille au-dessus de l'image (option « Grille au-dessus de l'image ») ──
+    if (gridVisible && grid.aboveMap) {
+      ctx.save();
+      ctx.globalAlpha = lBackground.alpha;
+      drawGrid(
+        ctx,
+        grid,
+        { left: viewLeft, top: viewTop, right: viewRight, bottom: viewBottom },
+        { minor: plateauColors.gridMinor, major: plateauColors.gridMajor },
+        zoom,
+      );
+      ctx.restore();
+    }
+
+
 
     // ── Drawings layer (excluding fogReveal) ──────────────────
     // Chaque dessin porte un calque canonique (décor / objets / effets / MJ) :
