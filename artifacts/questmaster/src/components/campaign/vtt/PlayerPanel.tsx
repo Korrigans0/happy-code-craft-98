@@ -43,7 +43,6 @@ export default function PlayerPanel({
             {initTerm}
           </span>
         </div>
-        </div>
       </div>
 
       {/* Round */}
