@@ -70,6 +70,7 @@ export function normalizeGridConfig(raw: unknown): GridConfig {
   if (o.unitLabel === "m" || o.unitLabel === "ft") base.unitLabel = o.unitLabel;
   if (typeof o.pixelsPerUnit === "number" && o.pixelsPerUnit > 0) base.pixelsPerUnit = o.pixelsPerUnit;
   if (typeof o.showLines === "boolean") base.showLines = o.showLines;
+  if (typeof o.aboveMap === "boolean") base.aboveMap = o.aboveMap;
   if (typeof o.snapEnabled === "boolean") base.snapEnabled = o.snapEnabled;
   return base;
 }

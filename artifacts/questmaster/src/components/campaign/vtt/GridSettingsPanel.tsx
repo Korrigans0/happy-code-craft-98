@@ -148,6 +148,14 @@ const GridSettingsPanel = ({ config, onChange, onTypeChange, disabled }: GridSet
           />
         </div>
         <div className="flex items-center justify-between">
+          <Label htmlFor="grid-above-map" className="text-sm">Grille au-dessus de l'image</Label>
+          <Switch
+            id="grid-above-map"
+            checked={!!config.aboveMap}
+            onCheckedChange={(v) => set({ aboveMap: v })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
           <Label htmlFor="grid-snap" className="text-sm">Accrochage des jetons</Label>
           <Switch
             id="grid-snap"
