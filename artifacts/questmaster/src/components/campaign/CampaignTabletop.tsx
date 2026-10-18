@@ -8,7 +8,7 @@ import {
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
-  RotateCw, Copy, Triangle, Dices, PanelRight, PanelRightClose,
+  RotateCw, Copy, Triangle, Dices,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
   Grid3x3, Hexagon, MousePointerSquareDashed, ClipboardPaste,
