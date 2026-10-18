@@ -4686,20 +4686,58 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
           />
         )}
 
-        {/* ── PANNEAU GLYPHES ── (épreuves, PA, héroïsme, journal des jets) */}
-        {!isMobile && campaignSystem === "Glyphes" && (
-          <Suspense fallback={null}>
-            <GlyphesPanel
-              campaignId={campaignId}
-              authorName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
-              selectedTokenId={selectedTokenId}
-              selectedTokenName={selectedToken?.name}
-              canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
-              canManageConfrontation={isGM}
-              opacity={panelOpacity / 100}
-              tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
-            />
-          </Suspense>
+        {/* ── PANNEAU JOUEUR GLYPHES ── (même panneau fusionné, droits joueur) */}
+        {!isGM && !isMobile && campaignSystem === "Glyphes" && (
+          <GMPanel
+            campaignId={campaignId}
+            isGM={false}
+            currentUserId={user?.id || ""}
+            userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+            tokens={tokens}
+            selectedTokenId={selectedTokenId}
+            waCreatures={waCreatures}
+            aetheriaCreatures={aetheriaCreatures as any}
+            systemMonsters={systemMonsters as any}
+            campaignSystem={campaignSystem}
+            opacity={panelOpacity / 100}
+            userCharacters={userCharacters}
+            initiative={initiative}
+            initiativeRound={initiativeRound}
+            initiativeActiveIdx={initiativeActiveIdx}
+            onUpdateTokenHp={updateTokenHp}
+            onSelectToken={(id) => { setSelectedTokenId(id); centerOnToken(id); }}
+            onSpawnCreature={spawnWACreature}
+            onSpawnAetheriaCreature={spawnAetheriaCreature}
+            onSpawnSystemMonster={spawnSystemMonster}
+            onSpawnCharacter={spawnCharacter}
+            onAddToInitiative={addToInitiative}
+            onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
+            onAddAllTokensToInitiative={addAllTokensToInitiative}
+            onAutoRollAllInitiative={autoRollAllInitiative}
+            onUpdateInitiativeValue={updateInitiativeValue}
+            onReorderInitiative={reorderInitiative}
+            onRemoveFromInitiative={removeFromInitiative}
+            onUpdateInitiativeHp={updateInitiativeHp}
+            onAddConditionToInitiative={addConditionToInitiative}
+            onRemoveConditionFromInitiative={removeConditionFromInitiative}
+            onNextTurn={nextTurn}
+            audio={audio}
+            onResetInitiative={resetInitiative}
+            glyphesPanel={
+              <Suspense fallback={null}>
+                <GlyphesPanel
+                  variant="embedded"
+                  campaignId={campaignId}
+                  authorName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+                  selectedTokenId={selectedTokenId}
+                  selectedTokenName={selectedToken?.name}
+                  canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
+                  canManageConfrontation={false}
+                  tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
+                />
+              </Suspense>
+            }
+          />
         )}
 
         {/* ── PANNEAU GLYPHES MOBILE ── (bouton flottant + tiroir plein écran) */}
