@@ -71,6 +71,8 @@ interface GMPanelProps {
   onResetInitiative: () => void;
   /** Instance partagée du hook audio (fournie par le plateau). */
   audio?: ReturnType<typeof useCampaignAudio>;
+  /** Opacité du fond du panneau (0 à 1). */
+  opacity?: number;
 }
 
 type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf" | "audio";
@@ -103,7 +105,7 @@ export default function GMPanel({
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
-  onNextTurn, onResetInitiative, audio,
+  onNextTurn, onResetInitiative, audio, opacity = 0.8,
 }: GMPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -212,7 +214,10 @@ export default function GMPanel({
   const sortedInit = [...initiative].sort((a, b) => b.initiative - a.initiative);
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm">
+    <div
+      className="flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      style={{ backgroundColor: `hsl(var(--card) / ${opacity})` }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="font-display text-sm font-semibold text-gradient-gold">

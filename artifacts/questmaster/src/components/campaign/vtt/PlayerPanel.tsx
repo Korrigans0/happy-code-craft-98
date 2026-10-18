@@ -12,6 +12,8 @@ interface PlayerPanelProps {
   /** Personnages que le joueur peut poser sur le plateau (les siens). */
   ownCharacters?: any[];
   onSpawnCharacter?: (char: any) => void;
+  /** Opacité du fond du panneau (0 à 1). */
+  opacity?: number;
 }
 
 export default function PlayerPanel({
@@ -22,6 +24,7 @@ export default function PlayerPanel({
   campaignSystem = "Aetheria",
   ownCharacters = [],
   onSpawnCharacter,
+  opacity = 0.8,
 }: PlayerPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -32,7 +35,8 @@ export default function PlayerPanel({
 
   return (
     <aside
-      className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm"
+      className="flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      style={{ backgroundColor: `hsl(var(--card) / ${opacity})` }}
       aria-label={`Suivi d'${initTerm.toLowerCase()}`}
     >
       {/* Header */}

@@ -8,7 +8,7 @@ import {
   Undo2, Redo2, Trash2, Download, Minus, ZoomIn, ZoomOut,
   Layers, Image, Users, PaintBucket, Eye, EyeOff, Upload,
   X, Plus, Magnet, Crosshair, Maximize2, Minimize2,
-  RotateCw, Copy, Triangle, Dices,
+  RotateCw, Copy, Triangle, Dices, Droplet,
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
   Grid3x3, Hexagon, MousePointerSquareDashed, ClipboardPaste,
@@ -273,6 +273,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [mapGenOpen, setMapGenOpen] = useState(false);
   const [glyphesSheetOpen, setGlyphesSheetOpen] = useState(false);
+  const [panelOpacity, setPanelOpacity] = useState(80);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   // (showLayersPanel retiré — la gestion des calques se fait via le panneau flottant LayersPanel monté par CampaignPlay)
@@ -4047,6 +4048,28 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
         {/* Connection / sync status — discret en bout de toolbar */}
         <div className="ml-auto flex items-center gap-2 pr-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" title="Opacité du panneau">
+                <Droplet className="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Opacité du panneau</span>
+                  <span className="font-mono text-xs">{panelOpacity}%</span>
+                </div>
+                <Slider
+                  value={[panelOpacity]}
+                  min={20}
+                  max={100}
+                  step={5}
+                  onValueChange={(v) => setPanelOpacity(v[0] ?? 80)}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
           <CampaignAudioPlayer campaignId={campaignId} isGM={isGM} audio={audio} />
           <ConnectionStatus
             status={connectionStatus}
@@ -4610,6 +4633,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             aetheriaCreatures={aetheriaCreatures as any}
             systemMonsters={systemMonsters as any}
             campaignSystem={campaignSystem}
+            opacity={panelOpacity / 100}
             userCharacters={userCharacters}
             initiative={initiative}
             initiativeRound={initiativeRound}
@@ -4642,6 +4666,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             initiativeRound={initiativeRound}
             initiativeActiveIdx={initiativeActiveIdx}
             campaignSystem={campaignSystem}
+            opacity={panelOpacity / 100}
             ownCharacters={userCharacters}
             onSpawnCharacter={spawnCharacter}
           />
@@ -4657,6 +4682,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               selectedTokenName={selectedToken?.name}
               canEdit={!!selectedToken && perms.canEditTokenStats(selectedToken)}
               canManageConfrontation={isGM}
+              opacity={panelOpacity / 100}
               tokens={tokens.map((t) => ({ id: t.id, name: t.name }))}
             />
           </Suspense>
