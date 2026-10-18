@@ -25,8 +25,8 @@ interface Props {
   /** Jetons présents sur la scène, cibles potentielles d'une attaque. */
   tokens?: GlyphesTargetOption[];
   onClose?: () => void;
-  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). */
-  variant?: "sidebar" | "sheet";
+  /** "sidebar" : colonne fixe (desktop). "sheet" : pleine largeur (mobile). "embedded" : contenu seul, intégré dans un autre panneau. */
+  variant?: "sidebar" | "sheet" | "embedded";
   /** Opacité du fond du panneau latéral (0 à 1). */
   opacity?: number;
 }
@@ -51,32 +51,11 @@ export default function GlyphesPanel({
   const state = selectedTokenId ? combat.getState(selectedTokenId) : null;
   const targets = useMemo(() => tokens.filter((t) => t.id !== selectedTokenId), [tokens, selectedTokenId]);
 
-  return (
-    <aside
-      className={
-        variant === "sheet"
-          ? "flex h-full w-full min-w-0 flex-col bg-card"
-          : "flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
-      }
-      style={
-        variant === "sidebar"
-          ? { backgroundColor: `hsl(var(--card) / ${opacity})` }
-          : undefined
-      }
-      aria-label="Panneau Glyphes"
-    >
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <span className="font-display text-sm font-semibold text-foreground">✨ Glyphes</span>
-        {variant === "sheet" && onClose && (
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fermer">
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
+  const body = (
+    <>
       <Tabs defaultValue="jeton" className="flex min-h-0 flex-1 flex-col">
         <TabsList className="mx-2 mt-2 grid grid-cols-3">
-          <TabsTrigger value="jeton" className="text-[11px]">Jeton</TabsTrigger>
+          <TabsTrigger value="jeton" className="text-[11px]">Épreuve</TabsTrigger>
           <TabsTrigger value="confrontation" className="text-[11px]">Confrontation</TabsTrigger>
           <TabsTrigger value="journal" className="text-[11px]">Journal</TabsTrigger>
         </TabsList>
@@ -187,6 +166,34 @@ export default function GlyphesPanel({
           />
         </>
       )}
+    </>
+  );
+
+  if (variant === "embedded") return body;
+
+  return (
+    <aside
+      className={
+        variant === "sheet"
+          ? "flex h-full w-full min-w-0 flex-col bg-card"
+          : "flex h-full w-72 shrink-0 flex-col border-l border-border backdrop-blur-sm"
+      }
+      style={
+        variant === "sidebar"
+          ? { backgroundColor: `hsl(var(--card) / ${opacity})` }
+          : undefined
+      }
+      aria-label="Panneau Glyphes"
+    >
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <span className="font-display text-sm font-semibold text-foreground">✨ Glyphes</span>
+        {variant === "sheet" && onClose && (
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fermer">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {body}
     </aside>
   );
 }
