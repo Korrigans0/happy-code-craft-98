@@ -109,7 +109,7 @@ export default function GMPanel({
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
-  onNextTurn, onResetInitiative, audio, opacity = 0.8,
+  onNextTurn, onResetInitiative, audio, opacity = 0.25, glyphesPanel,
 }: GMPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -840,6 +840,9 @@ export default function GMPanel({
         )}
 
         {/* ── PDF ──────────────────────────────────────────── */}
+        {/* ── GLYPHES (panneau fusionné) ───────────────────── */}
+        {activeTab === "glyphes" && glyphesPanel}
+
         {activeTab === "pdf" && isGM && (
           <PdfTab campaignId={campaignId} currentUserId={currentUserId} />
         )}
