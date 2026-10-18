@@ -220,6 +220,20 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
 
           {/* Colonne 2 */}
           <div className="space-y-4">
+            {sysData.combat && (
+              <Box className="border-primary/40">
+                <Title>En jeu (table)</Title>
+                <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                  <div><div className="text-xs text-muted-foreground">Points d'action</div>
+                    <div className="font-bold">{sysData.combat.actionPoints} / {sysData.combat.maxActionPoints}</div></div>
+                  <div><div className="text-xs text-muted-foreground">Déplacement</div>
+                    <div className="font-bold">{sysData.combat.movedFt ?? 0} ft</div></div>
+                  <div><div className="text-xs text-muted-foreground">Approche</div>
+                    <div className="font-bold">{sysData.combat.approach ?? "—"}</div></div>
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">Mis à jour automatiquement depuis la table de jeu.</p>
+              </Box>
+            )}
             <Box>
               <Title>Sens</Title>
               <div className="grid grid-cols-3 items-center gap-2 text-center">
