@@ -4062,10 +4062,10 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 </div>
                 <Slider
                   value={[panelOpacity]}
-                  min={20}
+                  min={0}
                   max={100}
                   step={5}
-                  onValueChange={(v) => setPanelOpacity(v[0] ?? 80)}
+                  onValueChange={(v) => setPanelOpacity(v[0] ?? 25)}
                 />
               </div>
             </PopoverContent>
