@@ -159,7 +159,7 @@ export default function SheetViewSwitcher({
     </div>
   );
 
-  if (view === "full") {
+  if (activeView === "full") {
     return (
       <div className="flex h-full flex-col">
         {header}
@@ -184,7 +184,7 @@ export default function SheetViewSwitcher({
           {identity}
           {hpBlock}
 
-          {view === "compact" && (
+          {activeView === "compact" && (
             <>
               <div className="grid grid-cols-3 gap-2">
                 {stats.map((s) => (
@@ -221,7 +221,7 @@ export default function SheetViewSwitcher({
             </>
           )}
 
-          {view === "play" && (
+          {activeView === "play" && (
             <>
               {/* Suivi PV en table */}
               <div className="rounded-lg border border-border/60 bg-card/40 p-3">
