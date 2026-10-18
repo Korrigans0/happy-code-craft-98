@@ -29,7 +29,7 @@ export type GlyphesCombatMap = Record<string, GlyphesTokenState>;
 const EVENT = "glyphes-state";
 
 export function defaultTokenState(partial?: Partial<GlyphesTokenState>): GlyphesTokenState {
-  return {
+  const state: GlyphesTokenState = {
     actionPoints: ACTION_POINTS_PER_TURN,
     maxActionPoints: ACTION_POINTS_PER_TURN,
     heroism: 0,
@@ -43,6 +43,10 @@ export function defaultTokenState(partial?: Partial<GlyphesTokenState>): Glyphes
     movedFt: 0,
     ...partial,
   };
+  // Règle Glyphes : les blessures sont toujours sur 3, même pour un état enregistré avant cette règle.
+  state.maxWounds = MAX_WOUNDS;
+  state.wounds = Math.max(0, Math.min(MAX_WOUNDS, state.wounds));
+  return state;
 }
 
 function storageKey(campaignId?: string | null) {
@@ -101,7 +105,10 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
       const tokens = remote.tokens as GlyphesCombatMap;
       if (Object.keys(tokens).length === 0) return;
       // Le serveur fait foi au chargement, le local complète les jetons absents.
-      setStore(key, (prev) => ({ ...prev, ...tokens }));
+      // Les états enregistrés avant la règle « blessures sur 3 » sont normalisés.
+      const normalized: GlyphesCombatMap = {};
+      for (const [id, token] of Object.entries(tokens)) normalized[id] = defaultTokenState(token);
+      setStore(key, (prev) => ({ ...prev, ...normalized }));
     });
     return () => {
       cancelled = true;
