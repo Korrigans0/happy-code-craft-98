@@ -348,7 +348,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background">
-      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/40 bg-card/40 backdrop-blur">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-card/40 p-3 backdrop-blur">
         <div className="min-w-0 flex-1">
           <SheetHeader
             character={character}
