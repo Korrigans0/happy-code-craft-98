@@ -198,6 +198,8 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     const effective = fitRef.current * zoomRef.current;
     recs.forEach((rec) => {
       rec.inner.style.transform = `scale(${effective})`;
+      rec.canvas.style.width = `${rec.widthCss * effective}px`;
+      rec.canvas.style.height = `${rec.heightCss * effective}px`;
       rec.wrap.style.width = `${rec.widthCss * effective}px`;
       rec.wrap.style.height = `${rec.heightCss * effective}px`;
     });
@@ -361,9 +363,22 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           pageWrap.style.position = "relative";
           pageWrap.style.margin = "0 auto 24px";
           pageWrap.style.overflow = "hidden";
+          pageWrap.style.background = "#fff";
           pageWrap.style.boxShadow = "0 4px 24px rgba(0,0,0,.5)";
           container.appendChild(pageWrap);
 
+          // The bitmap is a direct child of the page box and is sized to its final
+          // on-screen size, so the browser draws it 1:1 instead of upscaling a
+          // smaller layer — that upscaling is what made the text blurry when zooming.
+          const canvas = document.createElement("canvas");
+          canvas.style.position = "absolute";
+          canvas.style.top = "0";
+          canvas.style.left = "0";
+          canvas.style.pointerEvents = "none";
+          pageWrap.appendChild(canvas);
+
+          // The field overlay keeps its own scaled layer, so input coordinates
+          // expressed in page space stay exact at every zoom level.
           const pageInner = document.createElement("div");
           pageInner.style.position = "absolute";
           pageInner.style.top = "0";
@@ -371,16 +386,8 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           pageInner.style.width = `${viewport.width}px`;
           pageInner.style.height = `${viewport.height}px`;
           pageInner.style.transformOrigin = "top left";
-          pageInner.style.background = "#fff";
           pageInner.dataset.pageIndex = String(p - 1);
           pageWrap.appendChild(pageInner);
-
-          const canvas = document.createElement("canvas");
-          canvas.style.display = "block";
-          canvas.style.width = `${viewport.width}px`;
-          canvas.style.height = `${viewport.height}px`;
-          canvas.style.pointerEvents = "none";
-          pageInner.appendChild(canvas);
 
           pagesRef.current.push({
             page,
