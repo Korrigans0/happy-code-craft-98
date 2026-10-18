@@ -23,7 +23,8 @@
 - [x] Afficher les erreurs de chargement au lieu d’une fiche vide
 - [x] Ouvrir directement la fiche existante du personnage lié, sans ancien panneau intermédiaire
 - [x] Conserver les permissions, la synchronisation et le comportement des autres systèmes
-- [ ] Vérifier le double-clic réel dans la campagne Glyphes connectée
+- [x] Vérifier le double-clic réel dans la campagne Glyphes connectée : la fenêtre s’ouvre et signale la fiche absente
+- [ ] Vérifier le chargement du PDF depuis ce jeton : bloqué, le personnage lié a été supprimé (absence confirmée côté serveur)
 
 ## Section aventures de l'accueil (demande actuelle)
 - [x] Remplacer la présentation actuelle par la scène immersive sur la page d'accueil
