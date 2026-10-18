@@ -11,7 +11,7 @@ import {
   MessageSquare, Swords, Users, Skull, BookOpen,
   Send, Dices, Plus, Trash2, ChevronRight, ChevronDown,
   Crown, Heart, Shield, Eye, EyeOff, Search, X, SkipForward,
-  RotateCcw, PanelRight, MousePointerClick, ListPlus,
+  RotateCcw, MousePointerClick, ListPlus,
   ArrowUp, ArrowDown, FileText, Upload, Loader2, Music,
 } from "lucide-react";
 import AudioTab from "./AudioTab";
@@ -71,7 +71,6 @@ interface GMPanelProps {
   onResetInitiative: () => void;
   /** Instance partagée du hook audio (fournie par le plateau). */
   audio?: ReturnType<typeof useCampaignAudio>;
-  onClose: () => void;
 }
 
 type Tab = "chat" | "initiative" | "tokens" | "bestiary" | "notes" | "pdf" | "audio";
@@ -104,7 +103,7 @@ export default function GMPanel({
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
   onUpdateInitiativeHp, onAddConditionToInitiative, onRemoveConditionFromInitiative,
-  onNextTurn, onResetInitiative, audio, onClose,
+  onNextTurn, onResetInitiative, audio,
 }: GMPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -213,15 +212,12 @@ export default function GMPanel({
   const sortedInit = [...initiative].sort((a, b) => b.initiative - a.initiative);
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card">
+    <div className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="font-display text-sm font-semibold text-gradient-gold">
           {isGM ? "Panneau MJ" : "Panneau joueur"}
         </span>
-        <button onClick={onClose} className="rounded p-1 hover:bg-muted transition-colors">
-          <PanelRight className="h-4 w-4 text-muted-foreground" />
-        </button>
       </div>
 
       {/* Tab bar */}

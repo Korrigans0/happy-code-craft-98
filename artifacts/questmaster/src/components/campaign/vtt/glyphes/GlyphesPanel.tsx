@@ -53,13 +53,13 @@ export default function GlyphesPanel({
       className={
         variant === "sheet"
           ? "flex h-full w-full min-w-0 flex-col bg-card"
-          : "flex h-full w-80 shrink-0 flex-col border-l border-border bg-card"
+          : "flex h-full w-80 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm"
       }
       aria-label="Panneau Glyphes"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <span className="font-display text-sm font-semibold text-foreground">✨ Glyphes</span>
-        {onClose && (
+        {variant === "sheet" && onClose && (
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Fermer">
             <X className="h-4 w-4" />
           </button>

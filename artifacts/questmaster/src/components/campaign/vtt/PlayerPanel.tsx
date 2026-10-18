@@ -1,6 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Swords, ChevronRight, X, UserPlus } from "lucide-react";
+import { Swords, ChevronRight, UserPlus } from "lucide-react";
 import { TokenItem, InitiativeEntry, CONDITIONS } from "./types";
 
 interface PlayerPanelProps {
@@ -12,7 +12,6 @@ interface PlayerPanelProps {
   /** Personnages que le joueur peut poser sur le plateau (les siens). */
   ownCharacters?: any[];
   onSpawnCharacter?: (char: any) => void;
-  onClose: () => void;
 }
 
 export default function PlayerPanel({
@@ -23,7 +22,6 @@ export default function PlayerPanel({
   campaignSystem = "Aetheria",
   ownCharacters = [],
   onSpawnCharacter,
-  onClose,
 }: PlayerPanelProps) {
   const isGlyphes = campaignSystem === "Glyphes";
   const initTerm = isGlyphes ? "Épreuve" : "Initiative";
@@ -34,7 +32,7 @@ export default function PlayerPanel({
 
   return (
     <aside
-      className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-card"
+      className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm"
       aria-label={`Suivi d'${initTerm.toLowerCase()}`}
     >
       {/* Header */}
@@ -45,13 +43,6 @@ export default function PlayerPanel({
             {initTerm}
           </span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-muted-foreground transition-colors hover:text-foreground"
-          aria-label="Fermer le panneau"
-        >
-          <X className="h-4 w-4" />
-        </button>
       </div>
 
       {/* Round */}
