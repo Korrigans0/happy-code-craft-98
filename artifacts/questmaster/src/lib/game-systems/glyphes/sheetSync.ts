@@ -44,7 +44,7 @@ export function diffSystemData(
 
 /** Token state patch derived from a sheet edit (sheet → token). */
 export function systemDataToCombat(systemData: Record<string, any> | null | undefined) {
-  const patch: Partial<CombatSnapshot> = {};
+  const patch: Partial<Pick<CombatSnapshot, "wounds" | "heroism" | "resilience">> = {};
   if (!systemData) return patch;
   if (typeof systemData.def_blessure === "number")
     patch.wounds = Math.max(0, Math.min(SHEET_MAX_WOUNDS, systemData.def_blessure));
