@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Portrait Glyphes
-- [ ] Réutiliser l’import et le recadrage d’avatar pour la fiche PDF
-- [ ] Afficher le portrait dans la case du PDF et l’intégrer à l’export
-- [ ] Synchroniser les jetons liés et vérifier import, sauvegarde et export
+- [x] Réutiliser l’import et le recadrage d’avatar pour la fiche PDF
+- [x] Afficher le portrait dans la case du PDF et l’intégrer à l’export
+- [x] Synchroniser les jetons liés et vérifier import, sauvegarde, réouverture et export en session connectée ; rendu PDF inspecté sans débordement
+- [x] Vérifier le portrait sur un jeton créé via le Bestiaire et la mise à jour entrante ; ajouter un rafraîchissement de secours lorsque le temps réel ne transmet pas la modification
 
 ## Fiche Glyphes plein écran avec zoom
 - [x] Ouvrir la fiche en plein écran et supprimer le bouton de fermeture en doublon
