@@ -11,7 +11,7 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown } from "pdf-lib";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Loader2, Save, X } from "lucide-react";
+import { Download, Loader2, Maximize2, Save, X, ZoomIn, ZoomOut } from "lucide-react";
 import { SheetHeader } from "./SheetSections";
 import { getSystem } from "@/lib/systems";
 
@@ -55,6 +55,53 @@ function availableSheetWidth(container: HTMLElement): number {
     window.innerWidth,
   ].filter((w) => w > 0);
   return candidates.length ? Math.min(...candidates) : window.innerWidth;
+}
+
+// --- Zoom -----------------------------------------------------------------
+// The zoom is a multiplier applied on top of the auto-fit ratio, so 100 %
+// always means "the page exactly fits the width of the sheet".
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 4;
+const ZOOM_STEP = 1.25;
+// Bitmap resolution limits: keep canvases inside what browsers allow.
+const MAX_RENDER_SCALE = 6;
+const MAX_BITMAP_PX = 12_000_000;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/** One rendered page: its DOM nodes plus the pdfjs page needed to redraw it. */
+interface PageRec {
+  page: any;
+  widthCss: number;
+  heightCss: number;
+  wrap: HTMLDivElement;
+  inner: HTMLDivElement;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  bitmapScale: number;
+}
+
+/**
+ * pdfjs render scale giving a sharp bitmap for the given on-screen ratio,
+ * without ever exceeding the allowed canvas surface.
+ */
+function neededBitmapScale(rec: { widthCss: number; heightCss: number }, effective: number): number {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let scale = Math.max(RENDER_SCALE, RENDER_SCALE * effective * dpr);
+  const area = rec.widthCss * rec.heightCss * (scale / RENDER_SCALE) ** 2;
+  if (area > MAX_BITMAP_PX) scale *= Math.sqrt(MAX_BITMAP_PX / area);
+  return Math.min(MAX_RENDER_SCALE, scale);
+}
+
+/** Nearest scrollable ancestor of an element (the sheet's scroll viewport). */
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const overflow = getComputedStyle(node).overflowY;
+    if (overflow === "auto" || overflow === "scroll" || overflow === "overlay") return node;
+    node = node.parentElement;
+  }
+  return null;
 }
 
 interface Props {
@@ -132,6 +179,153 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
     return () => clearTimeout(t);
   }, [formData]);
 
+  // --- Zoom ---------------------------------------------------------------
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  const fitRef = useRef(1);
+  const pagesRef = useRef<PageRec[]>([]);
+  const scrollParentRef = useRef<HTMLElement | null>(null);
+  const renderingRef = useRef(false);
+  const bitmapDirtyRef = useRef(false);
+  const bitmapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  /** Resize every page for the current fit and zoom, without touching the bitmaps. */
+  const layoutPages = useCallback(() => {
+    const recs = pagesRef.current;
+    const container = containerRef.current;
+    if (!recs.length || !container) return;
+    fitRef.current = computeFit(availableSheetWidth(container) - PAGE_GUTTER, recs[0].widthCss);
+    const effective = fitRef.current * zoomRef.current;
+    recs.forEach((rec) => {
+      rec.inner.style.transform = `scale(${effective})`;
+      rec.canvas.style.width = `${rec.widthCss * effective}px`;
+      rec.canvas.style.height = `${rec.heightCss * effective}px`;
+      rec.wrap.style.width = `${rec.widthCss * effective}px`;
+      rec.wrap.style.height = `${rec.heightCss * effective}px`;
+    });
+  }, []);
+
+  /** Redraw the page bitmaps at the resolution the current zoom needs. */
+  const applyBitmaps = useCallback(async () => {
+    if (renderingRef.current) {
+      bitmapDirtyRef.current = true;
+      return;
+    }
+    renderingRef.current = true;
+    try {
+      do {
+        bitmapDirtyRef.current = false;
+        for (const rec of pagesRef.current) {
+          const wanted = neededBitmapScale(rec, fitRef.current * zoomRef.current);
+          // Downscaling an already sharp bitmap costs nothing: skip it.
+          if (wanted <= rec.bitmapScale * 1.05) continue;
+          const viewport = rec.page.getViewport({ scale: wanted });
+          rec.canvas.width = Math.round(viewport.width);
+          rec.canvas.height = Math.round(viewport.height);
+          await rec.page.render({ canvasContext: rec.ctx, viewport }).promise;
+          rec.bitmapScale = wanted;
+        }
+      } while (bitmapDirtyRef.current);
+    } catch (err) {
+      console.error("[GlyphesPdfSheet] bitmap render", err);
+    } finally {
+      renderingRef.current = false;
+    }
+  }, []);
+
+  const scheduleBitmaps = useCallback(() => {
+    if (bitmapTimerRef.current) clearTimeout(bitmapTimerRef.current);
+    bitmapTimerRef.current = setTimeout(() => void applyBitmaps(), 180);
+  }, [applyBitmaps]);
+
+  /** Apply a zoom level, keeping the anchored point of the sheet stationary. */
+  const changeZoom = useCallback(
+    (next: number, anchor?: { x: number; y: number }) => {
+      const prev = zoomRef.current;
+      const clamped = clamp(next, ZOOM_MIN, ZOOM_MAX);
+      if (clamped === prev) return;
+      zoomRef.current = clamped;
+      setZoom(clamped);
+      layoutPages();
+      const sp = scrollParentRef.current;
+      if (sp) {
+        const k = clamped / prev;
+        const ax = anchor ? anchor.x : sp.clientWidth / 2;
+        const ay = anchor ? anchor.y : sp.clientHeight / 2;
+        sp.scrollLeft = (sp.scrollLeft + ax) * k - ax;
+        sp.scrollTop = (sp.scrollTop + ay) * k - ay;
+      }
+      scheduleBitmaps();
+    },
+    [layoutPages, scheduleBitmaps],
+  );
+
+  // Track the scroll viewport: zoom anchors on it and the wheel is caught there.
+  useEffect(() => {
+    const sp = findScrollParent(containerRef.current);
+    scrollParentRef.current = sp;
+    if (!sp) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Ctrl + wheel is the trackpad pinch gesture; a plain wheel still scrolls.
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      const rect = sp.getBoundingClientRect();
+      changeZoom(zoomRef.current * Math.exp(-dy * 0.002), {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    };
+
+    sp.addEventListener("wheel", onWheel, { passive: false });
+    return () => sp.removeEventListener("wheel", onWheel);
+  }, [changeZoom, pages]);
+
+  // Drag with the mouse to pan the sheet once it is zoomed past the visible width.
+  useEffect(() => {
+    const container = containerRef.current;
+    const sp = findScrollParent(container);
+    if (!container || !sp) return;
+
+    let start: { x: number; y: number; left: number; top: number } | null = null;
+    let moved = false;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, label, button, a")) return;
+      start = { x: e.clientX, y: e.clientY, left: sp.scrollLeft, top: sp.scrollTop };
+      moved = false;
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!start) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+      moved = true;
+      e.preventDefault();
+      sp.scrollLeft = start.left - dx;
+      sp.scrollTop = start.top - dy;
+    };
+
+    const onUp = () => {
+      start = null;
+    };
+
+    container.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      container.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [pages]);
+
   // Load + render the PDF once
   useEffect(() => {
     let cancelled = false;
@@ -152,6 +346,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
 
         // Clear previous canvases (StrictMode re-run)
         container.innerHTML = "";
+        pagesRef.current = [];
 
         const nextPages: { widthCss: number; heightCss: number }[] = [];
         const nextWidgets: FieldWidget[] = [];
@@ -160,20 +355,30 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           const page = await pdf.getPage(p);
           const viewport = page.getViewport({ scale: RENDER_SCALE });
 
-          // The page is rendered at RENDER_SCALE then scaled with a CSS transform so
-          // it always fits the width the sheet has. The field overlay is mounted
-          // inside the scaled element, so input positions stay exact.
-          const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, viewport.width);
-
+          // The page is kept at RENDER_SCALE in the DOM and scaled with a CSS
+          // transform so it always fits the width the sheet has and follows the
+          // zoom. The field overlay is mounted inside the scaled element, so
+          // input positions stay exact at every zoom level.
           const pageWrap = document.createElement("div");
           pageWrap.style.position = "relative";
           pageWrap.style.margin = "0 auto 24px";
-          pageWrap.style.width = `${viewport.width * fit}px`;
-          pageWrap.style.height = `${viewport.height * fit}px`;
           pageWrap.style.overflow = "hidden";
+          pageWrap.style.background = "#fff";
           pageWrap.style.boxShadow = "0 4px 24px rgba(0,0,0,.5)";
           container.appendChild(pageWrap);
 
+          // The bitmap is a direct child of the page box and is sized to its final
+          // on-screen size, so the browser draws it 1:1 instead of upscaling a
+          // smaller layer — that upscaling is what made the text blurry when zooming.
+          const canvas = document.createElement("canvas");
+          canvas.style.position = "absolute";
+          canvas.style.top = "0";
+          canvas.style.left = "0";
+          canvas.style.pointerEvents = "none";
+          pageWrap.appendChild(canvas);
+
+          // The field overlay keeps its own scaled layer, so input coordinates
+          // expressed in page space stay exact at every zoom level.
           const pageInner = document.createElement("div");
           pageInner.style.position = "absolute";
           pageInner.style.top = "0";
@@ -181,26 +386,19 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
           pageInner.style.width = `${viewport.width}px`;
           pageInner.style.height = `${viewport.height}px`;
           pageInner.style.transformOrigin = "top left";
-          pageInner.style.transform = `scale(${fit})`;
-          pageInner.style.background = "#fff";
           pageInner.dataset.pageIndex = String(p - 1);
           pageWrap.appendChild(pageInner);
 
-          // The bitmap is rendered at the final on-screen size so it stays sharp
-          // when enlarged; when shrunk, the 1.6 bitmap is simply downscaled.
-          const bitmapViewport = fit > 1 ? page.getViewport({ scale: RENDER_SCALE * fit }) : viewport;
-
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.round(bitmapViewport.width);
-          canvas.height = Math.round(bitmapViewport.height);
-          canvas.style.display = "block";
-          canvas.style.width = `${viewport.width}px`;
-          canvas.style.height = `${viewport.height}px`;
-          canvas.style.pointerEvents = "none";
-          pageInner.appendChild(canvas);
-
-          const ctx = canvas.getContext("2d")!;
-          await page.render({ canvasContext: ctx, viewport: bitmapViewport }).promise;
+          pagesRef.current.push({
+            page,
+            widthCss: viewport.width,
+            heightCss: viewport.height,
+            wrap: pageWrap,
+            inner: pageInner,
+            canvas,
+            ctx: canvas.getContext("2d")!,
+            bitmapScale: 0,
+          });
 
           nextPages.push({ widthCss: viewport.width, heightCss: viewport.height });
 
@@ -252,8 +450,10 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
         }
 
         if (cancelled) return;
+        layoutPages();
         setPages(nextPages);
         setWidgets(nextWidgets);
+        void applyBitmaps();
       } catch (err) {
         console.error("[GlyphesPdfSheet] load error", err);
         toast.error("Impossible de charger la fiche PDF");
@@ -275,16 +475,8 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     const apply = () => {
-      const fit = computeFit(availableSheetWidth(container) - PAGE_GUTTER, pages[0].widthCss);
-      container.querySelectorAll<HTMLElement>("[data-page-index]").forEach((inner) => {
-        const pg = pages[Number(inner.dataset.pageIndex)] ?? pages[0];
-        inner.style.transform = `scale(${fit})`;
-        const wrap = inner.parentElement;
-        if (wrap) {
-          wrap.style.width = `${pg.widthCss * fit}px`;
-          wrap.style.height = `${pg.heightCss * fit}px`;
-        }
-      });
+      layoutPages();
+      scheduleBitmaps();
     };
 
     const observer = new ResizeObserver(() => {
@@ -296,7 +488,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
       observer.disconnect();
       if (timer) clearTimeout(timer);
     };
-  }, [pages]);
+  }, [pages, layoutPages, scheduleBitmaps]);
 
   const setField = useCallback(
     (name: string, value: any) => {
@@ -347,7 +539,16 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
   }, [formData, character?.name]);
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background">
+    <div
+      className="flex flex-col h-full min-h-0 bg-background"
+      onKeyDown={(e) => {
+        // Keyboard shortcuts, ignored while typing in a field.
+        if ((e.target as HTMLElement)?.closest("input, textarea, select")) return;
+        if (e.key === "+" || e.key === "=") changeZoom(zoomRef.current * ZOOM_STEP);
+        else if (e.key === "-" || e.key === "_") changeZoom(zoomRef.current / ZOOM_STEP);
+        else if (e.key === "0") changeZoom(1);
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-card/40 p-3 backdrop-blur">
         <div className="min-w-0 flex-1 basis-full sm:basis-auto">
           <SheetHeader
@@ -357,6 +558,44 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
             onEdit={onEdit}
             onChange={(k, v) => onSave?.({ [k]: v })}
           />
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border/50 bg-card/40 px-1 py-0.5">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(zoomRef.current / ZOOM_STEP)}
+            disabled={zoom <= ZOOM_MIN}
+            aria-label="Dézoomer"
+            title="Dézoomer"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[3.5rem] text-center text-xs tabular-nums text-muted-foreground">
+            {Math.round(zoom * 100)} %
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(zoomRef.current * ZOOM_STEP)}
+            disabled={zoom >= ZOOM_MAX}
+            aria-label="Zoomer"
+            title="Zoomer"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => changeZoom(1)}
+            disabled={zoom <= ZOOM_MIN}
+            aria-label="Ajuster à la largeur"
+            title="Ajuster à la largeur"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
@@ -394,7 +633,7 @@ const GlyphesPdfSheet = ({ character, editable, onSave, onClose, onEdit }: Props
             </div>
           )}
 
-          <div ref={containerRef} />
+          <div ref={containerRef} style={{ cursor: zoom > 1 ? "grab" : undefined }} />
 
           {/* Overlay inputs positioned on top of each rendered page. We portal
               them inside the correct pageWrap after render via absolute wrapper. */}

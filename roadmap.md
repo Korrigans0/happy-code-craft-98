@@ -1,5 +1,15 @@
 # Roadmap
 
+## Fiche Glyphes plein écran avec zoom
+- [x] Ouvrir la fiche en plein écran et supprimer le bouton de fermeture en doublon
+- [x] Ajuster la page PDF à la largeur disponible sur ordinateur et téléphone
+- [x] Ajouter zoom / dézoom (boutons, molette et pincement, raccourcis clavier) avec ajustement à la largeur
+- [x] Rendre le texte net à tous les niveaux de zoom et garder les champs alignés
+- [x] Vérifier dans le navigateur : 100 %, 125 %, 156 %, 228 % et retour à 100 % sur les deux tailles d'écran
+- [ ] Publier pour rendre la fiche et le zoom visibles sur aetheriavtt.com
+
+
+
 ## Affichage des blessures sous les jetons Glyphes
 - [x] Remplacer la barre de points de vie par les blessures « 0 / 3 » sous un jeton Glyphes
 - [x] Conserver la barre de points de vie pour les autres systèmes
