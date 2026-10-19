@@ -12,6 +12,7 @@ import {
   MapPin, Wand2, Keyboard, Film, ChevronRight, DoorClosed, Shield,
   Lightbulb, Moon, Smartphone, RectangleHorizontal, Trees, Map as MapIcon,
   Grid3x3, Hexagon, MousePointerSquareDashed, ClipboardPaste,
+  PanelRightOpen, PanelRightClose,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWalls } from "@/hooks/useWalls";
@@ -275,6 +276,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [mapGenOpen, setMapGenOpen] = useState(false);
   const [glyphesSheetOpen, setGlyphesSheetOpen] = useState(false);
   const [panelOpacity, setPanelOpacity] = useState(25);
+  // Sur téléphone, le panneau MJ (MJ + onglet Glyphes) est masqué par défaut : bouton flottant pour l'afficher/masquer.
+  const [mobileGmPanelOpen, setMobileGmPanelOpen] = useState(false);
   const [newTokenName, setNewTokenName] = useState("");
   const [newTokenColor, setNewTokenColor] = useState(TOKEN_COLORS[0]);
   // (showLayersPanel retiré — la gestion des calques se fait via le panneau flottant LayersPanel monté par CampaignPlay)
@@ -4686,7 +4689,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         </div>
 
         {/* ── GM PANEL ── (panneau Glyphes fusionné en onglet pour le système Glyphes) */}
-        {isGM && (
+        {isGM && (!isMobile || mobileGmPanelOpen) && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
@@ -4737,6 +4740,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             audio={audio}
             onResetInitiative={resetInitiative}
           />
+        )}
+        {/* ── BOUTON PANNEAU MJ (téléphone uniquement) ── */}
+        {isGM && isMobile && (
+          <Button
+            size="icon"
+            className="absolute bottom-16 left-4 z-30 h-12 w-12 rounded-full shadow-lg"
+            onClick={() => setMobileGmPanelOpen((o) => !o)}
+            aria-label={mobileGmPanelOpen ? "Masquer le panneau MJ" : "Afficher le panneau MJ"}
+            title={mobileGmPanelOpen ? "Masquer le panneau MJ" : "Afficher le panneau MJ"}
+          >
+            {mobileGmPanelOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
+          </Button>
         )}
         {!isGM && !isMobile && campaignSystem !== "Glyphes" && (
           <PlayerPanel
