@@ -3,6 +3,7 @@
 // (wounds, heroism, resilience, action points, movement) and vice versa.
 
 import { MAX_HEROISM } from "./heroic-actions";
+import { COMBAT_FIELDS, type PendingEdits } from "./syncState";
 
 export const SHEET_MAX_WOUNDS = 3;
 
@@ -64,15 +65,37 @@ export function systemDataToCombat(systemData: Record<string, any> | null | unde
   const patch: Partial<Pick<CombatSnapshot, "wounds" | "heroism" | "resilience">> = {};
   if (!systemData) return patch;
   const form = systemData.pdf_form;
-  if (form && typeof form === "object") {
+  if (form && typeof form === "object" && PDF_BOXES.wounds.some(name => name in form)) {
     patch.wounds = countBoxes(form, PDF_BOXES.wounds);
-    patch.heroism = Math.min(MAX_HEROISM, countBoxes(form, PDF_BOXES.heroism));
-    return patch;
-  }
-  if (typeof systemData.def_blessure === "number")
+  } else if (typeof systemData.def_blessure === "number") {
     patch.wounds = Math.max(0, Math.min(SHEET_MAX_WOUNDS, systemData.def_blessure));
-  if (typeof systemData.heroisme === "number")
+  }
+  if (form && typeof form === "object" && PDF_BOXES.heroism.some(name => name in form)) {
+    patch.heroism = Math.min(MAX_HEROISM, countBoxes(form, PDF_BOXES.heroism));
+  } else if (typeof systemData.heroisme === "number") {
     patch.heroism = Math.max(0, Math.min(MAX_HEROISM, systemData.heroisme));
+  }
   if (typeof systemData.def_resilience === "number") patch.resilience = Math.max(0, systemData.def_resilience);
   return patch;
+}
+
+/** Only explicit local edits may reach a sheet; movement cannot rewrite boxes. */
+export function applySheetEdits(current: Record<string, any> | null | undefined, edits: PendingEdits): Record<string, any> | null {
+  const cur = current ?? {};
+  const next = { ...cur };
+  if (edits.wounds) {
+    const wounds = Math.max(0, Math.min(SHEET_MAX_WOUNDS, Number(edits.wounds.value)));
+    next.def_blessure = wounds;
+    next.pdf_form = { ...(next.pdf_form ?? {}), ...fillBoxes(PDF_BOXES.wounds, wounds) };
+  }
+  if (edits.heroism) {
+    const heroism = Math.max(0, Math.min(MAX_HEROISM, Number(edits.heroism.value)));
+    next.heroisme = heroism;
+    next.pdf_form = { ...(next.pdf_form ?? {}), ...fillBoxes(PDF_BOXES.heroism, heroism) };
+  }
+  if (edits.resilience) next.def_resilience = Math.max(0, Number(edits.resilience.value));
+  for (const field of COMBAT_FIELDS) {
+    if (edits[field]) next.combat = { ...(next.combat ?? {}), [field]: edits[field]?.value };
+  }
+  return JSON.stringify(next) === JSON.stringify(cur) ? null : next;
 }
