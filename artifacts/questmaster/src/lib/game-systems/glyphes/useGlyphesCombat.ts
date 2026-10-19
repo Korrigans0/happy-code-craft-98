@@ -88,7 +88,9 @@ function getStore(key: string) {
 
 function setStore(key: string, updater: (prev: GlyphesCombatMap) => GlyphesCombatMap) {
   const store = getStore(key);
-  store.state = updater(store.state);
+  const next = updater(store.state);
+  if (next === store.state) return;
+  store.state = next;
   try {
     window.localStorage.setItem(key, JSON.stringify(store.state));
   } catch {
@@ -197,6 +199,7 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     const store = getStore(key);
     const next = new Set(ids);
     for (const id of store.linked) if (!next.has(id)) { store.ready.delete(id); delete store.pending[id]; }
+    for (const id of next) store.ready.delete(id);
     store.linked = next;
   }, [key]);
 

@@ -419,6 +419,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       queryClient.invalidateQueries({ queryKey: ["vtt-user-characters"] });
       // Mirror key fields to all tokens linked to this character
       if (updated?.id) {
+        if (updated.system === "Glyphes") {
+          for (const token of tokens) {
+            if (token.creatureType === "character" && token.creatureId === updated.id) {
+              glyphesCombat.acceptSheet(token.id, updated.system_data, true);
+            }
+          }
+        }
         setTokens(prev => prev.map(t => (
           t.creatureType === "character" && t.creatureId === updated.id
             ? {
@@ -5144,14 +5151,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     if (charPatch.name) tokPatch.name = charPatch.name;
                     if ("avatar_url" in charPatch) tokPatch.imageUrl = charPatch.avatar_url ?? undefined;
                     if (Object.keys(tokPatch).length > 0) updateToken(linkedTok.id, tokPatch);
-                    // Fiche Glyphes → état de combat du jeton (blessures, héroïsme, résilience)
-                    if (isGlyphes && charPatch.system_data) {
-                      for (const token of tokens) {
-                        if (token.creatureType === "character" && token.creatureId === fullSheetCharacter.id) {
-                          glyphesCombat.acceptSheet(token.id, charPatch.system_data, true);
-                        }
-                      }
-                    }
+
                   }
                 }}
                 onClose={() => setFullSheetCharId(null)}

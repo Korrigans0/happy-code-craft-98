@@ -49,6 +49,7 @@ export default function GlyphesPanel({
   const [maneuverOpen, setManeuverOpen] = useState(false);
 
   const state = selectedTokenId ? combat.getState(selectedTokenId) : null;
+  const countersReady = !selectedTokenId || combat.isReady(selectedTokenId);
   const targets = useMemo(() => tokens.filter((t) => t.id !== selectedTokenId), [tokens, selectedTokenId]);
 
   const body = (
@@ -68,19 +69,19 @@ export default function GlyphesPanel({
                   <GlyphesTokenPanel
                     tokenName={selectedTokenName || "Jeton"}
                     state={state}
-                    canEdit={canEdit}
+                    canEdit={canEdit && countersReady}
                     onChange={(patch) => combat.update(selectedTokenId, patch)}
                     onSpend={(cost) => combat.spend(selectedTokenId, cost)}
                     onSpendHeroism={(cost) => combat.spendHeroism(selectedTokenId, cost)}
                     onStartTurn={() => combat.startTurn(selectedTokenId)}
                     onCheck={() => setCheckOpen(true)}
-                    onAttack={targets.length > 0 ? () => setAttackOpen(true) : undefined}
+                    onAttack={targets.length > 0 && targets.every(t => combat.isReady(t.id)) ? () => setAttackOpen(true) : undefined}
                   />
                   <Button
                     size="sm"
                     variant="outline"
                     className="w-full"
-                    disabled={!canEdit}
+                    disabled={!canEdit || !countersReady}
                     onClick={() => setManeuverOpen(true)}
                   >
                     <Wind className="mr-2 h-4 w-4" /> Charge / Désengagement
