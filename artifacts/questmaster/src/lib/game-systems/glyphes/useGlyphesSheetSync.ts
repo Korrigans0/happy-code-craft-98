@@ -17,7 +17,6 @@ export function useGlyphesSheetSync(
   const current = useRef({ tokens, combat, canWrite });
   current.current = { tokens, combat, canWrite };
   const scope = useRef(0);
-  const running = useRef(false);
   const linkedKey = tokens.filter(t => t.creatureType === "character" && t.creatureId).map(t => `${t.id}:${t.creatureId}`).sort().join(",");
 
   useLayoutEffect(() => {
@@ -28,9 +27,10 @@ export function useGlyphesSheetSync(
     if (!enabled) return;
     const generation = ++scope.current;
     let cancelled = false;
+    let running = false;
     const refresh = async () => {
-      if (running.current || cancelled) return;
-      running.current = true;
+      if (running || cancelled) return;
+      running = true;
       try {
         const groups = new Map<string, LinkedToken[]>();
         for (const token of current.current.tokens) {
@@ -65,7 +65,9 @@ export function useGlyphesSheetSync(
           }
           for (const token of linked) current.current.combat.acceptSheet(token.id, sheet);
         }
-      } finally { running.current = false; }
+      } catch {
+        // Keep pending revisions intact; a later refresh retries network failures.
+      } finally { running = false; }
     };
     const onEdits = () => { void refresh(); };
     window.addEventListener("glyphes-sheet-edits", onEdits);
