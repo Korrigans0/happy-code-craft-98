@@ -7,6 +7,8 @@ import { getDiceChannel } from "@/lib/vtt/diceBroadcast";
 import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import { ACTION_POINTS_PER_TURN, type Approach } from "./actions";
 import { MAX_HEROISM } from "./heroic-actions";
+import { systemDataToCombat, type CombatSnapshot } from "./sheetSync";
+import { COUNTER_FIELDS, acknowledgeEdits, reconcileCounters, recordEdits, type PendingEdits } from "./syncState";
 // Nombre maximal de blessures avant qu'un jeton tombe au combat (règle Glyphes : 3).
 export const MAX_WOUNDS = 3;
 
@@ -57,7 +59,15 @@ function storageKey(campaignId?: string | null) {
  * Magasin partagé par onglet : plusieurs composants (table de jeu, panneau,
  * tiroir mobile) utilisent le même état sans se désynchroniser.
  */
-const stores = new Map<string, { state: GlyphesCombatMap; listeners: Set<(s: GlyphesCombatMap) => void> }>();
+interface CombatStore {
+  state: GlyphesCombatMap;
+  listeners: Set<(s: GlyphesCombatMap) => void>;
+  linked: Set<string>;
+  ready: Set<string>;
+  pending: Record<string, PendingEdits>;
+  revision: number;
+}
+const stores = new Map<string, CombatStore>();
 
 function getStore(key: string) {
   let store = stores.get(key);
@@ -70,7 +80,7 @@ function getStore(key: string) {
         initial = {};
       }
     }
-    store = { state: initial, listeners: new Set() };
+    store = { state: initial, listeners: new Set(), linked: new Set(), ready: new Set(), pending: {}, revision: 0 };
     stores.set(key, store);
   }
   return store;
@@ -84,7 +94,7 @@ function setStore(key: string, updater: (prev: GlyphesCombatMap) => GlyphesComba
   } catch {
     /* quota */
   }
-  store.listeners.forEach((l) => l(store!.state));
+  store.listeners.forEach((l) => l(store.state));
 }
 
 /** Campagnes déjà chargées depuis le serveur (une seule lecture par onglet). */
@@ -107,7 +117,17 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
       // Le serveur fait foi au chargement, le local complète les jetons absents.
       // Les états enregistrés avant la règle « blessures sur 3 » sont normalisés.
       const normalized: GlyphesCombatMap = {};
-      for (const [id, token] of Object.entries(tokens)) normalized[id] = defaultTokenState(token);
+      for (const [id, token] of Object.entries(tokens)) {
+        const store = getStore(key);
+        const local = store.state[id];
+        let next = defaultTokenState(token);
+        // Sheet hydration and newer local actions win over a late snapshot.
+        if (local && store.ready.has(id)) next = reconcileCounters(next, local, {});
+        for (const field of Object.keys(store.pending[id] ?? {}) as (keyof CombatSnapshot)[]) {
+          if (local) next = { ...next, [field]: local[field] };
+        }
+        normalized[id] = next;
+      }
       setStore(key, (prev) => ({ ...prev, ...normalized }));
     });
     return () => {
@@ -143,7 +163,16 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     if (!enabled || !campaignId) return;
     const channel: any = getDiceChannel(campaignId);
     const handler = ({ payload }: { payload: { tokenId: string; state: GlyphesTokenState } }) => {
-      setStore(key, (prev) => ({ ...prev, [payload.tokenId]: payload.state }));
+      setStore(key, (prev) => {
+        const store = getStore(key);
+        let next = defaultTokenState(payload.state);
+        const pending = store.pending[payload.tokenId] ?? {};
+        for (const field of Object.keys(pending) as (keyof CombatSnapshot)[]) {
+          const local = prev[payload.tokenId];
+          if (local) next = { ...next, [field]: local[field] };
+        }
+        return { ...prev, [payload.tokenId]: next };
+      });
     };
     channel.on?.("broadcast", { event: EVENT }, handler);
     return () => {
@@ -164,6 +193,43 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     [campaignId],
   );
 
+  const configureLinked = useCallback((ids: string[]) => {
+    const store = getStore(key);
+    const next = new Set(ids);
+    for (const id of store.linked) if (!next.has(id)) { store.ready.delete(id); delete store.pending[id]; }
+    store.linked = next;
+  }, [key]);
+
+  const isReady = useCallback((id: string) => {
+    const store = getStore(key);
+    return !store.linked.has(id) || store.ready.has(id);
+  }, [key]);
+
+  const acceptSheet = useCallback((tokenId: string, data: Record<string, any> | null, authoritative = false) => {
+    const store = getStore(key);
+    if (authoritative) {
+      const pending = { ...(store.pending[tokenId] ?? {}) };
+      for (const field of COUNTER_FIELDS) delete pending[field];
+      store.pending[tokenId] = pending;
+    }
+    const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
+    store.ready.add(tokenId);
+    setStore(key, prev => {
+      const previous = prev[tokenId] ?? defaultTokenState();
+      const next = reconcileCounters(previous, sheet, store.pending[tokenId] ?? {});
+      if (JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
+      return { ...prev, [tokenId]: next };
+    });
+  }, [key]);
+
+  const getPending = useCallback((id: string) => ({ ...(getStore(key).pending[id] ?? {}) }), [key]);
+  const acknowledge = useCallback((id: string, sent: PendingEdits) => {
+    const store = getStore(key);
+    store.pending[id] = acknowledgeEdits(store.pending[id] ?? {}, sent);
+    // Notify even when a newer edit already holds the same displayed value.
+    setStore(key, prev => ({ ...prev }));
+  }, [key]);
+
   const getState = useCallback(
     (tokenId: string, defaults?: Partial<GlyphesTokenState>) =>
       states[tokenId] ?? defaultTokenState(defaults),
@@ -173,15 +239,22 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   const update = useCallback(
     (tokenId: string, patch: Partial<GlyphesTokenState>) => {
       setStates((prev) => {
-        const next = { ...(prev[tokenId] ?? defaultTokenState()), ...patch };
+        const store = getStore(key);
+        const previous = prev[tokenId] ?? defaultTokenState();
+        const allowedPatch = { ...patch };
+        if (store.linked.has(tokenId) && !store.ready.has(tokenId)) {
+          for (const field of COUNTER_FIELDS) delete allowedPatch[field];
+        }
+        const next = defaultTokenState({ ...previous, ...allowedPatch });
         next.actionPoints = Math.max(0, Math.min(next.maxActionPoints, next.actionPoints));
         next.heroism = Math.max(0, Math.min(MAX_HEROISM, next.heroism));
         next.wounds = Math.max(0, Math.min(next.maxWounds, next.wounds));
+        store.pending[tokenId] = recordEdits(previous, next, allowedPatch, store.pending[tokenId] ?? {}, ++store.revision);
         push(tokenId, next);
         return { ...prev, [tokenId]: next };
       });
     },
-    [push],
+    [push, key, setStates],
   );
 
   /** Nouveau tour pour un jeton : points d'action rechargés. */
@@ -211,21 +284,21 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   const spendHeroism = useCallback(
     (tokenId: string, cost: number): boolean => {
       const current = states[tokenId] ?? defaultTokenState();
-      if (cost > current.heroism) return false;
+      if (!isReady(tokenId) || cost > current.heroism) return false;
       update(tokenId, { heroism: current.heroism - cost, spentHeroismThisTurn: true });
       return true;
     },
-    [states, update],
+    [states, update, isReady],
   );
 
   const gainHeroism = useCallback(
     (tokenId: string, amount: number) => {
       const current = states[tokenId] ?? defaultTokenState();
-      if (current.spentHeroismThisTurn || amount <= 0) return;
+      if (!isReady(tokenId) || current.spentHeroismThisTurn || amount <= 0) return;
       update(tokenId, { heroism: current.heroism + amount });
     },
-    [states, update],
+    [states, update, isReady],
   );
 
-  return { states, getState, update, startTurn, spend, spendHeroism, gainHeroism };
+  return { states, getState, update, startTurn, spend, spendHeroism, gainHeroism, configureLinked, isReady, acceptSheet, getPending, acknowledge };
 }
