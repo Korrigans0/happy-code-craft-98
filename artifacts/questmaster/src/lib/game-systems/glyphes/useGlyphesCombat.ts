@@ -164,11 +164,17 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   useEffect(() => {
     if (!enabled || !campaignId) return;
     const channel: any = getDiceChannel(campaignId);
-    const handler = ({ payload }: { payload: { tokenId: string; state: GlyphesTokenState } }) => {
+    const handler = ({ payload }: { payload: { tokenId: string; state: GlyphesTokenState; counterFields?: string[] } }) => {
       setStore(key, (prev) => {
         const store = getStore(key);
         let next = defaultTokenState(payload.state);
         const pending = store.pending[payload.tokenId] ?? {};
+        const previous = prev[payload.tokenId];
+        if (previous && store.linked.has(payload.tokenId)) {
+          for (const field of COUNTER_FIELDS) {
+            if (!payload.counterFields?.includes(field) || !store.ready.has(payload.tokenId)) next[field] = previous[field];
+          }
+        }
         for (const field of Object.keys(pending) as (keyof CombatSnapshot)[]) {
           const local = prev[payload.tokenId];
           if (local) next = { ...next, [field]: local[field] };
@@ -183,11 +189,11 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   }, [campaignId, enabled, key]);
 
   const push = useCallback(
-    (tokenId: string, state: GlyphesTokenState) => {
+    (tokenId: string, state: GlyphesTokenState, counterFields: string[] = []) => {
       if (!campaignId) return;
       try {
         const channel: any = getDiceChannel(campaignId);
-        channel.send?.({ type: "broadcast", event: EVENT, payload: { tokenId, state } });
+        channel.send?.({ type: "broadcast", event: EVENT, payload: { tokenId, state, counterFields } });
       } catch {
         /* non bloquant */
       }
@@ -212,7 +218,8 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     const store = getStore(key);
     if (authoritative) {
       const pending = { ...(store.pending[tokenId] ?? {}) };
-      for (const field of COUNTER_FIELDS) delete pending[field];
+      const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
+      for (const field of COUNTER_FIELDS) pending[field] = { value: sheet[field], revision: ++store.revision };
       store.pending[tokenId] = pending;
     }
     const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
@@ -254,7 +261,7 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
         next.heroism = Math.max(0, Math.min(MAX_HEROISM, next.heroism));
         next.wounds = Math.max(0, Math.min(next.maxWounds, next.wounds));
         store.pending[tokenId] = recordEdits(previous, next, allowedPatch, store.pending[tokenId] ?? {}, ++store.revision);
-        push(tokenId, next);
+        push(tokenId, next, COUNTER_FIELDS.filter(field => field in allowedPatch));
         return { ...prev, [tokenId]: next };
       });
     },
