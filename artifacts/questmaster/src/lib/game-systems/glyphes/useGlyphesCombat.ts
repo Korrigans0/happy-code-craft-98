@@ -216,18 +216,15 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
 
   const acceptSheet = useCallback((tokenId: string, data: Record<string, any> | null, authoritative = false) => {
     const store = getStore(key);
-    if (authoritative) {
-      const pending = { ...(store.pending[tokenId] ?? {}) };
-      const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
-      for (const field of COUNTER_FIELDS) pending[field] = { value: sheet[field], revision: ++store.revision };
-      store.pending[tokenId] = pending;
-    }
     const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
     const wasReady = store.ready.has(tokenId);
     store.ready.add(tokenId);
     setStore(key, prev => {
       const previous = prev[tokenId] ?? defaultTokenState();
-      const next = reconcileCounters(previous, sheet, store.pending[tokenId] ?? {});
+      const next = reconcileCounters(previous, sheet, authoritative ? {} : store.pending[tokenId] ?? {});
+      if (authoritative) {
+        store.pending[tokenId] = recordEdits(previous, next, systemDataToCombat(data), store.pending[tokenId] ?? {}, ++store.revision);
+      }
       if (wasReady && JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
       return { ...prev, [tokenId]: next };
     });
