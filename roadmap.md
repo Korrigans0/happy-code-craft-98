@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Préservation des cases Glyphes
-- [ ] Initialiser depuis les fiches et synchroniser uniquement les modifications volontaires
-- [ ] Tester les états anciens, les déplacements, les remises à zéro et les sauvegardes concurrentes
-- [ ] Vérifier le parcours connecté et résoudre le signalement confirmé
+- [x] Initialiser depuis les fiches et synchroniser uniquement les modifications volontaires
+- [x] Tester les états anciens, les déplacements, les remises à zéro et les sauvegardes concurrentes
+- [x] Vérifier le parcours connecté et résoudre le signalement confirmé
 
 ## Défilement des actions héroïques Glyphes
 - [x] Donner à la liste une zone de défilement à la molette sans déplacer ou zoomer la carte
