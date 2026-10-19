@@ -216,11 +216,12 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
       store.pending[tokenId] = pending;
     }
     const sheet = { wounds: 0, heroism: 0, resilience: 4, ...systemDataToCombat(data) };
+    const wasReady = store.ready.has(tokenId);
     store.ready.add(tokenId);
     setStore(key, prev => {
       const previous = prev[tokenId] ?? defaultTokenState();
       const next = reconcileCounters(previous, sheet, store.pending[tokenId] ?? {});
-      if (JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
+      if (wasReady && JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
       return { ...prev, [tokenId]: next };
     });
   }, [key]);

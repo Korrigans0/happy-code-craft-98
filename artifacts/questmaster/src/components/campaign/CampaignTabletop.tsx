@@ -422,7 +422,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         if (updated.system === "Glyphes") {
           for (const token of tokens) {
             if (token.creatureType === "character" && token.creatureId === updated.id) {
-              glyphesCombat.acceptSheet(token.id, updated.system_data, true);
+              glyphesCombat.acceptSheet(token.id, updated.system_data);
             }
           }
         }
@@ -5141,6 +5141,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 editable={!!canEditSheet}
                 onSave={(charPatch: any) => {
                   if (!canEditSheet) return;
+                  if (isGlyphes && charPatch.system_data) {
+                    for (const token of tokens) {
+                      if (token.creatureType === "character" && token.creatureId === fullSheetCharacter.id) {
+                        glyphesCombat.acceptSheet(token.id, charPatch.system_data, true);
+                      }
+                    }
+                  }
                   updateCharacterMutation.mutate({ id: fullSheetCharacter.id, patch: charPatch });
                   // Immediate optimistic mirror to the token (fiche → token sync)
                   if (linkedTok) {
