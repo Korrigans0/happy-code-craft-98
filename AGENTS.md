@@ -1,4 +1,5 @@
 # Agents
+- Glyphes sheet synchronization tracks session-local field revisions separately from restored/broadcast combat snapshots, hydrates linked counters from sheets, and saves with compare-and-set; default counters and movement must never overwrite existing PDF boxes.
 - Glyphes portraits use character.avatar_url and the existing character-avatars storage/cropper; share PDF-space portrait coordinates between preview and export to keep placement consistent.
 - Resolve direct token-sheet navigation in the pure tokenSheetTarget helper and reuse the existing full-sheet dialog; this keeps system routing testable without duplicating permissions, saving or realtime logic.
 - Use the canvas native double-click event for token-sheet opening independently of movement locks; selection permissions still apply, so locking movement cannot disable authorized sheet access.
