@@ -4689,7 +4689,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         </div>
 
         {/* ── GM PANEL ── (panneau Glyphes fusionné en onglet pour le système Glyphes) */}
-        {isGM && (
+        {isGM && (!isMobile || mobileGmPanelOpen) && (
           <GMPanel
             campaignId={campaignId}
             isGM={isGM}
