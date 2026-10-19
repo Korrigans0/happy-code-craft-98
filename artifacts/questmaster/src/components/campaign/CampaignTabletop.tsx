@@ -42,7 +42,6 @@ import PlayerPanel from "./vtt/PlayerPanel";
 const GlyphesPanel = lazy(() => import("./vtt/glyphes/GlyphesPanel"));
 import { defaultTokenState, MAX_WOUNDS, useGlyphesCombat } from "@/lib/game-systems/glyphes/useGlyphesCombat";
 import { useGlyphesSheetSync } from "@/lib/game-systems/glyphes/useGlyphesSheetSync";
-import { systemDataToCombat } from "@/lib/game-systems/glyphes/sheetSync";
 import { useGlyphesConfrontation } from "@/lib/game-systems/glyphes/useGlyphesConfrontation";
 import { movementCost } from "@/lib/game-systems/glyphes/actions";
 import {
@@ -838,7 +837,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   }, [isGlyphes, linkedPortraitIds, campaignId, queryClient]);
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
   // La fiche Glyphes liée se remplit automatiquement avec les actions de la table.
-  useGlyphesSheetSync(isGlyphes, tokens, glyphesCombat.states, (t) => perms.canSelectToken(t as any));
+  useGlyphesSheetSync(isGlyphes, tokens, glyphesCombat, (t) => perms.canSelectToken(t as any));
   const glyphesConfrontation = useGlyphesConfrontation(isGlyphes ? campaignId : null);
   /** Les PA ne sont décomptés que pendant une confrontation en cours. */
   const glyphesInCombat =
@@ -5147,8 +5146,11 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                     if (Object.keys(tokPatch).length > 0) updateToken(linkedTok.id, tokPatch);
                     // Fiche Glyphes → état de combat du jeton (blessures, héroïsme, résilience)
                     if (isGlyphes && charPatch.system_data) {
-                      const combatPatch = systemDataToCombat(charPatch.system_data);
-                      if (Object.keys(combatPatch).length > 0) glyphesCombat.update(linkedTok.id, combatPatch);
+                      for (const token of tokens) {
+                        if (token.creatureType === "character" && token.creatureId === fullSheetCharacter.id) {
+                          glyphesCombat.acceptSheet(token.id, charPatch.system_data, true);
+                        }
+                      }
                     }
                   }
                 }}
