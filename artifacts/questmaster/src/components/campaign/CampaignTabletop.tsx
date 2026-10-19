@@ -4741,6 +4741,18 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onResetInitiative={resetInitiative}
           />
         )}
+        {/* ── BOUTON PANNEAU MJ (téléphone uniquement) ── */}
+        {isGM && isMobile && (
+          <Button
+            size="icon"
+            className="absolute bottom-16 left-4 z-30 h-12 w-12 rounded-full shadow-lg"
+            onClick={() => setMobileGmPanelOpen((o) => !o)}
+            aria-label={mobileGmPanelOpen ? "Masquer le panneau MJ" : "Afficher le panneau MJ"}
+            title={mobileGmPanelOpen ? "Masquer le panneau MJ" : "Afficher le panneau MJ"}
+          >
+            {mobileGmPanelOpen ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
+          </Button>
+        )}
         {!isGM && !isMobile && campaignSystem !== "Glyphes" && (
           <PlayerPanel
             tokens={tokens}
