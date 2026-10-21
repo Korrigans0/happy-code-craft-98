@@ -14,6 +14,12 @@ export interface DiceRollBroadcast {
   label?: string;
   crit?: "success" | "fail";
   t: number;
+  /** "3d" when the roll comes from the physical 3D roller (replayed on every table). */
+  source?: "3d";
+  /** Index in the 3D dice colour presets chosen by the author. */
+  color?: number;
+  /** Author user id, so the author's own client skips the table replay. */
+  senderId?: string;
 }
 
 export function diceChannelName(campaignId: string) {

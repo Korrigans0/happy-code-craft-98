@@ -1,5 +1,8 @@
 # Roadmap
 
+## Dés 3D partagés sur la table
+- [x] Rejouer les lancers 3D des autres joueurs sur la carte avec leurs vrais résultats (option désactivable)
+
 ## Préservation des cases Glyphes
 - [x] Initialiser depuis les fiches et synchroniser uniquement les modifications volontaires
 - [x] Tester les états anciens, les déplacements, les remises à zéro et les sauvegardes concurrentes
