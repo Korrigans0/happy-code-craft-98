@@ -7,26 +7,31 @@ import {
   usePlane,
   useConvexPolyhedron,
 } from "@react-three/cannon";
-import { Environment, ContactShadows, Trail, Text } from "@react-three/drei";
+import { Environment, ContactShadows, Trail } from "@react-three/drei";
 import * as THREE from "three";
-import {
-  TetrahedronGeometry,
-  OctahedronGeometry,
-  DodecahedronGeometry,
-  IcosahedronGeometry,
-} from "three";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Dices, X, Plus, Minus, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { campaignsApi } from "@/lib/api";
 import DiceModifierInput from "@/components/campaign/vtt/DiceModifierInput";
 import { broadcastDiceRoll } from "@/lib/vtt/diceBroadcast";
+import { useSharedDicePreference } from "@/lib/vtt/sharedDicePreference";
+import {
+  COLOR_PRESETS,
+  DIE_TYPES,
+  getConvexArgs,
+  getPolyhedronData,
+  type DieMaterial,
+  type DieType,
+} from "./dice3d/diceGeometry";
+import { DieFaces } from "./dice3d/DieFaces";
 
 /* ============================================================
  *  Aetheria 3D Dice — physical dice, dark fantasy feel
  *  Tech: react-three-fiber + @react-three/cannon (cannon-es)
  * ============================================================ */
+
 
 
 /* ----------------------------------------------------------
