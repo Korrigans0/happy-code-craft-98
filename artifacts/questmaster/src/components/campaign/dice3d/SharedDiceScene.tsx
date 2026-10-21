@@ -38,7 +38,8 @@ function ReplayRoll({ roll, onDone }: { roll: SharedRoll; onDone: (id: string) =
 
   const prepared = useMemo<PreparedDie[]>(() => {
     const aspect = size.width / Math.max(1, size.height);
-    const halfWidth = Math.min(8, Math.max(2.4, HALF_DEPTH * 1.05 * aspect));
+    // Keep dice in the middle of the map, away from side panels.
+    const halfWidth = Math.min(7, Math.max(2.6, HALF_DEPTH * 0.75 * aspect));
     const bases = roll.dice.map((d) => baseData(d.type));
     const tracks = simulateThrow(bases, { halfWidth, halfDepth: HALF_DEPTH });
     return roll.dice.map((d, i) => ({
@@ -120,7 +121,7 @@ const SharedDiceScene = ({ rolls, onDone }: SharedDiceSceneProps) => (
     shadows
     dpr={[1, 1.5]}
     gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}
-    camera={{ position: [0, 16, 7], fov: 38 }}
+    camera={{ position: [0, 22, 9.5], fov: 34 }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       gl.setClearColor(0x000000, 0);
