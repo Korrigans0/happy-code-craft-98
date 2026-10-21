@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 const DiceRoller3D = lazy(() => import("./DiceRoller3D"));
 import DiceBroadcastOverlay from "./DiceBroadcastOverlay";
+import SharedDiceLayer from "./dice3d/SharedDiceLayer";
 import VTTContextMenu from "./vtt/VTTContextMenu";
 import GMPanel from "./vtt/GMPanel";
 import MapGeneratorDialog from "./vtt/MapGeneratorDialog";
@@ -4675,6 +4676,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
           {/* Selected token panel (floating bottom) */}
+          <SharedDiceLayer campaignId={campaignId} userId={user?.id} />
           {diceOpen && (
             <Suspense fallback={null}>
               <DiceRoller3D
@@ -4682,6 +4684,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
                 onClose={() => setDiceOpen(false)}
                 campaignId={campaignId}
                 userName={user?.display_name || user?.email?.split("@")[0] || "Joueur"}
+                userId={user?.id}
               />
             </Suspense>
           )}
