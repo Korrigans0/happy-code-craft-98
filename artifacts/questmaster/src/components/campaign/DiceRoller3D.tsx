@@ -288,18 +288,21 @@ interface DiceRoller3DProps {
   onClose: () => void;
   campaignId?: string;
   userName?: string;
+  /** Used so the author does not see his own roll replayed on the table. */
+  userId?: string;
 }
 
 const DICE_PRESET_LABELS: Record<DieType, string> = {
   4: "d4", 6: "d6", 8: "d8", 10: "d10", 12: "d12", 20: "d20",
 };
 
-const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps) => {
+const DiceRoller3D = ({ open, onClose, campaignId, userName, userId }: DiceRoller3DProps) => {
   const [counts, setCounts] = useState<Record<DieType, number>>({
     4: 0, 6: 0, 8: 0, 10: 0, 12: 0, 20: 1,
   });
   const [modifier, setModifier] = useState(0);
   const [colorIdx, setColorIdx] = useState(0);
+  const [showSharedDice, setShowSharedDice] = useSharedDicePreference();
   const [spawns, setSpawns] = useState<SpawnSpec[]>([]);
   const [rolls, setRolls] = useState<Record<string, Roll>>({});
   const [throwing, setThrowing] = useState(false);
@@ -399,7 +402,7 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             message_type: "dice_roll",
             metadata: { dice: formula, results: all.map(r => r.value), total, modifier, crit, author },
           }).catch(() => { /* ignore */ });
-          // Realtime broadcast for floating overlay
+          // Realtime broadcast: floating result card + shared 3D dice on the table
           broadcastDiceRoll(campaignId, {
             author,
             formula,
@@ -407,12 +410,15 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
             results: all.map(r => ({ type: Number(r.type), value: r.value ?? 0 })),
             modifier,
             crit,
+            source: "3d",
+            color: colorIdx,
+            senderId: userId,
           });
         }
       }
       return next;
     });
-  }, [modifier, campaignId, userName]);
+  }, [modifier, campaignId, userName, userId, colorIdx]);
 
   const rollAll = useCallback(() => {
     if (totalDice === 0) return;
@@ -549,6 +555,19 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName }: DiceRoller3DProps
               ))}
             </div>
           </div>
+
+          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-muted/20 px-2 py-2">
+            <Switch
+              checked={showSharedDice}
+              onCheckedChange={setShowSharedDice}
+              aria-label="Voir les lancers 3D des autres sur la table"
+              className="mt-0.5 shrink-0"
+            />
+            <span className="text-[11px] leading-snug text-muted-foreground">
+              Voir les lancers 3D des autres joueurs sur la table
+            </span>
+          </label>
+
 
           <Button onClick={rollAll} disabled={totalDice === 0 || throwing} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
             <Dices className="mr-2 h-4 w-4" /> Lancer ({totalDice})
