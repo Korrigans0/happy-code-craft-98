@@ -20,7 +20,8 @@ class SceneBoundary extends Component<{ children: ReactNode; onError: () => void
   static getDerivedStateFromError() {
     return { failed: true };
   }
-  componentDidCatch() {
+  componentDidCatch(error: unknown) {
+    console.warn("[shared-dice] 3D layer disabled:", error);
     this.props.onError();
   }
   render() {
