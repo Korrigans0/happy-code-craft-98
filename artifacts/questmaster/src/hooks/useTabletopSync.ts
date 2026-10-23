@@ -6,6 +6,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { campaignsApi } from "@/lib/api";
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
+import { completeRealtimeRow } from "@/lib/tabletopRealtimeRow";
 
 interface TokenItem {
   id: string;
@@ -353,9 +354,9 @@ export function useTabletopSync({
 
   // ── TEMPS RÉEL (websocket) ────────────────────────────────
   // On écoute la ligne `tabletop_state` de CETTE campagne uniquement.
-  // Le payload contient la ligne complète (REPLICA IDENTITY FULL), donc
-  // aucun re-fetch n'est nécessaire : on applique directement les champs
-  // qui ont changé.
+  // Attention : les colonnes volumineuses non modifiées (jetons, scènes,
+  // calques, carte) sont omises du payload ; elles sont complétées depuis
+  // le dernier état connu avant de détecter les sections modifiées.
   const subscriptions = useMemo(
     () => [
       {
@@ -375,7 +376,11 @@ export function useTabletopSync({
           if (updatedAt && updatedAt === lastUpdatedAtRef.current) return;
           lastUpdatedAtRef.current = updatedAt;
 
-          const normalized = normalize(row);
+          // Les colonnes volumineuses inchangées sont absentes du payload :
+          // on reprend leur dernière valeur connue au lieu de les vider.
+          const normalized = normalize(
+            completeRealtimeRow(row, lastSavedRef.current as Record<string, unknown>),
+          );
           // Ne remonter que les sections réellement modifiées.
           const changed = new Set<TabletopStateKey>();
           for (const key of Object.keys(normalized) as TabletopStateKey[]) {
