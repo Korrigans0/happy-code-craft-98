@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { pregensApi, type PregenEntry } from "@/lib/pregens";
+import { canPreviewPregen } from "@/lib/pregenPreview";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 
 interface PregenSectionProps {
@@ -122,6 +123,8 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
   const iHaveOne = pregens.some((p) => p.assigned.some((a) => a.is_me));
 
   const isTaken = (p: PregenEntry) => !p.character.pregen_allow_multiple && p.assigned.length > 0;
+  // The quick preview uses a D&D-style layout: never show it for Glyphes pregens.
+  const isPreviewable = (p: PregenEntry) => canPreviewPregen(p.character.system ?? campaignSystem) && canPreviewPregen(campaignSystem);
 
   if (!isGM && pregens.length === 0) return null;
 
@@ -151,6 +154,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
             const c = p.character;
             const taken = isTaken(p);
             const mine = p.assigned.some((a) => a.is_me);
+            const previewable = isPreviewable(p);
             return (
               <Card key={c.id} className="border-border bg-card/80 transition-colors hover:border-primary/40">
                 <CardContent className="space-y-3 p-4">
@@ -192,7 +196,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
 
                   {isGM ? (
                     <div className="flex flex-wrap gap-1.5">
-                      <Button size="sm" variant="outline" onClick={() => setPreview(p)}><Eye className="mr-1 h-3.5 w-3.5" />Voir</Button>
+                      {previewable && <Button size="sm" variant="outline" onClick={() => setPreview(p)}><Eye className="mr-1 h-3.5 w-3.5" />Voir</Button>}
                       <Button size="sm" variant="outline" onClick={() => navigate(`${createUrl}&edit=${c.id}`)}><Pencil className="mr-1 h-3.5 w-3.5" />Modifier</Button>
                       <Button size="sm" variant="outline" onClick={() => run.mutate(() => pregensApi.duplicate(c.id))}><Copy className="mr-1 h-3.5 w-3.5" />Dupliquer</Button>
                       <Button size="sm" variant="outline"
@@ -216,7 +220,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
-                      <Button size="sm" variant="outline" onClick={() => setPreview(p)}><Eye className="mr-1 h-3.5 w-3.5" />Voir</Button>
+                      {previewable && <Button size="sm" variant="outline" onClick={() => setPreview(p)}><Eye className="mr-1 h-3.5 w-3.5" />Voir</Button>}
                       <Button size="sm" variant="gold" disabled={taken || iHaveOne} onClick={() => setToClaim(p)}>
                         Choisir ce personnage
                       </Button>
@@ -229,7 +233,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
         </div>
       )}
 
-      <PregenPreview entry={preview} onClose={() => setPreview(null)}
+      <PregenPreview entry={preview && isPreviewable(preview) ? preview : null} onClose={() => setPreview(null)}
         footer={!isGM && preview && !isTaken(preview) && !iHaveOne ? (
           <Button variant="gold" onClick={() => { setToClaim(preview); setPreview(null); }}>Choisir ce personnage</Button>
         ) : undefined} />
