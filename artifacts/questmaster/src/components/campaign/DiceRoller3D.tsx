@@ -144,6 +144,11 @@ interface DieProps {
   onSettle: (id: string, value: number) => void;
 }
 
+const SETTLE_LINEAR_SPEED = 0.2;
+const SETTLE_ANGULAR_SPEED = 0.35;
+const SETTLE_STILL_FRAMES = 15;
+const SETTLE_TIMEOUT_MS = 7000;
+
 function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps) {
   const data = useMemo(() => getPolyhedronData(type), [type]);
   const convexArgs = useMemo(() => getConvexArgs(data.geometry), [data.geometry]);
@@ -163,6 +168,7 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
   const lastVelRef = useRef(new THREE.Vector3());
   const lastAngRef = useRef(new THREE.Vector3());
   const lastImpactRef = useRef(0);
+  const spawnedAtRef = useRef(performance.now());
 
   // Apply initial throw
   useEffect(() => {
@@ -184,27 +190,29 @@ function Die({ id, type, material, startPos, impulse, spin, onSettle }: DieProps
       Math.random() > 0.5 ? audio.felt() : audio.wood();
     }
 
-    if (v < 0.05 && a < 0.05) {
-      stillFramesRef.current++;
-      if (stillFramesRef.current > 12) {
-        settledRef.current = true;
-        // Determine up face
-        const obj = ref.current as THREE.Object3D;
-        const worldUp = new THREE.Vector3(0, 1, 0);
-        let bestDot = -Infinity;
-        let bestIdx = 0;
-        const quat = new THREE.Quaternion();
-        obj.getWorldQuaternion(quat);
-        data.faceNormals.forEach((n, i) => {
-          const wn = n.clone().applyQuaternion(quat);
-          const d = wn.dot(worldUp);
-          if (d > bestDot) { bestDot = d; bestIdx = i; }
-        });
-        const value = data.faceValues[bestIdx] ?? 1;
-        onSettle(id, value);
-      }
-    } else {
-      stillFramesRef.current = 0;
+    // Flat-faced dice (d4, d6, d8…) keep a tiny contact jitter in the physics
+    // worker and may never drop under a strict threshold: use a tolerant one,
+    // plus a hard timeout so every roll always resolves and is broadcast.
+    const elapsed = performance.now() - spawnedAtRef.current;
+    if (v < SETTLE_LINEAR_SPEED && a < SETTLE_ANGULAR_SPEED) stillFramesRef.current++;
+    else stillFramesRef.current = 0;
+
+    if (stillFramesRef.current > SETTLE_STILL_FRAMES || elapsed > SETTLE_TIMEOUT_MS) {
+      settledRef.current = true;
+      // Determine up face
+      const obj = ref.current as THREE.Object3D;
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      let bestDot = -Infinity;
+      let bestIdx = 0;
+      const quat = new THREE.Quaternion();
+      obj.getWorldQuaternion(quat);
+      data.faceNormals.forEach((n, i) => {
+        const wn = n.clone().applyQuaternion(quat);
+        const d = wn.dot(worldUp);
+        if (d > bestDot) { bestDot = d; bestIdx = i; }
+      });
+      const value = data.faceValues[bestIdx] ?? 1;
+      onSettle(id, value);
     }
   });
 
