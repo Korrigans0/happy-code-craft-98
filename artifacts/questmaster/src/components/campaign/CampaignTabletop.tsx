@@ -835,7 +835,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     const channel = supabase.channel(`glyphes-portraits-${campaignId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "characters" }, payload => {
         const row = payload.new;
-        if (typeof row.id === "string") mirror({ id: row.id, avatar_url: row.avatar_url });
+        // An unchanged long avatar_url can be omitted from live payloads: absent ≠ removed.
+        if (typeof row.id === "string" && row.avatar_url !== undefined) mirror({ id: row.id, avatar_url: row.avatar_url });
       }).subscribe();
     const refresh = () => {
       if (document.hidden) return;
