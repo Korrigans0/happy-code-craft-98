@@ -466,14 +466,14 @@ const DiceRoller3D = ({ open, onClose, campaignId, userName, userId }: DiceRolle
   return (
     <div data-vtt-allow-scroll className="absolute inset-0 z-30 flex flex-col bg-background/95 backdrop-blur-sm animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-card/80 px-4 py-3">
+      <div className="flex items-center gap-3 border-b border-border bg-card/80 px-4 py-3">
+        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" aria-label="Fermer le lanceur de dés">
+          <X className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-2">
           <Dices className="h-5 w-5 text-primary" />
           <h3 className="font-display text-lg text-gradient-gold">Lanceur de dés 3D</h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-          <X className="h-4 w-4" />
-        </Button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
