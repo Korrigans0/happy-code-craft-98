@@ -233,7 +233,7 @@ const PregenSection = ({ campaignId, campaignSystem, isGM, members }: PregenSect
         </div>
       )}
 
-      <PregenPreview entry={preview} onClose={() => setPreview(null)}
+      <PregenPreview entry={preview && isPreviewable(preview) ? preview : null} onClose={() => setPreview(null)}
         footer={!isGM && preview && !isTaken(preview) && !iHaveOne ? (
           <Button variant="gold" onClick={() => { setToClaim(preview); setPreview(null); }}>Choisir ce personnage</Button>
         ) : undefined} />
