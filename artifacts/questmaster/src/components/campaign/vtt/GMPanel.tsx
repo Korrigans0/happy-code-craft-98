@@ -234,6 +234,8 @@ export default function GMPanel({
   );
 
   const formatMessage = (msg: any) => {
+    const glyphesEntry = glyphesEntryFromMessage(msg);
+    if (glyphesEntry) return <GlyphesEntryCard entry={glyphesEntry} showHeader={false} />;
     const content = msg.content || "";
     return content.split("\n").map((line: string, i: number) => {
       if (line.startsWith("🎲")) return <p key={i} className="text-primary font-medium">{line}</p>;

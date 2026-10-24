@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Send, Dices, Crown, Eye, EyeOff, Sparkles, Image, AtSign, X, Trash2, Plus, Minus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { broadcastDiceRoll, detectCrit } from "@/lib/vtt/diceBroadcast";
+import { glyphesEntryFromMessage } from "@/lib/game-systems/glyphes/chatMessage";
+import GlyphesEntryCard from "@/components/campaign/vtt/glyphes/GlyphesEntryCard";
 
 interface CampaignChatProps {
   campaignId: string;
@@ -134,7 +136,8 @@ interface ChatMessageItemProps {
 const ChatMessageItem = memo(function ChatMessageItem({ msg, isOwn, profile, isMsgGM, members, onPingClick }: ChatMessageItemProps) {
   const isMsgWhisper = msg.message_type === "whisper";
   const trimmedContent = (msg.content || "").trim();
-  const isImage = isImageUrl(trimmedContent);
+  const glyphesEntry = useMemo(() => glyphesEntryFromMessage(msg), [msg]);
+  const isImage = !glyphesEntry && isImageUrl(trimmedContent);
   const initials = profile?.display_name
     ? profile.display_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -197,7 +200,9 @@ const ChatMessageItem = memo(function ChatMessageItem({ msg, isOwn, profile, isM
                 : "bg-muted text-foreground"
             }`}
           >
-            {renderMessageContent(msg.content, members, onPingClick)}
+            {glyphesEntry
+              ? <GlyphesEntryCard entry={glyphesEntry} showHeader={false} />
+              : renderMessageContent(msg.content, members, onPingClick)}
           </div>
         )}
       </div>
