@@ -21,6 +21,8 @@ import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { glyphesEntryFromMessage } from "@/lib/game-systems/glyphes/chatMessage";
+import GlyphesEntryCard from "./glyphes/GlyphesEntryCard";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
