@@ -71,3 +71,4 @@
 - [ ] Aligner les quotas serveur et l’affichage du stockage
 - [ ] Vérifier mobile, calculs, sécurité, parcours utilisateur et compilation
 - [ ] Produire le rapport final avec éléments de paiement manquants
+- [x] Épreuves Glyphes partagées dans le chat de campagne (temps réel, historique, sans doublon)
