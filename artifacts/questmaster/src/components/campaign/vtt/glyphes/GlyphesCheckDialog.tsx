@@ -47,6 +47,7 @@ export default function GlyphesCheckDialog({
   statLevels,
   onResolved,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   const [aptitudeKey, setAptitudeKey] = useState<string>(APTITUDES[0].key);
   const [statKey, setStatKey] = useState<string>("PUI");
   const [dieSize, setDieSize] = useState<DieSize>(6);

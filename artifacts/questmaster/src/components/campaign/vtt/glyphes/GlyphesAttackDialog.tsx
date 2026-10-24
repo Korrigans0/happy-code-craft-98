@@ -68,6 +68,7 @@ export default function GlyphesAttackDialog({
   onSpendTargetHeroism,
   onSpendActionPoints,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   const [targetId, setTargetId] = useState<string>(targets[0]?.id ?? "");
   const [weaponId, setWeaponId] = useState(WEAPON_CATEGORIES[0].id);
   const [dieSize, setDieSize] = useState<DieSize>(6);

@@ -45,6 +45,7 @@ export default function GlyphesConfrontationPanel({
   getTokenState,
   onHeroismChange,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   const conf = useGlyphesConfrontation(campaignId);
   const c = conf.confrontation;
 

@@ -40,6 +40,7 @@ export default function GlyphesManeuverDialog({
   availablePoints,
   onSpend,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   // Charge
   const [distanceFt, setDistanceFt] = useState(15);
   const [straightLine, setStraightLine] = useState(true);
