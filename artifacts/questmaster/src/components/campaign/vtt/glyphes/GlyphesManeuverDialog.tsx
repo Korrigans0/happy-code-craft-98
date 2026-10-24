@@ -18,7 +18,7 @@ import {
   type DieSize,
   type DisengageResult,
 } from "@/lib/game-systems/glyphes";
-import { broadcastGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
+import { usePublishGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
 
 interface Props {
   open: boolean;
@@ -77,7 +77,7 @@ export default function GlyphesManeuverDialog({
       enemySouplesseMax: enemyMax,
     });
     setDisengage(res);
-    broadcastGlyphesEntry(campaignId, entryFromCheck(authorName, res.check));
+    void publishEntry(entryFromCheck(authorName, res.check));
   };
 
   return (

@@ -24,7 +24,7 @@ import {
   type DieSize,
   type DifficultyTypeKey,
 } from "@/lib/game-systems/glyphes";
-import { broadcastGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
+import { usePublishGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
 
 interface Props {
   open: boolean;
@@ -98,7 +98,7 @@ export default function GlyphesCheckDialog({
     });
     setResult(res);
     onResolved?.(res);
-    broadcastGlyphesEntry(campaignId, entryFromCheck(authorName, res));
+    void publishEntry(entryFromCheck(authorName, res));
   };
 
   return (

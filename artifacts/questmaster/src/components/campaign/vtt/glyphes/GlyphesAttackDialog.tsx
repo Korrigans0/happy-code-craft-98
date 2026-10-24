@@ -27,7 +27,7 @@ import {
   type ReactionKey,
   type Superiority,
 } from "@/lib/game-systems/glyphes";
-import { broadcastGlyphesEntry, entryFromAttack } from "@/lib/game-systems/glyphes/broadcast";
+import { usePublishGlyphesEntry, entryFromAttack } from "@/lib/game-systems/glyphes/broadcast";
 import type { GlyphesTokenState } from "@/lib/game-systems/glyphes/useGlyphesCombat";
 
 export interface GlyphesTargetOption {
@@ -126,7 +126,7 @@ export default function GlyphesAttackDialog({
     });
     setAttack(res);
     setFinalWounds(res.wounds);
-    broadcastGlyphesEntry(campaignId, entryFromAttack(authorName, res));
+    void publishEntry(entryFromAttack(authorName, res));
     setPhase(res.reactionWindowOpen ? "reaction" : "done");
   };
 
