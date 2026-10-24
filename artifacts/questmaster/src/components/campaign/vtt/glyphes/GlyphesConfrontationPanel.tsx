@@ -19,7 +19,7 @@ import {
 } from "@/lib/game-systems/glyphes";
 import { DIE_LEVELS } from "@/lib/game-systems/glyphes";
 import { useGlyphesConfrontation } from "@/lib/game-systems/glyphes/useGlyphesConfrontation";
-import { broadcastGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
+import { usePublishGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
 import { defaultTokenState, type GlyphesTokenState } from "@/lib/game-systems/glyphes/useGlyphesCombat";
 
 interface TokenOption {
@@ -45,6 +45,7 @@ export default function GlyphesConfrontationPanel({
   getTokenState,
   onHeroismChange,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   const conf = useGlyphesConfrontation(campaignId);
   const c = conf.confrontation;
 
@@ -110,7 +111,7 @@ export default function GlyphesConfrontationPanel({
       aptitudeLevel: instinctLevel,
       surprised,
     });
-    if (res.check) broadcastGlyphesEntry(campaignId, entryFromCheck(authorName, res.check));
+    if (res.check) void publishEntry(entryFromCheck(authorName, res.check));
     conf.updateParticipant(participantId, { instinctSuccess: res.success });
     conf.reorder();
   };

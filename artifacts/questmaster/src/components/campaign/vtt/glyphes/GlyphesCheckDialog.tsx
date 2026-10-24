@@ -24,7 +24,7 @@ import {
   type DieSize,
   type DifficultyTypeKey,
 } from "@/lib/game-systems/glyphes";
-import { broadcastGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
+import { usePublishGlyphesEntry, entryFromCheck } from "@/lib/game-systems/glyphes/broadcast";
 
 interface Props {
   open: boolean;
@@ -47,6 +47,7 @@ export default function GlyphesCheckDialog({
   statLevels,
   onResolved,
 }: Props) {
+  const publishEntry = usePublishGlyphesEntry(campaignId);
   const [aptitudeKey, setAptitudeKey] = useState<string>(APTITUDES[0].key);
   const [statKey, setStatKey] = useState<string>("PUI");
   const [dieSize, setDieSize] = useState<DieSize>(6);
@@ -98,7 +99,7 @@ export default function GlyphesCheckDialog({
     });
     setResult(res);
     onResolved?.(res);
-    broadcastGlyphesEntry(campaignId, entryFromCheck(authorName, res));
+    void publishEntry(entryFromCheck(authorName, res));
   };
 
   return (

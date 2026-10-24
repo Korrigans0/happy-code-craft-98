@@ -12,6 +12,9 @@
     "typecheck:libs": "echo 'skipping lib typecheck'"
   },
   "devDependencies": {
+    "drizzle-kit": "0.x",
+    "drizzle-orm": "0.x",
+    "postgres": "^3.4.9",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },

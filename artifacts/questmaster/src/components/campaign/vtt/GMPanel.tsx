@@ -21,6 +21,8 @@ import { TokenItem, InitiativeEntry, CONDITIONS, rollDice } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
+import { glyphesEntryFromMessage } from "@/lib/game-systems/glyphes/chatMessage";
+import GlyphesEntryCard from "./glyphes/GlyphesEntryCard";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
@@ -234,6 +236,8 @@ export default function GMPanel({
   );
 
   const formatMessage = (msg: any) => {
+    const glyphesEntry = glyphesEntryFromMessage(msg);
+    if (glyphesEntry) return <GlyphesEntryCard entry={glyphesEntry} showHeader={false} />;
     const content = msg.content || "";
     return content.split("\n").map((line: string, i: number) => {
       if (line.startsWith("🎲")) return <p key={i} className="text-primary font-medium">{line}</p>;
