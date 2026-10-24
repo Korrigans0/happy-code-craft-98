@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -154,11 +155,28 @@ export default function GMPanel({
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
 
+  // Temps réel : chaque message (chat, jets, épreuves) arrive immédiatement ;
+  // le polling ne sert que de filet de sécurité si le socket tombe.
+  const chatRealtime = useRealtimeChannel({
+    channelName: `campaign:${campaignId}:vtt-chat`,
+    enabled: !!campaignId,
+    subscriptions: useMemo(
+      () => [
+        {
+          table: "campaign_messages",
+          event: "*" as const,
+          filter: `campaign_id=eq.${campaignId}`,
+          onChange: () => qc.invalidateQueries({ queryKey: ["vtt-chat-messages", campaignId] }),
+        },
+      ],
+      [campaignId, qc],
+    ),
+  });
+
   const { data: messages = [] } = useQuery({
     queryKey: ["vtt-chat-messages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
-    // Le chat est déjà synchronisé en temps réel : filet de sécurité lent uniquement.
-    refetchInterval: 20000,
+    refetchInterval: chatRealtime === "connected" ? 20000 : 2000,
     refetchOnWindowFocus: true,
   });
 
