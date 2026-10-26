@@ -8,6 +8,13 @@
       "when": 1792863998259,
       "tag": "0000_validate_glyphes_check_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793036718748,
+      "tag": "0001_tabletop_performance_and_merge",
+      "breakpoints": true
     }
   ]
 }
