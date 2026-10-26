@@ -37,10 +37,15 @@ export function useGlyphesSheetSync(
           if (token.creatureType !== "character" || !token.creatureId) continue;
           groups.set(token.creatureId, [...(groups.get(token.creatureId) ?? []), token]);
         }
+        if (groups.size === 0) return;
+        // One request for every linked sheet instead of one per character.
+        const { data: rows, error: readError } = await supabase.from("characters").select("id, system, system_data, updated_at").in("id", [...groups.keys()]);
+        if (readError || cancelled || generation !== scope.current) return;
+        const byId = new Map((rows ?? []).map(row => [row.id, row]));
         for (const [characterId, linked] of groups) {
           if (cancelled || generation !== scope.current) return;
-          const { data, error } = await supabase.from("characters").select("system, system_data, updated_at").eq("id", characterId).maybeSingle();
-          if (error || !data || data.system !== "Glyphes" || cancelled || generation !== scope.current) continue;
+          const data = byId.get(characterId);
+          if (!data || data.system !== "Glyphes") continue;
           let sheet = data.system_data as Record<string, any> | null;
           let version = data.updated_at;
           for (const token of linked) {
