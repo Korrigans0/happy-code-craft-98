@@ -60,6 +60,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import { externalizeInlineImages, hasInlineImages, uploadTabletopImage } from "@/lib/vtt/tabletopImages";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
 import CampaignAudioPlayer from "@/components/campaign/vtt/CampaignAudioPlayer";
 import { useCampaignAudio } from "@/hooks/useCampaignAudio";
@@ -1155,6 +1156,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, ...updates } : t));
   };
 
+  // Token pictures are stored as files; only their URL goes into the shared board.
+  const uploadTokenImage = async (tokenId: string, file: File) => {
+    try {
+      const url = await uploadTabletopImage(campaignId, file);
+      updateToken(tokenId, { imageUrl: url });
+    } catch (e) {
+      toast({ title: "Image non enregistrée", description: (e as Error).message, variant: "destructive" });
+    }
+  };
+
   const updateTokenHp = (tokenId: string, delta: number) => {
     setTokens(prev => prev.map(t => {
       if (t.id !== tokenId) return t;
@@ -1468,34 +1479,36 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, opacity } : l));
   };
 
+  /** Shows a stored map picture and saves its URL once it has loaded. */
+  const showMapImage = useCallback((url: string, extra?: { scale?: number }) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      mapImageRef.current = img;
+      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: url, ...(extra ?? {}) } : l));
+      saveState({ map_image_url: url }, { immediate: true });
+    };
+    img.onerror = () => toast({ title: "Carte illisible", description: "L'image n'a pas pu être affichée.", variant: "destructive" });
+    img.src = url;
+  }, [saveState]);
+
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
     const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const img = new window.Image();
-      img.onload = () => {
-        mapImageRef.current = img;
-        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: dataUrl } : l));
-        saveState({ map_image_url: dataUrl });
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
     e.target.value = "";
+    // The picture is stored as a file; the shared board only keeps its URL.
+    toast({ title: "Import de la carte…", description: file.name });
+    uploadTabletopImage(campaignId, file)
+      .then(url => showMapImage(url))
+      .catch(err => toast({ title: "Carte non enregistrée", description: (err as Error).message, variant: "destructive" }));
   };
 
   // ── Carte procédurale ──
   const applyGeneratedMap = useCallback((map: GeneratedMap, o: { replaceWalls: boolean }) => {
     if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
-    const img = new window.Image();
-    img.onload = () => {
-      mapImageRef.current = img;
-      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: map.dataUrl, scale: 1 } : l));
-      saveState({ map_image_url: map.dataUrl }, { immediate: true });
-    };
-    img.src = map.dataUrl;
+    uploadTabletopImage(campaignId, map.dataUrl)
+      .then(url => showMapImage(url, { scale: 1 }))
+      .catch(err => toast({ title: "Carte non enregistrée", description: (err as Error).message, variant: "destructive" }));
 
     if (map.walls.length) {
       if (o.replaceWalls) wallsHook.clearAllWalls();
@@ -3505,6 +3518,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // Synchronise immédiatement l'intégralité de la scène côté serveur pour que
     // les autres utilisateurs (et le rechargement) voient exactement la même chose.
     if (isGM) {
+      // The grid lives inside `scenes`; it is not a column of the shared board.
       saveState({
         map_image_url: scene.mapImageUrl ?? null,
         active_scene_id: scene.id,
@@ -3513,7 +3527,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         walls: scene.walls ?? [],
         lights: scene.lights ?? [],
         night_mode: scene.nightMode ?? false,
-        grid: normalizeGridConfig(scene.grid),
       } as any, { immediate: true });
     }
     setPanOffset({ x: 0, y: 0 });
@@ -4535,6 +4548,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               onCopyToken={ctxToken ? () => copyToken(ctxToken.id) : undefined}
               onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
               onUpdateToken={ctxToken ? updateToken : undefined}
+              onTokenImageFile={ctxToken ? uploadTokenImage : undefined}
               hasClipboard={hasClipboard}
             />
           )}
