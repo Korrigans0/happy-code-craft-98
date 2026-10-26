@@ -552,7 +552,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
-  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus } = useTabletopSync({
+  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus, loadState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state, changedKeys) => {
@@ -632,6 +632,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
     },
+    onSaveRejected: (message) => toast({ title: "Modification non enregistrée", description: message, variant: "destructive" }),
     debounceMs: 250,
   });
 
@@ -1520,7 +1521,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       title: "Carte générée",
       description: `${map.cols}×${map.rows} cases${map.walls.length ? ` · ${map.walls.length} murs` : ""}.`,
     });
-  }, [perms.canEditMap, saveState, wallsHook]);
+  }, [perms.canEditMap, campaignId, showMapImage, wallsHook]);
 
 
 
