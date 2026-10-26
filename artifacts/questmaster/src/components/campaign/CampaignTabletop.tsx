@@ -60,7 +60,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
-import { externalizeInlineImages, hasInlineImages, uploadTabletopImage } from "@/lib/vtt/tabletopImages";
+import { externalizeInlineImages, hasInlineImages, isInlineImage, uploadTabletopImage } from "@/lib/vtt/tabletopImages";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
 import CampaignAudioPlayer from "@/components/campaign/vtt/CampaignAudioPlayer";
 import { useCampaignAudio } from "@/hooks/useCampaignAudio";
@@ -697,12 +697,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     inlineMigrationRef.current = true;
     externalizeInlineImages(campaignId, current)
       .then(next => {
-        setScenes(next.scenes as VTTScene[]);
-        setTokens(next.tokens as TokenItem[]);
+        // Functional updates: edits made during the upload are kept; only the
+        // embedded pictures are swapped for their file URL.
+        const tokenUrls = new Map((next.tokens as TokenItem[]).map(t => [t.id, t.imageUrl]));
+        setTokens(prev => prev.map(t => isInlineImage(t.imageUrl) && tokenUrls.get(t.id) && !isInlineImage(tokenUrls.get(t.id)) ? { ...t, imageUrl: tokenUrls.get(t.id) } : t));
+        const sceneById = new Map((next.scenes as VTTScene[]).map(s => [s.id, s]));
+        setScenes(prev => prev.map(s => (sceneById.has(s.id) && hasInlineImages({ scenes: [s] }) ? sceneById.get(s.id)! : s)));
         if (next.map_image_url !== current.map_image_url) {
-          setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: next.map_image_url ?? undefined } : l));
+          setLayers(prev => prev.map(l => l.id === "map" && l.imageUrl === current.map_image_url ? { ...l, imageUrl: next.map_image_url ?? undefined } : l));
+          saveState({ map_image_url: next.map_image_url ?? null }, { immediate: true });
         }
-        saveState({ map_image_url: next.map_image_url ?? null, scenes: next.scenes, tokens: next.tokens } as any, { immediate: true });
       })
       .catch(() => { inlineMigrationRef.current = false; });
   }, [isGM, loadState, scenes, tokens, layers, campaignId, saveState]);
