@@ -175,6 +175,8 @@ export function useTabletopSync({
   const saveErrorsRef = useRef(0);
   const realtimeOkRef = useRef(false);
   const pullRef = useRef<(full?: boolean) => Promise<void>>(async () => undefined);
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -199,7 +201,15 @@ export function useTabletopSync({
    */
   const applyRemoteRow = useCallback((row: Record<string, unknown>, complete: boolean) => {
     const updatedAt = (row.updated_at as string | undefined) ?? null;
-    if (updatedAt && lastUpdatedAtRef.current && !newer(updatedAt, lastUpdatedAtRef.current)) return;
+    if (updatedAt && lastUpdatedAtRef.current && !newer(updatedAt, lastUpdatedAtRef.current)) {
+      // An older event from someone else arrived after our own newer write:
+      // re-read the row instead of dropping their change.
+      if (!complete && row.updated_by !== userIdRef.current) {
+        if (writingRef.current) resyncRequestedRef.current = true;
+        else void pullRef.current(true);
+      }
+      return;
+    }
     // A write is in flight: its confirmation would race this row; re-read afterwards.
     if (writingRef.current) { resyncRequestedRef.current = true; return; }
     const normalized = normalize(complete ? row : completeRealtimeRow(row, lastSavedRef.current as Record<string, unknown>));
