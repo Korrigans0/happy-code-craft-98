@@ -677,14 +677,35 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
-  // Persistance de l'initiative (ordre, round, tour actif)
+  // Persistance de l'initiative (ordre, round, tour actif) — MJ uniquement :
+  // le serveur refuse ces champs aux joueurs, qui la reçoivent du MJ.
   useEffect(() => {
-    if (user?.id) saveState({
+    if (user?.id && isGM) saveState({
       initiative: initiative as unknown as unknown[],
       initiative_round: initiativeRound,
       initiative_active_idx: initiativeActiveIdx,
     });
-  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
+  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id, isGM]);
+
+  // Campagnes créées avant l'import en fichiers : le MJ convertit une fois les
+  // images intégrées (carte, scènes, jetons) en fichiers, à l'identique.
+  const inlineMigrationRef = useRef(false);
+  useEffect(() => {
+    if (!isGM || loadState !== "ready" || inlineMigrationRef.current) return;
+    const current = { map_image_url: layers.find(l => l.id === "map")?.imageUrl ?? null, scenes: scenes as unknown[], tokens: tokens as unknown[] };
+    if (!hasInlineImages(current)) return;
+    inlineMigrationRef.current = true;
+    externalizeInlineImages(campaignId, current)
+      .then(next => {
+        setScenes(next.scenes as VTTScene[]);
+        setTokens(next.tokens as TokenItem[]);
+        if (next.map_image_url !== current.map_image_url) {
+          setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: next.map_image_url ?? undefined } : l));
+        }
+        saveState({ map_image_url: next.map_image_url ?? null, scenes: next.scenes, tokens: next.tokens } as any, { immediate: true });
+      })
+      .catch(() => { inlineMigrationRef.current = false; });
+  }, [isGM, loadState, scenes, tokens, layers, campaignId, saveState]);
   // Persistance des scènes (MJ uniquement — RLS/trigger côté serveur)
   useEffect(() => {
     if (user?.id && isGM) saveState({
