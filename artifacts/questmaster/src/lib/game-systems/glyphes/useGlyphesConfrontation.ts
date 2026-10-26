@@ -69,12 +69,6 @@ export function useGlyphesConfrontation(campaignId?: string | null) {
     };
   }, [campaignId]);
 
-  // Enregistrement différé
-  useEffect(() => {
-    if (!campaignId || !ready.current) return;
-    saveState(campaignId, { confrontation });
-  }, [confrontation, campaignId]);
-
   useEffect(() => {
     if (!campaignId) return;
     const channel: any = getDiceChannel(campaignId);
@@ -100,12 +94,16 @@ export function useGlyphesConfrontation(campaignId?: string | null) {
     [campaignId],
   );
 
+  // Only the author of a change saves it. Saving on every received update made
+  // every mounted panel of every player rewrite the same confrontation, and a
+  // panel mounted before the server copy loaded could save a stale local copy.
   const commit = useCallback(
     (next: Confrontation | null) => {
       setConfrontation(next);
       push(next);
+      if (campaignId) saveState(campaignId, { confrontation: next });
     },
-    [push],
+    [push, campaignId],
   );
 
   const start = useCallback((name: string) => commit(createConfrontation(name)), [commit]);

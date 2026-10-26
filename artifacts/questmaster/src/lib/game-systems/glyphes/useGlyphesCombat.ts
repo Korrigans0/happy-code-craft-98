@@ -66,6 +66,8 @@ interface CombatStore {
   ready: Set<string>;
   pending: Record<string, PendingEdits>;
   revision: number;
+  /** Tokens changed by this tab and not yet saved to the server. */
+  unsaved: Set<string>;
 }
 const stores = new Map<string, CombatStore>();
 
@@ -80,7 +82,7 @@ function getStore(key: string) {
         initial = {};
       }
     }
-    store = { state: initial, listeners: new Set(), linked: new Set(), ready: new Set(), pending: {}, revision: 0 };
+    store = { state: initial, listeners: new Set(), linked: new Set(), ready: new Set(), pending: {}, revision: 0, unsaved: new Set() };
     stores.set(key, store);
   }
   return store;
@@ -137,11 +139,17 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     };
   }, [campaignId, enabled, key]);
 
-  // Enregistrement différé
+  // Enregistrement différé : seuls les jetons modifiés dans cet onglet sont
+  // envoyés (fusion par jeton côté serveur). Les états reçus d'autres joueurs
+  // ne sont jamais réécrits, ce qui évite N écritures concurrentes et périmées.
   useEffect(() => {
     if (!enabled || !campaignId || !hydrated.has(key)) return;
-    if (Object.keys(states).length === 0) return;
-    saveState(campaignId, { tokens: states as Record<string, unknown> });
+    const store = getStore(key);
+    if (store.unsaved.size === 0) return;
+    const patch: Record<string, unknown> = {};
+    for (const id of store.unsaved) if (states[id]) patch[id] = states[id];
+    store.unsaved.clear();
+    if (Object.keys(patch).length > 0) saveState(campaignId, { tokens: patch });
   }, [states, campaignId, enabled, key]);
 
   // Abonnement au magasin partagé
@@ -179,6 +187,9 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
           const local = prev[payload.tokenId];
           if (local) next = { ...next, [field]: local[field] };
         }
+        // Every mounted instance (and the sender, self-broadcast) receives the
+        // event: an identical state must not trigger another render cascade.
+        if (previous && JSON.stringify(previous) === JSON.stringify(next)) return prev;
         return { ...prev, [payload.tokenId]: next };
       });
     };
@@ -224,6 +235,7 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
       const next = reconcileCounters(previous, sheet, authoritative ? {} : store.pending[tokenId] ?? {});
       if (authoritative) {
         store.pending[tokenId] = recordEdits(previous, next, systemDataToCombat(data), store.pending[tokenId] ?? {}, ++store.revision);
+        store.unsaved.add(tokenId);
       }
       if (wasReady && JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
       return { ...prev, [tokenId]: next };
@@ -258,6 +270,7 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
         next.heroism = Math.max(0, Math.min(MAX_HEROISM, next.heroism));
         next.wounds = Math.max(0, Math.min(next.maxWounds, next.wounds));
         store.pending[tokenId] = recordEdits(previous, next, allowedPatch, store.pending[tokenId] ?? {}, ++store.revision);
+        store.unsaved.add(tokenId);
         push(tokenId, next, COUNTER_FIELDS.filter(field => field in allowedPatch));
         return { ...prev, [tokenId]: next };
       });
