@@ -867,11 +867,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }).subscribe();
     const refresh = () => {
       if (document.hidden) return;
-      ids.forEach(id => { charactersApi.get(id).then(mirror).catch(() => { /* A removed or inaccessible sheet cannot provide a portrait. */ }); });
+      // One light request for every linked sheet (portrait only, not the whole sheet).
+      void supabase.from("characters").select("id, avatar_url").in("id", [...ids])
+        .then(({ data }) => { (data ?? []).forEach(mirror); }, () => { /* retried on the next tick */ });
     };
     refresh();
-    // REST-written rows may not be published to realtime on older projects.
-    const timer = setInterval(refresh, 5000);
+    // Character rows are not published live; portraits change rarely.
+    const timer = setInterval(refresh, 15000);
     return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
   }, [isGlyphes, linkedPortraitIds, campaignId, queryClient]);
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
@@ -4185,6 +4187,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             isDirty={isDirty}
             lastSavedAt={lastSavedAt}
             realtimeStatus={realtimeStatus}
+            loadState={loadState}
           />
 
         </div>
