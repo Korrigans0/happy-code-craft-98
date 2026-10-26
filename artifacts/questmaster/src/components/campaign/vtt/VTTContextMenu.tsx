@@ -36,6 +36,8 @@ interface ContextMenuProps {
   onPasteToken?: () => void;
   hasClipboard?: boolean;
   onUpdateToken?: (tokenId: string, updates: Partial<TokenItem>) => void;
+  /** Stores the picked picture as a file and sets its URL on the token. */
+  onTokenImageFile?: (tokenId: string, file: File) => void;
 }
 
 const ITEM_CLASS =
@@ -50,7 +52,7 @@ export default function VTTContextMenu({
   onAddToInitiative, onDuplicate, onToggleHide, onDelete, onCenter, onResize,
   onToggleAura, onAddToken, onPing, onToggleFog, onClearFogHere,
   onViewSheet, onEditGmNotes, onCopyToken, onPasteToken, hasClipboard,
-  onUpdateToken,
+  onUpdateToken, onTokenImageFile,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -216,6 +218,7 @@ export default function VTTContextMenu({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file || !token) return;
+                  if (onTokenImageFile) { onTokenImageFile(token.id, file); onClose(); return; }
                   const reader = new FileReader();
                   reader.onload = (ev) => {
                     const url = ev.target?.result as string;

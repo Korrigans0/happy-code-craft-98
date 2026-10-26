@@ -9,6 +9,8 @@ interface Props {
   lastSavedAt?: Date | null;
   /** État du websocket temps réel (point vert / orange / rouge). */
   realtimeStatus?: RealtimeStatus;
+  /** Chargement initial du plateau (nouvel essai automatique en cas d'échec). */
+  loadState?: "loading" | "ready" | "error";
   className?: string;
 }
 
@@ -17,12 +19,18 @@ interface Props {
  * Aide les MJ et joueurs à comprendre instantanément si leurs actions
  * sont bien envoyées au serveur (vs perte réseau silencieuse).
  */
-export function ConnectionStatus({ status, isSaving, isDirty, lastSavedAt, realtimeStatus, className }: Props) {
+export function ConnectionStatus({ status, isSaving, isDirty, lastSavedAt, realtimeStatus, loadState, className }: Props) {
   let icon = <Wifi className="h-3.5 w-3.5" />;
   let label = "Connecté";
   let tone = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
 
-  if (status === "offline") {
+  if (loadState === "loading" || loadState === "error") {
+    icon = <Loader2 className="h-3.5 w-3.5 animate-spin" />;
+    label = loadState === "error" ? "Chargement… nouvel essai" : "Chargement…";
+    tone = loadState === "error"
+      ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
+      : "text-blue-400 border-blue-500/30 bg-blue-500/10";
+  } else if (status === "offline") {
     icon = <WifiOff className="h-3.5 w-3.5" />;
     label = "Hors ligne";
     tone = "text-destructive border-destructive/40 bg-destructive/10";

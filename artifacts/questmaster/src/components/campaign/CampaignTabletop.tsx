@@ -60,6 +60,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { campaignsApi, charactersApi, compendiumApi } from "@/lib/api";
 import { useTabletopSync } from "@/hooks/useTabletopSync";
+import { externalizeInlineImages, hasInlineImages, isInlineImage, uploadTabletopImage } from "@/lib/vtt/tabletopImages";
 import { ConnectionStatus } from "@/components/campaign/ConnectionStatus";
 import CampaignAudioPlayer from "@/components/campaign/vtt/CampaignAudioPlayer";
 import { useCampaignAudio } from "@/hooks/useCampaignAudio";
@@ -551,7 +552,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   // ── Sync ──
   const wallsHookRef = useRef<ReturnType<typeof useWalls> | null>(null);
-  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus } = useTabletopSync({
+  const { saveState, isDirty, isSaving, lastSavedAt, connectionStatus, realtimeStatus, loadState } = useTabletopSync({
     campaignId,
     userId: user?.id || "",
     onStateReceived: (state, changedKeys) => {
@@ -631,6 +632,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
 
     },
+    onSaveRejected: (message) => toast({ title: "Modification non enregistrée", description: message, variant: "destructive" }),
     debounceMs: 250,
   });
 
@@ -675,14 +677,39 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   useEffect(() => { if (user?.id) saveState({ tokens }); }, [tokens, saveState, user?.id]);
   useEffect(() => { if (user?.id) saveState({ drawings: actions }); }, [actions, saveState, user?.id]);
-  // Persistance de l'initiative (ordre, round, tour actif)
+  // Persistance de l'initiative (ordre, round, tour actif) — MJ uniquement :
+  // le serveur refuse ces champs aux joueurs, qui la reçoivent du MJ.
   useEffect(() => {
-    if (user?.id) saveState({
+    if (user?.id && isGM) saveState({
       initiative: initiative as unknown as unknown[],
       initiative_round: initiativeRound,
       initiative_active_idx: initiativeActiveIdx,
     });
-  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id]);
+  }, [initiative, initiativeRound, initiativeActiveIdx, saveState, user?.id, isGM]);
+
+  // Campagnes créées avant l'import en fichiers : le MJ convertit une fois les
+  // images intégrées (carte, scènes, jetons) en fichiers, à l'identique.
+  const inlineMigrationRef = useRef(false);
+  useEffect(() => {
+    if (!isGM || loadState !== "ready" || inlineMigrationRef.current) return;
+    const current = { map_image_url: layers.find(l => l.id === "map")?.imageUrl ?? null, scenes: scenes as unknown[], tokens: tokens as unknown[] };
+    if (!hasInlineImages(current)) return;
+    inlineMigrationRef.current = true;
+    externalizeInlineImages(campaignId, current)
+      .then(next => {
+        // Functional updates: edits made during the upload are kept; only the
+        // embedded pictures are swapped for their file URL.
+        const tokenUrls = new Map((next.tokens as TokenItem[]).map(t => [t.id, t.imageUrl]));
+        setTokens(prev => prev.map(t => isInlineImage(t.imageUrl) && tokenUrls.get(t.id) && !isInlineImage(tokenUrls.get(t.id)) ? { ...t, imageUrl: tokenUrls.get(t.id) } : t));
+        const sceneById = new Map((next.scenes as VTTScene[]).map(s => [s.id, s]));
+        setScenes(prev => prev.map(s => (sceneById.has(s.id) && hasInlineImages({ scenes: [s] }) ? sceneById.get(s.id)! : s)));
+        if (next.map_image_url !== current.map_image_url) {
+          setLayers(prev => prev.map(l => l.id === "map" && l.imageUrl === current.map_image_url ? { ...l, imageUrl: next.map_image_url ?? undefined } : l));
+          saveState({ map_image_url: next.map_image_url ?? null }, { immediate: true });
+        }
+      })
+      .catch(() => { inlineMigrationRef.current = false; });
+  }, [isGM, loadState, scenes, tokens, layers, campaignId, saveState]);
   // Persistance des scènes (MJ uniquement — RLS/trigger côté serveur)
   useEffect(() => {
     if (user?.id && isGM) saveState({
@@ -840,11 +867,13 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       }).subscribe();
     const refresh = () => {
       if (document.hidden) return;
-      ids.forEach(id => { charactersApi.get(id).then(mirror).catch(() => { /* A removed or inaccessible sheet cannot provide a portrait. */ }); });
+      // One light request for every linked sheet (portrait only, not the whole sheet).
+      void supabase.from("characters").select("id, avatar_url").in("id", [...ids])
+        .then(({ data }) => { (data ?? []).forEach(mirror); }, () => { /* retried on the next tick */ });
     };
     refresh();
-    // REST-written rows may not be published to realtime on older projects.
-    const timer = setInterval(refresh, 5000);
+    // Character rows are not published live; portraits change rarely.
+    const timer = setInterval(refresh, 15000);
     return () => { active = false; clearInterval(timer); supabase.removeChannel(channel); };
   }, [isGlyphes, linkedPortraitIds, campaignId, queryClient]);
   const glyphesCombat = useGlyphesCombat(campaignId, isGlyphes);
@@ -1153,6 +1182,16 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
 
   const updateToken = (tokenId: string, updates: Partial<TokenItem>) => {
     setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, ...updates } : t));
+  };
+
+  // Token pictures are stored as files; only their URL goes into the shared board.
+  const uploadTokenImage = async (tokenId: string, file: File) => {
+    try {
+      const url = await uploadTabletopImage(campaignId, file);
+      updateToken(tokenId, { imageUrl: url });
+    } catch (e) {
+      toast({ title: "Image non enregistrée", description: (e as Error).message, variant: "destructive" });
+    }
   };
 
   const updateTokenHp = (tokenId: string, delta: number) => {
@@ -1468,34 +1507,36 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, opacity } : l));
   };
 
+  /** Shows a stored map picture and saves its URL once it has loaded. */
+  const showMapImage = useCallback((url: string, extra?: { scale?: number }) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      mapImageRef.current = img;
+      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: url, ...(extra ?? {}) } : l));
+      saveState({ map_image_url: url }, { immediate: true });
+    };
+    img.onerror = () => toast({ title: "Carte illisible", description: "L'image n'a pas pu être affichée.", variant: "destructive" });
+    img.src = url;
+  }, [saveState]);
+
   const handleMapUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
     const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const img = new window.Image();
-      img.onload = () => {
-        mapImageRef.current = img;
-        setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: dataUrl } : l));
-        saveState({ map_image_url: dataUrl });
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
     e.target.value = "";
+    // The picture is stored as a file; the shared board only keeps its URL.
+    toast({ title: "Import de la carte…", description: file.name });
+    uploadTabletopImage(campaignId, file)
+      .then(url => showMapImage(url))
+      .catch(err => toast({ title: "Carte non enregistrée", description: (err as Error).message, variant: "destructive" }));
   };
 
   // ── Carte procédurale ──
   const applyGeneratedMap = useCallback((map: GeneratedMap, o: { replaceWalls: boolean }) => {
     if (!perms.canEditMap) { denied("Seul le MJ peut changer la carte"); return; }
-    const img = new window.Image();
-    img.onload = () => {
-      mapImageRef.current = img;
-      setLayers(prev => prev.map(l => l.id === "map" ? { ...l, imageUrl: map.dataUrl, scale: 1 } : l));
-      saveState({ map_image_url: map.dataUrl }, { immediate: true });
-    };
-    img.src = map.dataUrl;
+    uploadTabletopImage(campaignId, map.dataUrl)
+      .then(url => showMapImage(url, { scale: 1 }))
+      .catch(err => toast({ title: "Carte non enregistrée", description: (err as Error).message, variant: "destructive" }));
 
     if (map.walls.length) {
       if (o.replaceWalls) wallsHook.clearAllWalls();
@@ -1507,7 +1548,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       title: "Carte générée",
       description: `${map.cols}×${map.rows} cases${map.walls.length ? ` · ${map.walls.length} murs` : ""}.`,
     });
-  }, [perms.canEditMap, saveState, wallsHook]);
+  }, [perms.canEditMap, campaignId, showMapImage, wallsHook]);
 
 
 
@@ -3505,6 +3546,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
     // Synchronise immédiatement l'intégralité de la scène côté serveur pour que
     // les autres utilisateurs (et le rechargement) voient exactement la même chose.
     if (isGM) {
+      // The grid lives inside `scenes`; it is not a column of the shared board.
       saveState({
         map_image_url: scene.mapImageUrl ?? null,
         active_scene_id: scene.id,
@@ -3513,7 +3555,6 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         walls: scene.walls ?? [],
         lights: scene.lights ?? [],
         night_mode: scene.nightMode ?? false,
-        grid: normalizeGridConfig(scene.grid),
       } as any, { immediate: true });
     }
     setPanOffset({ x: 0, y: 0 });
@@ -4146,6 +4187,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             isDirty={isDirty}
             lastSavedAt={lastSavedAt}
             realtimeStatus={realtimeStatus}
+            loadState={loadState}
           />
 
         </div>
@@ -4535,6 +4577,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               onCopyToken={ctxToken ? () => copyToken(ctxToken.id) : undefined}
               onPasteToken={() => pasteTokenAt(contextMenu.worldX, contextMenu.worldY)}
               onUpdateToken={ctxToken ? updateToken : undefined}
+              onTokenImageFile={ctxToken ? uploadTokenImage : undefined}
               hasClipboard={hasClipboard}
             />
           )}

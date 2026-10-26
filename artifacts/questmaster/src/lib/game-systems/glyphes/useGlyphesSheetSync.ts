@@ -37,10 +37,15 @@ export function useGlyphesSheetSync(
           if (token.creatureType !== "character" || !token.creatureId) continue;
           groups.set(token.creatureId, [...(groups.get(token.creatureId) ?? []), token]);
         }
+        if (groups.size === 0) return;
+        // One request for every linked sheet instead of one per character.
+        const { data: rows, error: readError } = await supabase.from("characters").select("id, system, system_data, updated_at").in("id", [...groups.keys()]);
+        if (readError || cancelled || generation !== scope.current) return;
+        const byId = new Map((rows ?? []).map(row => [row.id, row]));
         for (const [characterId, linked] of groups) {
           if (cancelled || generation !== scope.current) return;
-          const { data, error } = await supabase.from("characters").select("system, system_data, updated_at").eq("id", characterId).maybeSingle();
-          if (error || !data || data.system !== "Glyphes" || cancelled || generation !== scope.current) continue;
+          const data = byId.get(characterId);
+          if (!data || data.system !== "Glyphes") continue;
           let sheet = data.system_data as Record<string, any> | null;
           let version = data.updated_at;
           for (const token of linked) {
@@ -69,9 +74,14 @@ export function useGlyphesSheetSync(
         // Keep pending revisions intact; a later refresh retries network failures.
       } finally { running = false; }
     };
-    const onEdits = () => { void refresh(); };
+    // State changes only need a sheet round-trip when this tab holds unsaved
+    // sheet edits; reading other players' changes is the poll's job.
+    const onEdits = () => {
+      const live = current.current;
+      if (live.tokens.some(t => Object.keys(live.combat.getPending(t.id)).length > 0)) void refresh();
+    };
     window.addEventListener("glyphes-sheet-edits", onEdits);
-    const timer = window.setTimeout(onEdits, DEBOUNCE_MS);
+    const timer = window.setTimeout(() => { void refresh(); }, DEBOUNCE_MS);
     // Also imports edits from other sheets/devices and retries failed writes.
     const poll = window.setInterval(() => { if (!document.hidden) void refresh(); }, 5000);
     return () => { cancelled = true; ++scope.current; window.clearTimeout(timer); window.clearInterval(poll); window.removeEventListener("glyphes-sheet-edits", onEdits); };

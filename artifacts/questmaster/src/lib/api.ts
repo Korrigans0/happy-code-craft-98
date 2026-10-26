@@ -16,6 +16,12 @@ function fail(err: unknown): never {
 }
 
 async function uid(): Promise<string> {
+  // The local session is enough to know who writes (the server re-checks every
+  // request with RLS); calling the auth server before each chat message or
+  // save added a network round trip that could fail on weak connections.
+  const { data: session } = await supabase.auth.getSession();
+  const sessionUserId = session.session?.user?.id;
+  if (sessionUserId) return sessionUserId;
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error("Vous devez être connecté pour effectuer cette action.");
   return data.user.id;

@@ -2384,6 +2384,33 @@ export type Database = {
           },
         ]
       }
+      tabletop_state_image_backups: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          map_image_url: string | null
+          scenes: Json | null
+          tokens: Json | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          map_image_url?: string | null
+          scenes?: Json | null
+          tokens?: Json | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          map_image_url?: string | null
+          scenes?: Json | null
+          tokens?: Json | null
+        }
+        Relationships: []
+      }
       tabletop_token_notes: {
         Row: {
           campaign_id: string
@@ -2686,6 +2713,19 @@ export type Database = {
           display_name: string
           owner_id: string
         }[]
+      }
+      merge_glyphes_tokens: {
+        Args: { _campaign_id: string; _tokens: Json }
+        Returns: undefined
+      }
+      merge_tabletop_items: {
+        Args: {
+          _campaign_id: string
+          _column: string
+          _removed: string[]
+          _upserts: Json
+        }
+        Returns: Json
       }
       publish_pregen_to_shop: {
         Args: {

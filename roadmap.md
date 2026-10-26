@@ -1,5 +1,13 @@
 # Roadmap
 
+## Performances et sauvegardes en partie (Glyphes)
+- [x] Sortir les images de carte de l'état partagé (8 Mo → 3 Ko pour « Désastre Industriel »), copie de sauvegarde conservée
+- [x] Corriger le blocage de toutes les sauvegardes après un changement de scène
+- [x] Sauvegardes de jetons fusionnées sans écrasement entre joueurs, nouvel essai en cas de coupure, rechargement fiable
+- [x] Alléger les vérifications répétées (fiches liées, portraits, combat Glyphes, confrontation)
+- [x] Tests : fusion simultanée, coupure réseau, deux onglets, endurance, import de carte
+- [ ] Publier, puis faire une session test réelle à plusieurs joueurs
+
 ## Dés 3D partagés sur la table
 - [x] Rejouer les lancers 3D des autres joueurs sur la carte avec leurs vrais résultats (option désactivable)
 
