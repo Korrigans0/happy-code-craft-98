@@ -15,6 +15,13 @@
       "when": 1793036718748,
       "tag": "0001_tabletop_performance_and_merge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793191164531,
+      "tag": "0002_merge_tabletop_items_scene_guard",
+      "breakpoints": true
     }
   ]
 }

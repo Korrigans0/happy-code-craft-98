@@ -2721,7 +2721,9 @@ export type Database = {
       merge_tabletop_items: {
         Args: {
           _campaign_id: string
+          _check_scene?: boolean
           _column: string
+          _expected_scene_id?: string
           _removed: string[]
           _upserts: Json
         }
