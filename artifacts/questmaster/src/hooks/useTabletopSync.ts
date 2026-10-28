@@ -219,20 +219,22 @@ export function useTabletopSync({
     const base = lastSavedRef.current;
     if (updatedAt) lastUpdatedAtRef.current = updatedAt;
     lastSavedRef.current = normalized;
-    // The GM switched scene: unsaved token/drawing edits belong to the old one.
-    const sceneChanged = pendingBelongsToOldScene(base, normalized);
-
     const delivered = new Set<TabletopStateKey>();
+    // The GM switched scene: unsaved token/drawing edits belong to the old one
+    // and are dropped (replaying them would copy old tokens into the new scene).
+    if (pendingBelongsToOldScene(base, normalized)) {
+      for (const column of MERGEABLE_COLUMNS) {
+        if (pendingStateRef.current[column] === undefined) continue;
+        delete (pendingStateRef.current as Record<string, unknown>)[column];
+        delivered.add(column);
+      }
+    }
+
     const view: TabletopState = { ...normalized };
     for (const key of Object.keys(normalized) as TabletopStateKey[]) {
       if (isEqual(normalized[key], base[key])) continue;
       const pending = pendingStateRef.current[key];
       if (pending === undefined) { delivered.add(key); continue; }
-      if (isMergeableColumn(key) && sceneChanged) {
-        delete (pendingStateRef.current as Record<string, unknown>)[key];
-        delivered.add(key);
-        continue;
-      }
       if (isMergeableColumn(key)) {
         const rebased = rebaseById(normalized[key] as unknown[], base[key] as unknown[] | undefined, pending as unknown[]);
         (pendingStateRef.current as Record<string, unknown>)[key] = rebased;
