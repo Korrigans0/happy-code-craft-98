@@ -157,3 +157,27 @@ export function isRetryableError(error: { code?: string | null; message?: string
   // No HTTP status and no database code: the request never reached the server.
   return !code && (status === 0 || status === undefined || status === null);
 }
+
+/** Server refusal: the merge targeted a scene that is no longer the active one. */
+export const SCENE_CHANGED_CODE = "SCN01";
+export const isSceneChangedError = (error: { code?: string | null } | null | undefined) =>
+  error?.code === SCENE_CHANGED_CODE;
+
+/**
+ * A write that changes the active scene replaces the whole board: tokens and
+ * drawings must then be written in the same row update as the scene id, never
+ * merged separately (players' merges in between would mix the two scenes).
+ */
+export const changesActiveScene = (payload: Record<string, unknown>) => "active_scene_id" in payload;
+
+/**
+ * True when local unsaved token/drawing edits were made on a scene that is no
+ * longer active: replaying them would copy old-scene tokens into the new one.
+ */
+export function pendingBelongsToOldScene(
+  base: { active_scene_id?: string | null },
+  remote: { active_scene_id?: string | null },
+): boolean {
+  if (!("active_scene_id" in base)) return false;
+  return (base.active_scene_id ?? null) !== (remote.active_scene_id ?? null);
+}

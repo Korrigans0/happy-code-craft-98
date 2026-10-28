@@ -25,6 +25,9 @@ import {
   diffById,
   isMergeableColumn,
   isRetryableError,
+  isSceneChangedError,
+  changesActiveScene,
+  pendingBelongsToOldScene,
   pickTabletopColumns,
   rebaseById,
   type MergeableColumn,
@@ -135,13 +138,13 @@ const isEqual = (a: unknown, b: unknown): boolean => {
 const ROW_COLUMNS = `${TABLETOP_COLUMNS.join(", ")}, updated_at, updated_by`;
 
 class SyncError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+  constructor(message: string, readonly retryable: boolean, readonly code?: string) {
     super(message);
   }
 }
 
 const toSyncError = (error: { code?: string; message?: string } | null, status?: number) =>
-  new SyncError(error?.message || "Erreur de synchronisation", isRetryableError(error, status));
+  new SyncError(error?.message || "Erreur de synchronisation", isRetryableError(error, status), error?.code);
 
 const newer = (a: string | null | undefined, b: string | null | undefined) =>
   !b || (!!a && Date.parse(a) >= Date.parse(b));
@@ -216,8 +219,17 @@ export function useTabletopSync({
     const base = lastSavedRef.current;
     if (updatedAt) lastUpdatedAtRef.current = updatedAt;
     lastSavedRef.current = normalized;
-
     const delivered = new Set<TabletopStateKey>();
+    // The GM switched scene: unsaved token/drawing edits belong to the old one
+    // and are dropped (replaying them would copy old tokens into the new scene).
+    if (pendingBelongsToOldScene(base, normalized)) {
+      for (const column of MERGEABLE_COLUMNS) {
+        if (pendingStateRef.current[column] === undefined) continue;
+        delete (pendingStateRef.current as Record<string, unknown>)[column];
+        delivered.add(column);
+      }
+    }
+
     const view: TabletopState = { ...normalized };
     for (const key of Object.keys(normalized) as TabletopStateKey[]) {
       if (isEqual(normalized[key], base[key])) continue;
@@ -246,10 +258,13 @@ export function useTabletopSync({
     const remaining: Record<string, unknown> = { ...payload };
     const corrections = new Set<MergeableColumn>();
     let latest: string | null = null;
+    // A scene change writes tokens/drawings together with the new scene id.
+    const sceneChange = changesActiveScene(payload);
     try {
-      // 1) Multi-writer arrays: per-id merge on the server.
+      // 1) Multi-writer arrays: per-id merge on the server, refused if the
+      //    active scene changed since this tab last saw it.
       for (const column of MERGEABLE_COLUMNS) {
-        if (!(column in remaining)) continue;
+        if (sceneChange || !(column in remaining)) continue;
         const next = remaining[column] as unknown[];
         const diff = diffById(lastSavedRef.current[column] as unknown[] | undefined, next);
         if (!diff) continue; // full write below
@@ -259,6 +274,8 @@ export function useTabletopSync({
             _column: column,
             _upserts: diff.upserts,
             _removed: diff.removed,
+            _expected_scene_id: lastSavedRef.current.active_scene_id ?? null,
+            _check_scene: true,
           });
           if (error) throw toSyncError(error, status);
           const merged = (data?.items ?? next) as unknown[];
@@ -302,7 +319,20 @@ export function useTabletopSync({
       }
     } catch (e) {
       const err = e instanceof SyncError ? e : new SyncError(String((e as Error)?.message ?? e), true);
-      if (err.retryable) {
+      if (isSceneChangedError(err)) {
+        // Edits made on the previous scene: drop them and show the new scene.
+        console.info("[Tabletop] Scène changée par le MJ : modifications de l'ancienne scène ignorées.");
+        for (const column of MERGEABLE_COLUMNS) delete (pendingStateRef.current as Record<string, unknown>)[column];
+        const rest = Object.fromEntries(Object.entries(remaining).filter(([k]) => !isMergeableColumn(k)));
+        pendingStateRef.current = { ...(rest as Partial<TabletopState>), ...pendingStateRef.current };
+        resyncRequestedRef.current = true;
+        if (Object.keys(rest).length > 0 && !saveTimeoutRef.current) {
+          saveTimeoutRef.current = setTimeout(() => {
+            saveTimeoutRef.current = null;
+            void flushRef.current();
+          }, debounceMs);
+        }
+      } else if (err.retryable) {
         console.warn("[Tabletop] Sauvegarde différée (nouvel essai):", err.message);
         // Unsent parts go back in the queue; newer local edits take precedence.
         pendingStateRef.current = { ...(remaining as Partial<TabletopState>), ...pendingStateRef.current };
@@ -329,7 +359,7 @@ export function useTabletopSync({
         void pullRef.current(true);
       }
     }
-  }, [campaignId, userId, markDirty]);
+  }, [campaignId, userId, markDirty, debounceMs]);
 
   const flush = useCallback(async () => {
     if (!initializedRef.current) return; // never write before the saved board is known

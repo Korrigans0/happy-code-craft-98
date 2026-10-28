@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { applyDiff, diffById, isRetryableError, pickTabletopColumns, rebaseById } from "./tabletopMerge";
+import { applyDiff, changesActiveScene, diffById, isRetryableError, isSceneChangedError, pendingBelongsToOldScene, pickTabletopColumns, rebaseById } from "./tabletopMerge";
 
 const t = (id: string, x: number) => ({ id, x });
 
@@ -53,5 +53,21 @@ describe("isRetryableError", () => {
   it("does not retry permission refusals or unknown columns", () => {
     expect(isRetryableError({ code: "42501", message: "Only the GM can modify map" }, 403)).toBe(false);
     expect(isRetryableError({ code: "PGRST204", message: "Could not find the 'grid' column" }, 400)).toBe(false);
+  });
+});
+
+describe("scene change safety", () => {
+  it("a write that changes the active scene is not merged per id", () => {
+    expect(changesActiveScene({ tokens: [], active_scene_id: "b" })).toBe(true);
+    expect(changesActiveScene({ tokens: [] })).toBe(false);
+  });
+  it("unsaved token edits from the previous scene are not replayed on the new one", () => {
+    expect(pendingBelongsToOldScene({ active_scene_id: "a" }, { active_scene_id: "b" })).toBe(true);
+    expect(pendingBelongsToOldScene({ active_scene_id: "a" }, { active_scene_id: "a" })).toBe(false);
+    expect(pendingBelongsToOldScene({}, { active_scene_id: "b" })).toBe(false);
+  });
+  it("recognises the server refusal for a stale scene and never retries it", () => {
+    expect(isSceneChangedError({ code: "SCN01" })).toBe(true);
+    expect(isRetryableError({ code: "SCN01", message: "Active scene changed" }, 400)).toBe(false);
   });
 });
