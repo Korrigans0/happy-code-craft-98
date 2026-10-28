@@ -6,7 +6,10 @@
 - [x] Sauvegardes de jetons fusionnées sans écrasement entre joueurs, nouvel essai en cas de coupure, rechargement fiable
 - [x] Alléger les vérifications répétées (fiches liées, portraits, combat Glyphes, confrontation)
 - [x] Tests : fusion simultanée, coupure réseau, deux onglets, endurance, import de carte
+- [x] Vérification avant publication à trois comptes : scènes, coupure, refus serveur, permissions, fichiers de cartes
+- [x] Empêcher un déplacement de l'ancienne scène d'apparaître dans la nouvelle ; réafficher l'état enregistré après un refus
 - [ ] Publier, puis faire une session test réelle à plusieurs joueurs
+- [ ] Décision : rendre les fichiers de cartes strictement réservés aux membres (stockage privé + liens temporaires)
 
 ## Dés 3D partagés sur la table
 - [x] Rejouer les lancers 3D des autres joueurs sur la carte avec leurs vrais résultats (option désactivable)
