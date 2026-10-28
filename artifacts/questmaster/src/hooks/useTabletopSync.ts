@@ -258,10 +258,13 @@ export function useTabletopSync({
     const remaining: Record<string, unknown> = { ...payload };
     const corrections = new Set<MergeableColumn>();
     let latest: string | null = null;
+    // A scene change writes tokens/drawings together with the new scene id.
+    const sceneChange = changesActiveScene(payload);
     try {
-      // 1) Multi-writer arrays: per-id merge on the server.
+      // 1) Multi-writer arrays: per-id merge on the server, refused if the
+      //    active scene changed since this tab last saw it.
       for (const column of MERGEABLE_COLUMNS) {
-        if (!(column in remaining)) continue;
+        if (sceneChange || !(column in remaining)) continue;
         const next = remaining[column] as unknown[];
         const diff = diffById(lastSavedRef.current[column] as unknown[] | undefined, next);
         if (!diff) continue; // full write below
@@ -271,6 +274,8 @@ export function useTabletopSync({
             _column: column,
             _upserts: diff.upserts,
             _removed: diff.removed,
+            _expected_scene_id: lastSavedRef.current.active_scene_id ?? null,
+            _check_scene: true,
           });
           if (error) throw toSyncError(error, status);
           const merged = (data?.items ?? next) as unknown[];
