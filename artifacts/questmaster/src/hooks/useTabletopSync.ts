@@ -359,7 +359,7 @@ export function useTabletopSync({
         void pullRef.current(true);
       }
     }
-  }, [campaignId, userId, markDirty]);
+  }, [campaignId, userId, markDirty, debounceMs]);
 
   const flush = useCallback(async () => {
     if (!initializedRef.current) return; // never write before the saved board is known
