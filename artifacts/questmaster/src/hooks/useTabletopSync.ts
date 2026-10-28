@@ -138,13 +138,13 @@ const isEqual = (a: unknown, b: unknown): boolean => {
 const ROW_COLUMNS = `${TABLETOP_COLUMNS.join(", ")}, updated_at, updated_by`;
 
 class SyncError extends Error {
-  constructor(message: string, readonly retryable: boolean) {
+  constructor(message: string, readonly retryable: boolean, readonly code?: string) {
     super(message);
   }
 }
 
 const toSyncError = (error: { code?: string; message?: string } | null, status?: number) =>
-  new SyncError(error?.message || "Erreur de synchronisation", isRetryableError(error, status));
+  new SyncError(error?.message || "Erreur de synchronisation", isRetryableError(error, status), error?.code);
 
 const newer = (a: string | null | undefined, b: string | null | undefined) =>
   !b || (!!a && Date.parse(a) >= Date.parse(b));
@@ -219,6 +219,8 @@ export function useTabletopSync({
     const base = lastSavedRef.current;
     if (updatedAt) lastUpdatedAtRef.current = updatedAt;
     lastSavedRef.current = normalized;
+    // The GM switched scene: unsaved token/drawing edits belong to the old one.
+    const sceneChanged = pendingBelongsToOldScene(base, normalized);
 
     const delivered = new Set<TabletopStateKey>();
     const view: TabletopState = { ...normalized };
@@ -226,6 +228,11 @@ export function useTabletopSync({
       if (isEqual(normalized[key], base[key])) continue;
       const pending = pendingStateRef.current[key];
       if (pending === undefined) { delivered.add(key); continue; }
+      if (isMergeableColumn(key) && sceneChanged) {
+        delete (pendingStateRef.current as Record<string, unknown>)[key];
+        delivered.add(key);
+        continue;
+      }
       if (isMergeableColumn(key)) {
         const rebased = rebaseById(normalized[key] as unknown[], base[key] as unknown[] | undefined, pending as unknown[]);
         (pendingStateRef.current as Record<string, unknown>)[key] = rebased;
