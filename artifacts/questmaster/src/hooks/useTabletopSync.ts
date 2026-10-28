@@ -346,8 +346,17 @@ export function useTabletopSync({
         setConnectionStatus((s) => (s === "offline" ? s : "reconnecting"));
       } else {
         // Permanent refusal: never pretend it was saved, show the saved board again.
+        // The re-read alone would not repaint these sections when the server row
+        // equals the last confirmed state, so they are restored explicitly.
         console.error("[Tabletop] Modification refusée:", err.message);
         onSaveRejectedRef.current?.(REJECTED_MESSAGE);
+        const refused = new Set<TabletopStateKey>();
+        for (const key of Object.keys(remaining) as TabletopStateKey[]) {
+          if (!(key in lastSavedRef.current)) continue;
+          delete (pendingStateRef.current as Record<string, unknown>)[key];
+          refused.add(key);
+        }
+        if (refused.size > 0) onStateReceivedRef.current({ ...(lastSavedRef.current as TabletopState) }, refused);
         resyncRequestedRef.current = true;
       }
     } finally {
