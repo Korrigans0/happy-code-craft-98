@@ -326,6 +326,12 @@ export function useTabletopSync({
         const rest = Object.fromEntries(Object.entries(remaining).filter(([k]) => !isMergeableColumn(k)));
         pendingStateRef.current = { ...(rest as Partial<TabletopState>), ...pendingStateRef.current };
         resyncRequestedRef.current = true;
+        if (Object.keys(rest).length > 0 && !saveTimeoutRef.current) {
+          saveTimeoutRef.current = setTimeout(() => {
+            saveTimeoutRef.current = null;
+            void flushRef.current();
+          }, debounceMs);
+        }
       } else if (err.retryable) {
         console.warn("[Tabletop] Sauvegarde différée (nouvel essai):", err.message);
         // Unsent parts go back in the queue; newer local edits take precedence.
