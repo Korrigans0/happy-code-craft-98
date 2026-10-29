@@ -2096,15 +2096,23 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
         ctx.rotate((token.rotation * Math.PI) / 180);
         ctx.translate(-cx, -cy);
 
-        if (token.imageUrl) {
-          const img = new window.Image();
-          img.src = token.imageUrl;
+        // Reuse the preloaded image cache: creating an Image per token per frame
+        // re-requested every picture and made tokens flicker on busy boards.
+        const tokenImg = token.imageUrl ? tokenImagesRef.current.get(token.imageUrl) : undefined;
+        const tokenImgReady = !!tokenImg && tokenImg.complete && tokenImg.naturalWidth > 0;
+        if (token.imageUrl && tokenImgReady) {
           ctx.save();
           ctx.beginPath();
           ctx.arc(cx, cy, halfSize, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(img, cx - halfSize, cy - halfSize, token.size, token.size);
+          ctx.drawImage(tokenImg!, cx - halfSize, cy - halfSize, token.size, token.size);
           ctx.restore();
+        } else if (token.imageUrl) {
+          // Image still loading: draw a neutral disc, the onload handler redraws.
+          ctx.beginPath();
+          ctx.arc(cx, cy, halfSize, 0, Math.PI * 2);
+          ctx.fillStyle = token.color + "99";
+          ctx.fill();
         } else {
           const gradient = ctx.createRadialGradient(cx - halfSize * 0.3, cy - halfSize * 0.3, halfSize * 0.1, cx, cy, halfSize);
           gradient.addColorStop(0, token.color + "ff");
