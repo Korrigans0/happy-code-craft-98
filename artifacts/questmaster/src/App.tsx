@@ -89,6 +89,7 @@ const AppRoutes = () => (
       <TokenSyncer />
       <CosmeticsApplier />
       <ScrollToTop />
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/sign-in/*" element={<Auth />} />
@@ -128,6 +129,7 @@ const AppRoutes = () => (
         <Route path="/systems/glyphes/futur" element={<GlyphesComingSoon era="futur" />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />
