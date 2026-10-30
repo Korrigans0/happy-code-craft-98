@@ -67,12 +67,7 @@ export const WA_CLASS_BONUSES: Record<string, Record<string, number>> = {
 };
 
 // Class hit dice & magic stat
-export const WA_CLASS_META: Record<string, { hitDie: string; magicStat?: string }> = {
-  "Combattant": { hitDie: "2d6" },
-  "Croyant": { hitDie: "2d4", magicStat: "SAG" },
-  "Mystique": { hitDie: "1d6", magicStat: "INT" },
-  "Ombre": { hitDie: "1d8" },
-};
+export { WA_CLASS_META } from "./wa-class-meta";
 
 // WA currency
 export const WA_CURRENCY = "NX";
