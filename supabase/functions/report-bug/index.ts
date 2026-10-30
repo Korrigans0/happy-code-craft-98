@@ -3,6 +3,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { sendTemplateEmailWithLog } from '../_shared/transactional-email-templates/send-and-log.ts'
+import { clientIp, DAY, HOUR, withinRateLimits } from '../_shared/rate-limit.ts'
 
 const MAX_DESCRIPTION = 4000
 const MAX_SCREENSHOT_BYTES = 4 * 1024 * 1024 // 4 MB decoded
@@ -82,6 +83,18 @@ Deno.serve(async (req) => {
     } catch {
       userId = null
     }
+  }
+
+  // Anti-spam: this endpoint is public and e-mails the owner on every call.
+  const ip = clientIp(req)
+  const allowed = await withinRateLimits([
+    { bucket: `bug:ip:${ip}`, max: 5, windowSeconds: HOUR },
+    { bucket: `bug:ip-day:${ip}`, max: 20, windowSeconds: DAY },
+    ...(userId ? [{ bucket: `bug:user:${userId}`, max: 10, windowSeconds: HOUR }] : []),
+    { bucket: 'bug:global', max: 300, windowSeconds: DAY },
+  ])
+  if (!allowed) {
+    return json({ error: 'Trop de signalements envoyés. Réessayez plus tard.' }, 429)
   }
 
   // Optional screenshot -> storage
