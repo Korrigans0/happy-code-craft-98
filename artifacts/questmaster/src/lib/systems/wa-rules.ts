@@ -8,7 +8,7 @@
 //  - PM max = 2 x (MAG + niveau), minimum 0
 //  - Niveau maximum = 8
 
-import { WA_CLASS_META } from "@/lib/game-systems";
+import { WA_CLASS_META } from "@/lib/wa-class-meta";
 
 export const WA_MAX_LEVEL = 8;
 export const WA_MIN_LEVEL = 1;

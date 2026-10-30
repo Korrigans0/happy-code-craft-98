@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local env overrides (never commit real secrets; backend secrets live in Lovable Cloud)
+.env.local
+.env.*.local

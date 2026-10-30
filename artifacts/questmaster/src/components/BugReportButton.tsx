@@ -110,6 +110,10 @@ const BugReportButton = () => {
         },
       });
       if (error || !data?.success) {
+        const httpStatus = (error as { context?: { status?: number } } | null)?.context?.status;
+        if (httpStatus === 429) {
+          setErrorMessage("Trop de signalements envoyés depuis cet appareil. Réessayez dans une heure.");
+        }
         throw new Error(String((data as { error?: string } | null)?.error ?? error?.message ?? "send_failed"));
       }
       setStatus("success");

@@ -11,6 +11,8 @@ project_id = "snawpxrejmcxfbiiowxr"
     verify_jwt = true
   [functions.report-bug]
     verify_jwt = false
+  [functions.handle-email-events]
+    verify_jwt = false
   [functions.send-campaign-invitation]
     verify_jwt = true
 

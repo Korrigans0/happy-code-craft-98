@@ -103,7 +103,7 @@ const Header = () => {
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative flex h-11 w-11 shrink-0 items-center justify-center transition-all duration-300 group-hover:scale-105">
               <img
-                src="/aetheria-logo.png"
+                src="/aetheria-logo-128.webp"
                 alt="Aetheria"
                 className="h-11 w-11 rounded-full object-cover"
                 style={{ filter: "drop-shadow(0 0 12px hsl(41,60%,55%,0.45))" }}

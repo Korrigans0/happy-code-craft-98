@@ -1242,6 +1242,30 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_rate_limits: {
+        Row: {
+          bucket: string
+          created_at: string
+          hits: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          hits?: number
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          hits?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -2238,6 +2262,7 @@ export type Database = {
           last_payment_failed_at: string | null
           paddle_customer_id: string
           paddle_subscription_id: string
+          paddle_updated_at: string | null
           price_id: string
           product_id: string
           refunded_at: string | null
@@ -2256,6 +2281,7 @@ export type Database = {
           last_payment_failed_at?: string | null
           paddle_customer_id: string
           paddle_subscription_id: string
+          paddle_updated_at?: string | null
           price_id: string
           product_id: string
           refunded_at?: string | null
@@ -2274,6 +2300,7 @@ export type Database = {
           last_payment_failed_at?: string | null
           paddle_customer_id?: string
           paddle_subscription_id?: string
+          paddle_updated_at?: string | null
           price_id?: string
           product_id?: string
           refunded_at?: string | null
@@ -2622,6 +2649,10 @@ export type Database = {
         Returns: boolean
       }
       claim_pregen_character: { Args: { _pregen_id: string }; Returns: string }
+      consume_edge_rate_limit: {
+        Args: { _bucket: string; _max: number; _window_seconds: number }
+        Returns: boolean
+      }
       create_content_package: {
         Args: {
           _description: string

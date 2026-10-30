@@ -3,16 +3,16 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, MessageCircle } from "lucide-react";
-import vaeloriaLogo from "@/assets/vaeloria-logo-big.svg";
+import vaeloriaLogo from "@/assets/vaeloria-logo.webp";
 import guildryLogo from "@/assets/guildry-logo.webp";
-import waLogo from "@/assets/wa-logo.png";
+import waLogo from "@/assets/wa-logo.webp";
 import PageAmbiance from "@/components/fantasy/PageAmbiance";
-import waHome from "@/assets/partners/wa-home.png";
-import waCodex from "@/assets/partners/wa-codex.png";
+import waHome from "@/assets/partners/wa-home.webp";
+import waCodex from "@/assets/partners/wa-codex.webp";
 import waDiscord from "@/assets/partners/wa-discord.png";
 import guildryHome from "@/assets/partners/guildry-home.png";
-import vaeloriaHome from "@/assets/partners/vaeloria-home.png";
-import vaeloriaDiscord from "@/assets/partners/vaeloria-discord.png";
+import vaeloriaHome from "@/assets/partners/vaeloria-home.webp";
+import vaeloriaDiscord from "@/assets/partners/vaeloria-discord.webp";
 
 const ScreenshotGallery = ({ images }: { images: { src: string; alt: string }[] }) => (
   <div className="grid gap-3 px-6 pb-6 md:grid-cols-3 md:px-8 md:pb-8">

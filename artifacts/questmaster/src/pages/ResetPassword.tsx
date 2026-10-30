@@ -62,7 +62,7 @@ const ResetPassword = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-dark px-4">
-      <img src="/aetheria-logo.png" alt="Aetheria"
+      <img src="/aetheria-logo-128.webp" alt="Aetheria"
         className="mb-8 h-20 w-20 rounded-full object-cover"
         style={{ filter: "drop-shadow(0 0 20px hsl(43,75%,50%,0.5))" }} />
 

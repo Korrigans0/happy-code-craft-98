@@ -6,6 +6,7 @@
 
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { DAY, HOUR, withinRateLimits } from "../_shared/rate-limit.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -86,6 +87,15 @@ Deno.serve(async (req) => {
     .eq("user_id", user.id)
     .maybeSingle();
   if (membership?.role !== "gm") return json({ error: "Réservé au MJ de cette campagne." }, 403);
+
+  // Per-user AI quota: prevents abusive cost on the AI gateway.
+  const withinQuota = await withinRateLimits([
+    { bucket: `ai:mj-generate-entity:hour:${user.id}`, max: 20, windowSeconds: HOUR },
+    { bucket: `ai:mj-generate-entity:day:${user.id}`, max: 100, windowSeconds: DAY },
+  ]);
+  if (!withinQuota) {
+    return json({ error: "Limite d'utilisation de l'assistant atteinte. Réessayez plus tard." }, 429);
+  }
 
   const [{ data: campaign }, { data: entities }] = await Promise.all([
     supabase
