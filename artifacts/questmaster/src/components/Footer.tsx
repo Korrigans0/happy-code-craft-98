@@ -10,7 +10,7 @@ const Footer = forwardRef<HTMLElement>((props, ref) => {
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid gap-8 md:grid-cols-[1fr_auto_auto] md:items-start">
           <div className="flex items-center gap-3">
-            <img src="/aetheria-logo.png" alt="Aetheria" className="h-8 w-8 rounded-full object-cover opacity-90" />
+            <img src="/aetheria-logo-128.webp" alt="Aetheria" className="h-8 w-8 rounded-full object-cover opacity-90" />
             <div>
               <p className="font-display text-sm font-semibold text-gradient-gold">Aetheria VTT</p>
               <p className="text-[10px] text-muted-foreground">Table Virtuelle Immersive</p>

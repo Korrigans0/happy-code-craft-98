@@ -1,7 +1,7 @@
 import { ExternalLink, Star, Handshake, Swords, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import vaeloriaLogo from "@/assets/vaeloria-logo.svg";
-import waLogo from "@/assets/wa-logo.png";
+import vaeloriaLogo from "@/assets/vaeloria-logo.webp";
+import waLogo from "@/assets/wa-logo.webp";
 
 const GameSystemsSection = () => {
   return (
