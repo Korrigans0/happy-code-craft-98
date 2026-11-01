@@ -83,3 +83,4 @@
 - [ ] Vérifier mobile, calculs, sécurité, parcours utilisateur et compilation
 - [ ] Produire le rapport final avec éléments de paiement manquants
 - [x] Épreuves Glyphes partagées dans le chat de campagne (temps réel, historique, sans doublon)
+- [x] Audit externe : images de jetons en cache, pages chargées à la demande, images allégées, anti-spam signalements, quotas IA, webhook e-mails, ordre des webhooks Paddle
