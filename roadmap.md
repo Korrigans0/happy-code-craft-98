@@ -84,3 +84,14 @@
 - [ ] Produire le rapport final avec éléments de paiement manquants
 - [x] Épreuves Glyphes partagées dans le chat de campagne (temps réel, historique, sans doublon)
 - [x] Audit externe : images de jetons en cache, pages chargées à la demande, images allégées, anti-spam signalements, quotas IA, webhook e-mails, ordre des webhooks Paddle
+
+## Audit 2 : fiabilité, connexion, chat, images, polices (demande actuelle)
+- [ ] Chat : charger les derniers messages + « Voir les messages précédents »
+- [ ] Réglages de rechargement des données (pas de rechargement à chaque retour sur l'onglet)
+- [ ] Connexion : retour à la page voulue, écran de chargement, session qui ne bloque jamais, lien `next` sécurisé
+- [ ] Filets d'erreur par page et pour la table, avec envoi du rapport en un clic
+- [ ] Stockage local protégé (navigation privée / stockage bloqué)
+- [ ] Images de plateau redimensionnées (4096 px) et converties en WebP avant envoi
+- [ ] Polices hébergées sur le site (plus d'appel à Google avant consentement)
+- [ ] Icônes d'installation 192/512, image de partage stable
+- [ ] Tests lancables par une commande ; nettoyage (doublon 404, code mort, textes alternatifs)
