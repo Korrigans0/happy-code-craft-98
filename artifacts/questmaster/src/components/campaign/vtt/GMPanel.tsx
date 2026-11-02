@@ -24,6 +24,7 @@ import { toast } from "@/hooks/use-toast";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { glyphesEntryFromMessage } from "@/lib/game-systems/glyphes/chatMessage";
 import GlyphesEntryCard from "./glyphes/GlyphesEntryCard";
+import { readStorage, writeStorage } from "@/lib/safeStorage";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
@@ -121,7 +122,7 @@ export default function GMPanel({
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   // Largeur étirable du panneau (poignée sur le bord gauche), persistée par campagne.
   const [panelWidth, setPanelWidth] = useState(() => {
-    const saved = parseInt(localStorage.getItem(`vtt-panel-width-${campaignId}`) || "", 10);
+    const saved = parseInt(readStorage(`vtt-panel-width-${campaignId}`) || "", 10);
     return !isNaN(saved) ? Math.min(560, Math.max(220, saved)) : 288;
   });
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
@@ -140,7 +141,7 @@ export default function GMPanel({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       setPanelWidth(w => {
-        try { localStorage.setItem(`vtt-panel-width-${campaignId}`, String(w)); } catch {}
+        try { writeStorage(`vtt-panel-width-${campaignId}`, String(w)); } catch {}
         return w;
       });
     };
@@ -150,7 +151,7 @@ export default function GMPanel({
   const [chatInput, setChatInput] = useState("");
   const [isSecret, setIsSecret] = useState(false);
   const [bestiarySearch, setBestiarySearch] = useState("");
-  const [notes, setNotes] = useState(() => localStorage.getItem(`vtt-notes-${campaignId}`) || "");
+  const [notes, setNotes] = useState(() => readStorage(`vtt-notes-${campaignId}`) || "");
   const [addingToInit, setAddingToInit] = useState<{ name: string; roll: string; mod: string; hp: string; type: "player" | "monster" | "npc" }>({ name: "", roll: "", mod: "0", hp: "10", type: "monster" });
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
@@ -189,7 +190,7 @@ export default function GMPanel({
 
   const saveNotes = (val: string) => {
     setNotes(val);
-    localStorage.setItem(`vtt-notes-${campaignId}`, val);
+    writeStorage(`vtt-notes-${campaignId}`, val);
   };
 
   const sendChatMessage = async (content: string) => {

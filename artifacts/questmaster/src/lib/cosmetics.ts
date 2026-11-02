@@ -1,4 +1,5 @@
 // Cosmetics — personnalisation visuelle par utilisateur.
+import { readStorage } from "@/lib/safeStorage";
 //
 // Catalogue purement déclaratif : skins de dés, cadres de tokens, thèmes
 // d'interface et packs de bruitages. Les valeurs sont exposées en variables
@@ -69,7 +70,7 @@ export const COSMETICS_STORAGE_KEY = "aetheria.cosmetics";
 
 export function readLocalCosmetics(): Cosmetics {
   try {
-    const raw = localStorage.getItem(COSMETICS_STORAGE_KEY);
+    const raw = readStorage(COSMETICS_STORAGE_KEY);
     if (!raw) return DEFAULT_COSMETICS;
     return { ...DEFAULT_COSMETICS, ...(JSON.parse(raw) as Partial<Cosmetics>) };
   } catch {

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   applyCosmetics, COSMETICS_STORAGE_KEY, Cosmetics, DEFAULT_COSMETICS, readLocalCosmetics,
 } from "@/lib/cosmetics";
+import { writeStorage } from "@/lib/safeStorage";
 
 export function useCosmetics() {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export function useCosmetics() {
   // Application immédiate à chaque changement
   useEffect(() => {
     applyCosmetics(cosmetics);
-    try { localStorage.setItem(COSMETICS_STORAGE_KEY, JSON.stringify(cosmetics)); } catch { /* stockage indisponible */ }
+    try { writeStorage(COSMETICS_STORAGE_KEY, JSON.stringify(cosmetics)); } catch { /* stockage indisponible */ }
   }, [cosmetics]);
 
   // Hydratation depuis la base

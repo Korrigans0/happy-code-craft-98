@@ -1,6 +1,7 @@
 // Per-device preference: show other players' 3D dice rolling on the table.
 // Defaults to on, except when the device asks for reduced motion.
 import { useCallback, useEffect, useState } from "react";
+import { readStorage, writeStorage } from "@/lib/safeStorage";
 
 const STORAGE_KEY = "aetheria:shared-dice-3d";
 const CHANGE_EVENT = "aetheria:shared-dice-3d-change";
@@ -13,7 +14,7 @@ function prefersReducedMotion(): boolean {
 export function readSharedDicePreference(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored = readStorage(STORAGE_KEY);
     if (stored === "on") return true;
     if (stored === "off") return false;
   } catch {
@@ -24,7 +25,7 @@ export function readSharedDicePreference(): boolean {
 
 export function writeSharedDicePreference(enabled: boolean) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off");
+    writeStorage(STORAGE_KEY, enabled ? "on" : "off");
   } catch {
     /* storage unavailable */
   }

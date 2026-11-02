@@ -4,6 +4,7 @@ import { Music, VolumeX } from "lucide-react";
 import ambientAsset from "@/assets/aetheria-ambient.mp3.asset.json";
 import { cn } from "@/lib/utils";
 import { readCookieConsent } from "@/lib/cookieConsent";
+import { readStorage, writeStorage } from "@/lib/safeStorage";
 
 const STORAGE_KEY = "aetheria.ambient.muted";
 const DEFAULT_VOLUME = 0.08; // ambiance très discrète
@@ -18,7 +19,7 @@ const SiteAmbientMusic = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState<boolean>(() => {
     try {
-      return readCookieConsent()?.preferences ? localStorage.getItem(STORAGE_KEY) === "1" : false;
+      return readCookieConsent()?.preferences ? readStorage(STORAGE_KEY) === "1" : false;
     } catch {
       return false;
     }
@@ -73,7 +74,7 @@ const SiteAmbientMusic = () => {
     setMuted((prev) => {
       const next = !prev;
       try {
-        if (readCookieConsent()?.preferences) localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+        if (readCookieConsent()?.preferences) writeStorage(STORAGE_KEY, next ? "1" : "0");
       } catch {
         /* ignore */
       }
