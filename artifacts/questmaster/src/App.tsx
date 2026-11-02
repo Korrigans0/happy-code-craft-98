@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -52,22 +52,20 @@ const CreditsLicenses = legalPage("CreditsLicenses");
 const Withdrawal = legalPage("Withdrawal");
 const RefundPolicy = legalPage("RefundPolicy");
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { setTokenGetter } from "@/lib/api";
 import { useApplyCosmetics } from "@/hooks/useCosmetics";
-import { supabase } from "@/integrations/supabase/client";
+import { signInPathFor } from "@/lib/safeNext";
 
-const queryClient = new QueryClient();
+// Live game data arrives through realtime channels; refetching every query
+// each time a player alt-tabs back to the table only adds load.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 const basePath = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-
-function TokenSyncer() {
-  useEffect(() => {
-    setTokenGetter(async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session?.access_token ?? null;
-    });
-  }, []);
-  return null;
-}
 
 function CosmeticsApplier() {
   useApplyCosmetics();
@@ -76,9 +74,17 @@ function CosmeticsApplier() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/sign-in" replace />;
+  const location = useLocation();
+  if (loading) return <RouteFallback />;
+  if (!user) return <Navigate to={signInPathFor(location.pathname, location.search, location.hash)} replace />;
   return <>{children}</>;
+}
+
+// A crash inside one page keeps the header, navigation and bug button usable;
+// navigating elsewhere clears the error.
+function PageBoundary({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary scope="page" resetKey={pathname}>{children}</ErrorBoundary>;
 }
 
 const AppRoutes = () => (
@@ -86,9 +92,9 @@ const AppRoutes = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <TokenSyncer />
       <CosmeticsApplier />
       <ScrollToTop />
+      <PageBoundary>
       <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<Index />} />
@@ -130,6 +136,7 @@ const AppRoutes = () => (
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </PageBoundary>
       <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />

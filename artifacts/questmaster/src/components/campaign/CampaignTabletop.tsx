@@ -78,6 +78,7 @@ import {
   strokeHexAt, hexesInRadius, formatDistance,
 } from "@/lib/vtt/grid";
 import GridSettingsPanel from "./vtt/GridSettingsPanel";
+import { readStorage, writeStorage } from "@/lib/safeStorage";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { getDirectTokenSheetId } from "@/lib/vtt/tokenSheetTarget";
 
@@ -223,14 +224,14 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   type MeasureUnit = "m" | "ft" | "cases" | "km";
   const [measureUnit, setMeasureUnitState] = useState<MeasureUnit>(() => {
     try {
-      const v = localStorage.getItem(`vtt-measure-unit-${campaignId}`);
+      const v = readStorage(`vtt-measure-unit-${campaignId}`);
       if (v === "m" || v === "ft" || v === "cases" || v === "km") return v;
     } catch {}
     return "m";
   });
   const setMeasureUnit = (u: MeasureUnit) => {
     setMeasureUnitState(u);
-    try { localStorage.setItem(`vtt-measure-unit-${campaignId}`, u); } catch {}
+    try { writeStorage(`vtt-measure-unit-${campaignId}`, u); } catch {}
   };
   // formatMeasure est défini plus bas (dépend de la configuration de grille).
 
@@ -287,12 +288,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   const [gridMajorColor, setGridMajorColor] = useState("rgba(255,255,255,0.28)");
   const [plateauMode, setPlateauMode] = useState<"dark" | "sky">("dark");
   const [wallRafThrottle, setWallRafThrottle] = useState(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("vtt_wall_raf_throttle") : null;
+    const saved = typeof window !== "undefined" ? readStorage("vtt_wall_raf_throttle") : null;
     return saved ? Math.max(0, Math.min(5, parseInt(saved, 10))) : 0;
   });
 
   useEffect(() => {
-    localStorage.setItem("vtt_wall_raf_throttle", String(wallRafThrottle));
+    writeStorage("vtt_wall_raf_throttle", String(wallRafThrottle));
   }, [wallRafThrottle]);
 
   const plateauColors = useMemo(() => (
@@ -307,7 +308,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // Restaure la grille locale des campagnes sans scène enregistrée.
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(`vtt-grid-${campaignId}`);
+      const raw = readStorage(`vtt-grid-${campaignId}`);
       if (raw) setGridConfig(normalizeGridConfig(JSON.parse(raw)));
     } catch { /* ignore */ }
   }, [campaignId]);
@@ -1187,7 +1188,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // Token pictures are stored as files; only their URL goes into the shared board.
   const uploadTokenImage = async (tokenId: string, file: File) => {
     try {
-      const url = await uploadTabletopImage(campaignId, file);
+      const url = await uploadTabletopImage(campaignId, file, { kind: "token" });
       updateToken(tokenId, { imageUrl: url });
     } catch (e) {
       toast({ title: "Image non enregistrée", description: (e as Error).message, variant: "destructive" });
@@ -3505,7 +3506,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       setScenes(updated);
       setActiveSceneId(sceneId);
       saveState({ scenes: updated, active_scene_id: sceneId, tokens: nextTokens } as any);
-      try { localStorage.setItem(`vtt-grid-${campaignId}`, JSON.stringify(next)); } catch { /* ignore */ }
+      try { writeStorage(`vtt-grid-${campaignId}`, JSON.stringify(next)); } catch { /* ignore */ }
     }
   };
 

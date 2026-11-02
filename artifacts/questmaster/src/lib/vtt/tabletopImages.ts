@@ -3,6 +3,7 @@
 // several megabytes: every load, poll, save and live update re-sent the whole
 // picture, which progressively froze game sessions.
 import { supabase } from "@/integrations/supabase/client";
+import { compressTabletopImage, type TabletopImageKind } from "./imageCompression";
 
 // Same public bucket and per-user folder convention as campaign banners.
 const BUCKET = "avatars";
@@ -35,11 +36,15 @@ export function dataUrlToBlob(dataUrl: string): Blob {
 const uploads = new Map<string, Promise<string>>();
 
 /** Uploads an image for a campaign tabletop and returns its public URL. */
-export async function uploadTabletopImage(campaignId: string, source: Blob | string): Promise<string> {
+export async function uploadTabletopImage(
+  campaignId: string,
+  source: Blob | string,
+  options: { kind?: TabletopImageKind; compress?: boolean } = {},
+): Promise<string> {
   if (typeof source === "string") {
     const cached = uploads.get(source);
     if (cached) return cached;
-    const task = uploadTabletopImage(campaignId, dataUrlToBlob(source));
+    const task = uploadTabletopImage(campaignId, dataUrlToBlob(source), options);
     uploads.set(source, task);
     task.catch(() => uploads.delete(source));
     return task;
@@ -49,10 +54,13 @@ export async function uploadTabletopImage(campaignId: string, source: Blob | str
   const { data: auth } = await supabase.auth.getSession();
   const userId = auth.session?.user?.id;
   if (!userId) throw new Error("Vous devez être connecté pour importer une image.");
-  const ext = EXTENSIONS[source.type] ?? "png";
+  // New uploads are re-encoded; migrating old inline pictures passes
+  // compress: false so they stay byte-for-byte identical.
+  const file = options.compress === false ? source : await compressTabletopImage(source, options.kind ?? "map");
+  const ext = EXTENSIONS[file.type] ?? "png";
   const path = `${userId}/campaign-maps/${campaignId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, source, {
-    contentType: source.type,
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    contentType: file.type,
     cacheControl: "31536000",
     upsert: false,
   });
@@ -83,7 +91,7 @@ export function hasInlineImages(state: InlineState): boolean {
  */
 export async function externalizeInlineImages<T extends InlineState>(campaignId: string, state: T): Promise<T> {
   const upload = (url: string | undefined | null) =>
-    isInlineImage(url) ? uploadTabletopImage(campaignId, url) : Promise.resolve(url ?? undefined);
+    isInlineImage(url) ? uploadTabletopImage(campaignId, url, { compress: false }) : Promise.resolve(url ?? undefined);
   const mapTokens = (tokens: unknown[] | undefined) =>
     tokens
       ? Promise.all(tokens.map(async (t) => {

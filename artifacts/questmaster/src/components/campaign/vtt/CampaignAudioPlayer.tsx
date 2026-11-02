@@ -28,6 +28,7 @@ import {
   preloadSfx,
   unlockSfx,
 } from "@/lib/vtt/sfxEngine";
+import { readStorage, writeStorage } from "@/lib/safeStorage";
 
 
 interface YTPlayer {
@@ -65,16 +66,16 @@ export default function CampaignAudioPlayer({ campaignId, isGM, audio }: Props) 
 
   const storageKey = `vtt-audio-local-${campaignId}`;
   const [localVolume, setLocalVolume] = useState<number>(() => {
-    const raw = localStorage.getItem(storageKey);
+    const raw = readStorage(storageKey);
     const n = raw === null ? 1 : Number(raw);
     return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
   });
-  const [muted, setMuted] = useState<boolean>(() => localStorage.getItem(`${storageKey}-muted`) === "1");
+  const [muted, setMuted] = useState<boolean>(() => readStorage(`${storageKey}-muted`) === "1");
   // Les navigateurs bloquent l'autoplay tant que l'utilisateur n'a pas interagi.
   const [blocked, setBlocked] = useState(false);
 
-  useEffect(() => { localStorage.setItem(storageKey, String(localVolume)); }, [localVolume, storageKey]);
-  useEffect(() => { localStorage.setItem(`${storageKey}-muted`, muted ? "1" : "0"); }, [muted, storageKey]);
+  useEffect(() => { writeStorage(storageKey, String(localVolume)); }, [localVolume, storageKey]);
+  useEffect(() => { writeStorage(`${storageKey}-muted`, muted ? "1" : "0"); }, [muted, storageKey]);
 
   const master = state?.master_volume ?? 0.7;
   const effective = muted ? 0 : Math.min(1, Math.max(0, master * localVolume));

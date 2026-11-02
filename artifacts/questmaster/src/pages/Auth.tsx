@@ -11,20 +11,21 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { openCookieSettings, readCookieConsent } from "@/lib/cookieConsent";
+import { safeNextPath } from "@/lib/safeNext";
+import { readStorage, writeStorage, removeStorage } from "@/lib/safeStorage";
 
 const Auth = () => {
   const { user, loading } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initialMode = params.get("mode") === "signup" ? "signup" : "signin";
-  const rawNext = params.get("next") ?? "";
-  const nextPath = /^\/(?!\/)/.test(rawNext) ? rawNext : "";
+  const nextPath = safeNextPath(params.get("next"));
   const afterAuth = nextPath || "/campaigns";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const REMEMBER_KEY = "aetheria.remember.credentials";
   const remembered = (() => {
     try {
-      const raw = localStorage.getItem(REMEMBER_KEY);
+      const raw = readStorage(REMEMBER_KEY);
       return raw ? (JSON.parse(raw) as { email?: string }) : null;
     } catch {
       return null;
@@ -62,9 +63,9 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (remember && readCookieConsent()?.preferences) {
-          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
+          writeStorage(REMEMBER_KEY, JSON.stringify({ email }));
         } else {
-          localStorage.removeItem(REMEMBER_KEY);
+          removeStorage(REMEMBER_KEY);
         }
         toast.success("Connexion réussie");
       }

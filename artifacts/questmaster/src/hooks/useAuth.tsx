@@ -1,5 +1,5 @@
 // Native Supabase auth (replaces previous Clerk shim).
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,10 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+// A stalled session restore (blocked storage, network hiccup on refresh) must
+// never leave every protected page spinning forever.
+const SESSION_RESTORE_TIMEOUT_MS = 8000;
+
 function toAuthUser(u: User | null | undefined): AuthUser | null {
   if (!u) return null;
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
@@ -39,26 +43,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let settled = false;
+    const finish = () => {
+      settled = true;
+      setLoading(false);
+    };
     // Listener first (per Supabase recommendation)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
+      if (!settled) finish();
     });
+    const timeout = window.setTimeout(() => {
+      if (!settled) {
+        console.warn("[auth] session restore timed out");
+        finish();
+      }
+    }, SESSION_RESTORE_TIMEOUT_MS);
     // Then restore from storage
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((err) => console.warn("[auth] session restore failed", err))
+      .finally(finish);
+    return () => {
+      window.clearTimeout(timeout);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  const value: AuthContextType = {
-    user: toAuthUser(session?.user),
-    session,
-    loading,
-    signOut: async () => {
-      await supabase.auth.signOut();
-    },
-  };
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  // Token refreshes replace the session object without changing the user:
+  // keep the same user object so consumers depending on it do not re-render.
+  const sessionUser = session?.user;
+  const userKey = sessionUser ? `${sessionUser.id}|${sessionUser.email}|${JSON.stringify(sessionUser.user_metadata ?? {})}` : "";
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const user = useMemo(() => toAuthUser(sessionUser), [userKey]);
+
+  const value = useMemo<AuthContextType>(
+    () => ({ user, session, loading, signOut }),
+    [user, session, loading, signOut],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

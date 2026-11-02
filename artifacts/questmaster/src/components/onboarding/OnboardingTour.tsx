@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sparkles, Sword, Map, Users, BookOpen, Dices, ChevronRight, ChevronLeft, X, PartyPopper,
 } from "lucide-react";
+import { readStorage, writeStorage, removeStorage } from "@/lib/safeStorage";
 
 const STORAGE_KEY = "aetheria.onboarding.completed.v1";
 
@@ -128,7 +129,7 @@ export function OnboardingTour({ force = false, onClose }: Props) {
       return;
     }
     try {
-      const done = localStorage.getItem(STORAGE_KEY);
+      const done = readStorage(STORAGE_KEY);
       if (!done) setOpen(true);
     } catch {
       /* localStorage indisponible (mode privé) → on ne montre pas */
@@ -136,7 +137,7 @@ export function OnboardingTour({ force = false, onClose }: Props) {
   }, [force]);
 
   const finish = useCallback(() => {
-    try { localStorage.setItem(STORAGE_KEY, new Date().toISOString()); } catch { /* noop */ }
+    try { writeStorage(STORAGE_KEY, new Date().toISOString()); } catch { /* noop */ }
     setOpen(false);
     onClose?.();
   }, [onClose]);
@@ -222,5 +223,5 @@ export function OnboardingTour({ force = false, onClose }: Props) {
 
 /** Réinitialise le flag pour rejouer le tour. */
 export function resetOnboarding() {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+  try { removeStorage(STORAGE_KEY); } catch { /* noop */ }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { campaignsApi } from "@/lib/api";
@@ -302,12 +303,14 @@ const CampaignPlay = () => {
                 <div className="flex gap-2 h-full relative">
                   {/* Plateau — prend toute la place disponible */}
                   <div className="flex-1 min-w-0">
-                    <CampaignTabletop
-                      campaignId={id!}
-                      isGM={isGM}
-                      onToggleLayers={isGM ? () => setLayersOpen((v) => !v) : undefined}
-                      layersOpen={layersOpen}
-                    />
+                    <ErrorBoundary scope="table" resetKey={id}>
+                      <CampaignTabletop
+                        campaignId={id!}
+                        isGM={isGM}
+                        onToggleLayers={isGM ? () => setLayersOpen((v) => !v) : undefined}
+                        layersOpen={layersOpen}
+                      />
+                    </ErrorBoundary>
                   </div>
 
                   {/* Le panneau Calques est monté par CampaignTabletop (état partagé avec le rendu) */}
