@@ -1,5 +1,5 @@
-export const COOKIE_CONSENT_KEY = "aetheria.cookie-consent.v1";
 import { readStorage, writeStorage, removeStorage } from "@/lib/safeStorage";
+export const COOKIE_CONSENT_KEY = "aetheria.cookie-consent.v1";
 export const COOKIE_SETTINGS_EVENT = "aetheria:cookie-settings";
 
 export interface CookieConsent {
