@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
 
+/** Number of chat messages loaded at once (initial load and each « voir plus »). */
+export const CHAT_PAGE_SIZE = 150;
+
 
 /** Lance une erreur déjà traduite en français lisible par l'utilisateur. */
 function fail(err: unknown): never {
@@ -173,13 +176,30 @@ export const campaignsApi = {
       .single();
     return unwrap(r);
   },
-  getMessages: async (id: string) => {
+  /**
+   * Latest chat messages, oldest first. Only the most recent page is loaded:
+   * a full history exceeded the 1 000-row response cap in long campaigns and
+   * hid the newest messages.
+   */
+  getMessages: async (id: string, limit: number = CHAT_PAGE_SIZE) => {
     const r = await supabase
       .from("campaign_messages")
       .select("*")
       .eq("campaign_id", id)
-      .order("created_at", { ascending: true });
-    return unwrap(r) ?? [];
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return ((unwrap(r) ?? []) as any[]).reverse();
+  },
+  /** One page of messages strictly older than `before` (ISO date), oldest first. */
+  getMessagesBefore: async (id: string, before: string, limit: number = CHAT_PAGE_SIZE) => {
+    const r = await supabase
+      .from("campaign_messages")
+      .select("*")
+      .eq("campaign_id", id)
+      .lt("created_at", before)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return ((unwrap(r) ?? []) as any[]).reverse();
   },
   postMessage: async (id: string, data: Record<string, unknown>) => {
     const userId = await uid();
