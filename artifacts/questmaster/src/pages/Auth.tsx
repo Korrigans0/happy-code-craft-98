@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { openCookieSettings, readCookieConsent } from "@/lib/cookieConsent";
+import { safeNextPath } from "@/lib/safeNext";
 
 const Auth = () => {
   const { user, loading } = useAuth();

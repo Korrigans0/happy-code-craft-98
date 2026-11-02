@@ -52,22 +52,20 @@ const CreditsLicenses = legalPage("CreditsLicenses");
 const Withdrawal = legalPage("Withdrawal");
 const RefundPolicy = legalPage("RefundPolicy");
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { setTokenGetter } from "@/lib/api";
 import { useApplyCosmetics } from "@/hooks/useCosmetics";
-import { supabase } from "@/integrations/supabase/client";
+import { signInPathFor } from "@/lib/safeNext";
 
-const queryClient = new QueryClient();
+// Live game data arrives through realtime channels; refetching every query
+// each time a player alt-tabs back to the table only adds load.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 const basePath = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-
-function TokenSyncer() {
-  useEffect(() => {
-    setTokenGetter(async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session?.access_token ?? null;
-    });
-  }, []);
-  return null;
-}
 
 function CosmeticsApplier() {
   useApplyCosmetics();
@@ -76,8 +74,9 @@ function CosmeticsApplier() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/sign-in" replace />;
+  const location = useLocation();
+  if (loading) return <RouteFallback />;
+  if (!user) return <Navigate to={signInPathFor(location.pathname, location.search, location.hash)} replace />;
   return <>{children}</>;
 }
 
