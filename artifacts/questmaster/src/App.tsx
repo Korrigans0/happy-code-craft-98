@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -80,14 +80,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// A crash inside one page keeps the header, navigation and bug button usable;
+// navigating elsewhere clears the error.
+function PageBoundary({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary scope="page" resetKey={pathname}>{children}</ErrorBoundary>;
+}
+
 const AppRoutes = () => (
   <BrowserRouter basename={basePath}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <TokenSyncer />
       <CosmeticsApplier />
       <ScrollToTop />
+      <PageBoundary>
       <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<Index />} />
@@ -129,6 +136,7 @@ const AppRoutes = () => (
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </PageBoundary>
       <CommandPalette />
       <MobileBottomNav />
       <CookieBanner />
