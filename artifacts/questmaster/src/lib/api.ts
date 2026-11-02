@@ -7,9 +7,6 @@ import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { generateInviteCode, sanitizeInviteCode } from "@/lib/inviteCode";
 
 
-// Kept for backward compatibility with App.tsx wiring; no longer used.
-export function setTokenGetter(_fn: () => Promise<string | null>) {}
-
 /** Lance une erreur déjà traduite en français lisible par l'utilisateur. */
 function fail(err: unknown): never {
   throw new Error(toFriendlyMessage(err));
