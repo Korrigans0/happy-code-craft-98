@@ -1188,7 +1188,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
   // Token pictures are stored as files; only their URL goes into the shared board.
   const uploadTokenImage = async (tokenId: string, file: File) => {
     try {
-      const url = await uploadTabletopImage(campaignId, file);
+      const url = await uploadTabletopImage(campaignId, file, { kind: "token" });
       updateToken(tokenId, { imageUrl: url });
     } catch (e) {
       toast({ title: "Image non enregistrée", description: (e as Error).message, variant: "destructive" });
