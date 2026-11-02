@@ -3,17 +3,11 @@
 // polling); this hook only keeps the extra pages the reader asked for.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { campaignsApi, CHAT_PAGE_SIZE } from "@/lib/api";
+import { mergeChatPages } from "./mergeChatPages";
 
 interface ChatRow {
   id: string;
   created_at: string;
-}
-
-/** Older pages first, then the live window, without duplicates. */
-export function mergeChatPages<T extends ChatRow>(older: T[], recent: T[]): T[] {
-  if (older.length === 0) return recent;
-  const recentIds = new Set(recent.map((m) => m.id));
-  return [...older.filter((m) => !recentIds.has(m.id)), ...recent];
 }
 
 export function useChatHistory<T extends ChatRow>(campaignId: string, recent: T[]) {

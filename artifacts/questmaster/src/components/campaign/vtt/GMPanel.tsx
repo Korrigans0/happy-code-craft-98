@@ -25,6 +25,8 @@ import { toFriendlyMessage } from "@/lib/friendly-errors";
 import { glyphesEntryFromMessage } from "@/lib/game-systems/glyphes/chatMessage";
 import GlyphesEntryCard from "./glyphes/GlyphesEntryCard";
 import { readStorage, writeStorage } from "@/lib/safeStorage";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import OlderMessagesButton from "@/components/campaign/OlderMessagesButton";
 
 interface WACreature { id: string; name: string; power_level?: string; size?: string; constitution?: number; dexterity?: number; }
 interface AetheriaCreature {
@@ -174,19 +176,22 @@ export default function GMPanel({
     ),
   });
 
-  const { data: messages = [] } = useQuery({
+  const { data: recentMessages = [] } = useQuery({
     queryKey: ["vtt-chat-messages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
     refetchInterval: chatRealtime === "connected" ? 20000 : 2000,
     refetchOnWindowFocus: true,
   });
+  const history = useChatHistory(campaignId, recentMessages as any[]);
+  const messages = history.messages;
 
 
   useEffect(() => {
     if (activeTab === "chat") {
       chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, activeTab]);
+    // Only new live messages scroll to the bottom; loading older pages must not.
+  }, [recentMessages, activeTab]);
 
   const saveNotes = (val: string) => {
     setNotes(val);
@@ -319,6 +324,7 @@ export default function GMPanel({
           <>
             <ScrollArea className="flex-1">
               <div className="space-y-2 p-3">
+                <OlderMessagesButton history={history} compact />
                 {messages.length === 0 && (
                   <p className="py-8 text-center text-xs text-muted-foreground">
                     Pas encore de messages.<br />

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import OlderMessagesButton from "@/components/campaign/OlderMessagesButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { campaignsApi } from "@/lib/api";
@@ -249,12 +251,14 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     ),
   });
 
-  const { data: messages = [] } = useQuery({
+  const { data: recentMessages = [] } = useQuery({
     queryKey: ["campaignMessages", campaignId],
     queryFn: () => campaignsApi.getMessages(campaignId),
     refetchInterval: chatRealtime === "connected" ? 30000 : 1200,
     refetchOnWindowFocus: true,
   });
+  const history = useChatHistory(campaignId, recentMessages as any[]);
+  const messages = history.messages;
 
   const { data: members = [] } = useQuery({
     queryKey: ["campaignMembersChat", campaignId],
@@ -279,7 +283,8 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+    // Only new live messages scroll to the bottom; loading older pages must not.
+  }, [recentMessages]);
 
   const sendMutation = useMutation({
     mutationFn: async (data: { content: string; message_type: string; metadata?: any }) => {
@@ -462,6 +467,7 @@ const CampaignChat = ({ campaignId, isGM }: CampaignChatProps) => {
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-4">
+          <OlderMessagesButton history={history} />
           {visibleMessages.map((msg: any) => {
             const member = memberMap.get(msg.user_id);
             return (
