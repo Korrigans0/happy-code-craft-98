@@ -30,3 +30,32 @@ export function reconcileCounters<T extends CombatSnapshot>(state: T, sheet: Par
   }
   return next;
 }
+
+/**
+ * Counters received from another screen become pending edits of the tab that
+ * saves the sheet. Fields this tab already edits keep their local revision.
+ */
+export function recordRemoteCounters(previous: CombatSnapshot, next: CombatSnapshot, fields: readonly string[], pending: PendingEdits, revision: number): PendingEdits {
+  let result = pending;
+  for (const field of COUNTER_FIELDS) {
+    if (!fields.includes(field) || pending[field] || previous[field] === next[field]) continue;
+    if (result === pending) result = { ...pending };
+    result[field] = { value: next[field], revision };
+  }
+  return result;
+}
+
+/**
+ * Pending edits a tab cannot save itself (e.g. the GM on a player's sheet):
+ * combat metadata stays in the shared combat state, counters are released as
+ * soon as the sheet shows them or the sheet owner saved a newer version.
+ */
+export function settleUnsavableEdits(pending: PendingEdits, sheetCounters: Partial<CombatSnapshot>, sheetChanged: boolean): PendingEdits {
+  const settled: PendingEdits = {};
+  for (const field of COMBAT_FIELDS) if (pending[field]) settled[field] = pending[field];
+  for (const field of COUNTER_FIELDS) {
+    const edit = pending[field];
+    if (edit && (sheetChanged || sheetCounters[field] === edit.value)) settled[field] = edit;
+  }
+  return settled;
+}
