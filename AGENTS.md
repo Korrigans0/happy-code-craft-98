@@ -16,3 +16,9 @@
 - Every page except the landing page is loaded with React.lazy under one Suspense in App.tsx; keep new pages lazy so visitors never download the tabletop/PDF tools upfront. Shared data modules must not import each other in a cycle (lazy loading changes evaluation order and exposed a TDZ crash).
 - Public or costly backend functions (report-bug, AI functions) throttle through supabase/functions/_shared/rate-limit.ts (service-only consume_edge_rate_limit RPC, fixed windows, fail-open); this caps spam and AI cost without blocking users when the counter fails.
 - payments-webhook stores Paddle's updatedAt in subscriptions.paddle_updated_at and ignores strictly older events, so late webhooks never overwrite a newer subscription state.
+- Chat queries load only the latest CHAT_PAGE_SIZE messages (campaignsApi.getMessages) and older pages through useChatHistory; full history hit the 1 000-row response cap and hid the newest messages.
+- Read/write localStorage only through lib/safeStorage (except inside existing try blocks); blocked or full storage must never crash a page.
+- App.tsx wraps routes in a page-scoped ErrorBoundary reset on navigation and CampaignPlay wraps the tabletop in a table-scoped one; crash reports reuse report-bug via lib/crashReport on user click, so one failing view never blanks the whole site.
+- New tabletop uploads are re-encoded to WebP by lib/vtt/imageCompression (maps keep their pixel size up to 8192 px because they are drawn 1:1 with baked grids; tokens max 512 px); migrated inline images upload with compress: false to stay byte-identical.
+- Fonts are self-hosted via @fontsource imports in main.tsx; never load Google Fonts, which sent visitors' IP to Google before consent.
+- Run tests with `bun run test` (bun:test, files under src/**/*.test.ts); keep tests free of the Supabase client so they run without env vars.

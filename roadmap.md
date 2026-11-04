@@ -86,12 +86,13 @@
 - [x] Audit externe : images de jetons en cache, pages chargées à la demande, images allégées, anti-spam signalements, quotas IA, webhook e-mails, ordre des webhooks Paddle
 
 ## Audit 2 : fiabilité, connexion, chat, images, polices (demande actuelle)
-- [ ] Chat : charger les derniers messages + « Voir les messages précédents »
-- [ ] Réglages de rechargement des données (pas de rechargement à chaque retour sur l'onglet)
-- [ ] Connexion : retour à la page voulue, écran de chargement, session qui ne bloque jamais, lien `next` sécurisé
-- [ ] Filets d'erreur par page et pour la table, avec envoi du rapport en un clic
-- [ ] Stockage local protégé (navigation privée / stockage bloqué)
-- [ ] Images de plateau redimensionnées (4096 px) et converties en WebP avant envoi
-- [ ] Polices hébergées sur le site (plus d'appel à Google avant consentement)
-- [ ] Icônes d'installation 192/512, image de partage stable
-- [ ] Tests lancables par une commande ; nettoyage (doublon 404, code mort, textes alternatifs)
+- [x] Chat : charger les derniers messages + « Voir les messages précédents »
+- [x] Réglages de rechargement des données (pas de rechargement à chaque retour sur l'onglet)
+- [x] Connexion : retour à la page voulue, écran de chargement, session qui ne bloque jamais, lien `next` sécurisé
+- [x] Filets d'erreur par page et pour la table, avec envoi du rapport en un clic
+- [x] Stockage local protégé (navigation privée / stockage bloqué)
+- [x] Images de plateau converties en WebP avant envoi (cartes gardées à leur taille jusqu'à 8192 px, jetons 512 px)
+- [x] Polices hébergées sur le site (plus d'appel à Google avant consentement)
+- [x] Icônes d'installation 192/512, image de partage stable
+- [x] Tests lançables par une commande ; nettoyage (doublon 404, code mort ; textes alternatifs déjà présents)
+- [ ] Publier ; l'image de partage et les icônes ne seront visibles qu'après publication
