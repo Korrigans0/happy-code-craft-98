@@ -29,6 +29,13 @@
       "when": 1793395157932,
       "tag": "0003_edge_rate_limits_and_paddle_ordering",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793833556704,
+      "tag": "0004_restrict_get_storage_usage_to_self",
+      "breakpoints": true
     }
   ]
 }
