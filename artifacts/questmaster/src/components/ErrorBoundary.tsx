@@ -101,12 +101,13 @@ class ErrorBoundary extends Component<Props, State> {
             </details>
           )}
           <div className="flex flex-wrap gap-3 justify-center">
-            {contained ? (
+            {contained && (
               <Button variant="outline" onClick={this.handleRetry}>
                 <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
                 Réessayer
               </Button>
-            ) : (
+            )}
+            {scope !== 'table' && (
               <Button variant="outline" onClick={this.handleGoHome}>
                 Retour à l'accueil
               </Button>
