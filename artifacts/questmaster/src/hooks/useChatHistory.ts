@@ -3,7 +3,7 @@
 // polling); this hook only keeps the extra pages the reader asked for.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { campaignsApi, CHAT_PAGE_SIZE } from "@/lib/api";
-import { mergeChatPages } from "./mergeChatPages";
+import { mergeChatPages, retainedFromWindow } from "./mergeChatPages";
 
 interface ChatRow {
   id: string;
@@ -32,6 +32,19 @@ export function useChatHistory<T extends ChatRow>(campaignId: string, recent: T[
   useEffect(() => {
     if (recentIsComplete) setOlder([]);
   }, [recentIsComplete]);
+
+  // When new messages push the live window forward, its previous oldest rows
+  // leave `recent`; once older pages are shown they must move into `older`,
+  // otherwise they vanish between the two pages and loadOlder never refills them.
+  const previousRecentRef = useRef<T[]>(recent);
+  useEffect(() => {
+    const previous = previousRecentRef.current;
+    previousRecentRef.current = recent;
+    if (previous === recent || recentIsComplete) return;
+    const dropped = retainedFromWindow(previous, recent);
+    if (dropped.length === 0) return;
+    setOlder((prev) => (prev.length === 0 ? prev : mergeChatPages(prev, dropped)));
+  }, [recent, recentIsComplete]);
 
   const messages = useMemo(() => mergeChatPages(older, recent), [older, recent]);
   const hasMore = !recentIsComplete && !exhausted;
