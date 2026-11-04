@@ -8,7 +8,7 @@ import { createDebouncedSaver, loadGlyphesState } from "./persistence";
 import { ACTION_POINTS_PER_TURN, type Approach } from "./actions";
 import { MAX_HEROISM } from "./heroic-actions";
 import { systemDataToCombat, type CombatSnapshot } from "./sheetSync";
-import { COUNTER_FIELDS, acknowledgeEdits, reconcileCounters, recordEdits, type PendingEdits } from "./syncState";
+import { COUNTER_FIELDS, acknowledgeEdits, reconcileCounters, recordEdits, recordRemoteCounters, type PendingEdits } from "./syncState";
 // Nombre maximal de blessures avant qu'un jeton tombe au combat (règle Glyphes : 3).
 export const MAX_WOUNDS = 3;
 
@@ -68,6 +68,8 @@ interface CombatStore {
   revision: number;
   /** Tokens changed by this tab and not yet saved to the server. */
   unsaved: Set<string>;
+  /** Linked tokens whose character sheet this tab is allowed to save. */
+  writable: Set<string>;
 }
 const stores = new Map<string, CombatStore>();
 
@@ -82,7 +84,7 @@ function getStore(key: string) {
         initial = {};
       }
     }
-    store = { state: initial, listeners: new Set(), linked: new Set(), ready: new Set(), pending: {}, revision: 0, unsaved: new Set() };
+    store = { state: initial, listeners: new Set(), linked: new Set(), ready: new Set(), pending: {}, revision: 0, unsaved: new Set(), writable: new Set() };
     stores.set(key, store);
   }
   return store;
@@ -187,6 +189,13 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
           const local = prev[payload.tokenId];
           if (local) next = { ...next, [field]: local[field] };
         }
+        // Counters changed on another screen (e.g. the GM wounding a player's
+        // token) are saved to the sheet by the tab that owns it; otherwise the
+        // next sheet read would revert them.
+        if (previous && store.writable.has(payload.tokenId) && store.ready.has(payload.tokenId)) {
+          const received = recordRemoteCounters(previous, next, payload.counterFields ?? [], pending, ++store.revision);
+          if (received !== pending) store.pending[payload.tokenId] = received;
+        }
         // Every mounted instance (and the sender, self-broadcast) receives the
         // event: an identical state must not trigger another render cascade.
         if (previous && JSON.stringify(previous) === JSON.stringify(next)) return prev;
@@ -215,7 +224,7 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
   const configureLinked = useCallback((ids: string[]) => {
     const store = getStore(key);
     const next = new Set(ids);
-    for (const id of store.linked) if (!next.has(id)) { store.ready.delete(id); delete store.pending[id]; }
+    for (const id of store.linked) if (!next.has(id)) { store.ready.delete(id); store.writable.delete(id); delete store.pending[id]; }
     for (const id of next) store.ready.delete(id);
     store.linked = next;
   }, [key]);
@@ -240,6 +249,12 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
       if (wasReady && JSON.stringify(previous) === JSON.stringify(next) && prev[tokenId]) return prev;
       return { ...prev, [tokenId]: next };
     });
+  }, [key]);
+
+  const setWritable = useCallback((tokenId: string, writable: boolean) => {
+    const store = getStore(key);
+    if (writable) store.writable.add(tokenId);
+    else store.writable.delete(tokenId);
   }, [key]);
 
   const getPending = useCallback((id: string) => ({ ...(getStore(key).pending[id] ?? {}) }), [key]);
@@ -321,5 +336,5 @@ export function useGlyphesCombat(campaignId?: string | null, enabled = true) {
     [states, update, isReady],
   );
 
-  return { states, getState, update, startTurn, spend, spendHeroism, gainHeroism, configureLinked, isReady, acceptSheet, getPending, acknowledge };
+  return { states, getState, update, startTurn, spend, spendHeroism, gainHeroism, configureLinked, isReady, acceptSheet, setWritable, getPending, acknowledge };
 }

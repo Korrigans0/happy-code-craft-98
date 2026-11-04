@@ -126,7 +126,9 @@ const SharedDiceScene = ({ rolls, onDone }: SharedDiceSceneProps) => (
       camera.lookAt(0, 0, 0);
       gl.setClearColor(0x000000, 0);
     }}
-    style={{ background: "transparent" }}
+    // The Canvas wrapper defaults to pointer-events: auto, which would swallow
+    // clicks, drags and zoom on the map under this purely visual layer.
+    style={{ background: "transparent", pointerEvents: "none" }}
   >
     <ambientLight intensity={0.8} />
     <hemisphereLight args={["#fff1cc", "#1a1430", 0.7]} />

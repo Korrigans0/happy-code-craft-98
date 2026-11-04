@@ -1,7 +1,8 @@
 // Sheet counters are hydrated before editing; only session-local edits are saved.
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { applySheetEdits } from "./sheetSync";
+import { applySheetEdits, systemDataToCombat } from "./sheetSync";
+import { settleUnsavableEdits } from "./syncState";
 import type { useGlyphesCombat } from "./useGlyphesCombat";
 
 interface LinkedToken { id: string; creatureType?: string; creatureId?: string }
@@ -17,6 +18,8 @@ export function useGlyphesSheetSync(
   const current = useRef({ tokens, combat, canWrite });
   current.current = { tokens, combat, canWrite };
   const scope = useRef(0);
+  /** Last sheet version seen per character, to notice saves by its owner. */
+  const versions = useRef(new Map<string, string>());
   const linkedKey = tokens.filter(t => t.creatureType === "character" && t.creatureId).map(t => `${t.id}:${t.creatureId}`).sort().join(",");
 
   useLayoutEffect(() => {
@@ -39,8 +42,12 @@ export function useGlyphesSheetSync(
         }
         if (groups.size === 0) return;
         // One request for every linked sheet instead of one per character.
-        const { data: rows, error: readError } = await supabase.from("characters").select("id, system, system_data, updated_at").in("id", [...groups.keys()]);
+        const [{ data: rows, error: readError }, { data: auth }] = await Promise.all([
+          supabase.from("characters").select("id, user_id, kind, system, system_data, updated_at").in("id", [...groups.keys()]),
+          supabase.auth.getSession(),
+        ]);
         if (readError || cancelled || generation !== scope.current) return;
+        const userId = auth.session?.user.id;
         const byId = new Map((rows ?? []).map(row => [row.id, row]));
         for (const [characterId, linked] of groups) {
           if (cancelled || generation !== scope.current) return;
@@ -48,13 +55,24 @@ export function useGlyphesSheetSync(
           if (!data || data.system !== "Glyphes") continue;
           let sheet = data.system_data as Record<string, any> | null;
           let version = data.updated_at;
+          const previousVersion = versions.current.get(characterId);
+          versions.current.set(characterId, version);
+          // Row-level rules only let the owner (or the GM for pregens) save a sheet.
+          const ownsSheet = !!userId && (data.user_id === userId || data.kind === "pregen");
           for (const token of linked) {
             const live = current.current;
             if (!live.tokens.some(t => t.id === token.id && t.creatureId === characterId)) continue;
+            const writable = ownsSheet && live.canWrite(token);
+            live.combat.setWritable(token.id, writable);
             live.combat.acceptSheet(token.id, sheet);
-            if (!live.canWrite(token)) continue;
             const edits = live.combat.getPending(token.id);
             if (Object.keys(edits).length === 0) continue;
+            if (!writable) {
+              // The owner's tab saves these counters; release them once it did.
+              const settled = settleUnsavableEdits(edits, systemDataToCombat(sheet), previousVersion !== undefined && previousVersion !== version);
+              if (Object.keys(settled).length > 0) live.combat.acknowledge(token.id, settled);
+              continue;
+            }
             const patch = applySheetEdits(sheet, edits);
             if (!patch) { live.combat.acknowledge(token.id, edits); continue; }
             // Compare-and-set: concurrent sheet edits require a fresh read, never an overwrite.
@@ -65,6 +83,7 @@ export function useGlyphesSheetSync(
             if (result.error || !result.data) break; // Pending revisions remain for retry.
             sheet = result.data.system_data as Record<string, any>;
             version = result.data.updated_at;
+            versions.current.set(characterId, version);
             live.combat.acknowledge(token.id, edits);
             // Re-read after a CAS race or a newer local revision on the next pass.
           }

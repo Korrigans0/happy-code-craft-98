@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { applySheetEdits, systemDataToCombat } from "./sheetSync";
-import { acknowledgeEdits, reconcileCounters, recordEdits } from "./syncState";
+import { acknowledgeEdits, reconcileCounters, recordEdits, recordRemoteCounters, settleUnsavableEdits } from "./syncState";
 
 const defaults = { actionPoints: 4, maxActionPoints: 4, heroism: 0, wounds: 0, resilience: 4, movedFt: 0, approach: null };
 const sheet = { race: "Humain", def_resilience: 6, pdf_form: { "35": true, "26": true, "27": true, "36": true, name: "Test" } };
@@ -43,5 +43,24 @@ describe("Glyphes sheet edit provenance", () => {
   });
   it("empty PDF forms retain numeric counters and resilience", () => {
     expect(systemDataToCombat({ pdf_form: {}, def_blessure: 1, heroisme: 3, def_resilience: 6 })).toEqual({ wounds: 1, heroism: 3, resilience: 6 });
+  });
+});
+
+describe("Glyphes counters changed by another screen", () => {
+  it("the sheet owner saves 2 wounds given by the GM instead of reverting them", () => {
+    const pending = recordRemoteCounters({ ...defaults, wounds: 0 }, { ...defaults, wounds: 2 }, ["wounds"], {}, 5);
+    expect(pending).toEqual({ wounds: { value: 2, revision: 5 } });
+    expect(reconcileCounters({ ...defaults, wounds: 2 }, { wounds: 0 }, pending).wounds).toBe(2);
+    expect(systemDataToCombat(applySheetEdits(sheet, pending)).wounds).toBe(2);
+  });
+  it("fields not announced as counters or already edited locally are not taken over", () => {
+    const local = { heroism: { value: 1, revision: 3 } };
+    expect(recordRemoteCounters(defaults, { ...defaults, heroism: 4, wounds: 1 }, ["heroism"], local, 6)).toBe(local);
+  });
+  it("a screen that cannot save the sheet releases a counter once the sheet shows it", () => {
+    const pending = { wounds: { value: 2, revision: 1 }, actionPoints: { value: 2, revision: 1 } };
+    expect(settleUnsavableEdits(pending, { wounds: 1 }, false)).toEqual({ actionPoints: pending.actionPoints });
+    expect(settleUnsavableEdits(pending, { wounds: 2 }, false)).toEqual(pending);
+    expect(settleUnsavableEdits(pending, { wounds: 1 }, true)).toEqual(pending);
   });
 });
