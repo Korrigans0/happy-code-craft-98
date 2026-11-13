@@ -4485,7 +4485,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               types.includes("application/x-aetheria-char") ||
               types.includes("application/x-aetheria-creature") ||
               types.includes("application/x-aetheria-wa") ||
-              types.includes("application/x-aetheria-monster")
+              types.includes("application/x-aetheria-monster") ||
+              types.includes("application/x-aetheria-glyphes")
             ) {
               e.preventDefault(); e.dataTransfer.dropEffect = "copy";
               if (!isDragOverCanvas) setIsDragOverCanvas(true);

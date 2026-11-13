@@ -929,7 +929,7 @@ export default function GMPanel({
                     </>
                   );
                 })()}
-                {filteredCreatures.length === 0 && userCharacters.length === 0 && (
+                {filteredCreatures.length === 0 && userCharacters.length === 0 && campaignSystem !== "Glyphes" && (
                   <p className="py-8 text-center text-xs text-muted-foreground">Aucune créature trouvée</p>
                 )}
               </div>
