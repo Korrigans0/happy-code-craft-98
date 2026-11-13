@@ -1,3 +1,4 @@
+import { GLYPHES_BESTIARY, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
 import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -1114,6 +1115,22 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
       ac: creature.def_physique,
       conditions: [],
     } as TokenItem]);
+  };
+
+  const spawnGlyphesCreature = (creature: GlyphesCreature, atX?: number, atY?: number) => {
+    if (!perms.canAddToken) { denied("Seul le MJ peut placer une créature"); return; }
+    const cx = atX ?? ((-panOffset.x / zoom) + 200);
+    const cy = atY ?? ((-panOffset.y / zoom) + 200);
+    const { x: wx, y: wy } = snapPos(cx - cellPx / 2, cy - cellPx / 2);
+    const free = findFreePosition(wx, wy, cellPx);
+    const id = newId();
+    setTokens(prev => [...prev, {
+      id, name: creature.nom, x: free.x, y: free.y, size: cellPx, sizeUnits: 1, rotation: 0,
+      color: "#ef4444", label: creature.nom.substring(0, 2).toUpperCase(), layer: "tokens", visible: true,
+      creatureType: "glyphes_creature", creatureId: creature.nom, conditions: [],
+    } as TokenItem]);
+    const resilience = Number(creature.defense.resilience);
+    if (Number.isFinite(resilience)) glyphesCombat.update(id, { resilience });
   };
 
   const spawnSystemMonster = (monster: any, atX?: number, atY?: number) => {
@@ -4468,7 +4485,8 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
               types.includes("application/x-aetheria-char") ||
               types.includes("application/x-aetheria-creature") ||
               types.includes("application/x-aetheria-wa") ||
-              types.includes("application/x-aetheria-monster")
+              types.includes("application/x-aetheria-monster") ||
+              types.includes("application/x-aetheria-glyphes")
             ) {
               e.preventDefault(); e.dataTransfer.dropEffect = "copy";
               if (!isDragOverCanvas) setIsDragOverCanvas(true);
@@ -4495,6 +4513,12 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             if (waId) {
               const c = (waCreatures as any[]).find((x: any) => x.id === waId);
               if (c) { e.preventDefault(); spawnWACreature(c, world.x, world.y); }
+              return;
+            }
+            const glyId = e.dataTransfer.getData("application/x-aetheria-glyphes");
+            if (glyId) {
+              const c = GLYPHES_BESTIARY.find((x) => x.nom === glyId);
+              if (c) { e.preventDefault(); spawnGlyphesCreature(c, world.x, world.y); }
               return;
             }
             const monId = e.dataTransfer.getData("application/x-aetheria-monster");
@@ -4781,6 +4805,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onSpawnCreature={spawnWACreature}
             onSpawnAetheriaCreature={spawnAetheriaCreature}
             onSpawnSystemMonster={spawnSystemMonster}
+            onSpawnGlyphesCreature={spawnGlyphesCreature}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
             onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}
@@ -4845,6 +4870,7 @@ const CampaignTabletop = ({ campaignId, isGM, onToggleLayers, layersOpen }: Camp
             onSpawnCreature={spawnWACreature}
             onSpawnAetheriaCreature={spawnAetheriaCreature}
             onSpawnSystemMonster={spawnSystemMonster}
+            onSpawnGlyphesCreature={spawnGlyphesCreature}
             onSpawnCharacter={spawnCharacter}
             onAddToInitiative={addToInitiative}
             onAddSelectedTokenToInitiative={addSelectedTokenToInitiative}

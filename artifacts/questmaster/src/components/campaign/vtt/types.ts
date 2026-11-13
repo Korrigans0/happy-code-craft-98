@@ -33,7 +33,7 @@ export interface TokenItem {
   layer: string;
   visible: boolean;
   creatureId?: string;
-  creatureType?: "wa_creature" | "monster" | "character" | "aetheria_creature";
+  creatureType?: "wa_creature" | "monster" | "character" | "aetheria_creature" | "glyphes_creature";
   hp?: number;
   maxHp?: number;
   pe?: number;

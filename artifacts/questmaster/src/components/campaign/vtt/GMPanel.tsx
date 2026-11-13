@@ -1,3 +1,4 @@
+import { GLYPHES_BESTIARY, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -62,6 +63,7 @@ interface GMPanelProps {
   onSpawnCreature: (creature: WACreature) => void;
   onSpawnAetheriaCreature: (creature: AetheriaCreature) => void;
   onSpawnSystemMonster?: (monster: any) => void;
+  onSpawnGlyphesCreature?: (creature: GlyphesCreature) => void;
   onSpawnCharacter: (char: PlayerChar) => void;
   onAddToInitiative: (entry: Omit<InitiativeEntry, "id">) => void;
   onAddSelectedTokenToInitiative?: () => void;
@@ -110,7 +112,7 @@ export default function GMPanel({
   tokens, selectedTokenId, waCreatures, aetheriaCreatures, systemMonsters = [], campaignSystem = "Aetheria", userCharacters,
   initiative, initiativeRound, initiativeActiveIdx,
   onUpdateTokenHp, onSelectToken,
-  onSpawnCreature, onSpawnAetheriaCreature, onSpawnSystemMonster, onSpawnCharacter,
+  onSpawnCreature, onSpawnAetheriaCreature, onSpawnSystemMonster, onSpawnGlyphesCreature, onSpawnCharacter,
   onAddToInitiative, onAddSelectedTokenToInitiative, onAddAllTokensToInitiative,
   onAutoRollAllInitiative, onUpdateInitiativeValue, onReorderInitiative,
   onRemoveFromInitiative,
@@ -848,6 +850,45 @@ export default function GMPanel({
                   </>
                 )}
 
+                {/* Bestiaire officiel Glyphes */}
+                {campaignSystem === "Glyphes" && (() => {
+                  const q = bestiarySearch.toLowerCase();
+                  const list = GLYPHES_BESTIARY.filter(c => c.nom.toLowerCase().includes(q) || c.categorie.toLowerCase().includes(q));
+                  if (list.length === 0) return null;
+                  return (
+                    <>
+                      <Separator className="my-1" />
+                      <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/70">Bestiaire Glyphes</p>
+                      {list.map(c => (
+                        <div key={c.nom}
+                          draggable={isGM && !!onSpawnGlyphesCreature}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/x-aetheria-glyphes", c.nom);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
+                          className="group flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors cursor-grab active:cursor-grabbing">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                            <Skull className="h-3.5 w-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate text-amber-100">{c.nom}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {c.categorie} • Résilience {c.defense.resilience} • Mêlée {c.attaque.melee}
+                            </p>
+                          </div>
+                          {isGM && onSpawnGlyphesCreature && (
+                            <Button size="icon" variant="ghost" aria-label="Ajouter à la carte"
+                              className="h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-amber-400"
+                              onClick={() => onSpawnGlyphesCreature(c)}>
+                              <Plus className="h-4 w-4 sm:h-3 sm:w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+
                 {/* Monstres génériques (D&D 5e / Personnalisé) */}
                 {["D&D 5e", "Personnalisé"].includes(campaignSystem) && (() => {
                   const list = systemMonsters.filter((m: any) => m.name.toLowerCase().includes(bestiarySearch.toLowerCase()));
@@ -888,7 +929,7 @@ export default function GMPanel({
                     </>
                   );
                 })()}
-                {filteredCreatures.length === 0 && userCharacters.length === 0 && (
+                {filteredCreatures.length === 0 && userCharacters.length === 0 && campaignSystem !== "Glyphes" && (
                   <p className="py-8 text-center text-xs text-muted-foreground">Aucune créature trouvée</p>
                 )}
               </div>
