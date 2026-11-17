@@ -1,0 +1,10 @@
+{
+  "manifestVersion": 1,
+  "name": "Aetheria VTT",
+  "summary": "Vos fiches de personnage Aetheria VTT (Glyphes) directement dans TaleSpire, synchronisées avec le site.",
+  "descriptionFilePath": "/README.md",
+  "version": "0.1.0",
+  "entryPoint": "https://aetheriavtt.com/talespire",
+  "about": { "website": "https://aetheriavtt.com", "authors": ["Erwan \"Korrigans\" Lesage"] },
+  "environment": { "webViewBackgroundColor": "#0b0f1a" }
+}

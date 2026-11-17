@@ -369,7 +369,7 @@ const Guide = () => {
             </p>
 
             <Step n={1} title="Installer le Symbiote dans TaleSpire">
-              Dans TaleSpire, ouvre le panneau des <strong>Symbiotes</strong> et ajoute le module par son URL :
+              <a href="/talespire-symbiote/aetheria-vtt-symbiote.zip" download className="text-amber-300 underline">Télécharge le module</a> puis décompresse le dossier <strong>AetheriaVTT</strong>. Dans TaleSpire, active les Symbiotes dans les <strong>Paramètres</strong>, ouvre le dossier des Symbiotes et places-y ce dossier. Le fichier du module est aussi consultable ici :
               <code className="mt-1 block break-all rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 font-mono text-[11px] text-amber-300">
                 https://aetheriavtt.com/talespire-symbiote/manifest.json
               </code>
