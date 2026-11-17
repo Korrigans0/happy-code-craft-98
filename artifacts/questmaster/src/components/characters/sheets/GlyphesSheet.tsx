@@ -53,9 +53,11 @@ const APTITUDES: [string, string][] = [
   ["Intimidation", "Soc - Pui"], ["Négociateur", "Soc - Esp"],
   ["Persuasion", "Soc - Esp - Foi"], ["Tromperie", "Soc - Esp"], ["Forge-glyphe", "Flux"],
   ["Alchimiste", "Esp - Sou"], ["Ingénieur", "Esp - Sou"], ["Médecin", "Esp - Sou"],
-  ["Scout", "Instinct"], ["Vigilant", "Sens"], ["Botanique", "Esp"],
-  ["Déduction", "Esp"], ["Érudition", "Soc - Esp"],
+  ["Observateur", "Vue - Instinct"], ["Vigilant", "Sens"], ["Survie", "Sens"],
+  ["Déduction", "Esp"], ["Érudition", "Foi - Esp"],
 ];
+/** Aptitudes from earlier rule versions, still shown when a sheet has a value for them. */
+const LEGACY_APTITUDES: [string, string][] = [["Scout", "Instinct"], ["Botanique", "Esp"], ["Traqueur", "Esp"]];
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const toList = (v: unknown, n: number): string[] => {
@@ -325,7 +327,7 @@ const GlyphesSheet = ({ character, editable = false, onSave, onClose, onEdit }: 
                 </tr>
               </thead>
               <tbody>
-                {APTITUDES.map(([name, cara]) => (
+                {[...APTITUDES, ...LEGACY_APTITUDES.filter(([name]) => aptitudes[name])].map(([name, cara]) => (
                   <tr key={name} className="odd:bg-muted/40">
                     <td className="p-1">{name}</td>
                     <td className="p-1 text-center text-xs text-muted-foreground">{cara}</td>

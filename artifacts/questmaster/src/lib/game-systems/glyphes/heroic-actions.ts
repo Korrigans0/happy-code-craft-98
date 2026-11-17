@@ -121,7 +121,7 @@ export const HEROIC_ACTIONS: HeroicAction[] = [
     id: "cri-de-ralliement",
     name: "Cri de ralliement",
     category: "tactique",
-    cost: 4,
+    cost: 5,
     tags: [],
     description:
       "Les alliés à 50 ft peuvent relancer leur épreuve d'ordre de jeu avec une supériorité.",
@@ -169,7 +169,7 @@ export const HEROIC_ACTIONS: HeroicAction[] = [
     costFormula: "moitie-td",
     tags: [],
     description:
-      "Épreuves de Scout, traque, récolte ou survie : la moitié du TD garantit une réussite à la créature choisie.",
+      "Épreuves d'observation, de récolte ou de survie : la moitié du TD garantit une réussite.",
     source: "Module Coeur",
   },
 
@@ -218,9 +218,9 @@ export const HEROIC_ACTIONS: HeroicAction[] = [
     id: "riposte-insaisissable",
     name: "Riposte insaisissable",
     category: "offensive",
-    cost: 3,
+    cost: 1,
     tags: ["arme-legere", "distance", "melee"],
-    description: "Après une esquive réussie, le personnage inflige une riposte à son adversaire.",
+    description: "1 point en plus de l'esquive : après une esquive réussie, attaque la source du danger évité.",
     source: "Nouvel Empire",
   },
 
@@ -235,6 +235,16 @@ export const HEROIC_ACTIONS: HeroicAction[] = [
     description:
       "2 points annulent une réussite obtenue contre le porteur ; plusieurs réussites d'une même source peuvent être annulées.",
     source: "Nouvel Empire",
+  },
+  {
+    id: "intervention-defensive",
+    name: "Intervention défensive",
+    category: "defensive",
+    cost: 3,
+    tags: ["bouclier"],
+    description:
+      "S'interpose avec son bouclier pour défendre un allié : +1 point de protection pour l'action en cours.",
+    source: "Module Coeur",
   },
   {
     id: "esquive",

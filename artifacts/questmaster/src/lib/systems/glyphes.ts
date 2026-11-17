@@ -39,7 +39,7 @@ export const GLYPHES_SYSTEM: SystemDefinition = {
     { key: "hp", label: "Corps", display: "bar", min: 0 },
     { key: "ame", label: "Âme", hint: "Réserve spirituelle (max 5)", display: "counter", min: 0 },
     { key: "heroisme", label: "Héroïsme", hint: "Pool d'actions héroïques (max 5)", display: "counter", min: 0 },
-    { key: "tempete", label: "Tempête spirituelle", hint: "Jauge d'immersion (max 10)", display: "bar", min: 0 },
+    { key: "tempete", label: "Tempête spirituelle", hint: "Jauge d'immersion (max = score du dé d'Esprit)", display: "bar", min: 0 },
   ],
   raceLabel: "Race",
   races: [

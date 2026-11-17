@@ -54,8 +54,8 @@ const ARCHETYPES = [
     nom: "Rôdeur",
     theme: "Survie",
     desc: "Éclaireur, pisteur, herboriste. À l'aise dans la sauvagerie, prépare toujours l'inattendu.",
-    dons: ["Toujours prêt", "Insaisissable", "Expert en créatures"],
-    aptitudes: ["Scout", "Traqueur", "Botanique", "Camouflage"],
+    dons: ["Insaisissable", "Expert en créatures", "Sens surdéveloppés"],
+    aptitudes: ["Survie", "Observateur", "Vigilant", "Camouflage"],
   },
   {
     nom: "Ombre",
@@ -218,7 +218,7 @@ export default function GlyphesCompendium() {
                     <article key={a.nom} className="rounded-lg border border-white/10 bg-[hsl(228,68%,9%)] p-4">
                       <div className="flex items-baseline justify-between gap-2">
                         <h3 className="text-sm font-semibold text-amber-200">{a.nom}</h3>
-                        <span className="shrink-0 text-xs font-mono text-amber-400/80">{a.cout} pt</span>
+                        <span className="shrink-0 text-xs font-mono text-amber-400/80">{a.cout} pts</span>
                       </div>
                       <p className="mt-1 text-xs text-slate-400 leading-relaxed">{a.desc}</p>
                     </article>
@@ -248,6 +248,7 @@ export default function GlyphesCompendium() {
                         <th className="px-4 py-2 text-left">Portée</th>
                         <th className="px-4 py-2 text-left">Magnitude</th>
                         <th className="px-4 py-2 text-left">Zone</th>
+                        <th className="px-4 py-2 text-left">Durée</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -257,6 +258,7 @@ export default function GlyphesCompendium() {
                           <td className="px-4 py-2 font-mono">{i.portee}</td>
                           <td className="px-4 py-2">{i.magnitude}</td>
                           <td className="px-4 py-2">{i.zone}</td>
+                          <td className="px-4 py-2">{i.duree}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -535,7 +537,7 @@ export default function GlyphesCompendium() {
                       <thead className="bg-amber-500/10 text-amber-300">
                         <tr>
                           <th className="px-4 py-2 text-center">Résilience visée</th>
-                          <th className="px-4 py-2 text-center">Coût en âme</th>
+                          <th className="px-4 py-2 text-center">Points d'immersion par blessure</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -551,20 +553,20 @@ export default function GlyphesCompendium() {
                 </div>
 
                 <div>
-                  <h2 className="font-display text-xl text-amber-300 mb-3">Tempête spirituelle</h2>
+                  <h2 className="font-display text-xl text-amber-300 mb-3">Points d'immersion par réussite</h2>
                   <div className="rounded-xl border border-amber-500/15 bg-[hsl(228,68%,10%)] overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-amber-500/10 text-amber-300">
                         <tr>
-                          <th className="px-4 py-2 text-center">Niveau de difficulté</th>
-                          <th className="px-4 py-2 text-center">Points de tempête</th>
+                          <th className="px-4 py-2 text-center">TD de l'immersion</th>
+                          <th className="px-4 py-2 text-center">Points par réussite</th>
                         </tr>
                       </thead>
                       <tbody>
                         {TEMPETE_PAR_ND.map((t) => (
                           <tr key={t.nd} className="border-t border-white/5 text-slate-300">
                             <td className="px-4 py-2 text-center">{t.nd}</td>
-                            <td className="px-4 py-2 text-center font-mono text-amber-200">{t.tempete}</td>
+                            <td className="px-4 py-2 text-center font-mono text-amber-200">{t.points}</td>
                           </tr>
                         ))}
                       </tbody>

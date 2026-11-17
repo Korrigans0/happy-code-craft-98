@@ -20,6 +20,10 @@ export type SenseKey = (typeof SENSES)[number];
 /** Résilience de départ d'un personnage créé (Module Coeur). */
 export const BASE_RESILIENCE = 4;
 
+/** Points de corps et d'âme reçus à la création. */
+export const START_BODY = 2;
+export const START_SOUL = 2;
+
 /** Points de corps / d'âme et héroïsme sont plafonnés à 5. */
 export const MAX_BODY = 5;
 export const MAX_SOUL = 5;
@@ -60,16 +64,15 @@ export const APTITUDES: AptitudeDef[] = [
   { key: "sang-pourri", label: "Sang pourri", group: "Physique", stats: ["CON"] },
   // Survie et récupération
   { key: "medecin", label: "Médecin", group: "Survie et récupération", stats: ["ESP", "SOU"] },
-  { key: "scout", label: "Scout", group: "Survie et récupération", stats: ["Instinct"] },
+  { key: "observateur", label: "Observateur", group: "Survie et récupération", stats: ["Vue", "Instinct"] },
   { key: "vigilant", label: "Vigilant", group: "Survie et récupération", stats: ["Vue", "Ouïe", "Instinct", "Flux"] },
   // Création
   { key: "alchimiste", label: "Alchimiste", group: "Création", stats: ["ESP", "SOU"] },
   { key: "ingenieur", label: "Ingénieur", group: "Création", stats: ["ESP", "SOU"] },
   // Connaissances
-  { key: "botanique", label: "Botanique", group: "Connaissances", stats: ["ESP"] },
+  { key: "survie", label: "Survie", group: "Connaissances", stats: ["Vue", "Ouïe", "Instinct", "Flux"] },
   { key: "deduction", label: "Déduction", group: "Connaissances", stats: ["ESP"] },
   { key: "erudition", label: "Érudition", group: "Connaissances", stats: ["FOI", "ESP"] },
-  { key: "traqueur", label: "Traqueur", group: "Connaissances", stats: ["ESP"] },
   // Social
   { key: "charme", label: "Charme", group: "Social", stats: ["SOC", "SOU"] },
   { key: "intimidation", label: "Intimidation", group: "Social", stats: ["SOC", "PUI"] },
@@ -99,7 +102,8 @@ export const WAR_APTITUDES = [
 /** Niveaux de dé (1 = D4 … 5 = D12) indexés par caractéristique. */
 export type StatLevels = Record<string, number>;
 
-/** Sens dérivés des caractéristiques (Module Coeur). */
+/** Sens dérivés des caractéristiques (Module Coeur). Flux 0 = aucun dé de Flux
+ *  (Esprit en D4) : les épreuves de Flux sont alors impossibles. */
 export function deriveSenses(stats: StatLevels): Record<SenseKey, number> {
   const esp = stats.ESP ?? 1;
   const con = stats.CON ?? 1;
@@ -108,7 +112,7 @@ export function deriveSenses(stats: StatLevels): Record<SenseKey, number> {
     Vue: Math.min(esp, con),
     Ouïe: Math.min(esp, con),
     Instinct: Math.min(esp, foi),
-    Flux: Math.max(1, esp - 1),
+    Flux: Math.max(0, esp - 1),
   };
 }
 
@@ -123,6 +127,10 @@ export function carryCapacity(stats: StatLevels): number {
 }
 
 /** Taille de dé utilisée par une aptitude donnée, selon la caractéristique choisie. */
+export function hasFluxDie(stats: StatLevels): boolean {
+  return deriveSenses(stats).Flux > 0;
+}
+
 export function aptitudeDieSize(stats: StatLevels, statKey: string): DieSize {
   const senses = deriveSenses(stats);
   const level =

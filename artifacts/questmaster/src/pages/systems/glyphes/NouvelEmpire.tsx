@@ -7,7 +7,7 @@ import { ArrowLeft, Menu, X, Sparkles } from "lucide-react";
 import {
   SECTIONS, CARACTERISTIQUES, NIVEAUX_DES, DIFFICULTES, RANGS, RICHESSES, SENS,
   DONS, RACES, ACTIONS_HEROIQUES, APTITUDES, ETATS, IMMERSION_TABLE, TEMPETE_PAR_ND,
-  MAGNITUDE_DEGATS, GLYPHES_CONNUS, FABRICATION_TABLE, ARMES_CATEGORIES, ARMURES_CATEGORIES,
+  MAGNITUDE_DEGATS, SACRIFICES, PALIERS, GLYPHES_CONNUS, FABRICATION_TABLE, ARMES_CATEGORIES, ARMURES_CATEGORIES,
   OBJETS_QUALITE, FACTIONS, ATLAS, ANNEE_DE_REFERENCE, SectionId,
 } from "./data";
 
@@ -197,31 +197,34 @@ export default function NouvelEmpire() {
               {/* 3 */}
               <section>
                 <H id="epreuves" n={3}>Jouer à Glyphes — Épreuves & Résolutions</H>
-                <P>Une épreuve consiste à lancer <Strong>autant de dés que le niveau d'aptitude</Strong> du personnage, de la taille de la caractéristique liée. On compte les réussites : chaque dé ≥ valeur de difficulté = 1 succès.</P>
+                <P>Lors d'une épreuve simple, le joueur lance <Strong>autant de dés que le niveau de l'aptitude</Strong> utilisée, de la taille de la caractéristique liée. Chaque dé égal ou supérieur au type de difficulté est une <Strong>réussite</Strong> ; l'épreuve est un succès si le nombre de réussites atteint le rang de difficulté.</P>
+                <P>Le TD est choisi par le MJ et gardé secret jusqu'au lancer. Un personnage qui prend le temps d'examiner la situation peut tenter de le deviner (épreuve d'instinct, aptitude Déduction).</P>
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Type de Difficulté (TD)</h3>
                 <Table head={["Type", "Valeur cible", "Description"]} rows={DIFFICULTES.map(d => [d.td, d.valeur, d.desc])} />
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Rang de difficulté</h3>
-                <P>Le rang indique le nombre de réussites requises. Indispensable à mesurer pour calibrer la tension.</P>
+                <P>Le rang est le nombre de réussites nécessaires. Une épreuve Commune de rang 2 demande deux dés à 4 ou plus. Pour un jeu équilibré, augmentez le rang avant d'augmenter le type de difficulté.</P>
+                <Card title="Type de difficulté Nul">L'épreuve réussit automatiquement. Aucun point d'héroïsme ne peut être gagné.</Card>
+                <Card title="Coup d'éclat">Plus de réussites que nécessaire : le personnage gagne autant de points d'héroïsme que le rang de l'épreuve.</Card>
                 <Table head={["Rang", "Ajout"]} rows={RANGS.map(r => [r.rang, r.ajout])} />
 
-                <Card title="Supériorité">Un dé supplémentaire offert par une circonstance (aide d'un allié, position avantageuse). Cumulable si les sources sont différentes.</Card>
-                <Card title="Points de corps & d'âme">Dépensez 1 point pour <Strong>augmenter d'un niveau de dé</Strong> sur une épreuve. Corps = PUI / SOU / CON. Âme = FOI / ESP / SOC.</Card>
-                <Card title="Épreuves sous pression">Le MJ impose la caractéristique et l'aptitude. Succès ou échec, un point de corps ou d'âme est gagné.</Card>
-                <Card title="Résistance">Une cible peut utiliser une action héroïque (réaction) pour résister à une action qui l'affecte.</Card>
-                <Card title="Choisir la difficulté (guide MJ)">Placez la barre trop haute → injustice. Trop basse → sentiment d'inachevé. Ne dépassez Héroïque que si les PJ ont aptitude 3+ et D6+. Légendaire dès D8 / niveau 5 minimum.</Card>
+                <Card title="Supériorité">Un dé supplémentaire (surprise, aide d'un allié, supériorité numérique, preuve, diversion…). Cumulable si les sources sont de types différents.</Card>
+                <Card title="Niveau d'aptitude nul">Si le nombre de dés tombe à 0 ou moins, la créature lance 2 dés et garde le moins bon. Exception : sans dé de Flux, les épreuves de Flux sont impossibles.</Card>
+                <Card title="Points de corps & d'âme">Dépensez 1 point pour <Strong>augmenter d'un niveau le dé</Strong> de caractéristique de l'épreuve (D6 → D8 avec 1 point, D10 avec 2). Corps = PUI / SOU / CON. Âme = FOI / ESP / SOC. 2 de chaque à la création.</Card>
+                <Card title="Choix de la caractéristique">Le MJ fixe la caractéristique et l'aptitude idéales ; le joueur peut en proposer une autre qui correspond mieux à son personnage (enfoncer la porte plutôt que la crocheter).</Card>
+                <Card title="Épreuves sous pression">Le MJ impose la caractéristique et l'aptitude. Succès ou échec, le personnage reçoit un point de corps ou d'âme selon la caractéristique utilisée.</Card>
+                <Card title="Choisir la difficulté (guide MJ)">Nul : actions ordinaires, indices gratuits. Commun : débutants et intermédiaires (au-delà de deux aptitudes niveau 3, montez le rang). Héroïque : fait dépenser corps et âme. Grandiose : aptitudes niveau 4+. Légendaire : D8 et niveau 5 minimum. Mythique : un avertissement plus qu'une épreuve.</Card>
 
-                <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Épreuves complexes</h3>
-                <P>Un enchaînement d'épreuves simples (interrogatoire, escalade longue, infiltration). Le nombre de succès requis = niveau de complexité. Le MJ peut révéler ou cacher ce nombre.</P>
-                <Card title="Échec partiel">Au moins la moitié des succès atteints : le MJ choisit entre succès à contrecoup ou échec sans conséquences graves.</Card>
-                <Card title="Échec complet">Tentatives épuisées sans atteindre la moitié des succès. Conséquences pleines.</Card>
+                <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Épreuves à sacrifice</h3>
+                <P>Lors de l'échec d'une épreuve à sacrifice, le joueur choisit : <Strong>garantir le succès en sacrifiant quelque chose</Strong>, ou accepter l'échec et ses conséquences. Idéal pour les épreuves qui durent dans le temps (infiltration, interrogatoire).</P>
+                <Card title="Que sacrifier ?">Le MJ détermine toujours le sacrifice : narratif (traces, information partielle, confiance perdue), corporel (blessure, points de corps ou d'âme) ou matériel (outil ou équipement brisé).</Card>
               </section>
 
               {/* 4 */}
               <section>
                 <H id="personnages" n={4}>Personnages — Caractéristiques fondamentales</H>
-                <P>Tout personnage commence à <Strong>1D4</Strong> dans chaque caractéristique, modifié par sa race et son origine. Les niveaux de dés vont de <Strong>{NIVEAUX_DES.join(" → ")}</Strong>.</P>
+                <P>Tout personnage commence à <Strong>1D4</Strong> dans chaque caractéristique, agrandi par les bonus de race puis par la progression. Les niveaux de dés vont de <Strong>{NIVEAUX_DES.join(" → ")}</Strong>.</P>
                 <Table head={["Carac", "Nom complet", "Description"]} rows={CARACTERISTIQUES.map(c => [c.key, c.label, c.desc])} />
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Points de corps & d'âme</h3>
@@ -230,9 +233,12 @@ export default function NouvelEmpire() {
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Sens</h3>
                 <Table head={["Sens", "Formule"]} rows={SENS.map(s => [s.sens, s.formule])} />
 
-                <Card title="Tempête spirituelle">Stabilité de l'âme. Chaque personnage commence avec autant de stades que le score max de son dé d'Esprit. L'évocation et l'échec ajoutent des points de tempête — saturer = catastrophe.</Card>
-                <Card title="Héroïsme">Gagné par coups d'éclat ou actions épiques. Max 5 points. Dépensé pour les actions héroïques. Un seul usage par tour.</Card>
-                <Card title="Aptitudes">Définissent le personnage. À la création : <Strong>5 niveaux à répartir</Strong> (max 3 par aptitude). Progression jusqu'au niveau 5 ensuite.</Card>
+                <P>Les sens servent de manière <Strong>passive</Strong> (le TD d'une épreuve de camouflage adverse est égal au niveau de dé de vue ou d'ouïe) ou <Strong>active</Strong> (chercher, sentir, découvrir).</P>
+                <Card title="Résilience">Score minimum à atteindre lors d'une attaque pour blesser la créature. <Strong>4</Strong> à la création.</Card>
+                <Card title="Tempête spirituelle">Stabilité de l'âme. Maximum de points de tempête = score maximal du dé d'Esprit (D6 → 6 points).</Card>
+                <Card title="Héroïsme">Gagné par coups d'éclat ou épreuves désespérées. Maximum 5 points ; tout point au-delà est perdu.</Card>
+                <Card title="Aptitudes">Niveau 1 dans toutes les aptitudes à la création, puis <Strong>5 niveaux à répartir</Strong> (max 3 par aptitude). Progression jusqu'au niveau 5.</Card>
+                <Card title="Création">2 dons d'origine, 3 actions héroïques, 2 points de corps et 2 points d'âme, 0 point de potentiel.</Card>
               </section>
 
               {/* 5 */}
@@ -246,7 +252,7 @@ export default function NouvelEmpire() {
                   <Card title="Dons & Aptitudes">2 dons d'origine + tableau des aptitudes avec niveau.</Card>
                   <Card title="Héroïsme & Actions">5 cases d'héroïsme + liste des actions héroïques connues.</Card>
                   <Card title="Attaque & Défense">Mêlée / Distance, Blessures, Résilience, Esquive, protections.</Card>
-                  <Card title="Évocation">Liste des glyphes connus, jauge de Tempête spirituelle (max 10).</Card>
+                  <Card title="Évocation">Liste des glyphes connus, jauge de Tempête spirituelle (max = score du dé d'Esprit).</Card>
                   <Card title="Inventaire">Consommables + objets, encombrement max = score max du dé de PUI.</Card>
                   <Card title="Richesses">Bronze, Argent, Brume, Rubis, Saphir + total en argent.</Card>
                 </div>
@@ -285,7 +291,9 @@ export default function NouvelEmpire() {
               {/* 8 */}
               <section>
                 <H id="actions" n={8}>Actions Héroïques</H>
-                <P>Une action héroïque par tour, payée en points d'héroïsme. Impossible d'en gagner pendant une action héroïque.</P>
+                <P>Déclenchables à <Strong>tout moment</Strong> si leurs conditions sont remplies, sans limite par tour. Impossible de gagner de l'héroïsme pendant une action héroïque. <Strong>3 actions héroïques</Strong> au choix à la création.</P>
+                <Card title="Traits">Réussite garantie : dépenser la moitié du TD garantit une réussite. Augmentation : +1D par 2 points. Combo : permet à un allié à 30 ft de déclencher une action au même trait (sans nouveau combo). Guerroyer / Parlementer : réservées à l'approche choisie.</Card>
+                <Card title="Annotations martiales">Armes : Le légère, Lo lourde, Di distance, Me mêlée. Protections : Le légère, In intermédiaire, Lo lourde, Bou bouclier.</Card>
                 <Table head={["Action", "Coût", "Effet"]} rows={ACTIONS_HEROIQUES.map(a => [a.nom, `${a.cout} pts`, a.desc])} />
               </section>
 
@@ -301,19 +309,25 @@ export default function NouvelEmpire() {
                 </Card>
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">L'immersion</h3>
-                <P>Le joueur choisit son TD d'immersion (de Commun à Mythique). Sur un succès, il obtient des <Strong>points d'immersion</Strong> = score du dé. À répartir dans le tableau :</P>
-                <Table head={["Coût", "Portée", "Magnitude", "Zone d'effet"]} rows={IMMERSION_TABLE.map(i => [i.cout, i.portee, i.magnitude, i.zone])} />
+                <P>Le joueur choisit le TD de son immersion (de Commun 4+ à Mythique 12+), puis lance <Strong>autant de dés d'Esprit qu'il le souhaite</Strong>. Une seule réussite suffit pour que l'évocation réussisse ; chaque réussite rapporte des points d'immersion selon le TD.</P>
+                <Table head={["TD choisi", "Points par réussite"]} rows={TEMPETE_PAR_ND.map(t => [t.nd, t.points])} />
+                <Card title="Effet de base">Origine : l'évocateur. Portée 30 ft, magnitude simple, cible unique. Les points d'immersion s'ajoutent, et peuvent être dépensés plusieurs fois dans une même colonne.</Card>
+                <Table head={["Coût", "Portée", "Magnitude", "Zone (rayon)", "Durée"]} rows={IMMERSION_TABLE.map(i => [i.cout, i.portee, i.magnitude, i.zone, i.duree])} />
 
-                <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Échec d'immersion → Tempête spirituelle</h3>
-                <Table head={["TD choisi", "Tempête gagnée"]} rows={TEMPETE_PAR_ND.map(t => [t.nd, t.tempete])} />
+                <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Le coût d'un tel pouvoir</h3>
+                <Card title="Réussite">1 point de tempête spirituelle par dé qui n'atteint pas le TD choisi.</Card>
+                <Card title="Échec d'immersion">Points de tempête égaux au score minimal du TD (4 pour 4+, 6 pour 6+…).</Card>
+                <Card title="Immersion rituelle">Les créatures à 10 ft peuvent aider : chaque dé rituel coûte 2 points de tempête à l'aidant. Les dés rituels comptent seulement s'ils donnent des réussites et n'influent pas sur les événements de flux ; sans réussite de l'évocateur, l'immersion échoue.</Card>
+                <Card title="Tempête spirituelle atteinte">Épreuve de Flux TD commun rang 1 : un échec provoque un événement de flux catastrophique, un succès coupe le lien avec le flux.</Card>
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Magnitude — Dégâts</h3>
-                <P>Coût en points d'immersion pour infliger 1 blessure selon la résilience de la cible :</P>
+                <P>Dépenser une magnitude égale ou supérieure à la résilience de la cible inflige une blessure ; répétez la dépense pour plusieurs blessures.</P>
                 <Table head={["Résilience cible", "Coût par blessure"]} rows={MAGNITUDE_DEGATS.map(m => [m.resilience, m.cout])} />
 
-                <Card title="Magnitudes — Temps & espace">Voir dans le passé : Commune. Voir le présent en distance : Héroïque min. La netteté de la vision module la magnitude.</Card>
-                <Card title="Magnitudes — Effets & états">Imposer un état (Apeuré, Sonné, Charmé...) coûte selon la difficulté à le faire passer. Le MJ arbitre.</Card>
-                <Card title="Événements de flux">Apparition d'entités, ouverture de failles, possessions. Déclenchés par les évocateurs sauvages et les échecs critiques.</Card>
+                <Card title="Évoquer">La description doit faire tenir le concept de la rune centrale en une phrase (« Je veux <em>voir</em> dans le passé »).</Card>
+                <Card title="Magnitudes — Temps & espace">Changer le temps est impossible. Une vision du passé dépend de la distance temporelle et de la netteté ; voir le présent ailleurs demande au moins une magnitude héroïque.</Card>
+                <Card title="Magnitudes — Effets & états">Un état sans blessure réussit automatiquement dès la magnitude commune. Plusieurs états, un état rare ou une transformation profonde : héroïque ou plus.</Card>
+                <Card title="Événements de flux">Une fois tous les dés jetés (rituels compris), si les dés pairs ne sont pas plus nombreux que les impairs, un événement se produit : bénéfique si l'immersion réussit, potentiellement catastrophique sinon.</Card>
 
                 <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Glyphes connus</h3>
                 {GLYPHES_CONNUS.map((g) => (
@@ -326,11 +340,12 @@ export default function NouvelEmpire() {
               {/* 10 */}
               <section>
                 <H id="repos" n={10}>Activités & Repos</H>
-                <Card title="Activité simple">Quelques heures de travail (récolte, étude légère, fabrication courte).</Card>
-                <Card title="Activité complète">Une journée entière dédiée à une tâche.</Card>
-                <Card title="Repos simple">Quelques heures de pause. Récupère 1 point de corps OU 1 point d'âme.</Card>
-                <Card title="Repos complet">Nuit complète. Récupère tous les points de corps et d'âme, soigne 1 blessure légère.</Card>
-                <Card title="Récolte">Activité simple avec aptitude Botanique. Le résultat dépend de la flore locale et de l'environnement.</Card>
+                <Card title="Activité simple">15 minutes ; échoue si elle est interrompue (explorer une pièce, désarmer un piège, soigner).</Card>
+                <Card title="Activité complète">Une heure ; échoue si elle est interrompue. Allonger une activité peut réduire la difficulté ou apporter un bonus.</Card>
+                <Card title="Repos simple">Une heure : panser ses plaies, bandages, consommables. Soigner : épreuve de médecine, TD = résilience de la créature.</Card>
+                <Card title="Repos complet">6 heures minimum. Récupère 1 point de corps ou d'âme. Guérit une blessure sans interruption (pas de quart de surveillance).</Card>
+                <Card title="Réduire sa tempête">Méditation profonde : épreuve de Flux TD commun avec autant de dés que de points de tempête ; chaque réussite retire un point.</Card>
+                <Card title="Récolte">Au moins une activité complète, épreuve de survie. Riche : 2 ingrédients par réussite ; moyenne : 1 ; désertique : impossible.</Card>
               </section>
 
               {/* 11 */}
@@ -344,17 +359,21 @@ export default function NouvelEmpire() {
               {/* 12 */}
               <section>
                 <H id="combat" n={12}>Combattre</H>
-                <Card title="Initiative">Épreuve d'instinct ou de souplesse (selon contexte). Ordre du tour décidé par le score.</Card>
-                <Card title="Points d'action (PA)">Chaque tour : 4 PA. Attaque = 2 PA, mouvement = 1 PA pour 15 ft.</Card>
-                <Card title="Charge">Mouvement + attaque, +1D si pas de mouvement préalable. Coûte plus de PA sauf action héroïque.</Card>
-                <Card title="Escalade">Épreuve de Pied léger ou Athlétique selon la paroi.</Card>
-                <Card title="Se désengager">Évite l'attaque d'opportunité de l'ennemi en contact. Don Insaisissable la rend gratuite.</Card>
-                <Card title="Terrains difficiles / dangereux">Coût de mouvement doublé. Difficile peut occasionner une chute (épreuve d'agilité).</Card>
-                <Card title="Attaquer">Épreuve d'attaque selon arme + aptitude. Réussites = blessures (modulées par la protection cible).</Card>
-                <Card title="Subir des dégâts">Réussites adverses au-delà de la protection = blessures. La résilience limite le coût en immersion magique.</Card>
-                <Card title="Jetons de sacrifice">Tirés sur blessure critique : effets divers (estropié, sonné, perte de PA).</Card>
-                <Card title="Couverture">Réduit les réussites ennemies (légère −1D, totale −2D).</Card>
-                <Card title="Surprise & supériorité numérique">Surprise = première action gratuite. Supériorité numérique = +1D aux attaques mêlée.</Card>
+                <Card title="Enjeux">Avant chaque confrontation, celui qui l'initie fixe un enjeu (convaincre, tenir/protéger, dérober, effrayer, distraire, neutraliser). Le MJ peut cacher le sien ou imposer un enjeu supplémentaire.</Card>
+                <Card title="Victoire, défaite, nulle">Victoire : chaque participant gagne 5 points d'héroïsme. Défaite : ils perdent tout leur héroïsme et subissent les conséquences. Nulle : les deux camps échouent, sans effet de défaite.</Card>
+                <Card title="Ordre de jeu">Épreuve de vigilance avec le dé d'instinct, TD commun rang 1. Réussite : joue en premier ; échec : en dernier. La surprise inflige un échec automatique.</Card>
+                <Card title="Points d'action (PA)">4 PA au début du tour, dépensables jusqu'au tour suivant. Parlementer gratuit, 15 ft = 1 PA, objet = 1 PA, attaque = 2 PA.</Card>
+                <Card title="Parlementer ou guerroyer">Une seule approche par tour. Parlementer : épreuve sociale gratuite (TD = valeur max du dé de caractéristique de la cible, rang = son aptitude correspondante).</Card>
+                <Card title="Attaquer">2 PA. TD = résilience de la cible, rang = taux de protection de son armure.</Card>
+                <Card title="Charge">15 ft minimum en ligne droite puis attaque ou mise à terre, avec supériorité. Coût = déplacement + attaque.</Card>
+                <Card title="Se désengager">1 PA, épreuve de souplesse (TD = score max du dé de souplesse adverse). En cas d'échec : rester au contact, ou partir en subissant une attaque (1 PA pour l'adversaire).</Card>
+                <Card title="Escalade">1 PA pour un obstacle aussi haut ou plus haut que la créature ; gratuit sinon.</Card>
+                <Card title="Surprise & supériorité numérique">Chacune apporte une supériorité à l'attaque, cumulables. Pas de défense active contre une attaque surprise.</Card>
+                <Card title="Couverture (attaque à distance)">Léger : +1 protection. Intermédiaire : +2. Complet : attaque impossible.</Card>
+                <Card title="Subir des dégâts">Un PNJ succombe à son nombre maximal de blessures. Un PJ qui subit sa 3e blessure tire un jeton de sacrifice.</Card>
+                <h3 className="mt-6 font-display text-lg font-bold text-amber-300">Jetons de sacrifice</h3>
+                <P>4 exemplaires de chaque jeton, sauf Mort (autant que de joueurs présents) et Furie (un seul). Un jeton tiré ne revient pas dans le sac, sauf la Mort ; le sac est reconstitué après une semaine de repos en lieu sûr.</P>
+                <Table head={["N°", "Sacrifice", "Effet"]} rows={SACRIFICES.map(x => [x.n, x.nom, x.effet])} />
               </section>
 
               {/* 13 */}
@@ -366,27 +385,27 @@ export default function NouvelEmpire() {
               {/* 14 */}
               <section>
                 <H id="progression" n={14}>Progression des Personnages</H>
-                <Card title="Progression d'aptitude">Après plusieurs sessions, le MJ octroie un niveau d'aptitude (max 5).</Card>
-                <Card title="Progression de caractéristique">Évolutions rares, récompenses de jalons narratifs majeurs. +1 niveau de dé.</Card>
-                <Card title="Touché par le flux">Étape transformatrice. Le personnage gagne un don d'évocation ou un glyphe inédit.</Card>
-                <Card title="Devenir une légende">Au bout du parcours : le personnage entre dans les chroniques. Don héroïque ou capacité unique.</Card>
-                <Card title="Dons héroïques">Versions surpuissantes des dons. Acquis seulement par accomplissements légendaires.</Card>
+                <Card title="Le potentiel (PP)">0 PP à la création ; environ 1 PP par session (2 à 5 pour une fin d'arc).</Card>
+                <Card title="Augmenter une aptitude">Coûte autant de PP que le niveau actuel (niveau 1 → 2 : 1 PP ; 2 → 3 : 2 PP…). Maximum niveau 5.</Card>
+                <Card title="Augmenter un dé de caractéristique">D4 → D6 : 5 PP. D6 → D8 : 10 PP. Maximum D8, 4 caractéristiques améliorables sur 6, et 2 au plus en D8.</Card>
+                <Table head={["Palier", "PP dépensés"]} rows={PALIERS.map(p => [p.palier, p.pp])} />
+                <Card title="Palier héroïque — un don au choix">Grande figure (surnom, +2 héroïsme max), Vétéran endurci (résilience 6), Efficace (5 points d'action par tour), Forteresse spirituelle (réduit sa tempête de 1D4 par repos complet), Métabolisme rapide (+1 point de corps ou d'âme par repos complet).</Card>
               </section>
 
               {/* 15 */}
               <section>
                 <H id="exploration" n={15}>Exploration</H>
-                <Card title="Approche classique">Description narrative. Le MJ détaille, les joueurs choisissent.</Card>
-                <Card title="Sous pression">Temps limité, danger imminent. Épreuves sous pression imposées.</Card>
-                <Card title="Tour par tour">Quand le tempo l'exige (poursuite, dédale piégé). Découpage en rounds non-combat.</Card>
-                <Card title="Le donjon est vivant">Les lieux explorés évoluent : patrouilles, mécanismes, rumeurs, manifestations de flux.</Card>
+                <Card title="Tour par tour">Quelle que soit l'approche, l'exploration d'une zone restreinte (donjon, fort, souterrain) se joue en tours.</Card>
+                <Card title="Approche classique">Chaque tour dure 15 minutes : chaque personnage peut faire une activité simple. Le MJ peut compter le temps avec un D4 visible tourné à chaque tour.</Card>
+                <Card title="Approche sous pression">Chaque tour dure 5 secondes : c'est une confrontation contre l'environnement, avec les mêmes règles d'actions et de déplacement, et une épreuve d'initiative au départ.</Card>
+                <Card title="Le donjon est vivant">Le lieu réagit au groupe : pont trop chargé, éboulement, rencontre inattendue.</Card>
               </section>
 
               {/* 16 */}
               <section>
                 <H id="richesses" n={16}>Richesses & Équipements</H>
                 <Table head={["Pièce", "Conversion"]} rows={RICHESSES.map(r => [r.piece, r.taux])} />
-                <Card title="Poids & encombrement">L'encombrement max = score max du dé de PUI. Un D6 PUI = 6 emplacements d'inventaire. Au-delà : pénalités de mouvement.</Card>
+                <Card title="Poids & encombrement">Le nombre d'objets encombrants transportables dépend du dé de PUI. Armes : 1 emplacement (légère) ou 2 (lourde), non comptées si portées. Armures : lourde 2, intermédiaire 1, légère 0, comptées même portées. 10 petits objets = 1 emplacement.</Card>
               </section>
 
               {/* 17 */}
@@ -397,7 +416,8 @@ export default function NouvelEmpire() {
                 <P>Annotations : <Strong>Le</Strong> (légère), <Strong>Lo</Strong> (lourde), <Strong>Di</Strong> (distance), <Strong>Me</Strong> (mêlée).</P>
                 <Table head={["Action", "Tags", "Coût"]} rows={[
                   ["Frappe dévastatrice", "Lo Me", "2 pts (+1D par 2pts)"],
-                  ["Riposte Insaisissable", "Le Di Me", "3 pts"],
+                  ["Tir traversant", "Lo Di", "2 pts"],
+                  ["Riposte insaisissable", "Le Di Me", "1 pt + esquive"],
                   ["Estourbir", "Le Lo Me", "2 pts"],
                   ["Sentinelle", "Le Lo Di", "2 pts"],
                 ]} />
@@ -407,7 +427,8 @@ export default function NouvelEmpire() {
               <section>
                 <H id="armures" n={18}>Se Protéger</H>
                 <Table head={["Catégorie", "Protection", "Bonus / Malus", "Description"]} rows={ARMURES_CATEGORIES.map(a => [a.cat, a.protection, a.bonus, a.desc])} />
-                <Card title="Boucliers">Action héroïque <Strong>Levée de bouclier</Strong> (2 pts) — annule des réussites adverses.</Card>
+                <Card title="Taux de protection">Nombre de réussites nécessaires pour blesser le porteur : légère 1, intermédiaire 2, lourde 3. Sans armure, chaque réussite inflige une blessure.</Card>
+                <Card title="Boucliers">Défense active uniquement : <Strong>Levée de bouclier</Strong> (2 pts, apprise avec le bouclier) et <Strong>Intervention défensive</Strong> (3 pts, +1 protection à un allié). Actions défensives sans héroïsme : Tenir bon (2 PA, +1 rang aux épreuves offensives contre lui) et Repousser (2 PA, désengagement avec PUI).</Card>
                 <Card title="Esquive">Action héroïque universelle. Lance les dés d'esquive (modulés par armure). +1D pour 2 pts supplémentaires.</Card>
               </section>
 

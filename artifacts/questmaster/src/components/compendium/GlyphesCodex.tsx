@@ -197,14 +197,14 @@ const NouvelEmpireCodex = () => (
         <div>
           <SectionTitle>Table d'Immersion</SectionTitle>
           <Table
-            head={["Coût", "Portée", "Magnitude", "Zone"]}
-            rows={IMMERSION_TABLE.map((i) => [i.cout, i.portee, i.magnitude, i.zone])}
+            head={["Coût", "Portée", "Magnitude", "Zone", "Durée"]}
+            rows={IMMERSION_TABLE.map((i) => [i.cout, i.portee, i.magnitude, i.zone, i.duree])}
           />
         </div>
         <div>
           <SectionTitle>Magnitude des dégâts</SectionTitle>
           <Table
-            head={["Résilience cible", "Coût d'immersion"]}
+            head={["Résilience cible", "Points d'immersion par blessure"]}
             rows={MAGNITUDE_DEGATS.map((m) => [m.resilience, m.cout])}
           />
         </div>
