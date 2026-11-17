@@ -132,26 +132,125 @@ var get_campaign_default = defineTool2({
 // src/lib/mcp/tools/list-characters.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z3 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/characterPatch.ts
+var EDITABLE_CHARACTER_FIELDS = [
+  "name",
+  "race",
+  "class",
+  "subclass",
+  "level",
+  "background",
+  "alignment",
+  "backstory",
+  "personality_traits",
+  "ideals",
+  "bonds",
+  "flaws",
+  "appearance",
+  "strength",
+  "dexterity",
+  "constitution",
+  "intelligence",
+  "wisdom",
+  "charisma",
+  "hp",
+  "max_hp",
+  "temp_hp",
+  "armor_class",
+  "initiative",
+  "speed",
+  "hit_dice",
+  "proficiency_bonus",
+  "saving_throws",
+  "skills",
+  "languages",
+  "equipped_weapon_id",
+  "equipped_armor_id",
+  "equipped_items",
+  "inventory",
+  "gold",
+  "spellcasting_ability",
+  "spell_save_dc",
+  "spell_attack_bonus",
+  "known_spells",
+  "prepared_spells",
+  "spell_slots",
+  "experience_points",
+  "avatar_url"
+];
+var isPlainObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+function mergeSystemData(current, patch) {
+  const base = isPlainObject(current) ? { ...current } : {};
+  for (const [key, value] of Object.entries(patch)) {
+    base[key] = isPlainObject(value) && isPlainObject(base[key]) ? mergeSystemData(base[key], value) : value;
+  }
+  return base;
+}
+function pickEditableFields(input) {
+  const allowed = new Set(EDITABLE_CHARACTER_FIELDS);
+  const update = {};
+  const rejected = [];
+  for (const [key, value] of Object.entries(input)) {
+    if (value === void 0) continue;
+    if (allowed.has(key)) update[key] = value;
+    else rejected.push(key);
+  }
+  return { update, rejected };
+}
+function sameVersion(a, b) {
+  if (!a || !b) return false;
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  return Number.isFinite(ta) && ta === tb;
+}
+function canEditCharacter(row, userId, isPregenGm) {
+  if (!userId) return false;
+  if (row.user_id === userId) return true;
+  return row.kind === "pregen" && isPregenGm;
+}
+
+// src/lib/mcp/characterAccess.ts
+var errorResult = (code, message, extra = {}) => ({
+  content: [{ type: "text", text: JSON.stringify({ error: { code, message, ...extra } }) }],
+  isError: true
+});
+async function computeCanEdit(supabase, ctx, row) {
+  const userId = ctx.getUserId() ?? null;
+  let isGm = false;
+  if (row.kind === "pregen" && row.pregen_campaign_id && userId) {
+    const { data } = await supabase.rpc("is_campaign_gm", { _user_id: userId, _campaign_id: row.pregen_campaign_id });
+    isGm = data === true;
+  }
+  return canEditCharacter(row, userId, isGm);
+}
+
+// src/lib/mcp/tools/list-characters.ts
 var list_characters_default = defineTool3({
   name: "list_characters",
   title: "List characters",
-  description: "List the characters owned by the signed-in user, across all game systems.",
+  description: "List characters of the signed-in user (scope 'owned') or every character they may read (scope 'accessible'). Use updated_since to fetch only sheets changed since the last sync.",
   inputSchema: {
-    limit: z3.number().int().optional().describe("Maximum number of characters to return (default 25).")
+    limit: z3.number().int().optional().describe("Maximum number of characters to return (default 25, max 100)."),
+    scope: z3.enum(["owned", "accessible"]).optional().describe("'owned' (default) or 'accessible' (owned + campaign-linked + available pregens)."),
+    updated_since: z3.string().datetime({ offset: true }).optional().describe("ISO timestamp; only characters modified strictly after it are returned."),
+    system: z3.string().optional().describe("Filter by game system, e.g. 'Glyphes' or 'Aetheria'.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+  handler: async ({ limit, scope, updated_since, system }, ctx) => {
+    if (!ctx.isAuthenticated()) return errorResult("UNAUTHENTICATED", "Not authenticated");
     const supabase = supabaseForUser(ctx);
     const max = Math.min(Math.max(limit ?? 25, 1), 100);
-    const { data, error } = await supabase.from("characters").select("id, name, race, class, subclass, level, hp, max_hp, armor_class, system").eq("user_id", ctx.getUserId() ?? "").order("updated_at", { ascending: false }).limit(max);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? [], null, 2) }],
-      structuredContent: { characters: data ?? [] }
-    };
+    const userId = ctx.getUserId() ?? "";
+    let query = supabase.from("characters").select("id, user_id, name, race, class, subclass, level, hp, max_hp, armor_class, system, kind, avatar_url, updated_at").order("updated_at", { ascending: false }).limit(max);
+    if ((scope ?? "owned") === "owned") query = query.eq("user_id", userId);
+    if (updated_since) query = query.gt("updated_at", updated_since);
+    if (system) query = query.eq("system", system);
+    const { data, error } = await query;
+    if (error) return errorResult("DATABASE_ERROR", error.message);
+    const characters = (data ?? []).map((c) => ({ ...c, version: c.updated_at, is_owner: c.user_id === userId }));
+    const payload = { characters, server_time: (/* @__PURE__ */ new Date()).toISOString() };
+    return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }], structuredContent: payload };
   }
 });
 
@@ -161,23 +260,18 @@ import { z as z4 } from "npm:zod@^3.25.76";
 var get_character_default = defineTool4({
   name: "get_character",
   title: "Get character sheet",
-  description: "Get the full character sheet (stats, system data, background) of a character the signed-in user can access.",
-  inputSchema: { character_id: z4.string().describe("UUID of the character.") },
+  description: "Get the full character sheet (columns, system_data, version and can_edit) of a character the signed-in user can access.",
+  inputSchema: { character_id: z4.string().uuid().describe("UUID of the character.") },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ character_id }, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    }
+    if (!ctx.isAuthenticated()) return errorResult("UNAUTHENTICATED", "Not authenticated");
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("characters").select("*").eq("id", character_id).maybeSingle();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data) {
-      return { content: [{ type: "text", text: "Character not found or not accessible" }], isError: true };
-    }
-    return {
-      content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      structuredContent: { character: data }
-    };
+    if (error) return errorResult("DATABASE_ERROR", error.message);
+    if (!data) return errorResult("NOT_FOUND", "Character not found or not accessible");
+    const canEdit = await computeCanEdit(supabase, ctx, data);
+    const payload = { character: data, version: data.updated_at, can_edit: canEdit };
+    return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }], structuredContent: payload };
   }
 });
 
@@ -242,13 +336,146 @@ var create_campaign_note_default = defineTool6({
   }
 });
 
+// src/lib/mcp/tools/update-character.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z7 } from "npm:zod@^3.25.76";
+var json = z7.custom(() => true);
+var int = z7.number().int();
+var strList = z7.array(z7.string());
+var update_character_default = defineTool7({
+  name: "update_character",
+  title: "Update character sheet",
+  description: "Partially update a character the signed-in user may edit. Only provided fields change; system_data_patch is deep-merged. Requires expected_version (the character's last known updated_at) and fails with CONFLICT if the sheet changed meanwhile.",
+  inputSchema: {
+    character_id: z7.string().uuid().describe("UUID of the character."),
+    expected_version: z7.string().describe("updated_at value read from get_character/list_characters."),
+    fields: z7.object({
+      name: z7.string().min(1).max(120).optional(),
+      race: z7.string().max(120).optional(),
+      class: z7.string().max(120).optional(),
+      subclass: z7.string().max(120).nullable().optional(),
+      level: int.min(0).max(100).optional(),
+      background: z7.string().nullable().optional(),
+      alignment: z7.string().nullable().optional(),
+      backstory: z7.string().nullable().optional(),
+      personality_traits: z7.string().nullable().optional(),
+      ideals: z7.string().nullable().optional(),
+      bonds: z7.string().nullable().optional(),
+      flaws: z7.string().nullable().optional(),
+      appearance: z7.string().nullable().optional(),
+      strength: int.optional(),
+      dexterity: int.optional(),
+      constitution: int.optional(),
+      intelligence: int.optional(),
+      wisdom: int.optional(),
+      charisma: int.optional(),
+      hp: int.optional(),
+      max_hp: int.optional(),
+      temp_hp: int.nullable().optional(),
+      armor_class: int.optional(),
+      initiative: int.nullable().optional(),
+      speed: int.nullable().optional(),
+      hit_dice: z7.string().nullable().optional(),
+      proficiency_bonus: int.nullable().optional(),
+      saving_throws: strList.nullable().optional(),
+      skills: strList.nullable().optional(),
+      languages: strList.nullable().optional(),
+      equipped_weapon_id: z7.string().uuid().nullable().optional(),
+      equipped_armor_id: z7.string().uuid().nullable().optional(),
+      equipped_items: strList.nullable().optional(),
+      inventory: z7.string().nullable().optional(),
+      gold: int.nullable().optional(),
+      spellcasting_ability: z7.string().nullable().optional(),
+      spell_save_dc: int.nullable().optional(),
+      spell_attack_bonus: int.nullable().optional(),
+      known_spells: strList.nullable().optional(),
+      prepared_spells: strList.nullable().optional(),
+      spell_slots: json.optional(),
+      experience_points: int.nullable().optional(),
+      avatar_url: z7.string().url().nullable().optional()
+    }).strict().optional().describe("Top-level columns to change. Omitted fields are kept."),
+    system_data_patch: z7.record(json).optional().describe("Partial system_data (mana, wounds, heroism, aptitudes\u2026); deep-merged, untouched keys preserved.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ character_id, expected_version, fields, system_data_patch }, ctx) => {
+    if (!ctx.isAuthenticated()) return errorResult("UNAUTHENTICATED", "Not authenticated");
+    const supabase = supabaseForUser(ctx);
+    const { update, rejected } = pickEditableFields(fields ?? {});
+    if (rejected.length) return errorResult("FIELD_NOT_EDITABLE", "Some fields cannot be modified", { fields: rejected });
+    if (!Object.keys(update).length && !system_data_patch) return errorResult("EMPTY_UPDATE", "Nothing to update");
+    const { data: current, error: readError } = await supabase.from("characters").select("*").eq("id", character_id).maybeSingle();
+    if (readError) return errorResult("DATABASE_ERROR", readError.message);
+    if (!current) return errorResult("NOT_FOUND", "Character not found or not accessible");
+    if (!await computeCanEdit(supabase, ctx, current)) return errorResult("FORBIDDEN", "You are not allowed to modify this character");
+    if (!sameVersion(current.updated_at, expected_version)) {
+      return errorResult("CONFLICT", "The character was modified since expected_version", { current_version: current.updated_at, character: current });
+    }
+    if (system_data_patch) update.system_data = mergeSystemData(current.system_data, system_data_patch);
+    const { data: saved, error } = await supabase.from("characters").update(update).eq("id", character_id).eq("updated_at", current.updated_at).select("*").maybeSingle();
+    if (error) return errorResult("DATABASE_ERROR", error.message);
+    if (!saved) {
+      const { data: latest } = await supabase.from("characters").select("*").eq("id", character_id).maybeSingle();
+      return latest && !sameVersion(latest.updated_at, current.updated_at) ? errorResult("CONFLICT", "The character was modified concurrently", { current_version: latest.updated_at, character: latest }) : errorResult("FORBIDDEN", "You are not allowed to modify this character");
+    }
+    const payload = { character: saved, version: saved.updated_at };
+    return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }], structuredContent: payload };
+  }
+});
+
+// src/lib/mcp/tools/create-character.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z8 } from "npm:zod@^3.25.76";
+import { isKnownSystem } from "npm:@/lib/systems";
+var json2 = z8.custom(() => true);
+var create_character_default = defineTool8({
+  name: "create_character",
+  title: "Create character",
+  description: "Create a character owned by the signed-in user in one game system. Plan quotas apply server-side. Optional fields accept the same columns as update_character.",
+  inputSchema: {
+    name: z8.string().min(1).max(120).describe("Character name."),
+    system: z8.string().describe("Game system id, e.g. 'Glyphes', 'Aetheria', 'Worlds Awakening'."),
+    race: z8.string().max(120).optional(),
+    class: z8.string().max(120).optional(),
+    level: z8.number().int().min(0).max(100).optional(),
+    fields: z8.record(json2).optional().describe("Other editable columns (hp, max_hp, strength, inventory, gold\u2026)."),
+    system_data: z8.record(json2).optional().describe("Initial system-specific data.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ name, system, race, class: klass, level, fields, system_data }, ctx) => {
+    if (!ctx.isAuthenticated()) return errorResult("UNAUTHENTICATED", "Not authenticated");
+    if (!isKnownSystem(system)) return errorResult("UNKNOWN_SYSTEM", `Unknown game system: ${system}`);
+    const { update, rejected } = pickEditableFields(fields ?? {});
+    if (rejected.length) return errorResult("FIELD_NOT_EDITABLE", "Some fields cannot be set", { fields: rejected });
+    const supabase = supabaseForUser(ctx);
+    const row = {
+      ...update,
+      name,
+      system,
+      race: race ?? "",
+      class: klass ?? "",
+      level: level ?? 1,
+      system_data: system_data ?? {},
+      user_id: ctx.getUserId(),
+      // identity always from the verified token
+      kind: "standard"
+    };
+    const { data, error } = await supabase.from("characters").insert(row).select("*").single();
+    if (error) {
+      const quota = /quota|limit|limite/i.test(error.message);
+      return errorResult(quota ? "QUOTA_EXCEEDED" : "DATABASE_ERROR", error.message);
+    }
+    const payload = { character: data, version: data.updated_at };
+    return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }], structuredContent: payload };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "snawpxrejmcxfbiiowxr";
 var mcp_default = defineMcp({
   name: "vtt-jdr",
   title: "VTT JDR",
-  version: "0.1.0",
-  instructions: "Outils pour Aetheria VTT (table de jeu de r\xF4le virtuelle). Permet de lister et consulter les campagnes, leurs membres, les fiches de personnage de l'utilisateur connect\xE9, ainsi que de lire et cr\xE9er des notes de campagne. Chaque appel agit au nom de l'utilisateur connect\xE9 et respecte ses permissions (MJ / joueur).",
+  version: "0.2.0",
+  instructions: "Outils pour Aetheria VTT (table de jeu de r\xF4le virtuelle). Permet de lister et consulter les campagnes, leurs membres, les fiches de personnage de l'utilisateur connect\xE9, de cr\xE9er et modifier ses fiches (update_character exige expected_version = updated_at lu ; CONFLICT si la fiche a chang\xE9), de r\xE9cup\xE9rer les fiches modifi\xE9es depuis la derni\xE8re synchro (list_characters updated_since), ainsi que de lire et cr\xE9er des notes de campagne. Chaque appel agit au nom de l'utilisateur connect\xE9 et respecte ses permissions (MJ / joueur).",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
@@ -259,7 +486,9 @@ var mcp_default = defineMcp({
     list_characters_default,
     get_character_default,
     list_campaign_notes_default,
-    create_campaign_note_default
+    create_campaign_note_default,
+    update_character_default,
+    create_character_default
   ]
 });
 

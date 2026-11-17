@@ -1,0 +1,604 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://snawpxrejmcxfbiiowxr.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "vtt-jdr",
+      "version": "0.2.0",
+      "title": "VTT JDR"
+    },
+    "tools": [
+      {
+        "name": "list_campaigns",
+        "title": "List campaigns",
+        "description": "List the Aetheria VTT campaigns the signed-in user can access (owned as GM or joined as player).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of campaigns to return (default 25)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_campaign",
+        "title": "Get campaign details",
+        "description": "Get one Aetheria VTT campaign with its members (display name, role and linked character), if the signed-in user has access to it.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string",
+              "description": "UUID of the campaign."
+            }
+          },
+          "required": [
+            "campaign_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_characters",
+        "title": "List characters",
+        "description": "List characters of the signed-in user (scope 'owned') or every character they may read (scope 'accessible'). Use updated_since to fetch only sheets changed since the last sync.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of characters to return (default 25, max 100)."
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "owned",
+                "accessible"
+              ],
+              "description": "'owned' (default) or 'accessible' (owned + campaign-linked + available pregens)."
+            },
+            "updated_since": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO timestamp; only characters modified strictly after it are returned."
+            },
+            "system": {
+              "type": "string",
+              "description": "Filter by game system, e.g. 'Glyphes' or 'Aetheria'."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_character",
+        "title": "Get character sheet",
+        "description": "Get the full character sheet (columns, system_data, version and can_edit) of a character the signed-in user can access.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "character_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the character."
+            }
+          },
+          "required": [
+            "character_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_campaign_notes",
+        "title": "List campaign notes",
+        "description": "List the notes of a campaign that the signed-in user is allowed to read (GM-only notes require the GM role).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string",
+              "description": "UUID of the campaign."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of notes to return (default 50)."
+            }
+          },
+          "required": [
+            "campaign_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_campaign_note",
+        "title": "Create campaign note",
+        "description": "Create a note in a campaign on behalf of the signed-in user (session prep, lore, recap). Can be marked GM-only.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "campaign_id": {
+              "type": "string",
+              "description": "UUID of the campaign."
+            },
+            "title": {
+              "type": "string",
+              "description": "Title of the note."
+            },
+            "content": {
+              "type": "string",
+              "description": "Body of the note (plain text or markdown)."
+            },
+            "is_gm_only": {
+              "type": "boolean",
+              "description": "Restrict the note to the GM (default false)."
+            }
+          },
+          "required": [
+            "campaign_id",
+            "title",
+            "content"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_character",
+        "title": "Update character sheet",
+        "description": "Partially update a character the signed-in user may edit. Only provided fields change; system_data_patch is deep-merged. Requires expected_version (the character's last known updated_at) and fails with CONFLICT if the sheet changed meanwhile.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "character_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the character."
+            },
+            "expected_version": {
+              "type": "string",
+              "description": "updated_at value read from get_character/list_characters."
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "race": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "class": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "subclass": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "background": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "alignment": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "backstory": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "personality_traits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ideals": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bonds": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "flaws": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "appearance": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "strength": {
+                  "type": "integer"
+                },
+                "dexterity": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "constitution": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "intelligence": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "wisdom": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "charisma": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "hp": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "max_hp": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "temp_hp": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "armor_class": {
+                  "$ref": "#/properties/fields/properties/strength"
+                },
+                "initiative": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "speed": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "hit_dice": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "proficiency_bonus": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "saving_throws": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "skills": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/saving_throws/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "languages": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/saving_throws/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equipped_weapon_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equipped_armor_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equipped_items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/saving_throws/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "inventory": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "gold": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "spellcasting_ability": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "spell_save_dc": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "spell_attack_bonus": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "known_spells": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/saving_throws/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "prepared_spells": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/saving_throws/anyOf/0"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "spell_slots": {},
+                "experience_points": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/properties/fields/properties/strength"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "avatar_url": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "description": "Top-level columns to change. Omitted fields are kept."
+            },
+            "system_data_patch": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/properties/fields/properties/spell_slots"
+              },
+              "description": "Partial system_data (mana, wounds, heroism, aptitudes…); deep-merged, untouched keys preserved."
+            }
+          },
+          "required": [
+            "character_id",
+            "expected_version"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_character",
+        "title": "Create character",
+        "description": "Create a character owned by the signed-in user in one game system. Plan quotas apply server-side. Optional fields accept the same columns as update_character.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Character name."
+            },
+            "system": {
+              "type": "string",
+              "description": "Game system id, e.g. 'Glyphes', 'Aetheria', 'Worlds Awakening'."
+            },
+            "race": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "class": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "fields": {
+              "type": "object",
+              "additionalProperties": {},
+              "description": "Other editable columns (hp, max_hp, strength, inventory, gold…)."
+            },
+            "system_data": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/properties/fields/additionalProperties"
+              },
+              "description": "Initial system-specific data."
+            }
+          },
+          "required": [
+            "name",
+            "system"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
