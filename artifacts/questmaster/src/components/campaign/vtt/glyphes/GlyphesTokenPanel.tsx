@@ -94,6 +94,15 @@ export default function GlyphesTokenPanel({
             {state.actionPoints} / {state.maxActionPoints}
           </p>
           <p className="text-[9px] text-muted-foreground">{movementRange(state.actionPoints)} ft</p>
+          <button
+            className="mt-1 rounded border border-border px-1 text-[9px] disabled:opacity-40"
+            disabled={!canEdit}
+            title="Don du palier héroïque : 5 points d'action par tour"
+            aria-pressed={state.maxActionPoints >= 5}
+            onClick={() => onChange({ maxActionPoints: state.maxActionPoints >= 5 ? 4 : 5 })}
+          >
+            {state.maxActionPoints >= 5 ? "Efficace ✓" : "Efficace"}
+          </button>
         </div>
         <div className="rounded border border-border p-2">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Héroïsme</p>
