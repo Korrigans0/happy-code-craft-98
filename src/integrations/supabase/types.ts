@@ -2468,6 +2468,33 @@ export type Database = {
         }
         Relationships: []
       }
+      talespire_link_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_cosmetics: {
         Row: {
           dice_skin: string
@@ -2653,6 +2680,7 @@ export type Database = {
         Args: { _bucket: string; _max: number; _window_seconds: number }
         Returns: boolean
       }
+      consume_talespire_link_code: { Args: { _code: string }; Returns: string }
       create_content_package: {
         Args: {
           _description: string
@@ -2664,6 +2692,7 @@ export type Database = {
         }
         Returns: string
       }
+      create_talespire_link_code: { Args: never; Returns: string }
       duplicate_pregen: { Args: { _pregen_id: string }; Returns: string }
       effective_tier: {
         Args: { _user_id: string }
@@ -2719,6 +2748,10 @@ export type Database = {
       }
       is_campaign_member: {
         Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_gm_of_character_member: {
+        Args: { _character_id: string; _uid: string }
         Returns: boolean
       }
       join_campaign_by_invite_code: { Args: { _code: string }; Returns: string }

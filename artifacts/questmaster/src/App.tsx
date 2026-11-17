@@ -36,6 +36,8 @@ const Partners = lazy(() => import("./pages/Partners"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 const Guide = lazy(() => import("./pages/Guide"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const TaleSpireApp = lazy(() => import("./talespire/ui/TaleSpireApp"));
+const TaleSpireLinkPage = lazy(() => import("./talespire/ui/TaleSpireLinkPage"));
 const SystemsIndex = lazy(() => import("./pages/systems/Index"));
 const GlyphesHub = lazy(() => import("./pages/systems/glyphes/Hub"));
 const GlyphesNouvelEmpire = lazy(() => import("./pages/systems/glyphes/NouvelEmpire"));
@@ -87,6 +89,23 @@ function PageBoundary({ children }: { children: React.ReactNode }) {
   return <ErrorBoundary scope="page" resetKey={pathname}>{children}</ErrorBoundary>;
 }
 
+// Site-wide overlays are hidden inside the TaleSpire Symbiote window.
+function SiteChrome() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith("/talespire")) return null;
+  return (
+    <>
+      <CommandPalette />
+      <MobileBottomNav />
+      <CookieBanner />
+      <CookiePreferencesDialog />
+      <BugReportButton />
+      <MobileBanner />
+      <SiteAmbientMusic />
+    </>
+  );
+}
+
 const AppRoutes = () => (
   <BrowserRouter basename={basePath}>
     <TooltipProvider>
@@ -127,6 +146,8 @@ const AppRoutes = () => (
         <Route path="/retractation" element={<Withdrawal />} />
         <Route path="/politique-remboursement" element={<RefundPolicy />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+        <Route path="/talespire" element={<TaleSpireApp />} />
+        <Route path="/talespire/link" element={<TaleSpireLinkPage />} />
         <Route path="/systems" element={<SystemsIndex />} />
         <Route path="/systems/glyphes" element={<GlyphesHub />} />
         <Route path="/systems/glyphes/nouvel-empire" element={<GlyphesNouvelEmpire />} />
@@ -137,13 +158,7 @@ const AppRoutes = () => (
       </Routes>
       </Suspense>
       </PageBoundary>
-      <CommandPalette />
-      <MobileBottomNav />
-      <CookieBanner />
-      <CookiePreferencesDialog />
-      <BugReportButton />
-      <MobileBanner />
-      <SiteAmbientMusic />
+      <SiteChrome />
 
     </TooltipProvider>
   </BrowserRouter>

@@ -54,13 +54,18 @@ export function sameVersion(a: string | null | undefined, b: string | null | und
   return Number.isFinite(ta) && ta === tb;
 }
 
-/** Owner can edit; the campaign GM can edit pregens (mirrors the database rules). */
+/**
+ * Mirrors the database rules: the owner edits; the campaign GM edits pregens and the
+ * sheets linked to members of their campaign. The database still decides on write.
+ */
 export function canEditCharacter(
   row: { user_id: string | null; kind: string | null },
   userId: string | null,
   isPregenGm: boolean,
+  isMemberGm = false,
 ): boolean {
   if (!userId) return false;
   if (row.user_id === userId) return true;
-  return row.kind === "pregen" && isPregenGm;
+  if (row.kind === "pregen") return isPregenGm;
+  return isMemberGm;
 }

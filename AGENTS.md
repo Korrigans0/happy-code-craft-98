@@ -22,3 +22,4 @@
 - New tabletop uploads are re-encoded to WebP by lib/vtt/imageCompression (maps keep their pixel size up to 8192 px because they are drawn 1:1 with baked grids; tokens max 512 px); migrated inline images upload with compress: false to stay byte-identical.
 - Fonts are self-hosted via @fontsource imports in main.tsx; never load Google Fonts, which sent visitors' IP to Google before consent.
 - Run tests with `bun run test` (bun:test, files under src/**/*.test.ts); keep tests free of the Supabase client so they run without env vars.
+- The TaleSpire Symbiote is the /talespire route of the site (src/talespire, loaded by URL from talespire-symbiote/manifest.json); it mounts the real sheets via systems/registry and talks only to the MCP API (OAuth PKCE public client, link code = authorization code shown on /talespire/link), so sheets and rules are never duplicated and no backend secret reaches TaleSpire.

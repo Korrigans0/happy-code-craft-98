@@ -23,7 +23,7 @@ Stocker le refresh_token de manière chiffrée côté poste du joueur ; ne jamai
 
 ## 3. Règles d'accès (appliquées par la base, côté serveur)
 - Lecture : propriétaire ; membres d'une campagne pour les fiches liées ; MJ pour les fiches de ses joueurs ; pré-tirés disponibles.
-- Écriture : uniquement le propriétaire, et le MJ pour les pré-tirés de sa campagne. Un MJ ne modifie pas la fiche d'un joueur via l'API (même règle que le site). Un joueur ne peut jamais modifier la fiche d'un autre.
+- Écriture : le propriétaire ; le MJ pour les pré-tirés de sa campagne et pour les fiches liées aux membres de sa campagne (règle serveur). Le MJ ne peut jamais changer le propriétaire, le système ni le type d'une fiche. Un joueur ne peut jamais modifier la fiche d'un autre.
 - Colonnes jamais modifiables : `id, user_id, system, kind, pregen_*, source_*, created_at, updated_at`.
 - Quotas d'abonnement appliqués à la création.
 
@@ -94,8 +94,10 @@ Paramètres invalides : `isError` avec le message de validation.
 - **Résolution de conflit recommandée** : reprendre `character` du conflit, réappliquer uniquement les champs modifiés localement (envoyer des deltas, pas la fiche entière), renvoyer avec `current_version`. Ne jamais forcer en écrasant.
 - Envoyer des changements groupés (débounce ~500 ms) plutôt qu'un appel par clic.
 
+## 6 bis. Code de liaison (Symbiote TaleSpire)
+Le module enregistre un client OAuth public (redirection `https://aetheriavtt.com/talespire/link`). « Code de liaison » : l'adresse d'autorisation est ouverte dans le navigateur du joueur ; après consentement, la page `/talespire/link` affiche le code d'autorisation à coller dans TaleSpire, qui l'échange avec son vérificateur PKCE. Sans le vérificateur détenu par le module, ce code est inutilisable.
+
 ## 7. Limites actuelles
 - Pas de flux push (WebSocket) dans le MCP : synchronisation par interrogation.
 - Pas de suppression de fiche via l'API (volontaire).
-- Les modifications MJ sur la fiche d'un joueur restent impossibles par l'API, comme sur le site.
 - Activation en ligne seulement après publication du site.

@@ -204,10 +204,11 @@ function sameVersion(a, b) {
   const tb = Date.parse(b);
   return Number.isFinite(ta) && ta === tb;
 }
-function canEditCharacter(row, userId, isPregenGm) {
+function canEditCharacter(row, userId, isPregenGm, isMemberGm = false) {
   if (!userId) return false;
   if (row.user_id === userId) return true;
-  return row.kind === "pregen" && isPregenGm;
+  if (row.kind === "pregen") return isPregenGm;
+  return isMemberGm;
 }
 
 // src/lib/mcp/characterAccess.ts
@@ -222,7 +223,12 @@ async function computeCanEdit(supabase, ctx, row) {
     const { data } = await supabase.rpc("is_campaign_gm", { _user_id: userId, _campaign_id: row.pregen_campaign_id });
     isGm = data === true;
   }
-  return canEditCharacter(row, userId, isGm);
+  let isMemberGm = false;
+  if (row.kind !== "pregen" && userId && row.user_id !== userId && row.id) {
+    const { data } = await supabase.rpc("is_gm_of_character_member", { _uid: userId, _character_id: row.id });
+    isMemberGm = data === true;
+  }
+  return canEditCharacter(row, userId, isGm, isMemberGm);
 }
 
 // src/lib/mcp/tools/list-characters.ts

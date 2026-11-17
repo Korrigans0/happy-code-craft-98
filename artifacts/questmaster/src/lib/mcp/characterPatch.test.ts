@@ -17,6 +17,10 @@ describe("character MCP patch rules", () => {
     expect(canEditCharacter({ user_id: "a", kind: "character" }, "a", false)).toBe(true);
     expect(canEditCharacter({ user_id: null, kind: "pregen" }, "gm", true)).toBe(true);
   });
+  test("the GM of the campaign can edit a member's sheet, nobody else", () => {
+    expect(canEditCharacter({ user_id: "player", kind: "standard" }, "gm", false, true)).toBe(true);
+    expect(canEditCharacter({ user_id: "player", kind: "standard" }, "other", false, false)).toBe(false);
+  });
   test("version comparison ignores timestamp formatting", () => {
     expect(sameVersion("2026-11-17T16:00:00+00:00", "2026-11-17T16:00:00.000Z")).toBe(true);
     expect(sameVersion("2026-11-17T16:00:00Z", "2026-11-17T16:00:01Z")).toBe(false);
