@@ -9,6 +9,8 @@ interface AvatarCropDialogProps {
   open: boolean;
   onCancel: () => void;
   onConfirm: (blob: Blob) => Promise<void> | void;
+  /** Square output (e.g. sheet portrait boxes) instead of the round avatar mask. */
+  square?: boolean;
   isUploading?: boolean;
 }
 
@@ -18,7 +20,7 @@ const MIN_FRAME = 220;
 
 type Rotation = 0 | 90 | 180 | 270;
 
-const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: AvatarCropDialogProps) => {
+const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading, square = false }: AvatarCropDialogProps) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -184,7 +186,8 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
     const sy = cy - srcSize / 2;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(OUTPUT / 2, OUTPUT / 2, OUTPUT / 2, 0, Math.PI * 2);
+    if (square) ctx.rect(0, 0, OUTPUT, OUTPUT);
+    else ctx.arc(OUTPUT / 2, OUTPUT / 2, OUTPUT / 2, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
     ctx.drawImage(rot, sx, sy, srcSize, srcSize, 0, 0, OUTPUT, OUTPUT);
@@ -232,7 +235,7 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
               role="application"
               aria-label="Zone de recadrage de l'avatar."
               tabIndex={0}
-              className="relative overflow-hidden rounded-full border-2 border-primary/40 bg-secondary touch-none select-none outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:shadow-[0_0_22px_hsl(var(--primary)/0.25)]"
+              className={`relative overflow-hidden ${square ? "rounded-md" : "rounded-full"} border-2 border-primary/40 bg-secondary touch-none select-none outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:shadow-[0_0_22px_hsl(var(--primary)/0.25)]`}
               style={{ width: frame, height: frame, cursor: dragging ? 'grabbing' : 'grab' }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -263,7 +266,7 @@ const AvatarCropDialog = ({ file, open, onCancel, onConfirm, isUploading }: Avat
                 />
               )}
               {/* subtle inner ring */}
-              <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/10" />
+              <div className={`pointer-events-none absolute inset-0 ${square ? "rounded-md" : "rounded-full"} ring-1 ring-inset ring-white/10`} />
             </div>
             {/* zoom badge */}
             <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow">

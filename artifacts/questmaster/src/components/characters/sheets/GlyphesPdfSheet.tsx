@@ -724,7 +724,7 @@ const PageOverlay = ({
     <>
       {pageIndex === 0 && portraitUrl && <FieldPortal host={host}>
         <img src={portraitUrl} alt="Portrait du personnage" draggable={false}
-          className="pointer-events-none absolute rounded-[12px] object-contain"
+          className="pointer-events-none absolute object-contain"
           style={{ left: PORTRAIT_RECT.x * RENDER_SCALE, top: PORTRAIT_RECT.top * RENDER_SCALE, width: PORTRAIT_RECT.width * RENDER_SCALE, height: PORTRAIT_RECT.height * RENDER_SCALE }} />
       </FieldPortal>}
       {widgets.map((w) => {

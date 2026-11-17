@@ -41,6 +41,6 @@ export function GlyphesPortraitUpload({ onChange }: { onChange: (url: string) =>
     <Button type="button" variant="outline" size="sm" disabled={!user || uploading} onClick={() => input.current?.click()}>
       {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}Portrait
     </Button>
-    <AvatarCropDialog file={file} open={!!file} onCancel={() => setFile(null)} onConfirm={upload} isUploading={uploading} />
+    <AvatarCropDialog file={file} open={!!file} onCancel={() => setFile(null)} onConfirm={upload} isUploading={uploading} square />
   </>;
 }
