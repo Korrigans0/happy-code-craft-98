@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { Skull, Shield, Swords, Search, X } from "lucide-react";
-import { GLYPHES_BESTIARY, BESTIARY_CATEGORIES, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
+import { GLYPHES_BESTIARY, BESTIARY_CATEGORIES, BESTIARY_RULES, MAJOR_EFFECTS, type GlyphesCreature } from "@/pages/systems/glyphes/bestiary";
 
 const WoundRow = ({ count, icon }: { count: number; icon: "wound" | "shield" }) => (
   <div className="flex gap-1">
@@ -171,8 +171,16 @@ export default function GlyphesOfficialBestiary() {
             <h3 className="font-display text-lg font-semibold text-amber-300">Bestiaire officiel — Nouvel Empire</h3>
             <p className="mt-1 text-sm text-slate-400">
               {GLYPHES_BESTIARY.length} créatures canoniques extraites des guides officiels : bandits, faune sauvage,
-              mycoïdes et gardiens de fer-argent.
+              créatures végétales et minérales, gardiens de fer-argent.
             </p>
+            <details className="mt-3 text-sm text-slate-300">
+              <summary className="cursor-pointer font-semibold text-amber-300">Règles des créatures et effets majeurs</summary>
+              <ul className="mt-2 space-y-1">
+                {[...BESTIARY_RULES.map(r => ({ nom: r.titre, texte: r.texte })), ...MAJOR_EFFECTS].map(r => (
+                  <li key={r.nom}><span className="font-semibold text-amber-200">{r.nom} :</span> {r.texte}</li>
+                ))}
+              </ul>
+            </details>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@
 
 export type GlyphesCreature = {
   nom: string;
-  categorie: "Bandits" | "Faune sauvage" | "Créatures végétales" | "Gardiens";
+  categorie: "Bandits" | "Faune sauvage" | "Créatures végétales" | "Créatures minérales" | "Gardiens";
   tags?: string[]; // ex: "Violent 8", "Peur", "Effrayant"
   description: string;
   blessure: number; // nombre d'icônes 🔴
@@ -178,15 +178,16 @@ export const GLYPHES_BESTIARY: GlyphesCreature[] = [
     categorie: "Créatures végétales",
     description:
       "Créature mi-fongique mi-humanoïde d'environ 1 m, au chapeau atteignant 50 cm. Langage primitif propre, très intelligents, plutôt jovials et peuvent troquer. Se défendent en expulsant des spores volatiles.",
+    tags: ["Poison - Maladie"],
     blessure: 1,
-    protection: 0,
+    protection: 1,
     stats: { PUI: "D4", SOU: "D6", CON: "D4", FOI: "D4", SOC: "D6", ESP: "D8" },
     defense: { resilience: 4, esquive: "2D6" },
     attaque: { melee: "1D4", distance: "2D6" },
     aptitudes: [
-      { nom: "Armes de jets", niveau: 2 },
+      { nom: "Armes de jet", niveau: 2 },
       { nom: "Pied léger", niveau: 3 },
-      { nom: "Négociateur", niveau: 2 },
+      { nom: "Négociateur", niveau: 3 },
     ],
     expert:
       "Trois variétés : vénéneux (poison mortel), incandescent (spores inflammables), contagieux (maladies).",
@@ -209,17 +210,59 @@ export const GLYPHES_BESTIARY: GlyphesCreature[] = [
       { nom: "Érudition", niveau: 2 },
     ],
   },
+  // ═══ MINÉRALES ═══
+  {
+    nom: "Gobelin",
+    categorie: "Créatures minérales",
+    description:
+      "Lithoforme de fer, de cuivre ou de cristal vivant dans les boyaux du Monde, notamment au nord des Monts Gris. Aimables et friands de nourriture humaine (surtout de fromage), ils peuvent négocier un passage. Ramasser un cristal ou une pierre précieuse sur leur territoire est considéré comme une agression.",
+    blessure: 1,
+    protection: 2,
+    stats: { PUI: "D4", SOU: "D4", CON: "D4", FOI: "D6", SOC: "D6", ESP: "D4" },
+    defense: { resilience: 4, esquive: "—" },
+    attaque: { melee: "—", distance: "—" },
+    aptitudes: [
+      { nom: "Armes de jet", niveau: 3 },
+      { nom: "Pied léger", niveau: 3 },
+      { nom: "Négociateur", niveau: 2 },
+    ],
+    expert:
+      "Connaît leur capacité spéciale et sait qu'on peut traverser leur territoire en négociant le passage contre de la nourriture humaine. Épreuve de survie commune, rang 1.",
+    capacites: [
+      { nom: "Quand il y en a un, il y en a dix", desc: "Attaqués alors qu'ils forment un groupe de 4 individus ou moins, les gobelins lancent un cri d'alerte qui rameute 3D4 individus supplémentaires. Une fois par confrontation." },
+    ],
+  },
+  {
+    nom: "Kutka",
+    categorie: "Faune sauvage",
+    tags: ["Rapide"],
+    description:
+      "Monture officielle des pelotons de guerre montés de Solstice et de Grise Forge. Serres capables de broyer un homme en armure, intellect quasi inexistant : extrêmement difficile à domestiquer, rare à l'état sauvage. Se déplace de 20 ft par point d'action.",
+    blessure: 3,
+    protection: 2,
+    stats: { PUI: "D8", SOU: "D4", CON: "D6", FOI: "D6", SOC: "D4", ESP: "D4" },
+    defense: { resilience: 4, esquive: "—" },
+    attaque: { melee: "—", distance: "—" },
+    aptitudes: [
+      { nom: "Pugilat", niveau: 3 },
+      { nom: "Athlétique", niveau: 2 },
+      { nom: "Vigilant", niveau: 2 },
+    ],
+    capacites: [
+      { nom: "Charge mortelle", desc: "Lorsqu'il charge, le kutka obtient 2 supériorités au lieu d'une pour ses épreuves d'attaque et de renversement." },
+    ],
+  },
   // ═══ GARDIENS ═══
   {
     nom: "Gardien de fer-argent",
     categorie: "Gardiens",
-    tags: ["Violent 8", "Effrayant"],
+    tags: ["Violent 8", "Effrayant : Peur"],
     description:
       "Rare gardien des temples du Premier Peuple, entièrement fait de fer-argent. Indestructible sauf par une arme du Premier Peuple ou sertie de nacre.",
     blessure: 3,
-    protection: 0,
+    protection: 1,
     stats: { PUI: "D10", SOU: "D8", CON: "D10", FOI: "D12", SOC: "/", ESP: "D10" },
-    defense: { resilience: "—", esquive: "—" },
+    defense: { resilience: 6, esquive: "—" },
     attaque: { melee: "—", distance: "—" },
     aptitudes: [
       { nom: "Armes lourdes de mêlée", niveau: 4 },
@@ -233,13 +276,13 @@ export const GLYPHES_BESTIARY: GlyphesCreature[] = [
   {
     nom: "Sentinelle mécanique",
     categorie: "Gardiens",
-    tags: ["Effrayant"],
+    tags: ["Effrayant : Peur"],
     description:
       "Automate arachnéen créé par un gardien de fer-argent. Visage rappelant une créature traquée (souvent humaine). Destructible par des armes conventionnelles, contrairement à son créateur.",
     blessure: 1,
     protection: 1,
     stats: { PUI: "D4", SOU: "D8", CON: "D6", FOI: "D4", SOC: "/", ESP: "D6" },
-    defense: { resilience: "—", esquive: "—" },
+    defense: { resilience: 4, esquive: "—" },
     attaque: { melee: "—", distance: "—" },
     aptitudes: [
       { nom: "Armes légères de mêlée", niveau: 4 },
@@ -257,5 +300,23 @@ export const BESTIARY_CATEGORIES = [
   "Bandits",
   "Faune sauvage",
   "Créatures végétales",
+  "Créatures minérales",
   "Gardiens",
 ] as const;
+
+/** Règles générales du Guide des créatures. */
+export const BESTIARY_RULES: { titre: string; texte: string }[] = [
+  { titre: "Points d'action", texte: "Sauf exception, les créatures ont 4 points d'action par tour, avec les mêmes coûts que les personnages." },
+  { titre: "Blessures supportables", texte: "Le nombre d'icônes de blessure indique combien de blessures la créature encaisse avant de trépasser." },
+  { titre: "Capacités spéciales", texte: "Les créatures n'ont pas de points d'héroïsme. Leurs capacités spéciales s'utilisent au plus une fois par tour." },
+];
+
+/** Effets majeurs (pictogrammes) appliqués en permanence. */
+export const MAJOR_EFFECTS: { nom: string; texte: string }[] = [
+  { nom: "Effrayant : Peur", texte: "Sa présence impose une épreuve de courage aux créatures non alliées ; un échec applique l'état apeuré." },
+  { nom: "Effrayant : Terreur", texte: "Sa présence impose une épreuve de courage aux créatures non alliées ; un échec applique l'état terrifié." },
+  { nom: "Rapide", texte: "Se déplace de 20 ft par point d'action dépensé." },
+  { nom: "Efficace", texte: "Possède des points d'action supplémentaires." },
+  { nom: "Poison - Maladie", texte: "Ses attaques imposent des épreuves de sang pourri ; un échec applique l'état empoisonné ou malade." },
+  { nom: "Violent", texte: "Quand elle va blesser une créature, celle-ci tire un jeton de sacrifice : inférieur au taux de violence = une blessure ; égal = effet du jeton." },
+];
