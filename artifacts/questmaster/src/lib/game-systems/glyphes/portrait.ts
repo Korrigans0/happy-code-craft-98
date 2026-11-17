@@ -1,5 +1,5 @@
 // Coordinates in the official landscape sheet, measured in PDF points.
-export const PORTRAIT_RECT = { x: 15, top: 56, width: 106, height: 106 };
+export const PORTRAIT_RECT = { x: 13, top: 52, width: 107, height: 107 };
 
 export function portraitPlacement(imageWidth: number, imageHeight: number, pageHeight: number) {
   const scale = Math.min(PORTRAIT_RECT.width / imageWidth, PORTRAIT_RECT.height / imageHeight);
