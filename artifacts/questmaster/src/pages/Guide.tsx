@@ -8,7 +8,7 @@ import {
   PlayCircle, BookOpen, Swords, Users, Map, Shield, Sparkles,
   Dices, Lightbulb, DoorClosed, RectangleHorizontal, Trees,
   Crown, Smartphone, Wand2, Eye, Target, Skull, MessageCircle,
-  HelpCircle, Keyboard, Crosshair,
+  HelpCircle, Keyboard, Crosshair, Gamepad2,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ const TOC_ITEMS: { id: string; label: string; icon: React.ReactNode }[] = [
   { id: "audio",     label: "Audio & ambiances",  icon: <MessageCircle className="h-4 w-4" /> },
   { id: "pdf",       label: "PDF partagés",       icon: <BookOpen className="h-4 w-4" /> },
   { id: "macros",    label: "Macros",             icon: <Wand2 className="h-4 w-4" /> },
+  { id: "talespire", label: "TaleSpire",          icon: <Gamepad2 className="h-4 w-4" /> },
 
   { id: "mj",        label: "Astuces MJ",         icon: <Crown className="h-4 w-4" /> },
   { id: "mobile",    label: "Mobile",             icon: <Smartphone className="h-4 w-4" /> },
@@ -361,6 +362,44 @@ const Guide = () => {
           </Section>
 
 
+
+          <Section id="talespire" icon={<Gamepad2 className="h-5 w-5" />} title="TaleSpire : tes fiches Aetheria en jeu">
+            <p>
+              Le <strong>Symbiote TaleSpire</strong> est un module officiel qui affiche tes fiches Aetheria VTT <strong>directement dans TaleSpire</strong>, dans une fenêtre flottante. C'est la même fiche, les mêmes règles et les mêmes données que sur le site : aucune ressaisie, tout reste synchronisé.
+            </p>
+
+            <Step n={1} title="Installer le Symbiote dans TaleSpire">
+              Dans TaleSpire, ouvre le panneau des <strong>Symbiotes</strong> et ajoute le module par son URL :
+              <code className="mt-1 block break-all rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 font-mono text-[11px] text-amber-300">
+                https://aetheriavtt.com/talespire-symbiote/manifest.json
+              </code>
+              Le module apparaît ensuite dans ta barre d'outils TaleSpire.
+            </Step>
+            <Step n={2} title="Lier ton compte Aetheria VTT">
+              Au premier lancement, le Symbiote demande une <strong>liaison</strong> : une page Aetheria VTT s'ouvre, connecte-toi et autorise l'accès. Un <strong>code temporaire à usage unique</strong> t'est remis — colle-le dans le module. Aucune clé ni mot de passe n'est stocké dans TaleSpire.
+            </Step>
+            <Step n={3} title="Ouvrir tes fiches">
+              La liste de tes personnages s'affiche. Clique pour ouvrir une fiche dans un <strong>onglet</strong> : tu peux garder plusieurs fiches ouvertes en même temps et passer de l'une à l'autre. La fenêtre se déplace et se redimensionne librement.
+            </Step>
+            <Step n={4} title="Jouer et modifier">
+              La fiche est <strong>entièrement interactive</strong> : PV, ressources, compétences, inventaire… Chaque modification est enregistrée sur Aetheria VTT et visible sur le site (et inversement). En cas de coupure réseau, tes changements sont mis en attente et renvoyés dès que la connexion revient.
+            </Step>
+            <Step n="MJ" title="Côté MJ">
+              Le MJ voit et peut modifier les fiches des personnages <strong>liés à ses campagnes uniquement</strong> — jamais celles d'autres campagnes. Chaque modification faite par le MJ est tracée (auteur, date, contenu).
+            </Step>
+            <Step n="✕" title="Révoquer l'accès">
+              Depuis ton <em>Profil</em> sur Aetheria VTT, carte <strong>Applications liées</strong> : un clic retire l'accès du module. Le Symbiote revient alors à l'écran de connexion.
+            </Step>
+
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+              <p className="font-semibold text-amber-300">Bon à savoir</p>
+              <ul className="mt-1 space-y-0.5">
+                <li>• Le système <strong>Glyphes</strong> est supporté en priorité ; les autres systèmes suivront.</li>
+                <li>• Le module ne contient aucune donnée de règles : il utilise celles du site, toujours à jour.</li>
+                <li>• En cas de conflit (fiche modifiée sur le site pendant ta partie), le module prévient au lieu d'écraser.</li>
+              </ul>
+            </div>
+          </Section>
 
           <Section id="mj" icon={<Crown className="h-5 w-5" />} title="Astuces MJ">
             <ul className="space-y-1.5 ml-4 list-disc list-outside marker:text-amber-400/70">
