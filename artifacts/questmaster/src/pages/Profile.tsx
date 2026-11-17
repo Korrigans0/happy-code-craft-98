@@ -17,6 +17,7 @@ import { Loader2, User, Mail, Calendar, Save, Upload, Trash2, X, Sparkles, Shiel
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 import ProfileAchievements from '@/components/profile/ProfileAchievements';
 import CosmeticsPanel from '@/components/profile/CosmeticsPanel';
+import ConnectedAppsCard from '@/components/profile/ConnectedAppsCard';
 
 import { OnboardingTour, resetOnboarding } from '@/components/onboarding/OnboardingTour';
 import LegalRequestForm from '@/components/legal/LegalRequestForm';
@@ -339,8 +340,9 @@ const Profile = () => {
               <CardContent className="space-y-3"><p className="text-sm text-muted-foreground">La suppression peut affecter vos campagnes, personnages, appartenances et fichiers. Les conséquences sur les campagnes partagées sont vérifiées avant exécution. Certaines données peuvent être conservées lorsqu’une obligation légale l’impose.</p><Button variant="destructive" onClick={() => setDeletionOpen(true)}><Trash2 className="h-4 w-4" />Demander la suppression du compte</Button></CardContent>
             </Card>
           </div>
-          <div className="mt-8">
+          <div className="mt-8 space-y-8">
             <CosmeticsPanel />
+            <ConnectedAppsCard />
           </div>
           {user && (
             <div className="mt-8">

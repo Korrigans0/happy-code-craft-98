@@ -801,6 +801,41 @@ export type Database = {
         }
         Relationships: []
       }
+      character_change_log: {
+        Row: {
+          changed_by: string
+          changes: Json
+          character_id: string
+          created_at: string
+          id: string
+          owner_id: string | null
+        }
+        Insert: {
+          changed_by: string
+          changes: Json
+          character_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+        }
+        Update: {
+          changed_by?: string
+          changes?: Json
+          character_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_change_log_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_proposals: {
         Row: {
           campaign_id: string
@@ -2755,6 +2790,7 @@ export type Database = {
         Returns: boolean
       }
       join_campaign_by_invite_code: { Args: { _code: string }; Returns: string }
+      jsonb_change_diff: { Args: { _new: Json; _old: Json }; Returns: Json }
       list_campaign_pregens: { Args: { _campaign_id: string }; Returns: Json }
       list_campaign_proposals: {
         Args: { _campaign_id: string }
